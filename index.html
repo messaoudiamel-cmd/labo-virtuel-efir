@@ -333,6 +333,19 @@ a.exp:focus-visible { outline: 3px solid var(--chi); outline-offset: 3px; }
 .t-mouvement { --pan: linear-gradient(180deg, #F3E6CF, #DFC293); }
 .t-energie { --pan: linear-gradient(180deg, #F8E9C8, #E6C887); }
 .t-ondes { --pan: linear-gradient(180deg, #F1E4D4, #D9BC9C); }
+/* cartes des thèmes : verre bleu nuit, bordure dorée, icônes line art (remplace le style beige) */
+#themes a.exp { display: flex; flex-direction: column; min-height: 300px; padding: 22px 20px 18px; gap: 14px; border-radius: 18px; background: rgba(20,30,60,.8); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(235,213,179,.55); box-shadow: 0 12px 30px rgba(0,0,0,.35); transition: transform .25s, border-color .25s, box-shadow .25s; }
+#themes a.exp:hover, #themes a.exp:focus-visible { transform: translateY(-5px); border-color: #EBD5B3; box-shadow: 0 0 0 1px #EBD5B3, 0 0 26px rgba(235,213,179,.35), 0 18px 40px rgba(0,0,0,.45); }
+#themes .ico-la { color: #EBD5B3; opacity: .8; width: 72px; height: 72px; display: block; transition: opacity .25s, transform .25s; }
+#themes a.exp:hover .ico-la { opacity: 1; transform: scale(1.06); }
+#themes .ico-la svg { width: 100%; height: 100%; }
+#themes .exp-c { background: none; padding: 0; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+#themes .exp-th { color: #EBD5B3; font-variant: small-caps; text-transform: uppercase; letter-spacing: .1em; font: 700 .74rem var(--font-body); }
+#themes .exp h3 { color: #FFFFFF; font: 700 1.2rem/1.3 var(--font-display); text-shadow: none; }
+#themes .exp-go { margin-top: auto; }
+#themes .exp-go span { color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3); }
+#themes .exp-go span.plein { background: #EBD5B3; color: #0B132B; border-color: #EBD5B3; }
 </style>
 </head>
 <body>
@@ -511,6 +524,13 @@ const nch = (niv, th) => { const n = ((CHAPITRES[niv] || {})[th] || []).length; 
 const nbCy = cy => NIVEAUX.filter(n => n.cycle === cy).reduce((a, n) => a + nbTP(n.id), 0);
 const dispo = k => k ? k + " TP disponible" + (k > 1 ? "s" : "") : "TP à venir";
 /* Accroches de l'accueil : modifier les questions et les « Le saviez-vous ? » ici */
+/* Icônes « line art » des thèmes (trait fin, couleur = currentColor) */
+const ICO_LA = {
+  matiere: '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M44 10h12M46 10v34C32 48 24 58 24 70a26 26 0 0 0 52 0c0-12-8-22-22-26V10"/><path d="M42 24h16"/><path d="M27 68c10 4 36 4 46 0"/><circle cx="44" cy="78" r="2"/><circle cx="56" cy="74" r="1.5"/></svg>',
+  mouvement: '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="50" cy="50" r="12"/><ellipse cx="50" cy="50" rx="40" ry="18" transform="rotate(-20 50 50)" stroke-dasharray="4 5"/><circle cx="85" cy="34" r="5"/><path d="M78 26 66 40m0 0 1-7m-1 7 7-1"/></svg>',
+  energie: '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M38 66c0-8-12-14-12-30a24 24 0 0 1 48 0c0 16-12 22-12 30z"/><path d="M40 74h20M42 82h16M46 90h8"/><path d="M53 22 43 40h10l-6 16"/></svg>',
+  ondes: '<svg viewBox="0 0 100 100" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M50 18 76 74H24z" stroke="currentColor"/><path d="M4 56 40 48" stroke="currentColor"/><path d="M40 48 60 50" stroke="currentColor" opacity=".7"/><path d="M62 50 96 38" stroke="#ff5a5a"/><path d="M62 52 96 50" stroke="#4cd97b"/><path d="M62 54 96 62" stroke="#4a90e2"/></svg>'
+};
 const ACCROCHES = { /* plusieurs questions par thème : elles défilent sur chaque carte */
   college: {
     matiere: ["Comment reconnaître un ion invisible dans une solution ?", "Pourquoi le fer rouille-t-il et pas l'or ?", "Que devient la matière quand un morceau de sucre fond dans l'eau ?"],
@@ -576,7 +596,7 @@ function route() {
   if (!T) {
     $("#h-niv").textContent = N.long;
     $("#themes").innerHTML = THEMES.map((x, i) => { const k = nbTP(N.id, x.id);
-      return `<a class="exp t-${x.id}" href="#${N.id}/${x.id}" style="--i:${i}"><span class="ph ph-${x.id}" aria-hidden="true"></span><span class="exp-c"><span class="exp-th">${esc(x.nom)}</span><h3 class="qdef" data-th="${x.id}">${esc(ACCROCHES[N.cycle][x.id][0])}</h3><span class="exp-go"><span>${nch(N.id, x.id)}</span><span class="${k ? "plein" : ""}">${k ? k + " TP ➔" : "TP à venir"}</span></span></span></a>`; }).join("");
+      return `<a class="exp t-${x.id}" href="#${N.id}/${x.id}" style="--i:${i}"><span class="ico-la" aria-hidden="true">${ICO_LA[x.id]}</span><span class="exp-c"><span class="exp-th">${esc(x.nom)}</span><h3 class="qdef" data-th="${x.id}">${esc(ACCROCHES[N.cycle][x.id][0])}</h3><span class="exp-go"><span>${nch(N.id, x.id)}</span><span class="${k ? "plein" : ""}">${k ? k + " TP ➔" : "TP à venir"}</span></span></span></a>`; }).join("");
     defile(N.cycle);
     fil([[C.nom, "#" + C.id], [N.nom, ""]]); montre("#v-niveau"); rejoue($("#themes")); document.title = N.nom + " · Labo virtuel EFIR"; window.scrollTo(0, 0); return;
   }
