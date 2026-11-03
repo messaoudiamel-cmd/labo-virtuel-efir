@@ -227,6 +227,14 @@ body { background: radial-gradient(120% 90% at 20% 0%, var(--bg-2), var(--bg) 60
 @media (max-width: 860px) { .hero-txt .chiffres { justify-content: center; } }
 @media (max-width: 700px) { .fl:nth-child(n+8) { display: none; } .fl:nth-child(-n+7) { display: block; } }
 @media (prefers-reduced-motion: reduce) { .pr .ray { animation: none; } }
+/* dégradés sur l'écriture (profondeur et vivacité) */
+.hero .titre .k, .hero .titre .c, h2.t2 { -webkit-background-clip: text; background-clip: text; color: transparent; background-size: 200% 100%; animation: reflet 8s ease-in-out infinite; }
+.hero .titre .k { background-image: linear-gradient(100deg, #FFFFFF 0%, #DCEBFF 35%, #7FB4F0 60%, #FFFFFF 100%); }
+.hero .titre .c { background-image: linear-gradient(100deg, #FFF3DC 0%, #EBD5B3 35%, #D9A15E 65%, #F5E2C2 100%); }
+h2.t2 { background-image: linear-gradient(100deg, #FFFFFF 0%, #CFE2FA 40%, #EBD5B3 75%, #FFFFFF 100%); }
+.hero .titre { filter: drop-shadow(0 6px 18px rgba(0,0,0,.45)); }
+@keyframes reflet { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@media (prefers-reduced-motion: reduce) { .hero .titre .k, .hero .titre .c, h2.t2 { animation: none; } }
 </style>
 </head>
 <body>
