@@ -74,6 +74,7 @@ h2.t2 { font-size: clamp(1.7rem, 5vw, 2.6rem); }
 .vide { width: 100%; max-width: 560px; border: 1.5px dashed var(--line); border-radius: 16px; padding: 22px; color: var(--muted); background: rgba(255,255,255,.04); }
 .regles { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; font-size: .88rem; color: var(--muted); padding: 0; margin: 0; list-style: none; }
 .regles b { color: var(--ink); }
+.regles[hidden] { display: none; }
 .retour { justify-self: center; border: 1.5px solid var(--line); background: transparent; border-radius: 999px; padding: 8px 18px; color: var(--ink); text-decoration: none; font-weight: 700; }
 .retour:hover { background: var(--glass); }
 .logo-mini { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -143,7 +144,7 @@ h2.t2 { font-size: clamp(1.7rem, 5vw, 2.6rem); }
   <!-- 3. un thème : ses TP -->
   <section class="vue" id="v-theme" hidden aria-labelledby="h-th">
     <h2 class="t2" id="h-th"></h2>
-    <ul class="regles"><li><b>1.</b> Équipez-vous avant de manipuler</li><li><b>2.</b> Un tube propre par test</li><li><b>3.</b> Les déchets vont dans le bidon de récupération</li></ul>
+    <ul class="regles" id="regles"><li><b>1.</b> Équipez-vous avant de manipuler</li><li><b>2.</b> Un tube propre par test</li><li><b>3.</b> Les déchets vont dans le bidon de récupération</li></ul>
     <div id="tps" style="width:100%;display:grid;gap:22px;justify-items:center"></div>
     <a class="retour" id="ret-th" href="#">← Tous les thèmes</a>
   </section>
@@ -211,7 +212,7 @@ function route() {
       return `<a class="tuile" href="#${N.id}/${x.id}" style="--accent:${x.accent};--i:${i}">${ICO[x.id]}<h3>${esc(x.nom)}</h3><span class="nb${k ? " plein" : ""}">${k ? k + " TP" : "TP à venir"}</span></a>`; }).join("");
     fil([[N.nom, "#" + N.id]]); montre("#v-niveau"); rejoue($("#themes")); document.title = N.nom + " · Labo virtuel EFIR"; window.scrollTo(0, 0); return;
   }
-  $("#h-th").textContent = T.nom;
+  $("#h-th").textContent = T.nom; $("#regles").hidden = T.id !== "matiere";
   const liste = TP.filter(x => x.niv === N.id && x.theme === T.id), chaps = [...new Set(liste.map(x => x.chap))];
   $("#tps").innerHTML = liste.length ? chaps.map(c => `<div class="chap"><h3>${esc(c)}</h3><div class="cartes">${liste.filter(x => x.chap === c).map(x =>
       `<a class="carte" href="#${x.id}">${x.img}<span class="corps"><span class="tag">${esc(x.tag)}</span><h4>${esc(x.titre)}</h4><span class="pb">${esc(x.pb)}</span><span class="go">Ouvrir le labo →</span></span></a>`).join("")}</div></div>`).join("")
