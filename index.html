@@ -312,6 +312,8 @@ a.exp:focus-visible { outline: 3px solid var(--chi); outline-offset: 3px; }
 .exp-go span { font-size: .82rem; font-weight: 700; color: #fff; padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.4); background: rgba(11,19,43,.55); }
 .exp-go span.plein { background: #EBD5B3; color: #0B132B; border-color: #EBD5B3; }
 #themes.entre > * { animation-delay: calc(var(--i, 0) * 80ms); }
+.qdef { transition: opacity .4s, transform .4s; min-height: 3.75em; }
+.qdef.out { opacity: 0; transform: translateY(8px); }
 </style>
 </head>
 <body>
@@ -484,18 +486,18 @@ const nch = (niv, th) => { const n = ((CHAPITRES[niv] || {})[th] || []).length; 
 const nbCy = cy => NIVEAUX.filter(n => n.cycle === cy).reduce((a, n) => a + nbTP(n.id), 0);
 const dispo = k => k ? k + " TP disponible" + (k > 1 ? "s" : "") : "TP à venir";
 /* Accroches de l'accueil : modifier les questions et les « Le saviez-vous ? » ici */
-const ACCROCHES = {
+const ACCROCHES = { /* plusieurs questions par thème : elles défilent sur chaque carte */
   college: {
-    matiere: "Comment reconnaître un ion invisible dans une solution ?",
-    mouvement: "Pourquoi la Lune ne tombe-t-elle pas sur la Terre ?",
-    energie: "Où passe l'énergie d'une ampoule allumée ?",
-    ondes: "Pourquoi voit-on l'éclair avant d'entendre le tonnerre ?"
+    matiere: ["Comment reconnaître un ion invisible dans une solution ?", "Pourquoi le fer rouille-t-il et pas l'or ?", "Que devient la matière quand un morceau de sucre fond dans l'eau ?"],
+    mouvement: ["Pourquoi la Lune ne tombe-t-elle pas sur la Terre ?", "Pourquoi pèse-t-on moins lourd sur la Lune ?", "Pourquoi faut-il plus de distance pour freiner à grande vitesse ?"],
+    energie: ["Où passe l'énergie d'une ampoule allumée ?", "Comment une éolienne fabrique-t-elle de l'électricité ?", "Pourquoi un chargeur chauffe-t-il ?"],
+    ondes: ["Pourquoi voit-on l'éclair avant d'entendre le tonnerre ?", "Pourquoi le son ne voyage-t-il pas dans l'espace ?", "Comment un message passe-t-il par la fibre optique ?"]
   },
   lycee: {
-    matiere: "Comment compter des entités trop petites pour être vues ?",
-    mouvement: "Comment prévoir la trajectoire d'un satellite ?",
-    energie: "Comment l'énergie se transforme-t-elle sans jamais disparaître ?",
-    ondes: "Pourquoi un prisme transforme-t-il la lumière blanche en arc-en-ciel ?"
+    matiere: ["Comment compter des entités trop petites pour être vues ?", "Pourquoi le chou rouge change-t-il de couleur avec le pH ?", "Comment fabrique-t-on un médicament au laboratoire ?"],
+    mouvement: ["Comment prévoir la trajectoire d'un satellite ?", "Pourquoi un bateau de plusieurs tonnes flotte-t-il ?", "Que dit la deuxième loi de Newton sur un ballon lancé ?"],
+    energie: ["Comment l'énergie se transforme-t-elle sans jamais disparaître ?", "Pourquoi une tasse de thé refroidit-elle de plus en plus lentement ?", "Combien d'énergie stocke une pile ?"],
+    ondes: ["Pourquoi un prisme transforme-t-il la lumière blanche en arc-en-ciel ?", "Comment l'effet Doppler mesure-t-il la vitesse d'une voiture ?", "Pourquoi une bulle de savon est-elle irisée ?"]
   }
 };
 const SAVEZ = [
@@ -517,6 +519,11 @@ let tp = $("#tp"), ouvert = "";
 function nouveauCadre() { const n = document.createElement("iframe"); n.id = "tp"; n.title = tp.title; n.hidden = true; tp.replaceWith(n); tp = n; }
 function page(id) { const el = document.getElementById("sim-" + id); const b = atob(el.textContent.trim()); return new TextDecoder().decode(Uint8Array.from(b, c => c.charCodeAt(0))); }
 function rejoue(el) { el.classList.remove("entre"); void el.offsetWidth; el.classList.add("entre"); }
+/* fait défiler les questions des cartes de thème (une toutes les 5 s, décalées) */
+let minuteur = null;
+function defile(cy) { clearInterval(minuteur); if (matchMedia("(prefers-reduced-motion: reduce)").matches) return; let t = 0;
+  minuteur = setInterval(() => { t++; document.querySelectorAll("#themes .qdef").forEach((h, n) => { const L = ACCROCHES[cy][h.dataset.th]; const k = Math.floor((t + n) / 2) % L.length;
+    if (h.textContent !== L[k]) { h.classList.add("out"); setTimeout(() => { h.textContent = L[k]; h.classList.remove("out"); }, 400); } }); }, 2500); }
 function montre(id) { ["#v-accueil", "#v-cycle", "#v-niveau", "#v-theme"].forEach(s => { $(s).hidden = s !== id; }); document.body.dataset.vue = id.slice(3); rejoue($(id)); }
 function fil(parts) {
   $("#fil").innerHTML = parts.length ? [`<a href="#">Accueil</a>`].concat(parts.map((p, i) => i < parts.length - 1 ? `<a href="${p[1]}">${esc(p[0])}</a>` : `<span>${esc(p[0])}</span>`)).join('<span aria-hidden="true">›</span>') : "";
@@ -544,7 +551,8 @@ function route() {
   if (!T) {
     $("#h-niv").textContent = N.long;
     $("#themes").innerHTML = THEMES.map((x, i) => { const k = nbTP(N.id, x.id);
-      return `<a class="exp" href="#${N.id}/${x.id}" style="--i:${i}"><span class="ph ph-${x.id}" aria-hidden="true"></span><span class="exp-c"><span class="exp-th">${esc(x.nom)}</span><h3>${esc(ACCROCHES[N.cycle][x.id])}</h3><span class="exp-go"><span>${nch(N.id, x.id)}</span><span class="${k ? "plein" : ""}">${k ? k + " TP ➔" : "TP à venir"}</span></span></span></a>`; }).join("");
+      return `<a class="exp" href="#${N.id}/${x.id}" style="--i:${i}"><span class="ph ph-${x.id}" aria-hidden="true"></span><span class="exp-c"><span class="exp-th">${esc(x.nom)}</span><h3 class="qdef" data-th="${x.id}">${esc(ACCROCHES[N.cycle][x.id][0])}</h3><span class="exp-go"><span>${nch(N.id, x.id)}</span><span class="${k ? "plein" : ""}">${k ? k + " TP ➔" : "TP à venir"}</span></span></span></a>`; }).join("");
+    defile(N.cycle);
     fil([[C.nom, "#" + C.id], [N.nom, ""]]); montre("#v-niveau"); rejoue($("#themes")); document.title = N.nom + " · Labo virtuel EFIR"; window.scrollTo(0, 0); return;
   }
   $("#h-th").textContent = T.nom; $("#ban-th").className = "banniere ph-" + T.id; $("#regles").hidden = T.id !== "matiere";
