@@ -350,8 +350,13 @@ a.exp:focus-visible { outline: 3px solid var(--chi); outline-offset: 3px; }
 #themes .exp-lien { display: block; color: inherit; text-decoration: none; }
 #themes .exp-cyc { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
 #themes .exp-cyc + .exp-go { margin-top: 0; }
-#themes .exp-cyc a { font: 700 .85rem var(--font-body); color: #fff; text-decoration: none; padding: 6px 14px; border-radius: 999px; border: 1px solid #EBD5B3; background: transparent; transition: background .2s, color .2s, transform .2s; }
-#themes .exp-cyc a:hover, #themes .exp-cyc a:focus-visible { background: #EBD5B3; color: #0B132B; transform: scale(1.05); }
+#themes .exp-cyc button { cursor: pointer; }
+#themes .exp-cyc button:disabled { opacity: .35; cursor: default; transform: none; background: transparent; color: #fff; }
+#themes .exp-ch { display: block; min-height: 2.7em; margin: 2px 0 10px; color: #EBD5B3; font: 600 .9rem var(--font-body); line-height: 1.35; }
+#themes .exp-ch small { display: block; color: #9aa6c4; font-weight: 700; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+#tps .chap.vise { outline: 2px solid #EBD5B3; outline-offset: 6px; border-radius: 14px; }
+#themes .exp-cyc a, #themes .exp-cyc button { font: 700 .85rem var(--font-body); color: #fff; text-decoration: none; padding: 6px 14px; border-radius: 999px; border: 1px solid #EBD5B3; background: transparent; transition: background .2s, color .2s, transform .2s; }
+#themes .exp-cyc button:not(:disabled):hover, #themes .exp-cyc button:focus-visible, #themes .exp-cyc a:hover, #themes .exp-cyc a:focus-visible { background: #EBD5B3; color: #0B132B; transform: scale(1.05); }
 #themes .exp-cyc a.ici { border-width: 2px; color: #EBD5B3; }
 #themes .exp-cyc a.ici:hover { color: #0B132B; }
 </style>
@@ -610,17 +615,20 @@ function route() {
   if (!T) {
     $("#h-niv").textContent = N.long;
     $("#themes").innerHTML = THEMES.map((x, i) => { const k = nbTP(N.id, x.id);
-      /* boutons Collège / Lycée : la classe en cours, ou la classe de l'autre cycle la plus proche (3e ou 2de, 1re pour l'énergie) */
-      const nc = N.cycle === "college" ? N.id : "troisieme", nl = N.cycle === "lycee" ? N.id : (x.id === "energie" ? "premiere" : "seconde");
-      const bt = (cy, nv, lab) => `<a class="cyc${N.cycle === cy ? " ici" : ""}" href="#${nv}/${x.id}" title="${esc(NIVEAUX.find(n => n.id === nv).nom)} · ${esc(x.nom)}">${lab} ➔</a>`;
-      return `<div class="exp t-${x.id}" data-href="#${N.id}/${x.id}" style="--i:${i}"><span class="ico-la" aria-hidden="true">${ICO_LA[x.id]}</span><span class="exp-c"><span class="exp-th">${esc(x.nom)}</span><h3><a class="exp-lien qdef" data-th="${x.id}" href="#${N.id}/${x.id}">${esc(ACCROCHES[N.cycle][x.id][0])}</a></h3><span class="exp-cyc">${bt("college", nc, "Collège")}${bt("lycee", nl, "Lycée")}</span><span class="exp-go"><span>${nch(N.id, x.id)}</span><span class="${k ? "plein" : ""}">${k ? k + " TP ➔" : "TP à venir"}</span></span></span></div>`; }).join("");
-      document.querySelectorAll("#themes .exp").forEach(c => c.addEventListener("click", e => { if (!e.target.closest("a")) location.hash = c.dataset.href; }));
+      /* chapitre précédent / suivant : parcourir les chapitres du thème dans cette classe */
+      const L = listeChap(N.id, x.id), ch = L.length ? `<span class="exp-ch" aria-live="polite"><small>Chapitre 1 / ${L.length}</small>${esc(L[0])}</span><span class="exp-cyc"><button type="button" class="cyc" data-d="-1" disabled>◀ Chapitre précédent</button><button type="button" class="cyc" data-d="1" ${L.length > 1 ? "" : "disabled"}>Chapitre suivant ▶</button></span>` : "";
+      return `<div class="exp t-${x.id}" data-href="#${N.id}/${x.id}" style="--i:${i}"><span class="ico-la" aria-hidden="true">${ICO_LA[x.id]}</span><span class="exp-c"><span class="exp-th">${esc(x.nom)}</span><h3><a class="exp-lien qdef" data-th="${x.id}" href="#${N.id}/${x.id}">${esc(ACCROCHES[N.cycle][x.id][0])}</a></h3>${ch}<span class="exp-go"><span>${nch(N.id, x.id)}</span><span class="${k ? "plein" : ""}">${k ? k + " TP ➔" : "TP à venir"}</span></span></span></div>`; }).join("");
+      document.querySelectorAll("#themes .exp").forEach(c => { const th = c.dataset.href.split("/")[1], L = listeChap(N.id, th); c.dataset.k = 0;
+        c.addEventListener("click", e => { const b = e.target.closest("button[data-d]");
+          if (b) { e.stopPropagation(); const k = Math.max(0, Math.min(L.length - 1, +c.dataset.k + +b.dataset.d)); c.dataset.k = k;
+            c.querySelector(".exp-ch").innerHTML = `<small>Chapitre ${k + 1} / ${L.length}</small>${esc(L[k])}`; c.querySelector('[data-d="-1"]').disabled = k === 0; c.querySelector('[data-d="1"]').disabled = k === L.length - 1; return; }
+          chapVise = { nv: N.id, th, k: +c.dataset.k }; if (!e.target.closest("a")) location.hash = c.dataset.href; }); });
     defile(N.cycle);
     fil([[C.nom, "#" + C.id], [N.nom, ""]]); montre("#v-niveau"); rejoue($("#themes")); document.title = N.nom + " · Labo virtuel EFIR"; window.scrollTo(0, 0); return;
   }
   $("#h-th").textContent = T.nom; $("#ban-th").className = "banniere ph-" + T.id; $("#regles").hidden = T.id !== "matiere";
   const liste = TP.filter(x => x.niv === N.id && x.theme === T.id);
-  const chaps = [...new Set([...((CHAPITRES[N.id] || {})[T.id] || []), ...liste.map(x => x.chap)])];
+  const chaps = listeChap(N.id, T.id);
   const carte = x => `<a class="carte" href="#${x.id}">${x.img}<span class="corps"><span class="tag">${esc(x.tag)}</span><h4>${esc(x.titre)}</h4><span class="pb">${esc(x.pb)}</span><span class="go">Ouvrir le labo →</span></span></a>`;
   $("#tps").innerHTML = chaps.length ? chaps.map((c, n) => { const l = liste.filter(x => x.chap === c);
       return l.length ? `<div class="chap"><h3><span class="n">${n + 1}</span>${esc(c)}</h3><div class="cartes">${l.map(carte).join("")}</div></div>`
@@ -628,7 +636,11 @@ function route() {
     : `<p class="vide">Ce thème n'est pas au programme de cette classe.</p>`;
   $("#ret-th").href = "#" + N.id;
   fil([[C.nom, "#" + C.id], [N.nom, "#" + N.id], [T.nom, ""]]); montre("#v-theme"); document.title = T.nom + " · Labo virtuel EFIR"; window.scrollTo(0, 0);
+  const v = chapVise; chapVise = null;
+  if (v && v.nv === N.id && v.th === T.id && v.k > 0) { const c = document.querySelectorAll("#tps .chap")[v.k]; if (c) { c.classList.add("vise"); setTimeout(() => c.scrollIntoView({ behavior: "smooth", block: "center" }), 350); } }
 }
+let chapVise = null;
+function listeChap(nv, th) { return [...new Set([...((CHAPITRES[nv] || {})[th] || []), ...TP.filter(x => x.niv === nv && x.theme === th).map(x => x.chap)])]; }
 addEventListener("hashchange", route); route();
 </script>
 
