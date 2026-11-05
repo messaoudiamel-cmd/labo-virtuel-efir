@@ -233,12 +233,51 @@ body.accueil.concept-dock { padding-bottom: 130px; }
 .concept-orbite .rub .lab { font-size: .7rem; max-width: 76px; }
 .concept-orbite .rubriques.plat { position: static; display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
 .concept-orbite .rubriques.plat .rub { position: relative; margin: 0; }
-@media (prefers-reduced-motion: reduce) { .rub .ico { transition: none; } }
+/* --- Concept C : modèle de Mme Messaoudi (bulles en verre autour des tubes) --- */
+.foot-sig { display: none; }
+.concept-modele.accueil .foot-acc { display: none; }
+.concept-modele.accueil .foot-sig { display: grid; justify-items: center; gap: 6px; text-align: center; padding-top: 20px; border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); color: var(--muted); font-size: .9rem; }
+.foot-sig .sig { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.foot-sig .pastille { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid rgba(143,198,255,.25); font-size: 1.05rem; }
+.foot-sig strong { color: var(--ink); }
+.foot-sig .sig-bas { font-size: .78rem; opacity: .8; }
+.foot-sig a { color: var(--muted); }
+.concept-modele .hero h1 .nw { color: #5fd4ff; }
+.concept-modele.accueil .hero .prof { display: none !important; }
+.concept-modele .rub { width: 118px; height: 118px; border-radius: 50%; align-content: center; gap: 8px; font-size: .86rem; font-weight: 600;
+  background: rgba(255,255,255,.05); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 14px 34px rgba(0,0,0,.35); transition: background .3s, transform .3s, box-shadow .3s; }
+.concept-modele .rub .ico { font-size: 2rem; }
+.concept-modele .rub:hover { background: rgba(255,255,255,.13); box-shadow: 0 10px 30px rgba(0,229,255,.2); }
+.concept-modele .rub:hover .ico { transform: scale(1.12); }
+.concept-modele a.rub { width: 148px; height: 148px; font-size: 1.05rem; font-weight: 800; color: #8ff0ff; background: rgba(20,60,120,.45);
+  border-color: rgba(0,229,255,.8); box-shadow: 0 0 26px rgba(0,229,255,.55), 0 14px 34px rgba(0,0,0,.35); }
+.concept-modele a.rub .ico { font-size: 2.6rem; }
+.concept-modele a.rub:hover .ico { transform: rotate(12deg) scale(1.08); }
+.concept-modele a.rub .lab::after { content: " / Labo"; }
+.concept-modele .rubriques { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+@keyframes flotte { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@media (min-width: 700px) {
+  .concept-modele.accueil .hero { min-height: max(620px, min(720px, calc(100vh - 150px))); align-items: start; }
+  .concept-modele.accueil .hero .txt { max-width: none; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 18px 8px; }
+  .concept-modele.accueil .hero h1 { font-size: clamp(1.5rem, 2.6vw, 2rem); }
+  .concept-modele.accueil .logo-efir { width: 40px; }
+  .concept-modele.accueil .hero .plateforme { font-size: .9rem; }
+  .concept-modele.accueil .rubriques { position: absolute; z-index: 3; left: 0; right: 0; top: 100px; bottom: 16px; display: block; }
+  .concept-modele.accueil .rub { position: absolute; animation: flotte 5s ease-in-out infinite; }
+  .concept-modele.accueil .rub:nth-child(1) { left: 6%; top: 6%; }
+  .concept-modele.accueil .rub:nth-child(3) { right: 6%; top: 6%; animation-delay: -1.2s; }
+  .concept-modele.accueil .rub:nth-child(5) { left: 13%; bottom: 8%; animation-delay: -2.4s; }
+  .concept-modele.accueil .rub:nth-child(4) { right: 13%; bottom: 8%; animation-delay: -3.6s; }
+  .concept-modele.accueil a.rub { left: calc(50% - 74px); bottom: 0; animation-delay: -.6s; }
+}
+@media (max-width: 699px) { .concept-modele.accueil .rubriques { margin-top: 18px; gap: 10px; } .concept-modele .rub { width: 80px; height: 80px; font-size: .64rem; gap: 4px; } .concept-modele .rub .ico { font-size: 1.5rem; } .concept-modele a.rub { order: -1; display: flex; align-items: center; justify-content: center; width: 100%; height: 76px; border-radius: 999px; gap: 12px; font-size: 1.05rem; } .concept-modele a.rub .ico { font-size: 2rem; } }
+@media (prefers-reduced-motion: reduce) { .rub .ico { transition: none; } .concept-modele .rub { animation: none !important; } }
 .foot-acc { margin-top: 24px; padding-top: 20px; border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
 </style>
 </head>
 <body>
-<script>document.body.classList.add(new URLSearchParams(location.search).get("v") === "orbite" ? "concept-orbite" : "concept-dock");</script>
+<script>(function () { const v = new URLSearchParams(location.search).get("v"); document.body.classList.add(v === "orbite" ? "concept-orbite" : v === "dock" ? "concept-dock" : "concept-modele"); })();</script>
 <div class="wrap">
   <header class="hero">
     <canvas id="scene" aria-hidden="true"></canvas>
@@ -286,6 +325,10 @@ body.accueil.concept-dock { padding-bottom: 130px; }
     <div class="pf-filtres" id="pf-filtres"></div>
     <div id="pf-contenu" style="width:100%"></div>
   </section>
+  <div class="foot-sig">
+    <p class="sig"><span class="pastille" aria-hidden="true">👩‍🏫</span><span>Conçue avec passion par <strong>Mme Messaoudi</strong>, professeure de physique-chimie</span></p>
+    <p class="sig-bas">© 2026-2027 • Ma science physique-chimie • <a href="#suivi">Espace professeur</a></p>
+  </div>
   <p class="foot foot-acc"><span>© 2026-2027 • Ma science physique-chimie • Conçu par Mme Messaoudi</span><a href="#suivi">Espace professeur</a></p>
 </div>
 <script>try { document.getElementById("logo-efir").src = document.querySelector('link[rel="icon"]').href; } catch (e) {}</script>
@@ -520,9 +563,11 @@ addEventListener("hashchange", route); route();
     ions = Array.from({ length: n }, (_, k) => ({ x: Math.random() * W, y: Math.random() * H, r: 15 + Math.random() * 9, vx: (Math.random() - .5) * 10, vy: -4 - Math.random() * 8, t: IONS[k % IONS.length], ph: Math.random() * 6 }));
   }
   const avecTubes = () => W >= 640;
-  const orbite = () => document.body.classList.contains("concept-orbite") && document.body.classList.contains("accueil");
+  const orbite = () => document.body.classList.contains("accueil") && (document.body.classList.contains("concept-orbite") || modele());
+  const modele = () => document.body.classList.contains("concept-modele") && document.body.classList.contains("accueil");
   function geo(i) {
     const s = Math.max(1, Math.min(1.35, H / 330)), ecart = 64 * s, l = 30 * s;
+    if (modele()) { const x0 = W / 2 - (3 * ecart + l) / 2, f = calme ? 0 : Math.sin(performance.now() / 1300) * 6; return { x: x0 + i * ecart, haut: H * .30 + f, bas: H * .74 + f, l, s }; }
     if (orbite()) { const x0 = W / 2 - (3 * ecart + l) / 2; return { x: x0 + i * ecart, haut: H * .50, bas: H * .86, l, s }; }
     const x0 = W - 78 - 3 * ecart - l; return { x: x0 + i * ecart, haut: H * .22, bas: H * .82, l, s };
   }
@@ -621,8 +666,9 @@ addEventListener("hashchange", route); route();
 <script>
 /* Concept « orbite » : les rubriques tournent comme des électrons autour des tubes. */
 (function () {
-  if (!document.body.classList.contains("concept-orbite")) return;
   const hero = document.querySelector(".hero"), nav = document.getElementById("rubriques"), items = [...nav.children];
+  if (document.body.classList.contains("concept-modele")) { hero.appendChild(nav); return; }
+  if (!document.body.classList.contains("concept-orbite")) return;
   const calme = matchMedia("(prefers-reduced-motion: reduce)").matches;
   hero.appendChild(nav);
   let ang = -Math.PI / 2, vit = .12, cible = .12, last = 0;
