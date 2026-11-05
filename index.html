@@ -213,28 +213,34 @@ html:has(body.concept-prune) { background: #0A0410; }
 body.concept-prune { --ink: #ffffff; --muted: #E0E0E0; --line: rgba(209,196,233,.18); --navy: #D1C4E9; --surface: transparent;
   background: radial-gradient(ellipse 70% 65% at 60% 40%, #1A0B2E 0%, #12071f 55%, #0A0410 100%); background-attachment: fixed; }
 .concept-prune .hero .plateforme, .concept-prune .hero .prof, .concept-prune .titre-logo .logo-efir, .concept-prune .foot a { display: none; }
-.concept-prune .barre { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
-.concept-prune .barre .marque { display: flex; align-items: center; gap: 12px; color: #fff; font-weight: 600; font-size: .98rem; letter-spacing: .01em; }
-.concept-prune .barre .marque img { width: 30px; height: auto; background: #fff; border-radius: 8px; padding: 3px; }
-.concept-prune .barre .profe { display: grid; justify-items: end; gap: 6px; }
-.concept-prune .barre .nom { color: #fff; font-size: 1.05rem; font-weight: 600; }
-.concept-prune .pilule { font-size: .8rem; color: #D1C4E9; text-decoration: none; border: 1px solid rgba(209,196,233,.4); border-radius: 999px; padding: 4px 16px; transition: border-color .25s, background .25s; }
-.concept-prune .pilule:hover { border-color: #D1C4E9; background: rgba(209,196,233,.08); }
+html:has(body.concept-prune) { overflow-x: clip; }
+.concept-prune .hero canvas { left: calc(50% - 50vw); right: auto; width: 100vw; }
+.concept-prune .hero { overflow: visible; }
+.concept-prune .barre { display: flex; justify-content: flex-end; padding-top: 8px; }
+.concept-prune .barre .bloc { display: flex; align-items: center; gap: 16px; }
+.concept-prune .barre .profe { display: grid; justify-items: end; gap: 8px; }
+.concept-prune .barre .nom { color: #fff; font-size: 1.08rem; font-weight: 600; }
+.concept-prune .barre img { width: 64px; height: 64px; object-fit: contain; background: #fff; border-radius: 14px; padding: 6px; }
+.concept-prune .pilule { font-size: .8rem; color: #E0E0E0; text-decoration: none; border: 1px solid rgba(224,224,224,.3); border-radius: 999px; padding: 4px 16px; transition: border-color .25s, color .25s, background .25s; }
+.concept-prune .pilule:hover { border-color: #F4B4C1; color: #F4B4C1; background: rgba(244,180,193,.06); }
 .concept-prune .badge { justify-self: start; font-size: .7rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #F4B4C1; border: 1px solid rgba(244,180,193,.5); border-radius: 999px; padding: 6px 16px; }
-.concept-prune .hero h1 { font-weight: 600; font-size: clamp(2.1rem, 8.4vw, 3.8rem); line-height: 1.05; letter-spacing: -.01em; color: #fff; }
+.concept-prune .hero h1 { font-weight: 600; font-size: clamp(2.2rem, 9vw, 3.1rem); line-height: 1.1; letter-spacing: -.01em; color: #fff; }
 .concept-prune .hero h1 .nw { background: linear-gradient(90deg, #F4B4C1, #D1C4E9); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.concept-prune .hero h1 .nw::after { content: "."; }
-.concept-prune .sous-titre { color: #E0E0E0; font-size: 1.08rem; max-width: 34ch; }
-.concept-prune .btn-labo { justify-self: start; margin-top: 10px; font: 700 1rem var(--font-body); color: #1A0B2E; background: #F7F1EE; border: 0; border-radius: 999px; padding: 14px 32px; cursor: pointer; box-shadow: 0 10px 30px rgba(244,180,193,.15); transition: transform .25s, box-shadow .25s; }
-.concept-prune .btn-labo:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(244,180,193,.28); }
-.concept-prune .btn-labo:focus-visible, .concept-prune .pilule:focus-visible { outline: 2px solid #F4B4C1; outline-offset: 3px; }
-.concept-prune .hero .txt { gap: 16px; }
-.concept-prune .levels { gap: 10px; }
-.concept-prune .levels a { font: 600 .9rem var(--font-body); color: #E0E0E0; background: transparent; border: 1px solid rgba(224,224,224,.28); padding: 7px 18px; }
-.concept-prune .levels a:hover, .concept-prune .levels a[aria-current="page"] { border-color: #D1C4E9; color: #fff; background: rgba(209,196,233,.08); }
-.concept-prune .levels.appel a { border-color: #D1C4E9; box-shadow: 0 0 0 4px rgba(209,196,233,.15); }
-@media (min-width: 700px) { .concept-prune.accueil-prune .hero { min-height: max(440px, min(560px, calc(100vh - 300px))); display: grid; align-items: center; } .concept-prune .hero .txt { max-width: 600px; } }
-@media (max-width: 520px) { .concept-prune .barre .profe { justify-items: start; } }
+.concept-prune .sous-titre { color: #E0E0E0; font-size: 1.05rem; line-height: 1.6; max-width: 40ch; }
+.concept-prune .btn-niveau { justify-self: start; margin-top: 8px; font: 600 .95rem var(--font-body); color: #E0E0E0; background: transparent; border: 1px solid rgba(224,224,224,.4); border-radius: 999px; padding: 10px 24px; cursor: pointer; transition: border-color .25s, color .25s; }
+.concept-prune .btn-niveau:hover { border-color: #F4B4C1; color: #F4B4C1; }
+.concept-prune .btn-niveau:focus-visible, .concept-prune .pilule:focus-visible, .concept-prune .levels a:focus-visible { outline: 2px solid #F4B4C1; outline-offset: 3px; }
+.concept-prune .hero .txt { gap: 20px; text-align: left; max-width: 440px; padding: 48px 8px; }
+.concept-prune .levels { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: stretch; gap: 14px; }
+.concept-prune .levels a { font: 600 1rem var(--font-body); color: #fff; text-align: center; background: rgba(26,11,46,.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid rgba(244,180,193,.65); border-radius: 999px; padding: 14px 26px; }
+.concept-prune .levels a:hover, .concept-prune .levels a[aria-current="page"] { border-color: #F4B4C1; background: rgba(244,180,193,.12); color: #fff; }
+.concept-prune .levels.appel a { box-shadow: 0 0 0 4px rgba(244,180,193,.22); }
+.concept-prune .wrap { gap: 56px; }
+@media (min-width: 700px) {
+  .concept-prune .hero { display: grid; grid-template-columns: minmax(0, 1fr) 250px; align-items: center; column-gap: 24px; min-height: max(460px, min(580px, calc(100vh - 260px))); }
+  .concept-prune .levels { grid-column: 2; grid-row: 1; justify-self: end; width: 250px; }
+}
+@media (max-width: 699px) { .concept-prune .hero .txt { padding: 24px 4px; } .concept-prune .barre .bloc { gap: 12px; } .concept-prune .barre img { width: 52px; height: 52px; } }
 </style>
 </head>
 <body>
@@ -508,9 +514,16 @@ addEventListener("hashchange", route); route();
     W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const n = W < 600 ? 9 : 16;
     ions = Array.from({ length: n }, (_, k) => ({ x: Math.random() * W, y: Math.random() * H, r: 15 + Math.random() * 9, vx: (Math.random() - .5) * 10, vy: -4 - Math.random() * 8, t: IONS[k % IONS.length], ph: Math.random() * 6 }));
+    if (document.body.classList.contains("concept-prune")) {
+      /* variante prune : ions confinés aux quatre coins, hors des zones de texte et de boutons */
+      const hw = cv.parentElement.clientWidth, marge = (W - hw) / 2, bw = Math.min(marge - 16, W * .13), bh = H * .3;
+      ions = bw < 50 ? [] : ions.slice(0, 12).map((o, k) => { const c = k % 4, b = { x0: c % 2 ? W - bw : 0, y0: c < 2 ? 0 : H - bh, w: bw, h: bh }; return Object.assign(o, { b, x: b.x0 + Math.random() * bw, y: b.y0 + Math.random() * bh }); });
+    }
   }
   const avecTubes = () => W >= 640;
-  function geo(i) { const x0 = W - 300, ecart = 64; return { x: x0 + i * ecart, haut: H * .22, bas: H * .82, l: 30 }; }
+  function geo(i) {
+    if (document.body.classList.contains("concept-prune")) { const hw = cv.parentElement.clientWidth, x0 = (W - hw) / 2 + hw - 270 - 36 - 222; return { x: x0 + i * 64, haut: H * .2, bas: H * .8, l: 30 }; }
+    const x0 = W - 300, ecart = 64; return { x: x0 + i * ecart, haut: H * .22, bas: H * .82, l: 30 }; }
   function niveau(g) { return g.bas - (g.bas - g.haut) * .45; }
   function dessinerIon(o) {
     const neg = o.t.includes("⁻");
@@ -541,6 +554,10 @@ addEventListener("hashchange", route); route();
     ctx.clearRect(0, 0, W, H);
     for (const o of ions) {
       if (!calme) { o.x += (o.vx + Math.sin(ts / 1500 + o.ph) * 4) * dt; o.y += o.vy * dt; }
+      if (o.b) {
+        const b = o.b; if (o.y < b.y0) o.y = b.y0 + b.h; if (o.y > b.y0 + b.h) o.y = b.y0; if (o.x < b.x0) o.x = b.x0 + b.w; if (o.x > b.x0 + b.w) o.x = b.x0;
+        ctx.globalAlpha = .15; dessinerIon(o); ctx.globalAlpha = 1; continue;
+      }
       if (o.y < -o.r) { o.y = H + o.r; o.x = Math.random() * W; }
       if (o.x < -o.r) o.x = W + o.r; if (o.x > W + o.r) o.x = -o.r;
       dessinerIon(o);
@@ -626,19 +643,19 @@ addEventListener("hashchange", route); route();
 /* Variante « prune » : construite seulement avec ?v=prune (la version normale n'est pas modifiée). */
 (function () {
   if (!document.body.classList.contains("concept-prune")) return;
-  const wrap = document.querySelector(".wrap"), txt = document.querySelector(".hero .txt"), h1 = txt.querySelector(".titre-logo"), nav = document.querySelector(".levels");
+  const wrap = document.querySelector(".wrap"), hero = document.querySelector(".hero"), txt = hero.querySelector(".txt"), tl = txt.querySelector(".titre-logo"), nav = document.querySelector(".levels");
   const logo = (document.querySelector('link[rel="icon"]') || {}).href;
   const barre = document.createElement("header"); barre.className = "barre";
-  barre.innerHTML = '<span class="marque"><img alt="Logo EFIR" src="' + logo + '">Ma science physique-chimie</span><span class="profe"><span class="nom">Mme Messaoudi</span><a class="pilule" href="#suivi">Espace professeur</a></span>';
+  barre.innerHTML = '<div class="bloc"><span class="profe"><span class="nom">Mme Messaoudi</span><a class="pilule" href="#suivi">Espace professeur</a></span><img alt="Logo EFIR" src="' + logo + '"></div>';
   wrap.prepend(barre);
   const badge = document.createElement("p"); badge.className = "badge"; badge.textContent = "Plateforme pédagogique interactive";
-  h1.before(badge);
-  const st = document.createElement("p"); st.className = "sous-titre"; st.textContent = "Explorez, manipulez et comprenez le monde qui vous entoure.";
-  const bt = document.createElement("button"); bt.className = "btn-labo"; bt.type = "button"; bt.textContent = "Entrer dans le labo";
-  h1.after(st); st.after(bt);
-  bt.addEventListener("click", () => { nav.scrollIntoView({ behavior: "smooth", block: "center" }); nav.classList.add("appel"); setTimeout(() => nav.classList.remove("appel"), 1600); nav.querySelector("a").focus({ preventScroll: true }); });
-  function etat() { document.body.classList.toggle("accueil-prune", !location.hash.slice(1)); }
-  addEventListener("hashchange", () => { etat(); dispatchEvent(new Event("resize")); }); etat();
+  tl.before(badge);
+  tl.querySelector("h1").innerHTML = 'Explorez la<br><span class="nw">physique-chimie</span><br>autrement.';
+  const st = document.createElement("p"); st.className = "sous-titre"; st.textContent = "Manipulez, observez et comprenez le monde qui vous entoure grâce à des outils interactifs conçus pour vous.";
+  const bt = document.createElement("button"); bt.className = "btn-niveau"; bt.type = "button"; bt.textContent = "Choisir mon niveau →";
+  tl.after(st); st.after(bt);
+  hero.appendChild(nav);
+  bt.addEventListener("click", () => { nav.scrollIntoView({ behavior: "smooth", block: "nearest" }); nav.classList.add("appel"); setTimeout(() => nav.classList.remove("appel"), 1600); nav.querySelector("a").focus({ preventScroll: true }); });
   dispatchEvent(new Event("resize"));
 })();
 </script>
