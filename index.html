@@ -147,6 +147,7 @@ a.card:hover .grains { animation-duration: 2.5s; }
 .reprendre small { display: block; color: var(--muted); }
 .reprendre[hidden] { display: none; }
 .foot a { color: var(--muted); }
+.foot-acc { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; text-align: left; }
 .cible-th { animation: repere 1.6s ease-out 1; }
 @keyframes repere { from { box-shadow: 0 0 0 4px var(--navy); } to { box-shadow: 0 0 0 0 transparent; } }
 #tp { position: fixed; inset: 0; border: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; }
@@ -180,7 +181,6 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 70% 45%
   <header class="hero">
     <canvas id="scene" aria-hidden="true"></canvas>
     <div class="txt">
-      <p class="kicker">3e · 1re · Terminale</p>
       <div class="titre-logo"><img class="logo-efir" id="logo-efir" alt="Logo EFIR" width="30" height="58"><h1>Ma science <span class="nw">physique-chimie</span></h1></div>
       <p class="plateforme">Plateforme pédagogique interactive</p>
       <p class="prof">Professeure : Mme Messaoudi</p>
@@ -216,7 +216,7 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 70% 45%
     <div class="pf-filtres" id="pf-filtres"></div>
     <div id="pf-contenu" style="width:100%"></div>
   </section>
-  <p class="foot">Ma science physique-chimie · EFIR · Mme Messaoudi · 2026-2027. Les vraies manipulations se font en salle de TP. · <a href="#suivi">Espace professeur</a></p>
+  <p class="foot foot-acc"><span>© 2026-2027 • Ma science physique-chimie • Conçu par Mme Messaoudi</span><a href="#suivi">Espace professeur</a></p>
 </div>
 <script>try { document.getElementById("logo-efir").src = document.querySelector('link[rel="icon"]').href; } catch (e) {}</script>
 <iframe id="tp" hidden title="Activité du labo virtuel"></iframe>
