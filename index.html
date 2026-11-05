@@ -225,9 +225,10 @@ html:has(body.concept-prune) { overflow-x: clip; }
 .concept-prune .pilule { font-size: .8rem; color: #E0E0E0; text-decoration: none; border: 1px solid rgba(224,224,224,.3); border-radius: 999px; padding: 4px 16px; transition: border-color .25s, color .25s, background .25s; }
 .concept-prune .pilule:hover { border-color: #F4B4C1; color: #F4B4C1; background: rgba(244,180,193,.06); }
 .concept-prune .badge { justify-self: start; font-size: .7rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #F4B4C1; border: 1px solid rgba(244,180,193,.5); border-radius: 999px; padding: 6px 16px; }
-.concept-prune .hero h1 { font-weight: 600; font-size: clamp(2.2rem, 9vw, 3.1rem); line-height: 1.1; letter-spacing: -.01em; color: #fff; }
+.concept-prune .hero h1 { font-weight: 800; font-size: clamp(3rem, 11vw, 3.75rem); line-height: 1.15; margin-bottom: 4px; letter-spacing: -.01em; color: #fff; }
 .concept-prune .hero h1 .nw { background: linear-gradient(90deg, #F4B4C1, #D1C4E9); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.concept-prune .sous-titre { color: #E0E0E0; font-size: 1.05rem; line-height: 1.6; max-width: 40ch; }
+.concept-prune .sous-titre { color: #d1d5db; font-size: clamp(1.125rem, 2vw, 1.25rem); line-height: 1.625; max-width: 28rem; }
+.concept-prune .sous-titre strong { color: #fff; font-weight: 600; }
 .concept-prune .btn-niveau { justify-self: start; margin-top: 8px; font: 600 .95rem var(--font-body); color: #E0E0E0; background: transparent; border: 1px solid rgba(224,224,224,.4); border-radius: 999px; padding: 10px 24px; cursor: pointer; transition: border-color .25s, color .25s; }
 .concept-prune .btn-niveau:hover { border-color: #F4B4C1; color: #F4B4C1; }
 .concept-prune .btn-niveau:focus-visible, .concept-prune .pilule:focus-visible, .concept-prune .levels a:focus-visible { outline: 2px solid #F4B4C1; outline-offset: 3px; }
@@ -663,8 +664,8 @@ addEventListener("hashchange", route); route();
   wrap.prepend(barre);
   const badge = document.createElement("p"); badge.className = "badge"; badge.textContent = "Plateforme pédagogique interactive";
   tl.before(badge);
-  tl.querySelector("h1").innerHTML = 'Explorez la<br><span class="nw">physique-chimie</span><br>autrement.';
-  const st = document.createElement("p"); st.className = "sous-titre"; st.textContent = "Manipulez, observez et comprenez le monde qui vous entoure grâce à des outils interactifs conçus pour vous.";
+  tl.querySelector("h1").innerHTML = 'L’avant-goût<br>de la <span class="nw">science.</span>';
+  const st = document.createElement("p"); st.className = "sous-titre"; st.innerHTML = "<strong>Manipulez</strong>, <strong>observez</strong> et <strong>comprenez</strong> à volonté.";
   tl.after(st);
   const col = document.createElement("div"); col.className = "niveaux";
   col.innerHTML = '<p class="etiq">Sélectionnez votre niveau</p>'; col.append(nav); hero.appendChild(col);
