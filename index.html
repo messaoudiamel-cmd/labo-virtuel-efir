@@ -165,6 +165,28 @@ a.card:hover .grains { animation-duration: 2.5s; }
 .titre-logo { display: flex; align-items: center; gap: 12px; }
 .logo-efir { flex: none; width: 30px; height: auto; background: #fff; border-radius: 8px; padding: 4px; }
 @media (max-width: 520px) { .logo-efir { width: 24px; } }
+/* Fond continu bleu nuit sur toute la page (le bandeau se fond dans le fond) */
+html:root:not(.x) { --bg: #081a36; --surface: #10284d; --surface-2: #0d2244; --ink: #e8eef6; --muted: #a8bad2; --line: #23426e; --navy: #8fc6ff; --navy-soft: #183a66; --red: #ff8a7a; --hero: #081a36; --hero-2: #081a36; --hero-ink: #f2f6fa; --hero-muted: #b9cce0; color-scheme: dark; }
+html { background: #081a36; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 70% 45% at 15% 0%, rgba(40,90,160,.35), transparent 70%), radial-gradient(ellipse 60% 40% at 90% 30%, rgba(30,70,140,.25), transparent 70%), linear-gradient(180deg, #0a2147 0%, #081a36 45%, #06142b 100%); background-attachment: fixed; }
+.hero { background: transparent; border-radius: 0; overflow: visible; }
+.hero canvas { -webkit-mask-image: radial-gradient(ellipse 70% 75% at 60% 50%, #000 45%, transparent 95%); mask-image: radial-gradient(ellipse 70% 75% at 60% 50%, #000 45%, transparent 95%); }
+.hero::before { display: none; }
+.levels a[aria-current="page"] { color: #081a36; }
+/* Bandeau étendu sur toute la largeur, centré, comme le modèle */
+body { overflow-x: hidden; }
+.hero { margin-inline: calc(50% - 50vw); width: 100vw; min-height: 0; padding: 18px 16px 8px; }
+.hero canvas { -webkit-mask-image: radial-gradient(ellipse 34% 42% at 50% 48%, rgba(0,0,0,.18) 30%, #000 100%); mask-image: radial-gradient(ellipse 34% 42% at 50% 48%, rgba(0,0,0,.18) 30%, #000 100%); }
+.hero { -webkit-mask-image: linear-gradient(180deg, #000 85%, transparent 100%); mask-image: linear-gradient(180deg, #000 85%, transparent 100%); }
+.hero .txt { margin: 0 auto; max-width: 900px; justify-items: center; text-align: center; grid-template-columns: minmax(0, 1fr); padding: 30px 8px 46px; gap: 14px; }
+.hero h1 { font-size: clamp(2.3rem, 6.4vw, 4.4rem); line-height: 1.05; text-shadow: 0 2px 24px rgba(0,0,0,.45); }
+.degrade { background: linear-gradient(90deg, #4fb8ff, #4fe3d6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero .plateforme { display: inline-flex; gap: 8px; align-items: center; color: #7fd0ff; font-weight: 700; font-size: 1rem; border: 1px solid rgba(127,208,255,.35); background: rgba(16,40,77,.55); border-radius: 999px; padding: 7px 18px; margin: 0; letter-spacing: 0; }
+.titre-logo { justify-content: center; }
+.hero h1 .logo-efir { display: inline-block; width: auto; height: .78em; vertical-align: -.02em; margin-right: .25em; padding: 3px; border-radius: 6px; }
+.hero .kicker, .hero .prof { text-shadow: 0 1px 10px rgba(0,0,0,.5); }
+@media (max-width: 520px) { .hero .plateforme { font-size: .9rem; } }
+.hero canvas { opacity: .75; }
 </style>
 </head>
 <body>
@@ -172,9 +194,9 @@ a.card:hover .grains { animation-duration: 2.5s; }
   <header class="hero">
     <canvas id="scene" aria-hidden="true"></canvas>
     <div class="txt">
+      <p class="plateforme"><span aria-hidden="true">✦</span> Plateforme pédagogique interactive</p>
+      <h1><img class="logo-efir" id="logo-efir" alt="Logo EFIR" width="30" height="58">Ma science <span class="nw degrade">physique-chimie</span></h1>
       <p class="kicker">EFIR · Physique-chimie · 3e, 1re et Terminale</p>
-      <div class="titre-logo"><img class="logo-efir" id="logo-efir" alt="Logo EFIR" width="30" height="58"><h1>Ma science <span class="nw">physique-chimie</span></h1></div>
-      <p class="plateforme">Plateforme pédagogique interactive</p>
       <p class="prof">Professeure : <b>Mme Messaoudi.A</b> · EFIR · 2026-2027</p>
     </div>
   </header>
@@ -438,10 +460,10 @@ addEventListener("hashchange", route); route();
   function taille() {
     const r = cv.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio || 1);
     W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const n = W < 600 ? 9 : 16;
+    const n = W < 600 ? 10 : 22;
     ions = Array.from({ length: n }, (_, k) => ({ x: Math.random() * W, y: Math.random() * H, r: 15 + Math.random() * 9, vx: (Math.random() - .5) * 10, vy: -4 - Math.random() * 8, t: IONS[k % IONS.length], ph: Math.random() * 6 }));
   }
-  const avecTubes = () => W >= 640;
+  const avecTubes = () => false; /* fond étendu : réseau de molécules, sans tubes */
   function geo(i) { const x0 = W - 300, ecart = 64; return { x: x0 + i * ecart, haut: H * .22, bas: H * .82, l: 30 }; }
   function niveau(g) { return g.bas - (g.bas - g.haut) * .45; }
   function dessinerIon(o) {
@@ -471,6 +493,11 @@ addEventListener("hashchange", route); route();
     if (!t0) nouveauCycle(ts);
     const dt = Math.min(.05, (ts - (frame.last || ts)) / 1000); frame.last = ts;
     ctx.clearRect(0, 0, W, H);
+    /* liaisons entre ions proches : effet « réseau de molécules » */
+    for (let a = 0; a < ions.length; a++) for (let b = a + 1; b < ions.length; b++) {
+      const dx = ions[a].x - ions[b].x, dy = ions[a].y - ions[b].y, d = Math.hypot(dx, dy), L = W < 600 ? 120 : 190;
+      if (d < L) { ctx.strokeStyle = `rgba(120,200,255,${(.35 * (1 - d / L)).toFixed(3)})`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(ions[a].x, ions[a].y); ctx.lineTo(ions[b].x, ions[b].y); ctx.stroke(); }
+    }
     for (const o of ions) {
       if (!calme) { o.x += (o.vx + Math.sin(ts / 1500 + o.ph) * 4) * dt; o.y += o.vy * dt; }
       if (o.y < -o.r) { o.y = H + o.r; o.x = Math.random() * W; }
