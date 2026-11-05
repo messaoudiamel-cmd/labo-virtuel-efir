@@ -416,11 +416,10 @@ function route() {
   const suivi = h === "suivi";
   $("#v-suivi").hidden = !suivi; document.querySelectorAll(".hero, .rules, .levels, .level, .reprendre").forEach(e => e.classList.toggle("pf-cache", suivi));
   if (suivi) { Prof.rendu(); document.title = "Espace professeur · Ma science physique-chimie"; window.scrollTo(0, 0); return; }
-  let [nv, th] = h.split("/"); nv = ALIAS[nv] || nv; if (!CLASSES.includes(nv)) nv = "troisieme";
+  let [nv, th] = h.split("/"); nv = ALIAS[nv] || nv; if (!CLASSES.includes(nv)) nv = ""; /* accueil : ni thèmes ni TP, seulement le choix de la classe */
   CLASSES.forEach(k => { $("#lvl-" + k).hidden = k !== nv; });
   document.querySelectorAll(".levels a").forEach(a => a.dataset.lvl === nv ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
   document.title = "Ma science physique-chimie · EFIR";
-  let d = null; try { d = TP.find(x => x.id === localStorage.getItem("labo-efir-dernier-tp")); } catch (e) {}
   /* Règle : jamais de TP ouvert affiché sur l'accueil (bouton « Reprendre mon TP » retiré). */
   const c = th && document.getElementById("sec-" + nv + "-" + th);
   if (c) { c.classList.remove("cible-th"); void c.offsetWidth; c.classList.add("cible-th"); setTimeout(() => c.scrollIntoView({ block: "start" }), 50); }
