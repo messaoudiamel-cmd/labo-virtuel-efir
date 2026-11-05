@@ -219,8 +219,9 @@ html:has(body.concept-prune) { overflow-x: clip; }
 .concept-prune .barre { display: flex; justify-content: flex-end; padding-top: 8px; }
 .concept-prune .barre .bloc { display: flex; align-items: center; gap: 16px; }
 .concept-prune .barre .profe { display: grid; justify-items: end; gap: 8px; }
-.concept-prune .barre .nom { color: #fff; font-size: 1.08rem; font-weight: 600; }
-.concept-prune .barre img { width: 64px; height: 64px; object-fit: contain; background: #fff; border-radius: 14px; padding: 6px; }
+.concept-prune .barre .nom { color: #4A2C5A; opacity: .9; font-size: .9rem; font-style: italic; font-weight: 400; }
+.concept-prune .barre .verre { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 14px; background: rgba(255,255,255,.1); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.12); }
+.concept-prune .barre img { width: 40px; height: 52px; object-fit: contain; filter: saturate(.7) brightness(.9); mix-blend-mode: luminosity; }
 .concept-prune .pilule { font-size: .8rem; color: #E0E0E0; text-decoration: none; border: 1px solid rgba(224,224,224,.3); border-radius: 999px; padding: 4px 16px; transition: border-color .25s, color .25s, background .25s; }
 .concept-prune .pilule:hover { border-color: #F4B4C1; color: #F4B4C1; background: rgba(244,180,193,.06); }
 .concept-prune .badge { justify-self: start; font-size: .7rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #F4B4C1; border: 1px solid rgba(244,180,193,.5); border-radius: 999px; padding: 6px 16px; }
@@ -231,14 +232,26 @@ html:has(body.concept-prune) { overflow-x: clip; }
 .concept-prune .btn-niveau:hover { border-color: #F4B4C1; color: #F4B4C1; }
 .concept-prune .btn-niveau:focus-visible, .concept-prune .pilule:focus-visible, .concept-prune .levels a:focus-visible { outline: 2px solid #F4B4C1; outline-offset: 3px; }
 .concept-prune .hero .txt { gap: 20px; text-align: left; max-width: 440px; padding: 48px 8px; }
-.concept-prune .levels { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: stretch; gap: 14px; }
-.concept-prune .levels a { font: 600 1rem var(--font-body); color: #fff; text-align: center; background: rgba(26,11,46,.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid rgba(244,180,193,.65); border-radius: 999px; padding: 14px 26px; }
-.concept-prune .levels a:hover, .concept-prune .levels a[aria-current="page"] { border-color: #F4B4C1; background: rgba(244,180,193,.12); color: #fff; }
+.concept-prune .niveaux { position: relative; z-index: 2; display: grid; justify-items: end; gap: 14px; }
+.concept-prune .niveaux .etiq { font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #F4B4C1; }
+.concept-prune .levels { display: flex; flex-direction: column-reverse; align-items: stretch; gap: 14px; width: 100%; }
+.concept-prune .levels a { transition: transform .25s, box-shadow .25s, background .25s; font: 600 1rem var(--font-body); color: #fff; text-align: center; background: rgba(244,180,193,.1); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid rgba(244,180,193,.65); border-radius: 999px; padding: 14px 26px; }
+.concept-prune .levels a:hover, .concept-prune .levels a[aria-current="page"] { border-color: #F4B4C1; background: rgba(244,180,193,.16); color: #fff; }
+.concept-prune .levels a:hover { transform: translateX(5px); box-shadow: 0 0 22px rgba(244,180,193,.25); }
+.concept-prune .formule { position: fixed; z-index: 0; pointer-events: none; font: 700 2.2rem var(--font-display); color: rgba(244,180,193,.1); animation: flotte-p 9s ease-in-out infinite; }
+.concept-prune .formule:nth-of-type(2) { animation-delay: -2s; } .concept-prune .formule:nth-of-type(3) { animation-delay: -4s; } .concept-prune .formule:nth-of-type(4) { animation-delay: -6s; }
+@keyframes flotte-p { 0%, 100% { translate: 0 0; } 50% { translate: 6px -12px; } }
+.concept-prune .citation { position: fixed; z-index: 40; left: 50%; bottom: 24px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); pointer-events: none; text-align: center;
+  padding: 10px 22px; border-radius: 999px; font-size: .9rem; color: #E0E0E0; background: rgba(26,11,46,.45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid rgba(244,180,193,.45); opacity: 0; animation: fadeInOut 25s ease-in-out infinite; }
+.concept-prune .citation cite { font-style: normal; color: #F4B4C1; }
+@keyframes fadeInOut { 0%, 8% { opacity: 0; } 14%, 40% { opacity: 1; } 46%, 100% { opacity: 0; } }
+@media (max-width: 699px) { .concept-prune .formule { display: none; } .concept-prune .citation { border-radius: 16px; font-size: .82rem; } }
+@media (prefers-reduced-motion: reduce) { .concept-prune .formule { animation: none; } .concept-prune .levels a:hover { transform: none; } .concept-prune .citation { animation: none; opacity: 1; position: static; transform: none; margin: 0 auto; } }
 .concept-prune .levels.appel a { box-shadow: 0 0 0 4px rgba(244,180,193,.22); }
 .concept-prune .wrap { gap: 56px; }
 @media (min-width: 700px) {
   .concept-prune .hero { display: grid; grid-template-columns: minmax(0, 1fr) 250px; align-items: center; column-gap: 24px; min-height: max(460px, min(580px, calc(100vh - 260px))); }
-  .concept-prune .levels { grid-column: 2; grid-row: 1; justify-self: end; width: 250px; }
+  .concept-prune .niveaux { grid-column: 2; grid-row: 1; justify-self: end; width: 250px; }
 }
 @media (max-width: 699px) { .concept-prune .hero .txt { padding: 24px 4px; } .concept-prune .barre .bloc { gap: 12px; } .concept-prune .barre img { width: 52px; height: 52px; } }
 </style>
@@ -517,7 +530,7 @@ addEventListener("hashchange", route); route();
     if (document.body.classList.contains("concept-prune")) {
       /* variante prune : ions confinés aux quatre coins, hors des zones de texte et de boutons */
       const hw = cv.parentElement.clientWidth, marge = (W - hw) / 2, bw = Math.min(marge - 16, W * .13), bh = H * .3;
-      ions = bw < 50 ? [] : ions.slice(0, 12).map((o, k) => { const c = k % 4, b = { x0: c % 2 ? W - bw : 0, y0: c < 2 ? 0 : H - bh, w: bw, h: bh }; return Object.assign(o, { b, x: b.x0 + Math.random() * bw, y: b.y0 + Math.random() * bh }); });
+      ions = []; if (0) ions.slice(0, 12).map((o, k) => { const c = k % 4, b = { x0: c % 2 ? W - bw : 0, y0: c < 2 ? 0 : H - bh, w: bw, h: bh }; return Object.assign(o, { b, x: b.x0 + Math.random() * bw, y: b.y0 + Math.random() * bh }); });
     }
   }
   const avecTubes = () => W >= 640;
@@ -646,16 +659,21 @@ addEventListener("hashchange", route); route();
   const wrap = document.querySelector(".wrap"), hero = document.querySelector(".hero"), txt = hero.querySelector(".txt"), tl = txt.querySelector(".titre-logo"), nav = document.querySelector(".levels");
   const logo = (document.querySelector('link[rel="icon"]') || {}).href;
   const barre = document.createElement("header"); barre.className = "barre";
-  barre.innerHTML = '<div class="bloc"><span class="profe"><span class="nom">Mme Messaoudi</span><a class="pilule" href="#suivi">Espace professeur</a></span><img alt="Logo EFIR" src="' + logo + '"></div>';
+  barre.innerHTML = '<div class="bloc"><span class="profe"><span class="nom">Mme Messaoudi</span><a class="pilule" href="#suivi">Espace professeur</a></span><span class="verre"><img alt="Logo EFIR" src="' + logo + '"></span></div>';
   wrap.prepend(barre);
   const badge = document.createElement("p"); badge.className = "badge"; badge.textContent = "Plateforme pédagogique interactive";
   tl.before(badge);
   tl.querySelector("h1").innerHTML = 'Explorez la<br><span class="nw">physique-chimie</span><br>autrement.';
   const st = document.createElement("p"); st.className = "sous-titre"; st.textContent = "Manipulez, observez et comprenez le monde qui vous entoure grâce à des outils interactifs conçus pour vous.";
-  const bt = document.createElement("button"); bt.className = "btn-niveau"; bt.type = "button"; bt.textContent = "Choisir mon niveau →";
-  tl.after(st); st.after(bt);
-  hero.appendChild(nav);
-  bt.addEventListener("click", () => { nav.scrollIntoView({ behavior: "smooth", block: "nearest" }); nav.classList.add("appel"); setTimeout(() => nav.classList.remove("appel"), 1600); nav.querySelector("a").focus({ preventScroll: true }); });
+  tl.after(st);
+  const col = document.createElement("div"); col.className = "niveaux";
+  col.innerHTML = '<p class="etiq">Sélectionnez votre niveau</p>'; col.append(nav); hero.appendChild(col);
+  /* quatre formules ioniques aux coins de l'écran */
+  [["Na⁺", "top:24px;left:24px"], ["Zn²⁺", "bottom:24px;left:24px"], ["Fe³⁺", "top:24px;right:24px"], ["Ag⁺", "bottom:24px;right:24px"]].forEach(([f, pos]) => {
+    const e = document.createElement("span"); e.className = "formule"; e.setAttribute("aria-hidden", "true"); e.textContent = f; e.style.cssText = pos; document.body.append(e); });
+  const ci = document.createElement("p"); ci.className = "citation";
+  ci.innerHTML = '« Je suis de ceux qui pensent que la science a une grande beauté. » <cite>— Marie Curie</cite>';
+  document.body.append(ci);
   dispatchEvent(new Event("resize"));
 })();
 </script>
