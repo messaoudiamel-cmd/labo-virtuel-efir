@@ -186,7 +186,6 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 70% 45%
       <p class="prof">Professeure : Mme Messaoudi</p>
     </div>
   </header>
-  <a class="reprendre" id="reprendre" href="#" hidden></a>
   <nav class="levels" aria-label="Choisir la classe">
     <a href="#troisieme" data-lvl="troisieme">3e</a>
     <a href="#premiere" data-lvl="premiere">1re spécialité</a>
@@ -422,7 +421,7 @@ function route() {
   document.querySelectorAll(".levels a").forEach(a => a.dataset.lvl === nv ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
   document.title = "Ma science physique-chimie · EFIR";
   let d = null; try { d = TP.find(x => x.id === localStorage.getItem("labo-efir-dernier-tp")); } catch (e) {}
-  const r = $("#reprendre"); r.hidden = !d; if (d) { r.href = "#" + d.id; r.innerHTML = `<span aria-hidden="true">↻</span><span><b>Reprendre mon TP</b><small>${esc(d.tag.split(" · ")[0])} · ${esc(d.titre)}</small></span>`; }
+  /* Règle : jamais de TP ouvert affiché sur l'accueil (bouton « Reprendre mon TP » retiré). */
   const c = th && document.getElementById("sec-" + nv + "-" + th);
   if (c) { c.classList.remove("cible-th"); void c.offsetWidth; c.classList.add("cible-th"); setTimeout(() => c.scrollIntoView({ block: "start" }), 50); }
 }
