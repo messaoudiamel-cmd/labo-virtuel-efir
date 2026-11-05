@@ -208,10 +208,37 @@ html:has(body.concept-inspi) { background: #040a17; }
 .concept-inspi .chiffres b { color: var(--ink); font: 800 1.35rem var(--font-display); margin-right: 8px; }
 @media (min-width: 700px) { .concept-inspi.accueil-inspi .hero { min-height: max(460px, min(560px, calc(100vh - 260px))); display: grid; align-items: center; } .concept-inspi .hero .txt { max-width: 620px; } }
 @media (prefers-reduced-motion: reduce) { .concept-inspi .levels.ouvert { animation: none; } }
+/* ===== Variante « prune » (aperçu seulement, ?v=prune) ===== */
+html:has(body.concept-prune) { background: #0A0410; }
+body.concept-prune { --ink: #ffffff; --muted: #E0E0E0; --line: rgba(209,196,233,.18); --navy: #D1C4E9; --surface: transparent;
+  background: radial-gradient(ellipse 70% 65% at 60% 40%, #1A0B2E 0%, #12071f 55%, #0A0410 100%); background-attachment: fixed; }
+.concept-prune .hero .plateforme, .concept-prune .hero .prof, .concept-prune .titre-logo .logo-efir, .concept-prune .foot a { display: none; }
+.concept-prune .barre { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.concept-prune .barre .marque { display: flex; align-items: center; gap: 12px; color: #fff; font-weight: 600; font-size: .98rem; letter-spacing: .01em; }
+.concept-prune .barre .marque img { width: 30px; height: auto; background: #fff; border-radius: 8px; padding: 3px; }
+.concept-prune .barre .profe { display: grid; justify-items: end; gap: 6px; }
+.concept-prune .barre .nom { color: #fff; font-size: 1.05rem; font-weight: 600; }
+.concept-prune .pilule { font-size: .8rem; color: #D1C4E9; text-decoration: none; border: 1px solid rgba(209,196,233,.4); border-radius: 999px; padding: 4px 16px; transition: border-color .25s, background .25s; }
+.concept-prune .pilule:hover { border-color: #D1C4E9; background: rgba(209,196,233,.08); }
+.concept-prune .badge { justify-self: start; font-size: .7rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #F4B4C1; border: 1px solid rgba(244,180,193,.5); border-radius: 999px; padding: 6px 16px; }
+.concept-prune .hero h1 { font-weight: 600; font-size: clamp(2.1rem, 8.4vw, 3.8rem); line-height: 1.05; letter-spacing: -.01em; color: #fff; }
+.concept-prune .hero h1 .nw { background: linear-gradient(90deg, #F4B4C1, #D1C4E9); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.concept-prune .hero h1 .nw::after { content: "."; }
+.concept-prune .sous-titre { color: #E0E0E0; font-size: 1.08rem; max-width: 34ch; }
+.concept-prune .btn-labo { justify-self: start; margin-top: 10px; font: 700 1rem var(--font-body); color: #1A0B2E; background: #F7F1EE; border: 0; border-radius: 999px; padding: 14px 32px; cursor: pointer; box-shadow: 0 10px 30px rgba(244,180,193,.15); transition: transform .25s, box-shadow .25s; }
+.concept-prune .btn-labo:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(244,180,193,.28); }
+.concept-prune .btn-labo:focus-visible, .concept-prune .pilule:focus-visible { outline: 2px solid #F4B4C1; outline-offset: 3px; }
+.concept-prune .hero .txt { gap: 16px; }
+.concept-prune .levels { gap: 10px; }
+.concept-prune .levels a { font: 600 .9rem var(--font-body); color: #E0E0E0; background: transparent; border: 1px solid rgba(224,224,224,.28); padding: 7px 18px; }
+.concept-prune .levels a:hover, .concept-prune .levels a[aria-current="page"] { border-color: #D1C4E9; color: #fff; background: rgba(209,196,233,.08); }
+.concept-prune .levels.appel a { border-color: #D1C4E9; box-shadow: 0 0 0 4px rgba(209,196,233,.15); }
+@media (min-width: 700px) { .concept-prune.accueil-prune .hero { min-height: max(440px, min(560px, calc(100vh - 300px))); display: grid; align-items: center; } .concept-prune .hero .txt { max-width: 600px; } }
+@media (max-width: 520px) { .concept-prune .barre .profe { justify-items: start; } }
 </style>
 </head>
 <body>
-<script>if (new URLSearchParams(location.search).get("v") === "inspiration") document.body.classList.add("concept-inspi");</script>
+<script>(function () { const v = new URLSearchParams(location.search).get("v"); if (v === "inspiration") document.body.classList.add("concept-inspi"); if (v === "prune") document.body.classList.add("concept-prune"); })();</script>
 <div class="wrap">
   <header class="hero">
     <canvas id="scene" aria-hidden="true"></canvas>
@@ -518,10 +545,11 @@ addEventListener("hashchange", route); route();
       if (o.x < -o.r) o.x = W + o.r; if (o.x > W + o.r) o.x = -o.r;
       dessinerIon(o);
     }
-    /* onde progressive en bas du bandeau */
+    /* onde progressive en bas du bandeau (absente de la variante prune : aucune décoration) */
+    if (!document.body.classList.contains("concept-prune")) {
     ctx.beginPath();
     for (let x = 0; x <= W; x += 4) { const yy = H - 22 + Math.sin(x / 38 - ts / 600) * 7; x ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); }
-    ctx.strokeStyle = "rgba(139,184,232,.35)"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = "rgba(139,184,232,.35)"; ctx.lineWidth = 2; ctx.stroke(); }
     if (avecTubes() && document.body.classList.contains("concept-inspi")) {
       /* orbites fines autour des tubes */
       const a = geo(0), b = geo(3), cx = (a.x + b.x + b.l) / 2, cy = (a.haut + a.bas) / 2, rx = (b.x + b.l - a.x) * .95, ry = (a.bas - a.haut) * .62;
@@ -530,7 +558,8 @@ addEventListener("hashchange", route); route();
       ctx.save(); ctx.shadowColor = "#f5a65b"; ctx.shadowBlur = 14; ctx.fillStyle = "#f5a65b"; ctx.beginPath(); ctx.arc(px, py, 5, 0, 7); ctx.fill(); ctx.restore();
     }
     if (avecTubes()) {
-      TUBES.forEach((T, i) => tube(i, T));
+      if (document.body.classList.contains("concept-prune")) { ctx.save(); ctx.shadowColor = "rgba(0,0,0,.65)"; ctx.shadowBlur = 40; ctx.shadowOffsetY = 18; TUBES.forEach((T, i) => tube(i, T)); ctx.restore(); }
+      else TUBES.forEach((T, i) => tube(i, T));
       const g = geo(actif), y = niveau(g), cx = g.x + g.l / 2, e = (ts - t0) / 1000;
       /* compte-gouttes au-dessus du tube actif */
       const dy = Math.min(1, e / .6);
@@ -591,6 +620,26 @@ addEventListener("hashchange", route); route();
   function etat() { const h = location.hash.slice(1); document.body.classList.toggle("accueil-inspi", !h); if (h) nav.classList.add("ouvert"); }
   addEventListener("hashchange", () => { etat(); dispatchEvent(new Event("resize")); }); etat();
   dispatchEvent(new Event("resize")); /* le bandeau a changé de taille : on recale l'animation */
+})();
+</script>
+<script>
+/* Variante « prune » : construite seulement avec ?v=prune (la version normale n'est pas modifiée). */
+(function () {
+  if (!document.body.classList.contains("concept-prune")) return;
+  const wrap = document.querySelector(".wrap"), txt = document.querySelector(".hero .txt"), h1 = txt.querySelector(".titre-logo"), nav = document.querySelector(".levels");
+  const logo = (document.querySelector('link[rel="icon"]') || {}).href;
+  const barre = document.createElement("header"); barre.className = "barre";
+  barre.innerHTML = '<span class="marque"><img alt="Logo EFIR" src="' + logo + '">Ma science physique-chimie</span><span class="profe"><span class="nom">Mme Messaoudi</span><a class="pilule" href="#suivi">Espace professeur</a></span>';
+  wrap.prepend(barre);
+  const badge = document.createElement("p"); badge.className = "badge"; badge.textContent = "Plateforme pédagogique interactive";
+  h1.before(badge);
+  const st = document.createElement("p"); st.className = "sous-titre"; st.textContent = "Explorez, manipulez et comprenez le monde qui vous entoure.";
+  const bt = document.createElement("button"); bt.className = "btn-labo"; bt.type = "button"; bt.textContent = "Entrer dans le labo";
+  h1.after(st); st.after(bt);
+  bt.addEventListener("click", () => { nav.scrollIntoView({ behavior: "smooth", block: "center" }); nav.classList.add("appel"); setTimeout(() => nav.classList.remove("appel"), 1600); nav.querySelector("a").focus({ preventScroll: true }); });
+  function etat() { document.body.classList.toggle("accueil-prune", !location.hash.slice(1)); }
+  addEventListener("hashchange", () => { etat(); dispatchEvent(new Event("resize")); }); etat();
+  dispatchEvent(new Event("resize"));
 })();
 </script>
 <!-- Formulaire Netlify : reçoit les résultats envoyés par les élèves depuis les TP (Netlify > Forms > resultats-tp) -->
