@@ -349,6 +349,23 @@ body.concept-prune { padding: 1.5rem 0; box-sizing: border-box; min-height: 100v
 @media (max-width: 699px) { .concept-prune .barre { flex-direction: column-reverse; align-items: stretch; } .concept-prune .barre .bloc { align-self: flex-end; } .concept-prune .rubriques { gap: .5rem; } .concept-prune .rub { padding: .375rem .875rem; } .concept-prune .hero { margin-top: 1rem; } .concept-prune .citation { top: auto; } }
 .concept-prune .formule { color: rgba(209,196,233,.12); filter: blur(1px); }
 @media (min-width: 700px) { .concept-prune .hero { min-height: 540px; } }
+/* bulles d'ions (bulles de savon) qui montent depuis les tubes */
+.concept-prune .formule, .concept-prune .formule.f1, .concept-prune .formule.f2, .concept-prune .formule.f3, .concept-prune .formule.f4, .concept-prune .formule.f5 { position: fixed; top: auto; right: auto; bottom: 15%; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-family: var(--font-body); font-weight: 700; line-height: 1; filter: none; z-index: 5; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.15), transparent 60%); border: 1px solid rgba(255,255,255,.2); box-shadow: inset 0 0 15px rgba(255,255,255,.1), 0 0 20px rgba(255,255,255,.05); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); animation: rise 25s linear infinite; }
+.concept-prune .formule.ion-cu { color: #00BFFF; text-shadow: 0 0 15px #00BFFF; border-color: rgba(0,191,255,.4); background: radial-gradient(circle at 30% 30%, rgba(0,191,255,.2), transparent 70%); }
+.concept-prune .formule.ion-fe { color: #E06C4A; text-shadow: 0 0 15px #B22222; border-color: rgba(224,108,74,.5); background: radial-gradient(circle at 30% 30%, rgba(224,108,74,.25), transparent 70%); }
+.concept-prune .formule.ion-zn { color: #F0F0F0; text-shadow: 0 0 15px #A0A0A0; border-color: rgba(255,255,255,.4); background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.3), rgba(200,200,200,.1) 70%); }
+.concept-prune .formule.ion-cl { color: #E0E0E0; text-shadow: 0 0 10px #E0E0E0; border-color: rgba(224,224,224,.4); background: radial-gradient(circle at 30% 30%, rgba(224,224,224,.2), transparent 70%); }
+@keyframes rise { 0% { transform: translateY(0) translateX(0) scale(.6) rotate(0deg); opacity: 0; } 10% { opacity: .8; } 50% { transform: translateY(-40vh) translateX(20px) scale(1) rotate(10deg); opacity: .9; } 90% { opacity: .6; } 100% { transform: translateY(-90vh) translateX(-20px) scale(1.2) rotate(-10deg); opacity: 0; } }
+.concept-prune .formule.f1 { left: 42%; width: 70px; height: 70px; font-size: 1rem; animation-delay: 0s; animation-duration: 18s; }
+.concept-prune .formule.f2 { left: 48%; width: 90px; height: 90px; font-size: 1.3rem; animation-delay: 4s; animation-duration: 22s; }
+.concept-prune .formule.f3 { left: 52%; width: 80px; height: 80px; font-size: 1.2rem; animation-delay: 2s; animation-duration: 25s; }
+.concept-prune .formule.f4 { left: 45%; width: 60px; height: 60px; font-size: .9rem; animation-delay: 8s; animation-duration: 20s; }
+.concept-prune .formule.f5 { left: 55%; width: 100px; height: 100px; font-size: 1.5rem; animation-delay: 6s; animation-duration: 28s; }
+.concept-prune .citation, .concept-prune .barre, .concept-prune .hero .txt, .concept-prune .niveaux { position: relative; z-index: 6; }
+.concept-prune .citation { position: absolute; }
+@media (max-width: 699px) { .concept-prune .formule { display: none; } .concept-prune .citation { position: relative; } }
+@media (prefers-reduced-motion: reduce) { .concept-prune .formule { display: none; } }
 .concept-prune .foot a { display: none; }
 </style>
 </head>
@@ -737,9 +754,9 @@ addEventListener("hashchange", route); route();
   tl.after(st);
   const col = document.createElement("div"); col.className = "niveaux";
   col.innerHTML = '<p class="etiq">Sélectionnez votre niveau</p>'; col.append(nav); hero.appendChild(col);
-  /* quatre formules ioniques aux coins de l'écran */
-  ["Na⁺", "Zn²⁺", "Fe³⁺", "Ag⁺"].forEach((f, k) => {
-    const e = document.createElement("span"); e.className = "formule f" + (k + 1); e.setAttribute("aria-hidden", "true"); e.textContent = f; document.body.append(e); });
+  /* cinq bulles d'ions qui montent des tubes */
+  [["Cu²⁺", "cu"], ["Fe³⁺", "fe"], ["Zn²⁺", "zn"], ["Cl⁻", "cl"], ["Na⁺", "zn"]].forEach(([f, c], k) => {
+    const e = document.createElement("span"); e.className = "formule f" + (k + 1) + " ion-" + c; e.setAttribute("aria-hidden", "true"); e.textContent = f; document.body.append(e); });
   /* citation encadrée, juste sous les tubes */
   const ci = document.createElement("div"); ci.className = "citation";
   ci.innerHTML = '<p class="phrase">« Je suis de ceux qui pensent que la science a une grande beauté. »</p><p class="auteur">— MARIE CURIE</p>';
