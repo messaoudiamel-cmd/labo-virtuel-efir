@@ -465,12 +465,14 @@ const NIVEAUX = [
   { id: "terminale", cycle: "lycee", nom: "Terminale spécialité", long: "Terminale spécialité physique-chimie" }
 ];
 const THEMES = [
-  { id: "matiere", nom: "Organisation et transformation de la matière", accent: "#d8b994" },
+  { id: "matiere", nom: "Organisation et transformations de la matière", accent: "#d8b994" },
   { id: "mouvement", nom: "Mouvement et interactions", accent: "#9cbcdc" },
   { id: "energie", nom: "Énergie et conversions", accent: "#d6c79a" },
   { id: "ondes", nom: "Ondes et signaux", accent: "#a9c6de" }
 ];
-/* Chapitres de chaque thème, par classe (modifier ici pour suivre la progression) */
+/* Chapitres de chaque partie, par classe, dans l'ordre de la progression (modifier ici pour suivre la progression).
+   Un chapitre s'écrit "Nom" ou [numéro, "Nom"] : le numéro est celui du chapitre dans la progression de l'année
+   (celui des fiches et du manuel), il s'affiche tel quel sur le site. Sans numéro, rien n'est affiché devant le nom. */
 const CHAPITRES = {
   cinquieme: {
     matiere: ["États de la matière et changements d'état", "Mélanges et solutions", "Masse et volume"],
@@ -485,7 +487,7 @@ const CHAPITRES = {
     ondes: ["La lumière : propagation et vitesse", "Le son : propagation et vitesse"]
   },
   troisieme: {
-    matiere: ["Atomes et ions", "Acides, bases et pH", "Réactions chimiques et équations", "Organisation de l'Univers"],
+    matiere: [[1, "Atomes et ions"], "Acides, bases et pH", "Réactions chimiques et équations", "Organisation de l'Univers"],
     mouvement: ["Mouvement et vitesse", "Actions mécaniques et forces", "Gravitation et poids"],
     energie: ["Énergie cinétique et sécurité routière", "Puissance et énergie électriques"],
     ondes: ["Signaux sonores et lumineux", "Signaux pour communiquer"]
@@ -499,16 +501,20 @@ const CHAPITRES = {
   premiere: {
     matiere: ["Composition d'un système et dosage par étalonnage", "Suivi d'une transformation : avancement", "Titrage", "Structure des entités chimiques", "Cohésion et solubilité", "Molécules organiques et synthèse", "Combustions et énergie chimique"],
     mouvement: ["Interactions fondamentales et champs", "Fluide au repos", "Mouvement et deuxième loi de Newton"],
-    energie: ["Aspects énergétiques des phénomènes électriques", "Énergie mécanique"],
+    energie: ["Aspects énergétiques des phénomènes électriques", "Aspects énergétiques des phénomènes mécaniques"],
     ondes: ["Ondes mécaniques", "Images et couleurs", "Modèles ondulatoire et particulaire de la lumière"]
   },
   terminale: {
-    matiere: ["Réactions acide-base et pH", "Analyse d'un système : titrages et conductimétrie", "Cinétique chimique", "Décroissance radioactive", "Équilibres chimiques et sens d'évolution", "Piles et électrolyse", "Force des acides et des bases", "Stratégie de synthèse organique"],
-    mouvement: ["Description d'un mouvement", "Deuxième loi de Newton", "Mouvement dans un champ uniforme", "Mouvement dans un champ de gravitation", "Mécanique des fluides"],
+    matiere: [[1, "Transformations acide-base"], "Méthodes physiques d'analyse", "Méthodes chimiques d'analyse : titrages", "Cinétique chimique", "Décroissance radioactive", "Sens d'évolution spontanée et piles", [8, "Force des acides et des bases"], "Forcer le sens d'évolution : électrolyse", "Stratégie de synthèse organique"],
+    mouvement: ["Description d'un mouvement", [12, "Mouvement dans un champ uniforme"], "Mouvement dans un champ de gravitation", "Mécanique des fluides"],
     energie: ["Premier principe de la thermodynamique", "Transferts thermiques"],
-    ondes: ["Diffraction et interférences", "Effet Doppler", "Lunette astronomique", "Effet photoélectrique", "Circuit RC : charge d'un condensateur"]
+    ondes: ["Intensité sonore, diffraction et interférences", "Effet Doppler", "Lunette astronomique", "Effet photoélectrique", "Circuit RC : charge d'un condensateur"]
   }
 };
+/* Nom officiel des parties au lycée (programmes de 1re et Terminale spécialité) ; au collège, les noms de THEMES */
+const THEMES_LYCEE = { matiere: "Constitution et transformations de la matière", mouvement: "Mouvement et interactions", energie: "L'énergie : conversions et transferts", ondes: "Ondes et signaux" };
+const nomTheme = (nv, id) => ((NIVEAUX.find(n => n.id === nv) || {}).cycle === "lycee" ? THEMES_LYCEE[id] : THEMES.find(T => T.id === id).nom);
+const nomChap = c => Array.isArray(c) ? c[1] : c, numChap = c => Array.isArray(c) ? c[0] : 0;
 const TUBE = (sol, grain, delai) => `<svg viewBox="0 0 64 96" aria-hidden="true"><path d="M20 6 H44 V74 A12 12 0 0 1 20 74 Z" fill="rgba(255,255,255,.06)" stroke="#b3c6da" stroke-width="2"/><path d="M21.5 50 H42.5 V74 A10.5 10.5 0 0 1 21.5 74 Z" fill="${sol}"/><g class="grains" fill="${grain}" style="animation-delay:${delai}s"><circle cx="28" cy="80" r="2.6"/><circle cx="34" cy="82" r="2.8"/><circle cx="31" cy="77" r="2.4"/><circle cx="37" cy="78" r="2.2"/><circle cx="26" cy="75" r="2"/></g></svg>`;
 const TP = [
   { id: "ae1", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AE1 · Expérimentale",
@@ -523,7 +529,7 @@ const TP = [
     titre: "Acide sulfamique : acide fort ou faible ?", pb: "L'acide sulfamique est-il totalement dissocié dans l'eau ?", img: TUBE("rgba(200,225,255,.3)", "#EBD5B3", 0) },
   { id: "tp2", niv: "terminale", theme: "matiere", chap: "Force des acides et des bases", tag: "ECE · Expérimentale",
     titre: "Force des acides : pKA et taux d'avancement final", pb: "Comment comparer la force de deux acides grâce au pKA et à τf ?", img: TUBE("rgba(210,200,240,.35)", "#4A90E2", -1.5) },
-  { id: "tp3", niv: "terminale", theme: "matiere", chap: "Réactions acide-base et pH", tag: "AE · Expérimentale",
+  { id: "tp3", niv: "terminale", theme: "matiere", chap: "Transformations acide-base", tag: "AE · Expérimentale",
     titre: "Mesure du pH d'une solution et incertitude de mesure", pb: "La relation pH = − log([H₃O⁺]/c⁰) est-elle toujours valable ?", img: TUBE("rgba(200,225,255,.3)", "#7dffcf", -.8) },
   { id: "tp4", niv: "terminale", theme: "matiere", chap: "Force des acides et des bases", tag: "AE · Expérimentale",
     titre: "Force des acides et des bases (HCl, acide éthanoïque, ammoniac, soude, aspirine)", pb: "La réaction entre un acide et l'eau est-elle toujours totale ?", img: TUBE("rgba(235,235,240,.45)", "#EBD5B3", .8) },
@@ -539,21 +545,22 @@ const nbCy = cy => NIVEAUX.filter(n => n.cycle === cy).reduce((a, n) => a + nbTP
 const dispo = k => k ? k + " TP disponible" + (k > 1 ? "s" : "") : "TP à venir";
 
 const ICO_TH = {"matiere": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><circle cx=\"12\" cy=\"12\" r=\"2\" fill=\"currentColor\"/><ellipse cx=\"12\" cy=\"12\" rx=\"10\" ry=\"4\"/><ellipse cx=\"12\" cy=\"12\" rx=\"10\" ry=\"4\" transform=\"rotate(60 12 12)\"/><ellipse cx=\"12\" cy=\"12\" rx=\"10\" ry=\"4\" transform=\"rotate(120 12 12)\"/></svg>", "mouvement": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1\"/></svg>", "energie": "<svg viewBox=\"0 0 24 24\"><path d=\"M13.5 2 5 13.5h6L9.5 22 19 9.5h-6.2z\" fill=\"#f08a3c\"/></svg>", "ondes": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"><path d=\"M2 14c2.5-5 5-5 7.5 0s5 5 7.5 0 3.5-3 5-1\"/></svg>"};
-const NOM_COURT = {"matiere": "Organisation et transformation de la matière", "mouvement": "Mouvement et interactions", "energie": "Énergie et conversions", "ondes": "Ondes et signaux"};
+const NOM_COURT = {"matiere": "Organisation et transformations de la matière", "mouvement": "Mouvement et interactions", "energie": "Énergie et conversions", "ondes": "Ondes et signaux"};
 const CLASSES = ["troisieme", "premiere", "terminale"];          /* onglets affichés (comme dans le guide élève) */
 const ALIAS = { college: "troisieme", lycee: "terminale", cinquieme: "troisieme", quatrieme: "troisieme", seconde: "premiere" };
-function listeChap(nv, th) { return [...new Set([...((CHAPITRES[nv] || {})[th] || []), ...TP.filter(x => x.niv === nv && x.theme === th).map(x => x.chap)])]; }
+function listeChap(nv, th) { const P = ((CHAPITRES[nv] || {})[th] || []), noms = P.map(nomChap);
+  return [...P.map(c => ({ nom: nomChap(c), n: numChap(c) })), ...[...new Set(TP.filter(x => x.niv === nv && x.theme === th).map(x => x.chap))].filter(c => !noms.includes(c)).map(c => ({ nom: c, n: 0 }))]; }
 const carte = x => `<a class="card" href="#${x.id}">${x.img}<span class="body"><span class="tag">${esc(x.tag)}</span><h3>${esc(x.titre)}</h3><p class="pb">${esc(x.pb)}</p><span class="go">Ouvrir le labo →</span></span></a>`;
 function niveauHTML(nv) {
   const N = NIVEAUX.find(n => n.id === nv), k = nbTP(nv);
   const pleins = THEMES.filter(T => nbTP(nv, T.id)), vides = THEMES.filter(T => !nbTP(nv, T.id));
-  const sec = T => { const L = listeChap(nv, T.id).filter(c => TP.some(x => x.niv === nv && x.theme === T.id && x.chap === c));
-    return `<section class="tsec" id="sec-${nv}-${T.id}" aria-labelledby="h-${nv}-${T.id}"><div class="thead"><span class="ico" aria-hidden="true">${ICO_TH[T.id]}</span><h3 id="h-${nv}-${T.id}">${esc(T.nom)}</h3><span class="nb">${nbTP(nv, T.id)} TP</span></div>` +
-      L.map(c => { const l = TP.filter(x => x.niv === nv && x.theme === T.id && x.chap === c), n = listeChap(nv, T.id).indexOf(c) + 1;
+  const sec = T => { const L = listeChap(nv, T.id).filter(c => TP.some(x => x.niv === nv && x.theme === T.id && x.chap === c.nom));
+    return `<section class="tsec" id="sec-${nv}-${T.id}" aria-labelledby="h-${nv}-${T.id}"><div class="thead"><span class="ico" aria-hidden="true">${ICO_TH[T.id]}</span><h3 id="h-${nv}-${T.id}">${esc(nomTheme(nv, T.id))}</h3><span class="nb">${nbTP(nv, T.id)} TP</span></div>` +
+      L.map(({ nom: c, n }) => { const l = TP.filter(x => x.niv === nv && x.theme === T.id && x.chap === c);
         const exp = l.filter(x => /Expérimentale/.test(x.tag)).length, num = l.filter(x => /Simulation/.test(x.tag)).length, doc = l.length - exp - num;
         const det = [exp ? exp + " activité" + (exp > 1 ? "s" : "") + " expérimentale" + (exp > 1 ? "s" : "") : "", num ? num + " simulation" + (num > 1 ? "s" : "") + " numérique" + (num > 1 ? "s" : "") : "", doc ? doc + " activité" + (doc > 1 ? "s" : "") + " documentaire" + (doc > 1 ? "s" : "") : ""].filter(Boolean).join(" · ");
-        return `<div class="chapitre"><h4>Chapitre ${n} · ${esc(c)}</h4><span>${det}</span></div><div class="cards">${l.map(carte).join("")}</div>`; }).join("") + `</section>`; };
-  const petite = T => `<a class="theme" id="sec-${nv}-${T.id}" href="#${nv}/${T.id}"><span class="ico" aria-hidden="true">${ICO_TH[T.id]}</span><h3>${NOM_COURT[T.id]}</h3><p>TP à venir</p></a>`;
+        return `<div class="chapitre"><h4>${n ? "Chapitre " + n + " · " : ""}${esc(c)}</h4><span>${det}</span></div><div class="cards">${l.map(carte).join("")}</div>`; }).join("") + `</section>`; };
+  const petite = T => `<a class="theme" id="sec-${nv}-${T.id}" href="#${nv}/${T.id}"><span class="ico" aria-hidden="true">${ICO_TH[T.id]}</span><h3>${esc(nomTheme(nv, T.id))}</h3><p>TP à venir</p></a>`;
   return `<div class="lvl-h"><h2>${esc(N.long)}</h2><span>${k} activité${k > 1 ? "s" : ""}${k ? "" : " pour l'instant"}</span></div>` +
     pleins.map(sec).join("") + (vides.length ? `<div class="themes">${vides.map(petite).join("")}</div>` : "") +
     (k ? "" : `<p class="soon">Les TP de ${N.nom.replace(" spécialité", "")} apparaîtront ici au fil de l'année, rangés par thème.</p>`);
