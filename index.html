@@ -349,6 +349,18 @@ body.concept-prune { padding: 1.5rem 0; box-sizing: border-box; min-height: 100v
 @media (max-width: 699px) { .concept-prune .barre { flex-direction: column-reverse; align-items: stretch; } .concept-prune .barre .bloc { align-self: flex-end; } .concept-prune .rubriques { gap: .5rem; } .concept-prune .rub { padding: .375rem .875rem; } .concept-prune .hero { margin-top: 1rem; } .concept-prune .citation { top: auto; } }
 .concept-prune .formule { color: rgba(209,196,233,.12); filter: blur(1px); }
 @media (min-width: 700px) { .concept-prune .hero { min-height: 540px; } }
+/* ions « bulles de savon » qui montent depuis les tubes */
+.concept-prune .formule, .concept-prune .formule.f1, .concept-prune .formule.f2, .concept-prune .formule.f3, .concept-prune .formule.f4, .concept-prune .formule.f5 { position: fixed; top: auto; right: auto; bottom: 20%; font-size: 2.25rem; font-weight: 600; color: rgba(244,180,193,.25); text-shadow: 0 0 10px rgba(244,180,193,.3); filter: none; z-index: 5; pointer-events: none; opacity: 0; animation: rise 15s linear infinite; }
+@keyframes rise { 0% { transform: translateY(0) scale(.8) rotate(0deg); opacity: 0; } 20% { opacity: .6; } 80% { opacity: .4; } 100% { transform: translateY(-60vh) scale(1.2) rotate(20deg); opacity: 0; } }
+.concept-prune .formule.f1 { left: 42%; animation-delay: 0s; animation-duration: 12s; }
+.concept-prune .formule.f2 { left: 48%; animation-delay: 3s; animation-duration: 15s; }
+.concept-prune .formule.f3 { left: 52%; animation-delay: 6s; animation-duration: 14s; }
+.concept-prune .formule.f4 { left: 58%; animation-delay: 2s; animation-duration: 18s; }
+.concept-prune .formule.f5 { left: 45%; animation-delay: 8s; animation-duration: 16s; }
+.concept-prune .citation, .concept-prune .barre, .concept-prune .hero .txt, .concept-prune .niveaux { position: relative; z-index: 6; }
+.concept-prune .citation { position: absolute; }
+@media (max-width: 699px) { .concept-prune .formule { display: none; } .concept-prune .citation { position: relative; } }
+@media (prefers-reduced-motion: reduce) { .concept-prune .formule { display: none; } }
 .concept-prune .foot a { display: none; }
 </style>
 </head>
@@ -734,8 +746,8 @@ addEventListener("hashchange", route); route();
   tl.after(st);
   const col = document.createElement("div"); col.className = "niveaux";
   col.innerHTML = '<p class="etiq">Sélectionnez votre niveau</p>'; col.append(nav); hero.appendChild(col);
-  /* quatre formules ioniques aux coins de l'écran */
-  ["Na⁺", "Zn²⁺", "Fe³⁺", "Ag⁺"].forEach((f, k) => {
+  /* cinq ions qui montent des tubes comme des bulles */
+  ["Na⁺", "Zn²⁺", "Fe³⁺", "Ag⁺", "Cu²⁺"].forEach((f, k) => {
     const e = document.createElement("span"); e.className = "formule f" + (k + 1); e.setAttribute("aria-hidden", "true"); e.textContent = f; document.body.append(e); });
   /* citation encadrée, juste sous les tubes */
   const ci = document.createElement("div"); ci.className = "citation";
