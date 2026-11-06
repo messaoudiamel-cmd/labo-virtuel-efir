@@ -425,6 +425,11 @@ body #v-suivi .pf-btn { color: #F4B4C1 !important; background: rgba(244,180,193,
 body #v-suivi .pf-btn:hover { background: rgba(244,180,193,.15); border-color: #F4B4C1; }
 body #v-suivi .pf-btn.pf-ghost { color: #fff !important; border-color: rgba(255,255,255,.2); }
 body #v-suivi .pf-btn.pf-danger { color: #ff9a8f !important; border-color: #ff9a8f; background: transparent; }
+/* icônes d'activité (Lucide) : pastille ronde, rose pour l'expérimental, lavande pour le documentaire */
+.card .ico { display: grid; place-items: center; width: 56px; height: 56px; margin-top: 4px; border-radius: 50%; color: #F4B4C1; background: rgba(244,180,193,.08); border: 1px solid rgba(244,180,193,.35); transition: background .3s, border-color .3s; }
+.card .ico.documentary { color: #D1C4E9; background: rgba(209,196,233,.08); border-color: rgba(209,196,233,.35); }
+.card .ico svg { width: 28px; height: 28px; }
+a.card:hover .ico { border-color: #F4B4C1; background: rgba(244,180,193,.14); }
 </style>
 </head>
 <body>
@@ -544,23 +549,33 @@ const THEMES_LYCEE = { matiere: "Constitution et transformations de la matière"
 const nomTheme = (nv, id) => ((NIVEAUX.find(n => n.id === nv) || {}).cycle === "lycee" ? THEMES_LYCEE[id] : THEMES.find(T => T.id === id).nom);
 const nomChap = c => Array.isArray(c) ? c[1] : c, numChap = c => Array.isArray(c) ? c[0] : 0;
 const TUBE = (sol, grain, delai) => `<svg viewBox="0 0 64 96" aria-hidden="true"><path d="M20 6 H44 V74 A12 12 0 0 1 20 74 Z" fill="rgba(255,255,255,.06)" stroke="#b3c6da" stroke-width="2"/><path d="M21.5 50 H42.5 V74 A10.5 10.5 0 0 1 21.5 74 Z" fill="${sol}"/><g class="grains" fill="${grain}" style="animation-delay:${delai}s"><circle cx="28" cy="80" r="2.6"/><circle cx="34" cy="82" r="2.8"/><circle cx="31" cy="77" r="2.4"/><circle cx="37" cy="78" r="2.2"/><circle cx="26" cy="75" r="2"/></g></svg>`;
+/* Icônes Lucide (lucide-static 0.460, licence ISC) selon le type d'activité, comme iconsMap.ts */
+const ICONES = {
+  experimental_default: '<path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>',
+  experimental_search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  experimental_analysis: '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/>',
+  documentary_atom: '<circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z"/><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z"/>',
+  documentary_ions: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  documentary_default: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+};
+const ICO = type => `<span class="ico ${type.split("_")[0]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONES[type] || ICONES.experimental_default}</svg></span>`;
 const TP = [
   { id: "ae1", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AE1 · Expérimentale",
-    titre: "Détermination des ions dans une solution inconnue", pb: "Quels ions contient la solution inconnue ?", img: TUBE("rgba(90,160,230,.3)", "#8fb0d0", 0) },
+    titre: "Détermination des ions dans une solution inconnue", pb: "Quels ions contient la solution inconnue ?", img: ICO("experimental_analysis") },
   { id: "ae2", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AE2 · Expérimentale",
-    titre: "Enlèvement à l'EFIR", pb: "Dans quel lieu de l'EFIR l'enlèvement a-t-il eu lieu ?", img: TUBE("rgba(240,200,110,.28)", "#b98a62", -2.5) },
+    titre: "Enlèvement à l'EFIR", pb: "Dans quel lieu de l'EFIR l'enlèvement a-t-il eu lieu ?", img: ICO("experimental_search") },
   { id: "ad1", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AD1 · Documentaire",
-    titre: "Histoire et composition de l'atome", pb: "Comment le modèle de l'atome a-t-il évolué jusqu'à nos connaissances actuelles ?", img: TUBE("rgba(111,183,255,.25)", "#ff7a6b", 1.5) },
+    titre: "Histoire et composition de l'atome", pb: "Comment le modèle de l'atome a-t-il évolué jusqu'à nos connaissances actuelles ?", img: ICO("documentary_atom") },
   { id: "ad2", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AD2 · Documentaire",
-    titre: "À la découverte des ions", pb: "Comment passe-t-on d'un atome à un ion ?", img: TUBE("rgba(240,160,75,.25)", "#6fb7ff", -1) },
+    titre: "À la découverte des ions", pb: "Comment passe-t-on d'un atome à un ion ?", img: ICO("documentary_ions") },
   { id: "tp1", niv: "terminale", theme: "matiere", chap: "Force des acides et des bases", tag: "ECE · Expérimentale",
-    titre: "Acide sulfamique : acide fort ou faible ?", pb: "L'acide sulfamique est-il totalement dissocié dans l'eau ?", img: TUBE("rgba(200,225,255,.3)", "#EBD5B3", 0) },
+    titre: "Acide sulfamique : acide fort ou faible ?", pb: "L'acide sulfamique est-il totalement dissocié dans l'eau ?", img: ICO("experimental_default") },
   { id: "tp2", niv: "terminale", theme: "matiere", chap: "Force des acides et des bases", tag: "ECE · Expérimentale",
-    titre: "Force des acides : pKA et taux d'avancement final", pb: "Comment comparer la force de deux acides grâce au pKA et à τf ?", img: TUBE("rgba(210,200,240,.35)", "#4A90E2", -1.5) },
+    titre: "Force des acides : pKA et taux d'avancement final", pb: "Comment comparer la force de deux acides grâce au pKA et à τf ?", img: ICO("experimental_default") },
   { id: "tp3", niv: "terminale", theme: "matiere", chap: "Transformations acide-base", tag: "AE · Expérimentale",
-    titre: "Mesure du pH d'une solution et incertitude de mesure", pb: "La relation pH = − log([H₃O⁺]/c⁰) est-elle toujours valable ?", img: TUBE("rgba(200,225,255,.3)", "#7dffcf", -.8) },
+    titre: "Mesure du pH d'une solution et incertitude de mesure", pb: "La relation pH = − log([H₃O⁺]/c⁰) est-elle toujours valable ?", img: ICO("experimental_default") },
   { id: "tp4", niv: "terminale", theme: "matiere", chap: "Force des acides et des bases", tag: "AE · Expérimentale",
-    titre: "Force des acides et des bases (HCl, acide éthanoïque, ammoniac, soude, aspirine)", pb: "La réaction entre un acide et l'eau est-elle toujours totale ?", img: TUBE("rgba(235,235,240,.45)", "#EBD5B3", .8) },
+    titre: "Force des acides et des bases (HCl, acide éthanoïque, ammoniac, soude, aspirine)", pb: "La réaction entre un acide et l'eau est-elle toujours totale ?", img: ICO("experimental_default") },
   { id: "tle-ch12-ex31", niv: "terminale", theme: "mouvement", chap: "Mouvement dans un champ uniforme", tag: "Ex. 31 p. 256 · Simulation numérique",
     titre: "Trajectoire d'une particule chargée", pb: "De quoi dépend la trajectoire d'une particule chargée dans un champ électrique uniforme ?", img: `<svg viewBox="0 0 64 96" aria-hidden="true"><rect x="6" y="22" width="46" height="3" rx="1.5" fill="#b3c6da"/><rect x="6" y="70" width="46" height="3" rx="1.5" fill="#b3c6da"/><path d="M6 48 Q30 50 52 30" fill="none" stroke="#6fb7ff" stroke-width="2.6"/><path d="M6 48 Q30 46 52 64" fill="none" stroke="#ffb36b" stroke-width="2.6"/><circle cx="52" cy="30" r="3" fill="#6fb7ff"/><circle cx="52" cy="64" r="3" fill="#ffb36b"/><path d="M58 60 V36 M55 40 l3 -5 l3 5" fill="none" stroke="#ff6b6b" stroke-width="2"/></svg>` }
 ];
