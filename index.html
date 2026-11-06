@@ -552,6 +552,7 @@ const TUBE = (sol, grain, delai) => `<svg viewBox="0 0 64 96" aria-hidden="true"
 /* Icônes Lucide (lucide-static 0.460, licence ISC) selon le type d'activité, comme iconsMap.ts */
 const ICONES = {
   experimental_default: '<path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>',
+  experimental_tube: '<path d="M14.5 2v17.5c0 1.4-1.1 2.5-2.5 2.5c-1.4 0-2.5-1.1-2.5-2.5V2"/><path d="M8.5 2h7"/><path d="M14.5 16h-5"/>',
   experimental_search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   experimental_analysis: '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/>',
   documentary_atom: '<circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z"/><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z"/>',
@@ -561,7 +562,7 @@ const ICONES = {
 const ICO = type => `<span class="ico ${type.split("_")[0]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONES[type] || ICONES.experimental_default}</svg></span>`;
 const TP = [
   { id: "ae1", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AE1 · Expérimentale",
-    titre: "Détermination des ions dans une solution inconnue", pb: "Quels ions contient la solution inconnue ?", img: ICO("experimental_analysis") },
+    titre: "Détermination des ions dans une solution inconnue", pb: "Quels ions contient la solution inconnue ?", img: ICO("experimental_tube") },
   { id: "ae2", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AE2 · Expérimentale",
     titre: "Enlèvement à l'EFIR", pb: "Dans quel lieu de l'EFIR l'enlèvement a-t-il eu lieu ?", img: ICO("experimental_search") },
   { id: "ad1", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AD1 · Documentaire",
