@@ -349,6 +349,8 @@ body.concept-prune { padding: 0; background: radial-gradient(circle at 50% 50%, 
 .concept-prune .citation .phrase { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #F4B4C1; }
 .concept-prune .citation .auteur { margin-top: .5rem; }
 @media (max-width: 699px) { .concept-prune .citation { top: auto; width: auto; margin: 2rem 1rem 0; } .concept-prune .citation .phrase { font-size: .875rem; white-space: normal; } }
+.concept-prune .foot { justify-content: flex-end; border-top: 0; padding: 1rem 0 2rem; }
+@media (max-width: 699px) { .concept-prune .foot { justify-content: center; } }
 .concept-prune .foot a { display: none; }
 </style>
 </head>
@@ -771,7 +773,7 @@ addEventListener("hashchange", route); route();
   const ci = document.createElement("div"); ci.className = "citation";
   ci.innerHTML = '<p class="phrase">« Je suis de ceux qui pensent que la science a une grande beauté. »</p><p class="auteur">— MARIE CURIE</p>';
   hero.append(ci);
-  const pied = document.querySelector(".foot"); if (pied) pied.innerHTML = "<span>— MARIE CURIE</span><span>© 2026-2027 • Ma science physique-chimie • Conçue par Mme Messaoudi</span>";
+  const pied = document.querySelector(".foot"); if (pied) pied.innerHTML = "<span>© 2026-2027 • Ma science physique-chimie • Conçue par Mme Messaoudi</span>";
   dispatchEvent(new Event("resize"));
 })();
 </script>
