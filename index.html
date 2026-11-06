@@ -359,6 +359,18 @@ body.concept-prune { padding: 1.5rem 0; box-sizing: border-box; min-height: 100v
 .concept-prune .barre img.logo-fantome, .concept-prune .barre img.logo-fantome:hover { width: 3rem; height: 3rem; object-fit: contain; }
 .concept-prune .citation { top: calc(50% + 110px + 1.5rem); }
 @media (max-width: 699px) { body.concept-prune { padding: 1rem 0; } .concept-prune .wrap { max-width: none; margin: 0 1rem; padding: 1rem; min-height: calc(100vh - 2rem); } .concept-prune .citation { top: auto; margin-top: 1.5rem; } }
+/* prune v7 : rubriques dans l'en-tête */
+.concept-prune .barre { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: .5rem; }
+.concept-prune .rubriques { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.concept-prune .rub { display: inline-flex; align-items: center; gap: .375rem; font-size: .75rem; font-weight: 500; line-height: 1rem; color: #F4B4C1; border: 1px solid rgba(244,180,193,.4); border-radius: 999px; padding: .375rem 1.25rem; cursor: default; transition: background .3s; }
+.concept-prune .rub:hover { background: rgba(244,180,193,.1); }
+.concept-prune .rub.plein { background: #F4B4C1; color: #1A0B2E; font-weight: 700; border-color: #F4B4C1; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.concept-prune .rub.plein:hover { background: #fff; border-color: #fff; }
+.concept-prune .barre img.logo-fantome, .concept-prune .barre img.logo-fantome:hover { width: 2.5rem; height: 2.5rem; }
+.concept-prune .hero { margin-top: 2rem; }
+.concept-prune .hero h1 { margin-bottom: .5rem; }
+.concept-prune .citation { top: calc(50% + 125px + 1.5rem); }
+@media (max-width: 699px) { .concept-prune .barre { flex-direction: column-reverse; align-items: stretch; } .concept-prune .barre .bloc { align-self: flex-end; } .concept-prune .rubriques { gap: .5rem; } .concept-prune .rub { padding: .375rem .875rem; } .concept-prune .hero { margin-top: 1rem; } .concept-prune .citation { top: auto; } }
 .concept-prune .foot a { display: none; }
 </style>
 </head>
@@ -641,7 +653,7 @@ addEventListener("hashchange", route); route();
   }
   const avecTubes = () => W >= 640;
   function geo(i) {
-    if (document.body.classList.contains("concept-prune")) { const hw = cv.parentElement.clientWidth, x0 = W / 2 - 111; return { x: x0 + i * 64, haut: H / 2 - 150, bas: H / 2 + 110, l: 30 }; }
+    if (document.body.classList.contains("concept-prune")) { const hw = cv.parentElement.clientWidth, x0 = W / 2 - 111; return { x: x0 + i * 64, haut: H / 2 - 170, bas: H / 2 + 125, l: 30 }; }
     const x0 = W - 300, ecart = 64; return { x: x0 + i * ecart, haut: H * .22, bas: H * .82, l: 30 }; }
   function niveau(g) { return g.bas - (g.bas - g.haut) * .45; }
   function dessinerIon(o) {
@@ -765,10 +777,9 @@ addEventListener("hashchange", route); route();
   const wrap = document.querySelector(".wrap"), hero = document.querySelector(".hero"), txt = hero.querySelector(".txt"), tl = txt.querySelector(".titre-logo"), nav = document.querySelector(".levels");
   const logo = (document.querySelector('link[rel="icon"]') || {}).href;
   const barre = document.createElement("header"); barre.className = "barre";
-  barre.innerHTML = '<div class="bloc"><span class="profe"><a class="pilule" href="#suivi">Espace professeur</a><span class="nom">Mme Messaoudi</span></span><img class="logo-fantome" alt="Logo EFIR" src="' + logo + '"></div>';
+  barre.innerHTML = '<nav class="rubriques" aria-label="Rubriques"><span class="rub plein" aria-disabled="true" title="Bientôt disponible">📘 Cours</span><span class="rub" aria-disabled="true" title="Bientôt disponible">📝 QCM &amp; Évaluations</span><span class="rub" aria-disabled="true" title="Bientôt disponible">🛠 Outils &amp; Méthodes</span></nav><div class="bloc"><span class="profe"><a class="pilule" href="#suivi">Espace professeur</a><span class="nom">Mme Messaoudi</span></span><img class="logo-fantome" alt="Logo EFIR" src="' + logo + '"></div>';
   wrap.prepend(barre);
   const badge = document.createElement("p"); badge.className = "badge"; badge.textContent = "Plateforme pédagogique interactive";
-  tl.before(badge);
   tl.querySelector("h1").innerHTML = 'L’avant-goût<br>de la <span class="nw">science.</span>';
   const st = document.createElement("p"); st.className = "sous-titre"; st.innerHTML = "<strong>Manipuler</strong>, <strong>observer</strong> et <strong>comprendre</strong> à volonté.";
   tl.after(st);
