@@ -430,6 +430,22 @@ body #v-suivi .pf-btn.pf-danger { color: #ff9a8f !important; border-color: #ff9a
 .card .ico.documentary { color: #D1C4E9; background: rgba(209,196,233,.08); border-color: rgba(209,196,233,.35); }
 .card .ico svg { width: 28px; height: 28px; }
 a.card:hover .ico { border-color: #F4B4C1; background: rgba(244,180,193,.14); }
+/* cartes d'activité d'après le composant ActivityCard d'Amel : icône en carré arrondi, tag, titre, question, lien */
+.cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
+body a.card, body .tsec a.card { display: flex; flex-direction: column; align-items: stretch; gap: 0; background: #1A1124; border: 1px solid rgba(88,28,135,.4); border-radius: 16px; padding: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,.25); }
+body a.card:hover { border-color: #F4B4C1; transform: translateY(-2px); }
+.card .ico { width: 56px; height: 56px; margin: 0 0 24px; border-radius: 16px; }
+.card > svg { width: 56px; height: 56px; margin: 0 0 24px; padding: 6px; border-radius: 16px; border: 1px solid rgba(244,180,193,.35); background: rgba(244,180,193,.08); }
+.card .body { display: flex; flex-direction: column; gap: 0; flex: 1; }
+body .card .tag { align-self: flex-start; padding: 4px 12px; margin-bottom: 16px; border-radius: 999px; font-size: .72rem; letter-spacing: .06em; background: transparent; border: 1px solid rgba(244,180,193,.35); color: #F4B4C1; }
+body .card:has(.ico.documentary) .tag { border-color: rgba(209,196,233,.35); color: #D1C4E9; }
+body .card h3 { font-size: 1.125rem; font-weight: 700; line-height: 1.25; margin: 0 0 12px; min-height: 2.6em; }
+body .card .pb { font-size: .9rem; color: #9ca3af; line-height: 1.6; margin: 0 0 28px; flex-grow: 1; }
+body .card .go { margin-top: auto; font-weight: 600; font-size: .9rem; color: #F4B4C1; display: inline-flex; align-items: center; gap: 8px; }
+body a.card:hover .go { color: #f9cfd8; }
+.card .go .fl { display: inline-block; transition: transform .25s; }
+body a.card:hover .go .fl { transform: translateX(4px); }
+@media (prefers-reduced-motion: reduce) { .card .go .fl { transition: none; } }
 </style>
 </head>
 <body>
@@ -553,13 +569,17 @@ const TUBE = (sol, grain, delai) => `<svg viewBox="0 0 64 96" aria-hidden="true"
 const ICONES = {
   experimental_default: '<path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>',
   experimental_tube: '<path d="M14.5 2v17.5c0 1.4-1.1 2.5-2.5 2.5c-1.4 0-2.5-1.1-2.5-2.5V2"/><path d="M8.5 2h7"/><path d="M14.5 16h-5"/>',
+  experimental_droplets: '<path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/>',
+  experimental_compare: '<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+  experimental_measure: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+  experimental_tubes: '<path d="M9 2v17.5A2.5 2.5 0 0 1 6.5 22A2.5 2.5 0 0 1 4 19.5V2"/><path d="M20 2v17.5a2.5 2.5 0 0 1-2.5 2.5a2.5 2.5 0 0 1-2.5-2.5V2"/><path d="M3 2h7"/><path d="M14 2h7"/><path d="M9 16H4"/><path d="M20 16h-5"/>',
   experimental_search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   experimental_analysis: '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/>',
   documentary_atom: '<circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z"/><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z"/>',
   documentary_ions: '<circle cx="10" cy="14" r="7.5"/><path d="M10 10.5v7M6.5 14h7"/><circle cx="19" cy="5" r="3"/><path d="M17.6 5h2.8"/>', /* modèle d'ion : ion positif et électron perdu (dessin maison, style Lucide) */
   documentary_default: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
 };
-const ICO = type => `<span class="ico ${type.split("_")[0]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONES[type] || ICONES.experimental_default}</svg></span>`;
+const ICO = type => `<span class="ico ${type.split("_")[0]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONES[type] || ICONES.experimental_default}</svg></span>`;
 const TP = [
   { id: "ae1", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AE1 · Expérimentale",
     titre: "Détermination des ions dans une solution inconnue", pb: "Quels ions contient la solution inconnue ?", img: ICO("experimental_tube") },
@@ -570,13 +590,13 @@ const TP = [
   { id: "ad2", niv: "troisieme", theme: "matiere", chap: "Atomes et ions", tag: "AD2 · Documentaire",
     titre: "À la découverte des ions", pb: "Comment passe-t-on d'un atome à un ion ?", img: ICO("documentary_ions") },
   { id: "tp1", niv: "terminale", theme: "matiere", chap: "Force des acides et des bases", tag: "ECE · Expérimentale",
-    titre: "Acide sulfamique : acide fort ou faible ?", pb: "L'acide sulfamique est-il totalement dissocié dans l'eau ?", img: ICO("experimental_default") },
+    titre: "Acide sulfamique : acide fort ou faible ?", pb: "L'acide sulfamique est-il totalement dissocié dans l'eau ?", img: ICO("experimental_droplets") },
   { id: "tp2", niv: "terminale", theme: "matiere", chap: "Force des acides et des bases", tag: "ECE · Expérimentale",
-    titre: "Force des acides : pKA et taux d'avancement final", pb: "Comment comparer la force de deux acides grâce au pKA et à τf ?", img: ICO("experimental_default") },
+    titre: "Force des acides : pKA et taux d'avancement final", pb: "Comment comparer la force de deux acides grâce au pKA et à τf ?", img: ICO("experimental_compare") },
   { id: "tp3", niv: "terminale", theme: "matiere", chap: "Transformations acide-base", tag: "AE · Expérimentale",
-    titre: "Mesure du pH d'une solution et incertitude de mesure", pb: "La relation pH = − log([H₃O⁺]/c⁰) est-elle toujours valable ?", img: ICO("experimental_default") },
+    titre: "Mesure du pH d'une solution et incertitude de mesure", pb: "La relation pH = − log([H₃O⁺]/c⁰) est-elle toujours valable ?", img: ICO("experimental_measure") },
   { id: "tp4", niv: "terminale", theme: "matiere", chap: "Force des acides et des bases", tag: "AE · Expérimentale",
-    titre: "Force des acides et des bases (HCl, acide éthanoïque, ammoniac, soude, aspirine)", pb: "La réaction entre un acide et l'eau est-elle toujours totale ?", img: ICO("experimental_default") },
+    titre: "Force des acides et des bases (HCl, acide éthanoïque, ammoniac, soude, aspirine)", pb: "La réaction entre un acide et l'eau est-elle toujours totale ?", img: ICO("experimental_tubes") },
   { id: "tle-ch12-ex31", niv: "terminale", theme: "mouvement", chap: "Mouvement dans un champ uniforme", tag: "Ex. 31 p. 256 · Simulation numérique",
     titre: "Trajectoire d'une particule chargée", pb: "De quoi dépend la trajectoire d'une particule chargée dans un champ électrique uniforme ?", img: `<svg viewBox="0 0 64 96" aria-hidden="true"><rect x="6" y="22" width="46" height="3" rx="1.5" fill="#b3c6da"/><rect x="6" y="70" width="46" height="3" rx="1.5" fill="#b3c6da"/><path d="M6 48 Q30 50 52 30" fill="none" stroke="#6fb7ff" stroke-width="2.6"/><path d="M6 48 Q30 46 52 64" fill="none" stroke="#ffb36b" stroke-width="2.6"/><circle cx="52" cy="30" r="3" fill="#6fb7ff"/><circle cx="52" cy="64" r="3" fill="#ffb36b"/><path d="M58 60 V36 M55 40 l3 -5 l3 5" fill="none" stroke="#ff6b6b" stroke-width="2"/></svg>` }
 ];
@@ -594,7 +614,7 @@ const CLASSES = ["troisieme", "premiere", "terminale"];          /* onglets affi
 const ALIAS = { college: "troisieme", lycee: "terminale", cinquieme: "troisieme", quatrieme: "troisieme", seconde: "premiere" };
 function listeChap(nv, th) { const P = ((CHAPITRES[nv] || {})[th] || []), noms = P.map(nomChap);
   return [...P.map(c => ({ nom: nomChap(c), n: numChap(c) })), ...[...new Set(TP.filter(x => x.niv === nv && x.theme === th).map(x => x.chap))].filter(c => !noms.includes(c)).map(c => ({ nom: c, n: 0 }))]; }
-const carte = x => `<a class="card" href="#${x.id}">${x.img}<span class="body"><span class="tag">${esc(x.tag)}</span><h3>${esc(x.titre)}</h3><p class="pb">${esc(x.pb)}</p><span class="go">Ouvrir le labo →</span></span></a>`;
+const carte = x => `<a class="card" href="#${x.id}">${x.img}<span class="body"><span class="tag">${esc(x.tag)}</span><h3>${esc(x.titre)}</h3><p class="pb">${esc(x.pb)}</p><span class="go">Ouvrir le labo <span class="fl" aria-hidden="true">→</span></span></span></a>`;
 /* Navigation en trois pages, comme l'ancienne version : niveau → ses 4 thèmes → les chapitres du thème (dans l'ordre de la progression) */
 const pl = (n, mot) => n + " " + mot + (n > 1 ? "s" : "");
 function detailTP(l) { const exp = l.filter(x => /Expérimentale/.test(x.tag)).length, num = l.filter(x => /Simulation/.test(x.tag)).length, doc = l.length - exp - num;
