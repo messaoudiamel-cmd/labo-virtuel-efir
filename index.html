@@ -161,6 +161,12 @@ a.card:hover .grains { animation-duration: 2.5s; }
 .retour-acc { color: var(--navy); font-weight: 700; text-decoration: none; }
 @media print { body { background: #fff !important; } .hero, .rules, .levels, .level, .foot, .pf-panel, .pf-filtres, .retour-acc { display: none !important; } }
 .pf-cache { display: none !important; }
+.sous-niv { color: #D1D5DB; margin: -4px 0 0; }
+.themes-niv { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.themes-niv .theme { padding: 18px; min-height: 96px; }
+body .retour-acc { color: #F4B4C1; justify-self: start; }
+.ch-vide { opacity: .75; }
+.page-niveau .formule { display: none !important; } /* les bulles d'ions restent sur l'accueil, près des tubes */
 .hero .plateforme { color: var(--hero-muted); font-size: .95rem; letter-spacing: .02em; margin-top: -2px; }
 .nw { white-space: nowrap; }
 .titre-logo { display: flex; align-items: center; gap: 12px; }
@@ -551,21 +557,25 @@ const ALIAS = { college: "troisieme", lycee: "terminale", cinquieme: "troisieme"
 function listeChap(nv, th) { const P = ((CHAPITRES[nv] || {})[th] || []), noms = P.map(nomChap);
   return [...P.map(c => ({ nom: nomChap(c), n: numChap(c) })), ...[...new Set(TP.filter(x => x.niv === nv && x.theme === th).map(x => x.chap))].filter(c => !noms.includes(c)).map(c => ({ nom: c, n: 0 }))]; }
 const carte = x => `<a class="card" href="#${x.id}">${x.img}<span class="body"><span class="tag">${esc(x.tag)}</span><h3>${esc(x.titre)}</h3><p class="pb">${esc(x.pb)}</p><span class="go">Ouvrir le labo →</span></span></a>`;
+/* Navigation en trois pages, comme l'ancienne version : niveau → ses 4 thèmes → les chapitres du thème (dans l'ordre de la progression) */
+const pl = (n, mot) => n + " " + mot + (n > 1 ? "s" : "");
+function detailTP(l) { const exp = l.filter(x => /Expérimentale/.test(x.tag)).length, num = l.filter(x => /Simulation/.test(x.tag)).length, doc = l.length - exp - num;
+  return [exp ? pl(exp, "activité") + " expérimentale" + (exp > 1 ? "s" : "") : "", num ? pl(num, "simulation") + " numérique" + (num > 1 ? "s" : "") : "", doc ? pl(doc, "activité") + " documentaire" + (doc > 1 ? "s" : "") : ""].filter(Boolean).join(" · "); }
 function niveauHTML(nv) {
   const N = NIVEAUX.find(n => n.id === nv), k = nbTP(nv);
-  const pleins = THEMES.filter(T => nbTP(nv, T.id)), vides = THEMES.filter(T => !nbTP(nv, T.id));
-  const sec = T => { const L = listeChap(nv, T.id).filter(c => TP.some(x => x.niv === nv && x.theme === T.id && x.chap === c.nom));
-    return `<section class="tsec" id="sec-${nv}-${T.id}" aria-labelledby="h-${nv}-${T.id}"><div class="thead"><span class="ico" aria-hidden="true">${ICO_TH[T.id]}</span><h3 id="h-${nv}-${T.id}">${esc(nomTheme(nv, T.id))}</h3><span class="nb">${nbTP(nv, T.id)} TP</span></div>` +
-      L.map(({ nom: c, n }) => { const l = TP.filter(x => x.niv === nv && x.theme === T.id && x.chap === c);
-        const exp = l.filter(x => /Expérimentale/.test(x.tag)).length, num = l.filter(x => /Simulation/.test(x.tag)).length, doc = l.length - exp - num;
-        const det = [exp ? exp + " activité" + (exp > 1 ? "s" : "") + " expérimentale" + (exp > 1 ? "s" : "") : "", num ? num + " simulation" + (num > 1 ? "s" : "") + " numérique" + (num > 1 ? "s" : "") : "", doc ? doc + " activité" + (doc > 1 ? "s" : "") + " documentaire" + (doc > 1 ? "s" : "") : ""].filter(Boolean).join(" · ");
-        return `<div class="chapitre"><h4>${n ? "Chapitre " + n + " · " : ""}${esc(c)}</h4><span>${det}</span></div><div class="cards">${l.map(carte).join("")}</div>`; }).join("") + `</section>`; };
-  const petite = T => `<a class="theme" id="sec-${nv}-${T.id}" href="#${nv}/${T.id}"><span class="ico" aria-hidden="true">${ICO_TH[T.id]}</span><h3>${esc(nomTheme(nv, T.id))}</h3><p>TP à venir</p></a>`;
-  return `<div class="lvl-h"><h2>${esc(N.long)}</h2><span>${k} activité${k > 1 ? "s" : ""}${k ? "" : " pour l'instant"}</span></div>` +
-    pleins.map(sec).join("") + (vides.length ? `<div class="themes">${vides.map(petite).join("")}</div>` : "") +
-    (k ? "" : `<p class="soon">Les TP de ${N.nom.replace(" spécialité", "")} apparaîtront ici au fil de l'année, rangés par thème.</p>`);
+  const tuile = T => { const c = listeChap(nv, T.id).length, t = nbTP(nv, T.id);
+    return `<a class="theme" id="sec-${nv}-${T.id}" href="#${nv}/${T.id}"><span class="ico" aria-hidden="true">${ICO_TH[T.id]}</span><h3>${esc(nomTheme(nv, T.id))}</h3><p>${c ? pl(c, "chapitre") : "Pas au programme"} · ${t ? t + " TP" : "TP à venir"}</p></a>`; };
+  return `<a class="retour-acc" href="#">← Changer de niveau</a><div class="lvl-h"><h2>${esc(N.long)}</h2><span>${k} activité${k > 1 ? "s" : ""}${k ? "" : " pour l'instant"}</span></div>` +
+    `<p class="sous-niv">Choisissez un thème</p><div class="themes themes-niv">${THEMES.map(tuile).join("")}</div>`;
 }
-CLASSES.forEach(nv => { const d = document.getElementById("lvl-" + nv); if (d) d.innerHTML = niveauHTML(nv); });
+function themeHTML(nv, th) {
+  const N = NIVEAUX.find(n => n.id === nv), L = listeChap(nv, th), t = nbTP(nv, th);
+  const chap = ({ nom: c, n }) => { const l = TP.filter(x => x.niv === nv && x.theme === th && x.chap === c);
+    return `<div class="chapitre${l.length ? "" : " ch-vide"}"><h4>${n ? "Chapitre " + n + " · " : ""}${esc(c)}</h4><span>${l.length ? detailTP(l) : "TP à venir"}</span></div>` + (l.length ? `<div class="cards">${l.map(carte).join("")}</div>` : ""); };
+  return `<a class="retour-acc" href="#${nv}">← Tous les thèmes · ${esc(N.nom)}</a>` +
+    `<section class="tsec" id="sec-${nv}-${th}" aria-labelledby="h-${nv}-${th}"><div class="thead"><span class="ico" aria-hidden="true">${ICO_TH[th]}</span><h3 id="h-${nv}-${th}">${esc(nomTheme(nv, th))}</h3><span class="nb">${t ? t + " TP" : "TP à venir"}</span></div>` +
+    (L.length ? L.map(chap).join("") : `<p class="soon">Ce thème n'est pas au programme de cette classe.</p>`) + `</section>`;
+}
 
 let tp = $("#tp"), ouvert = "";
 function nouveauCadre() { const n = document.createElement("iframe"); n.id = "tp"; n.title = tp.title; n.hidden = true; tp.replaceWith(n); tp = n; }
@@ -651,12 +661,14 @@ function route() {
   $("#v-suivi").hidden = !suivi; document.querySelectorAll(".hero, .rules, .levels, .level, .reprendre").forEach(e => e.classList.toggle("pf-cache", suivi));
   if (suivi) { Prof.rendu(); document.title = "Espace professeur · Ma science physique-chimie"; window.scrollTo(0, 0); return; }
   let [nv, th] = h.split("/"); nv = ALIAS[nv] || nv; if (!CLASSES.includes(nv)) nv = ""; /* accueil : ni thèmes ni TP, seulement le choix de la classe */
-  CLASSES.forEach(k => { $("#lvl-" + k).hidden = k !== nv; });
+  if (!THEMES.some(T => T.id === th)) th = "";
+  CLASSES.forEach(k => { const d = $("#lvl-" + k); d.hidden = k !== nv; if (k === nv) d.innerHTML = th ? themeHTML(k, th) : niveauHTML(k); });
+  /* un niveau ou un thème s'ouvre comme une nouvelle page : le bandeau d'accueil est masqué */
+  document.querySelectorAll(".hero, .levels").forEach(e => e.classList.toggle("pf-cache", !!nv)); document.body.classList.toggle("page-niveau", !!nv);
   document.querySelectorAll(".levels a").forEach(a => a.dataset.lvl === nv ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
   document.title = "Ma science physique-chimie · EFIR";
   /* Règle : jamais de TP ouvert affiché sur l'accueil (bouton « Reprendre mon TP » retiré). */
-  const c = th && document.getElementById("sec-" + nv + "-" + th);
-  if (c) { c.classList.remove("cible-th"); void c.offsetWidth; c.classList.add("cible-th"); setTimeout(() => c.scrollIntoView({ block: "start" }), 50); }
+  if (nv) { const N = NIVEAUX.find(n => n.id === nv); document.title = (th ? nomTheme(nv, th) + " · " : "") + N.nom + " · Ma science physique-chimie"; window.scrollTo(0, 0); }
 }
 addEventListener("hashchange", route); route();
 </script>
