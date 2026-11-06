@@ -166,8 +166,8 @@ a.card:hover .grains { animation-duration: 2.5s; }
 .titre-logo { display: flex; align-items: center; gap: 12px; }
 .logo-efir { flex: none; width: 30px; height: auto; background: #fff; border-radius: 8px; padding: 4px; }
 @media (max-width: 520px) { .logo-efir { width: 24px; } }
-/* Fond continu bleu nuit sur toute la page ; l'animation du bandeau se fond dans le fond */
-html:root:not(.x) { --bg: #081a36; --surface: #10284d; --surface-2: #0d2244; --ink: #e8eef6; --muted: #a8bad2; --line: #23426e; --navy: #8fc6ff; --navy-soft: #183a66; --red: #ff8a7a; --hero: #081a36; --hero-2: #081a36; --hero-ink: #f2f6fa; --hero-muted: #b9cce0; color-scheme: dark; }
+/* Fond continu prune sur toute la page ; l'animation du bandeau se fond dans le fond */
+html:root:not(.x) { --bg: #0A0410; --surface: transparent; --surface-2: rgba(26,11,46,.55); --ink: #ffffff; --muted: #D1D5DB; --line: rgba(209,196,233,.18); --navy: #D1C4E9; --navy-soft: rgba(244,180,193,.10); --red: #ff9a8f; --hero: #1A0B2E; --hero-2: #1A0B2E; --hero-ink: #ffffff; --hero-muted: #D1D5DB; color-scheme: dark; }
 html { background: #081a36; }
 body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse 70% 45% at 15% 0%, rgba(40,90,160,.35), transparent 70%), radial-gradient(ellipse 60% 40% at 90% 30%, rgba(30,70,140,.25), transparent 70%), linear-gradient(180deg, #0a2147 0%, #081a36 45%, #06142b 100%); background-attachment: fixed; }
 .hero { background: transparent; border-radius: 0; overflow: visible; }
@@ -367,6 +367,36 @@ body.concept-prune { padding: 1.5rem 0; box-sizing: border-box; min-height: 100v
 @media (max-width: 699px) { .concept-prune .formule { display: none; } .concept-prune .citation { position: relative; } }
 @media (prefers-reduced-motion: reduce) { .concept-prune .formule { display: none; } }
 .concept-prune .foot a { display: none; }
+/* Pages intérieures (niveaux, chapitres, Espace professeur) au code couleur de l'accueil, sans bleu */
+body .level h2, body .chap h2 { color: #fff; }
+body .tsec { background: rgba(26,11,46,.35); border: 1px solid rgba(209,196,233,.15); border-radius: 16px; }
+body .thead h3 { color: #fff; }
+body .thead .ico, body .theme .ico { background: rgba(209,196,233,.10); color: #D1C4E9; border: 1px solid rgba(209,196,233,.25); }
+body .thead .nb { color: #F4B4C1; background: rgba(244,180,193,.05); border: 1px solid rgba(244,180,193,.3); }
+body .chapitre h4 { color: #fff; }
+body .chapitre span { color: #D1D5DB; }
+body a.card, body .tsec a.card { background: rgba(26,11,46,.55); border: 1px solid rgba(209,196,233,.18); transition: border-color .3s, box-shadow .3s, transform .3s; }
+body a.card:hover { border-color: #F4B4C1; box-shadow: 0 4px 15px rgba(244,180,193,.2); }
+body a.card:focus-visible { outline: 2px solid #F4B4C1; outline-offset: 3px; }
+body .card h3 { color: #fff; }
+body .card .pb { color: #D1D5DB; }
+body .card .go { color: #F4B4C1; }
+body .tag { color: #F4B4C1; background: rgba(244,180,193,.05); border: 1px solid rgba(244,180,193,.3); }
+body .glass { fill: rgba(209,196,233,.06); stroke: rgba(209,196,233,.55); }
+body .theme { background: rgba(26,11,46,.35); border: 1px solid rgba(209,196,233,.15); transition: border-color .3s; }
+body a.theme:hover { border-color: #F4B4C1; }
+body .theme h3 { color: #fff; }
+body .theme p { color: #D1D5DB; }
+body .soon, body .tsec .soon { background: rgba(26,11,46,.35); border-color: rgba(209,196,233,.25); color: #D1D5DB; }
+/* Espace professeur */
+body #v-suivi { --glass: rgba(26,11,46,.55); --glass-2: rgba(26,11,46,.8); --soft: #D1D5DB; --chi: #F4B4C1; }
+body #v-suivi .t2, body #v-suivi h3 { color: #fff; }
+body #pf-codes { background: rgba(10,4,16,.6); color: #fff; border-color: rgba(209,196,233,.25); }
+body #pf-codes::placeholder { color: #9CA3AF; }
+body #v-suivi .pf-btn { color: #F4B4C1 !important; background: rgba(244,180,193,.05); border: 1px solid rgba(244,180,193,.3); }
+body #v-suivi .pf-btn:hover { background: rgba(244,180,193,.15); border-color: #F4B4C1; }
+body #v-suivi .pf-btn.pf-ghost { color: #fff !important; border-color: rgba(255,255,255,.2); }
+body #v-suivi .pf-btn.pf-danger { color: #ff9a8f !important; border-color: #ff9a8f; background: transparent; }
 </style>
 </head>
 <body>
