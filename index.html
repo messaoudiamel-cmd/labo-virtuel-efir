@@ -345,6 +345,10 @@ body.concept-prune { padding: 0; background: radial-gradient(circle at 50% 50%, 
   .concept-prune .citation .phrase { font-size: .75rem; }
   .concept-prune .foot { justify-content: center; text-align: center; }
 }
+.concept-prune .citation { top: calc(50% + 110px + 2rem); max-width: calc(100% - 2rem); width: max-content; padding: .5rem 0; }
+.concept-prune .citation .phrase { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #F4B4C1; }
+.concept-prune .citation .auteur { margin-top: .5rem; }
+@media (max-width: 699px) { .concept-prune .citation { top: auto; width: auto; margin: 2rem 1rem 0; } .concept-prune .citation .phrase { font-size: .875rem; white-space: normal; } }
 .concept-prune .foot a { display: none; }
 </style>
 </head>
