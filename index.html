@@ -315,6 +315,36 @@ body.concept-prune { position: relative; min-height: 100vh; padding-bottom: 3rem
 .concept-prune .barre .profe { gap: .25rem; }
 .concept-prune .pilule { padding: .375rem 1.25rem; font-size: .75rem; font-weight: 600; }
 .concept-prune .barre img.logo-fantome, .concept-prune .barre img.logo-fantome:hover { width: auto; height: 3rem; object-fit: contain; filter: none; opacity: 1; mix-blend-mode: normal; }
+/* prune v5 (grille globale d'amel) */
+body.concept-prune { padding: 0; background: radial-gradient(circle at 50% 50%, #1A0B2E 0%, #0A0410 100%) fixed; }
+.concept-prune .wrap { max-width: 80rem; padding: 0 2rem; box-sizing: border-box; min-height: 100vh; display: flex; flex-direction: column; gap: 0; }
+.concept-prune .hero { padding-bottom: 0; flex-grow: 1; }
+.concept-prune .barre { padding: 1.5rem 0 0; }
+.concept-prune .barre .bloc { gap: .75rem; }
+.concept-prune .formule { font-weight: 800; font-family: var(--font-body); color: rgba(209,196,233,.05); filter: blur(2px); animation: ion-v5 20s ease-in-out infinite alternate; }
+.concept-prune .formule.f1 { font-size: 4.5rem; top: 5%; left: 2%; bottom: auto; right: auto; animation-delay: 0s; }
+.concept-prune .formule.f2 { font-size: 3rem; bottom: 5%; left: 5%; top: auto; right: auto; animation-delay: -5s; }
+.concept-prune .formule.f3 { font-size: 3.75rem; top: 5%; right: 2%; bottom: auto; left: auto; animation-delay: -10s; }
+.concept-prune .formule.f4 { font-size: 2.25rem; bottom: 5%; right: 5%; top: auto; left: auto; animation-delay: -15s; }
+@keyframes ion-v5 { 0% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(30px, -40px) rotate(10deg); } 100% { transform: translate(-20px, 20px) rotate(-5deg); } }
+.concept-prune .citation { left: 50%; top: calc(50% + 150px); bottom: auto; max-width: 24rem; padding: 4px 8px; }
+.concept-prune .citation .phrase { font-size: .875rem; }
+.concept-prune .citation .auteur { margin-top: 4px; font-size: 10px; font-weight: 300; letter-spacing: .1em; text-transform: uppercase; color: #9CA3AF; }
+.concept-prune .niveaux { max-width: 280px; gap: .75rem; }
+.concept-prune .niveaux .etiq { text-align: right; padding-right: .25rem; margin-bottom: .25rem; }
+.concept-prune .levels { gap: .75rem; }
+.concept-prune .levels a { font-size: .875rem; font-weight: 700; padding: .75rem 1.5rem; }
+@media (min-width: 700px) {
+  .concept-prune .hero { grid-template-columns: minmax(0, 1fr) 280px; min-height: 0; }
+  .concept-prune .niveaux { width: 280px; }
+}
+.concept-prune .foot { position: static; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 16px; max-width: none; text-align: right; border-top: 1px solid rgba(255,255,255,.05); padding: 1rem 0 1.5rem; margin: 0; }
+@media (max-width: 699px) {
+  .concept-prune .wrap { padding: 0 1rem; }
+  .concept-prune .citation { left: auto; top: auto; }
+  .concept-prune .citation .phrase { font-size: .75rem; }
+  .concept-prune .foot { justify-content: center; text-align: center; }
+}
 .concept-prune .foot a { display: none; }
 </style>
 </head>
@@ -597,7 +627,7 @@ addEventListener("hashchange", route); route();
   }
   const avecTubes = () => W >= 640;
   function geo(i) {
-    if (document.body.classList.contains("concept-prune")) { const hw = cv.parentElement.clientWidth, x0 = (W - hw) / 2 + hw - 270 - 36 - 222; return { x: x0 + i * 64, haut: H * .2, bas: H * .8, l: 30 }; }
+    if (document.body.classList.contains("concept-prune")) { const hw = cv.parentElement.clientWidth, x0 = W / 2 - 111; return { x: x0 + i * 64, haut: H / 2 - 150, bas: H / 2 + 110, l: 30 }; }
     const x0 = W - 300, ecart = 64; return { x: x0 + i * ecart, haut: H * .22, bas: H * .82, l: 30 }; }
   function niveau(g) { return g.bas - (g.bas - g.haut) * .45; }
   function dessinerIon(o) {
@@ -737,7 +767,7 @@ addEventListener("hashchange", route); route();
   const ci = document.createElement("div"); ci.className = "citation";
   ci.innerHTML = '<p class="phrase">« Je suis de ceux qui pensent que la science a une grande beauté. »</p><p class="auteur">— MARIE CURIE</p>';
   hero.append(ci);
-  const pied = document.querySelector(".foot"); if (pied) pied.textContent = "© 2026-2027 • Ma science physique-chimie • Conçue par Mme Messaoudi";
+  const pied = document.querySelector(".foot"); if (pied) pied.innerHTML = "<span>— MARIE CURIE</span><span>© 2026-2027 • Ma science physique-chimie • Conçue par Mme Messaoudi</span>";
   dispatchEvent(new Event("resize"));
 })();
 </script>
