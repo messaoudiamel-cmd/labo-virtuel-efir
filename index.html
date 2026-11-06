@@ -351,6 +351,14 @@ body.concept-prune { padding: 0; background: radial-gradient(circle at 50% 50%, 
 @media (max-width: 699px) { .concept-prune .citation { top: auto; width: auto; margin: 2rem 1rem 0; } .concept-prune .citation .phrase { font-size: .875rem; white-space: normal; } }
 .concept-prune .foot { justify-content: flex-end; border-top: 0; padding: 1rem 0 2rem; }
 @media (max-width: 699px) { .concept-prune .foot { justify-content: center; } }
+/* prune v6 : cadre fin autour de la page */
+body.concept-prune { padding: 1.5rem 0; box-sizing: border-box; min-height: 100vh; }
+.concept-prune .wrap { max-width: 95%; margin: 0 auto; padding: 1.5rem; border: 1px solid rgba(255,255,255,.1); min-height: calc(100vh - 3rem); }
+.concept-prune .barre { padding: 0; }
+.concept-prune .foot { padding: 1rem 0 0; }
+.concept-prune .barre img.logo-fantome, .concept-prune .barre img.logo-fantome:hover { width: 3rem; height: 3rem; object-fit: contain; }
+.concept-prune .citation { top: calc(50% + 110px + 1.5rem); }
+@media (max-width: 699px) { body.concept-prune { padding: 1rem 0; } .concept-prune .wrap { max-width: none; margin: 0 1rem; padding: 1rem; min-height: calc(100vh - 2rem); } .concept-prune .citation { top: auto; margin-top: 1.5rem; } }
 .concept-prune .foot a { display: none; }
 </style>
 </head>
@@ -762,7 +770,7 @@ addEventListener("hashchange", route); route();
   const badge = document.createElement("p"); badge.className = "badge"; badge.textContent = "Plateforme pédagogique interactive";
   tl.before(badge);
   tl.querySelector("h1").innerHTML = 'L’avant-goût<br>de la <span class="nw">science.</span>';
-  const st = document.createElement("p"); st.className = "sous-titre"; st.innerHTML = "<strong>Manipulez</strong>, <strong>observez</strong> et <strong>comprenez</strong> à volonté.";
+  const st = document.createElement("p"); st.className = "sous-titre"; st.innerHTML = "<strong>Manipuler</strong>, <strong>observer</strong> et <strong>comprendre</strong> à volonté.";
   tl.after(st);
   const col = document.createElement("div"); col.className = "niveaux";
   col.innerHTML = '<p class="etiq">Sélectionnez votre niveau</p>'; col.append(nav); hero.appendChild(col);
