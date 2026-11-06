@@ -166,6 +166,28 @@ a.card:hover .grains { animation-duration: 2.5s; }
 .themes-niv .theme { padding: 18px; min-height: 96px; }
 body .retour-acc { color: #F4B4C1; justify-self: start; }
 .ch-vide { opacity: .75; }
+.btn-retour { justify-self: start; display: inline-flex; align-items: center; gap: 8px; padding: 8px 20px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.05); color: #fff; font-size: .9rem; font-weight: 600; text-decoration: none; transition: all .3s; }
+.btn-retour:hover { border-color: #F4B4C1; color: #F4B4C1; background: rgba(244,180,193,.1); }
+.niv-titre { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.niv-titre h2 { margin: 0; font: 800 clamp(1.8rem, 4vw, 2.4rem) var(--font-display); background: linear-gradient(90deg, #fff 0%, #F4B4C1 60%, #D1C4E9 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.niv-nb { color: #F4B4C1; background: rgba(244,180,193,.1); border: 1px solid rgba(244,180,193,.3); border-radius: 999px; padding: 4px 12px; font-size: .75rem; font-weight: 600; }
+.th-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 8px; }
+.th-carte { display: flex; flex-direction: column; gap: 14px; padding: 22px; border-radius: 16px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.1); transition: all .3s; }
+.th-carte:hover { background: rgba(244,180,193,.05); border-color: rgba(244,180,193,.3); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,.2); }
+.th-tete { display: flex; align-items: flex-start; gap: 14px; text-decoration: none; color: #fff; }
+.th-tete .ico { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: #D1C4E9; }
+.th-tete .ico svg { width: 22px; height: 22px; }
+.th-tete h3 { margin: 0; font-size: 1.1rem; line-height: 1.25; color: #fff; }
+.th-chaps { display: flex; flex-direction: column; gap: 2px; }
+.ch-lien { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; color: #9CA3AF; font-size: .9rem; text-decoration: none; transition: color .2s; }
+.th-carte:hover .ch-lien { color: #E5E7EB; }
+.th-carte:hover a.ch-lien:hover { color: #F4B4C1; }
+.ch-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 30px; padding: 2px 6px; border-radius: 4px; background: rgba(244,180,193,.1); border: 1px solid rgba(244,180,193,.3); color: #F4B4C1; font-size: 10px; font-weight: 700; margin-top: 2px; }
+.ch-nom { flex: 1; }
+.ch-tp { flex: none; color: #F4B4C1; font-size: .72rem; font-weight: 700; margin-top: 3px; }
+.ch-avenir { font-style: italic; color: #6B7280 !important; }
+.ch-avenir .ch-badge { opacity: .5; }
+
 .page-niveau .formule { display: none !important; } /* les bulles d'ions restent sur l'accueil, près des tubes */
 .hero .plateforme { color: var(--hero-muted); font-size: .95rem; letter-spacing: .02em; margin-top: -2px; }
 .nw { white-space: nowrap; }
@@ -510,11 +532,11 @@ const CHAPITRES = {
     energie: ["Aspects énergétiques des phénomènes électriques", "Aspects énergétiques des phénomènes mécaniques"],
     ondes: ["Ondes mécaniques", "Images et couleurs", "Modèles ondulatoire et particulaire de la lumière"]
   },
-  terminale: {
-    matiere: [[1, "Transformations acide-base"], "Méthodes physiques d'analyse", "Méthodes chimiques d'analyse : titrages", "Cinétique chimique", "Décroissance radioactive", "Sens d'évolution spontanée et piles", [8, "Force des acides et des bases"], "Forcer le sens d'évolution : électrolyse", "Stratégie de synthèse organique"],
-    mouvement: ["Description d'un mouvement", [12, "Mouvement dans un champ uniforme"], "Mouvement dans un champ de gravitation", "Mécanique des fluides"],
-    energie: ["Premier principe de la thermodynamique", "Transferts thermiques"],
-    ondes: ["Intensité sonore, diffraction et interférences", "Effet Doppler", "Lunette astronomique", "Effet photoélectrique", "Circuit RC : charge d'un condensateur"]
+  terminale: { /* progression de Mme Messaoudi (maquette du 06/11/2026) */
+    matiere: [[1, "Transformations acide-base"], [2, "Méthodes physiques d'analyse"], [3, "Méthodes chimiques d'analyse"], [4, "Modélisation macroscopique de l'évolution d'un système"], [7, "Sens d'évolution spontanée d'un système chimique"], [8, "Force des acides et des bases"], [9, "Forcer l'évolution d'un système"]],
+    mouvement: [[12, "Mouvement dans un champ uniforme"], [13, "Mouvement dans un champ de gravitation"], [15, "Premier principe de la thermodynamique et bilan énergétique"]],
+    energie: [],
+    ondes: [[18, "Diffraction et interférences"], [19, "Lunette astronomique"], [20, "La lumière"], [21, "Dynamique du dipôle RC"]]
   }
 };
 /* Nom officiel des parties au lycée (programmes de 1re et Terminale spécialité) ; au collège, les noms de THEMES */
@@ -562,17 +584,20 @@ const pl = (n, mot) => n + " " + mot + (n > 1 ? "s" : "");
 function detailTP(l) { const exp = l.filter(x => /Expérimentale/.test(x.tag)).length, num = l.filter(x => /Simulation/.test(x.tag)).length, doc = l.length - exp - num;
   return [exp ? pl(exp, "activité") + " expérimentale" + (exp > 1 ? "s" : "") : "", num ? pl(num, "simulation") + " numérique" + (num > 1 ? "s" : "") : "", doc ? pl(doc, "activité") + " documentaire" + (doc > 1 ? "s" : "") : ""].filter(Boolean).join(" · "); }
 function niveauHTML(nv) {
-  const N = NIVEAUX.find(n => n.id === nv), k = nbTP(nv);
-  const tuile = T => { const c = listeChap(nv, T.id).length, t = nbTP(nv, T.id);
-    return `<a class="theme" id="sec-${nv}-${T.id}" href="#${nv}/${T.id}"><span class="ico" aria-hidden="true">${ICO_TH[T.id]}</span><h3>${esc(nomTheme(nv, T.id))}</h3><p>${c ? pl(c, "chapitre") : "Pas au programme"} · ${t ? t + " TP" : "TP à venir"}</p></a>`; };
-  return `<a class="retour-acc" href="#">← Changer de niveau</a><div class="lvl-h"><h2>${esc(N.long)}</h2><span>${k} activité${k > 1 ? "s" : ""}${k ? "" : " pour l'instant"}</span></div>` +
-    `<p class="sous-niv">Choisissez un thème</p><div class="themes themes-niv">${THEMES.map(tuile).join("")}</div>`;
+  const N = NIVEAUX.find(n => n.id === nv), nc = THEMES.reduce((a, T) => a + listeChap(nv, T.id).length, 0);
+  const lien = (T, c) => { const t = TP.filter(x => x.niv === nv && x.theme === T.id && x.chap === c.nom).length;
+    return `<a class="ch-lien" href="#${nv}/${T.id}/${encodeURIComponent(c.nom)}">${c.n ? `<span class="ch-badge">C${c.n}</span>` : ""}<span class="ch-nom">${esc(c.nom)}</span>${t ? `<span class="ch-tp">${t} TP</span>` : ""}</a>`; };
+  const carteTh = T => { const L = listeChap(nv, T.id);
+    return `<div class="th-carte" id="sec-${nv}-${T.id}"><a class="th-tete" href="#${nv}/${T.id}"><span class="ico" aria-hidden="true">${ICO_TH[T.id]}</span><h3>${esc(nomTheme(nv, T.id))}</h3></a>` +
+      `<div class="th-chaps">${L.length ? L.map(c => lien(T, c)).join("") : `<span class="ch-lien ch-avenir"><span class="ch-badge">…</span>Contenu à venir</span>`}</div></div>`; };
+  return `<a class="btn-retour" href="#">← Retour à l'accueil</a><div class="niv-titre"><h2>${esc(N.long.replace(" physique-chimie", ""))}</h2>${nc ? `<span class="niv-nb">${nc} chapitre${nc > 1 ? "s" : ""}</span>` : ""}</div>` +
+    `<p class="sous-niv">Choisissez un thème pour commencer votre révision.</p><div class="th-grille">${THEMES.map(carteTh).join("")}</div>`;
 }
 function themeHTML(nv, th) {
   const N = NIVEAUX.find(n => n.id === nv), L = listeChap(nv, th), t = nbTP(nv, th);
   const chap = ({ nom: c, n }) => { const l = TP.filter(x => x.niv === nv && x.theme === th && x.chap === c);
-    return `<div class="chapitre${l.length ? "" : " ch-vide"}"><h4>${n ? "Chapitre " + n + " · " : ""}${esc(c)}</h4><span>${l.length ? detailTP(l) : "TP à venir"}</span></div>` + (l.length ? `<div class="cards">${l.map(carte).join("")}</div>` : ""); };
-  return `<a class="retour-acc" href="#${nv}">← Tous les thèmes · ${esc(N.nom)}</a>` +
+    return `<div class="chapitre${l.length ? "" : " ch-vide"}" data-chap="${esc(c)}"><h4>${n ? "Chapitre " + n + " · " : ""}${esc(c)}</h4><span>${l.length ? detailTP(l) : "TP à venir"}</span></div>` + (l.length ? `<div class="cards">${l.map(carte).join("")}</div>` : ""); };
+  return `<a class="btn-retour" href="#${nv}">← Tous les thèmes · ${esc(N.nom)}</a>` +
     `<section class="tsec" id="sec-${nv}-${th}" aria-labelledby="h-${nv}-${th}"><div class="thead"><span class="ico" aria-hidden="true">${ICO_TH[th]}</span><h3 id="h-${nv}-${th}">${esc(nomTheme(nv, th))}</h3><span class="nb">${t ? t + " TP" : "TP à venir"}</span></div>` +
     (L.length ? L.map(chap).join("") : `<p class="soon">Ce thème n'est pas au programme de cette classe.</p>`) + `</section>`;
 }
@@ -660,7 +685,7 @@ function route() {
   const suivi = h === "suivi";
   $("#v-suivi").hidden = !suivi; document.querySelectorAll(".hero, .rules, .levels, .level, .reprendre").forEach(e => e.classList.toggle("pf-cache", suivi));
   if (suivi) { Prof.rendu(); document.title = "Espace professeur · Ma science physique-chimie"; window.scrollTo(0, 0); return; }
-  let [nv, th] = h.split("/"); nv = ALIAS[nv] || nv; if (!CLASSES.includes(nv)) nv = ""; /* accueil : ni thèmes ni TP, seulement le choix de la classe */
+  let [nv, th, ch] = h.split("/"); nv = ALIAS[nv] || nv; if (!CLASSES.includes(nv)) nv = ""; /* accueil : ni thèmes ni TP, seulement le choix de la classe */
   if (!THEMES.some(T => T.id === th)) th = "";
   CLASSES.forEach(k => { const d = $("#lvl-" + k); d.hidden = k !== nv; if (k === nv) d.innerHTML = th ? themeHTML(k, th) : niveauHTML(k); });
   /* un niveau ou un thème s'ouvre comme une nouvelle page : le bandeau d'accueil est masqué */
@@ -668,7 +693,9 @@ function route() {
   document.querySelectorAll(".levels a").forEach(a => a.dataset.lvl === nv ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
   document.title = "Ma science physique-chimie · EFIR";
   /* Règle : jamais de TP ouvert affiché sur l'accueil (bouton « Reprendre mon TP » retiré). */
-  if (nv) { const N = NIVEAUX.find(n => n.id === nv); document.title = (th ? nomTheme(nv, th) + " · " : "") + N.nom + " · Ma science physique-chimie"; window.scrollTo(0, 0); }
+  if (nv) { const N = NIVEAUX.find(n => n.id === nv); document.title = (th ? nomTheme(nv, th) + " · " : "") + N.nom + " · Ma science physique-chimie"; window.scrollTo(0, 0);
+    const vise = th && ch && [...document.querySelectorAll("#lvl-" + nv + " .chapitre")].find(e => e.dataset.chap === ch);
+    if (vise) { vise.classList.add("cible-th"); setTimeout(() => vise.scrollIntoView({ block: "center" }), 60); } }
 }
 addEventListener("hashchange", route); route();
 </script>
