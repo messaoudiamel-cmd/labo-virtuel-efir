@@ -291,7 +291,19 @@ html:has(body.concept-prune) { overflow-x: clip; }
 .concept-prune .citation { background: transparent; border: 0; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 8px 16px; width: 100%; max-width: 24rem; text-shadow: 0 2px 4px rgba(0,0,0,.8); }
 .concept-prune .citation .phrase { color: #F4B4C1; line-height: 1.625; }
 .concept-prune .citation .auteur { margin-top: 8px; }
-.concept-prune .foot { position: relative; z-index: 20; display: block; width: 100%; text-align: center; text-transform: uppercase; font-size: 10px; font-weight: 300; letter-spacing: .1em; color: #9CA3AF; border: 0; padding: 0 0 1.5rem; margin: 0; }
+body.concept-prune { position: relative; min-height: 100vh; padding-bottom: 3rem; }
+.concept-prune .foot { position: absolute; bottom: 1rem; right: 2rem; z-index: 20; display: block; max-width: calc(100vw - 4rem); text-align: right; text-transform: uppercase; font-size: 10px; font-weight: 300; letter-spacing: .1em; color: #9CA3AF; border: 0; padding: 0; margin: 0; }
+.concept-prune .niveaux { justify-items: stretch; width: 100%; max-width: 20rem; justify-self: end; }
+.concept-prune .niveaux .etiq { text-align: center; width: 100%; margin-bottom: 0; }
+.concept-prune .levels a { font-size: 1rem; padding: .875rem 2rem; }
+@media (max-width: 760px) { .concept-prune .niveaux { justify-self: center; } }
+.concept-prune .barre { padding: 2rem 0 0; }
+.concept-prune .barre .bloc { gap: .75rem; }
+.concept-prune .barre .profe { gap: .25rem; }
+.concept-prune .pilule { padding: .5rem 1.5rem; font-size: .875rem; }
+.concept-prune .barre .nom { font-size: 10px; font-style: normal; font-weight: 300; letter-spacing: .1em; text-transform: uppercase; padding-right: .25rem; background: none; color: #9CA3AF; -webkit-text-fill-color: #9CA3AF; }
+.concept-prune .barre img.logo-fantome { width: 4rem; height: 4rem; object-fit: contain; mix-blend-mode: normal; opacity: 1; filter: grayscale(40%) opacity(.7); transition: filter .3s ease; }
+.concept-prune .barre img.logo-fantome:hover { opacity: 1; filter: none; }
 .concept-prune .foot a { display: none; }
 </style>
 </head>
