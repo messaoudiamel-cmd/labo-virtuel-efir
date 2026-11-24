@@ -1,0 +1,1064 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel 3D · Titrage suivi par conductimétrie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Paillasse : en-tête de fiche, puis deux colonnes (tubes à gauche, flacons et carnet à droite), une seule colonne sur téléphone */
+:root {
+  --bg: #eef2f5;          /* carrelage de paillasse, gris bleuté */
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #15212d;
+  --muted: #576776;
+  --line: #d3dce4;
+  --navy: #003366;        /* bleu marine EFIR */
+  --navy-soft: #e3ecf6;
+  --red: #b42318;         /* sécurité, interdit */
+  --red-soft: #fdecea;
+  --green: #2f6f45;       /* vérifié */
+  --green-soft: #e7f3eb;
+  --amber: #8c6d1f;
+  --amber-soft: #fbf3df;
+  --glass: rgba(120, 150, 175, .55);
+  --glass-fill: rgba(255, 255, 255, .55);
+  --water: rgba(170, 205, 230, .38);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+    --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+    --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+    --water: rgba(150, 190, 225, .28); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+  --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+  --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+  --water: rgba(150, 190, 225, .28); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; color: var(--navy); }
+h1 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); line-height: 1.15; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+sub, sup { font-size: .7em; line-height: 0; }
+.kicker { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+header.fiche { display: grid; gap: 10px; }
+.pb { border: 1.5px solid var(--red); background: var(--surface); border-radius: var(--radius); padding: 10px 14px; font-weight: 700; }
+.pb span { color: var(--red); }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .92rem; padding: 0; margin: 0; list-style: none; }
+.steps li b { color: var(--ink); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: .88rem; }
+
+/* sécurité */
+.epi { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .92rem; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--green); background: var(--green-soft); color: var(--green); font-weight: 700; }
+.chip:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+
+/* porte-tubes */
+.rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px 6px; }
+.tube { font: inherit; background: none; border: 2px solid transparent; border-radius: 10px; padding: 4px 2px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; color: var(--ink); }
+.tube[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); }
+.tube svg { width: 52px; height: 178px; overflow: visible; }
+.tube .lab { font-size: .72rem; line-height: 1.15; text-align: center; min-height: 2.3em; color: var(--muted); }
+.tube .num { font-weight: 700; font-size: .8rem; }
+.glass { fill: var(--glass-fill); stroke: var(--glass); stroke-width: 2; }
+.drop { animation: fall .55s ease-in forwards; }
+@keyframes fall { from { transform: translateY(-34px); opacity: 1; } to { transform: translateY(var(--dy, 120px)); opacity: .2; } }
+.ppt circle { transition: fill 9s linear, opacity .9s ease, transform 2.2s ease-in; }
+@media (prefers-reduced-motion: reduce) { .drop { animation: none; opacity: 0; } .ppt circle { transition: none; } }
+.bench-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sel-info { flex: 1 1 220px; min-width: 0; font-size: .92rem; }
+
+/* flacons */
+.bottles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bottle { font: inherit; text-align: left; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 8px 10px; cursor: pointer; display: grid; gap: 4px; }
+.bottle:hover { border-color: var(--navy); }
+.bottle .nm { font-weight: 700; line-height: 1.2; }
+.bottle .io { font-size: .85rem; color: var(--muted); }
+.bottle .act { font-size: .78rem; color: var(--navy); font-weight: 700; }
+.bottle.reagent { background: var(--navy-soft); }
+.bottle[disabled] { opacity: .45; cursor: not-allowed; }
+.pic { display: flex; gap: 4px; }
+.pic img { width: 30px; height: 30px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--glass); vertical-align: -1px; margin-right: 4px; }
+
+button.btn { font: inherit; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1.5px solid var(--navy); background: var(--navy); color: var(--surface); }
+button.btn.ghost { background: transparent; color: var(--navy); }
+button.btn.warn { border-color: var(--red); color: var(--red); background: transparent; }
+button.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* messages */
+.toast { border-radius: 8px; padding: 9px 12px; font-size: .95rem; border: 1px solid var(--line); background: var(--surface-2); }
+.toast.err { border-color: var(--red); background: var(--red-soft); }
+.toast.ok { border-color: var(--green); background: var(--green-soft); }
+.toast.info { border-color: var(--amber); background: var(--amber-soft); }
+
+/* carnet */
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.log li { font-size: .92rem; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.log li.pos { border-left-color: var(--navy); }
+.log li:empty { display: none; }
+.log .t { color: var(--muted); font-size: .8rem; }
+
+/* tableaux */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 640px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; vertical-align: middle; }
+thead th, tbody th { background: var(--navy-soft); color: var(--navy); font-weight: 700; }
+tbody th { text-align: left; }
+td select { font: inherit; font-size: .88rem; width: 100%; min-width: 0; padding: 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+td.good select { border-color: var(--green); background: var(--green-soft); }
+td.bad select { border-color: var(--red); background: var(--red-soft); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.foot { color: var(--muted); font-size: .82rem; text-align: center; }
+details summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+
+/* animation et guide (version 3e) */
+.guide { display: flex; gap: 12px; align-items: center; background: var(--navy); color: var(--surface); border-radius: var(--radius); padding: 12px 14px; font-size: 1.05rem; }
+.guide b { color: inherit; }
+.guide .gn { flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--surface); color: var(--navy); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; }
+.next { box-shadow: 0 0 0 3px var(--amber); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--amber) 35%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .next { animation: none; } }
+.bench { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 520px) { .bench { grid-template-columns: minmax(0, 1fr); } .stage svg { max-height: 260px; } }
+.stage { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; display: grid; gap: 6px; justify-items: center; }
+.stage svg { width: 100%; max-width: 200px; height: auto; overflow: hidden; }
+.stage .caption { font-size: .95rem; text-align: center; min-height: 4.5em; }
+.stlbl { font: 700 15px var(--font-body); fill: var(--ink); }
+.mots summary { font-size: 1rem; }
+.mots dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 0; }
+.mots dt { font-weight: 700; color: var(--navy); }
+.mots dd { margin: 0; }
+@media (max-width: 520px) { .mots dl { grid-template-columns: 1fr; } .mots dd { margin-bottom: 6px; } }
+.tube .lab { font-size: .78rem; }
+.bottle .act { font-size: .88rem; }
+
+/* version 2 : actions rapides et compte rendu */
+.quick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.quick:empty { display: none; }
+.qbtn { font-size: .9rem; padding: 6px 10px; }
+.crform { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.crform label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+.crform input { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; width: 100%; }
+.crform label:first-child { flex: 1 1 220px; } .crform label:nth-child(2) { flex: 0 1 120px; }
+.cr { border: 1.5px solid var(--navy); border-radius: var(--radius); padding: 14px; background: var(--surface); display: grid; gap: 8px; }
+.cr h3, .cr h4 { margin: 4px 0 0; color: var(--navy); font-family: var(--font-display); }
+.cr ol, .cr ul { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.cr table { min-width: 0; font-size: .88rem; } .cr td, .cr th { text-align: left; }
+.cr .t { display: none; } .cr[hidden] { display: none; }
+.codebox { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.codebox input { font: inherit; width: 9em; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-transform: uppercase; }
+
+/* version 3 : question ion utile, mode économe */
+.ask { display: grid; gap: 8px; max-width: 260px; font-size: .92rem; text-align: center; }
+.ask .toast { text-align: left; }
+body.eco *, body.eco *::before, body.eco *::after { animation: none !important; transition: none !important; }
+#effacer { font-size: .85rem; padding: 4px 10px; margin-left: 6px; }
+
+/* version 4 : manipulations pilotées par l'élève */
+.vol { font-size: .92rem; align-self: center; }
+#verser { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.askbox:empty { display: none; }
+.askbox .ask { max-width: 280px; }
+.stage svg { overflow: visible; }
+
+.qtitle { width: 100%; text-align: center; font-size: .92rem; margin: 2px 0 0; }
+.quick .qbtn.next { font-size: .95rem; }
+.prof { margin: -4px 0 0; color: var(--navy); font-size: 1rem; }
+
+/* protocole de la fiche */
+.proto { border: 1.5px solid var(--navy); border-radius: var(--radius); background: var(--surface); padding: 10px 12px; }
+.proto summary { font-weight: 700; color: var(--navy); cursor: pointer; }
+.proto ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.proto li { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 1.4em; gap: 8px; align-items: start; font-size: .92rem; padding: 6px 8px; border-radius: 8px; }
+.proto li.partie { display: block; grid-template-columns: none; font-family: var(--font-display); font-weight: 700; color: var(--navy); padding: 6px 0 0; font-size: .95rem; }
+.proto .q { font-weight: 700; color: var(--muted); font-size: .8rem; padding-top: 2px; }
+.proto .st { font-weight: 700; color: var(--green); text-align: center; }
+.proto li.cur { background: var(--amber-soft); outline: 1.5px solid var(--amber); }
+.proto li.cur .st { color: var(--amber); }
+.proto li.fait .tx { color: var(--muted); }
+.proto li.fait { background: var(--green-soft); }
+.proto ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.proto ul li { display: block; padding: 0; font-size: .88rem; background: none; outline: none; }
+.proto ul li.fait { color: var(--green); background: none; }
+
+#prototout { margin-top: 8px; }
+.proto:not(.tout) #proto > li:not(.cur) { display: none; }
+.proto li { grid-template-columns: 4.2em minmax(0, 1fr) 1.4em; }
+.extract{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center}.extract svg{width:120px;height:120px}
+
+/* ===== Compléments communs aux simulations 3D (Terminale) ===== */
+.scene3d { margin: 0; position: relative; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.scene3d canvas.c3d { width: 100%; aspect-ratio: 16 / 10; display: block; touch-action: none; cursor: grab; }
+.scene3d canvas.c3d:active { cursor: grabbing; }
+.scene3d .vues { position: absolute; top: 8px; left: 8px; display: flex; flex-wrap: wrap; gap: 4px; max-width: calc(100% - 16px); }
+.scene3d .vues button, .scene3d .zoom button { font: inherit; font-size: .78rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--navy); cursor: pointer; }
+.scene3d .vues button[aria-pressed="true"] { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.scene3d .zoom { position: absolute; right: 8px; bottom: 8px; display: grid; gap: 4px; }
+.scene3d .zoom button { width: 2rem; height: 2rem; padding: 0; font-size: 1.1rem; }
+.scene3d .hud { position: absolute; left: 8px; bottom: 8px; font-size: .8rem; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-variant-numeric: tabular-nums; max-width: calc(100% - 64px); }
+.scene3d .hud:empty { display: none; }
+.scene3d .astuce { position: absolute; right: 8px; top: 8px; font-size: .72rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 80%, transparent); border-radius: 6px; padding: 2px 6px; }
+@media (max-width: 520px) { .scene3d canvas.c3d { aspect-ratio: 4 / 3.6; } .scene3d .astuce { display: none; } }
+.nogl { padding: 30px 16px; text-align: center; color: var(--red); font-weight: 700; }
+.reglages { display: grid; gap: 10px; }
+.reglage { display: grid; grid-template-columns: 9em minmax(0, 1fr) 7.6em; gap: 10px; align-items: center; font-size: .95rem; }
+.reglage label { font-weight: 700; }
+.reglage output { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); text-align: right; }
+.reglage input[type=range] { width: 100%; accent-color: var(--navy); }
+@media (max-width: 520px) { .reglage { grid-template-columns: minmax(0, 1fr) auto; } .reglage input[type=range] { grid-column: 1 / -1; grid-row: 2; } }
+.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
+.calc div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .88rem; }
+.calc b { display: block; font-variant-numeric: tabular-nums; color: var(--navy); font-size: 1rem; }
+.question { border: 1.5px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--surface); min-width: 0; }
+.question h3 { font-size: 1rem; }
+.question .tag { font-size: .72rem; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: 2px; }
+.question select, .question input[type=text] { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.question select { width: 100%; }
+.question label { display: block; }
+.question label select { display: block; margin-top: 4px; }
+.question select.ok, .question input.ok { border-color: var(--green); background: var(--green-soft); }
+.question select.ko, .question input.ko { border-color: var(--red); background: var(--red-soft); }
+.question .pouce summary { font-size: .9rem; color: var(--amber); }
+.question .pouce { font-size: .88rem; }
+.question.verrou { opacity: .55; pointer-events: none; }
+.onglets { display: flex; flex-wrap: wrap; gap: 6px; }
+.onglets button { font: inherit; font-size: .88rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+.onglets button[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); color: var(--navy); }
+.graphe { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
+.graphe canvas { width: 100%; height: auto; aspect-ratio: 16 / 10; display: block; }
+.code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .84rem; background: #fffbe8; color: #2b2b2b; border: 1px solid #e8d9a0; border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre; line-height: 1.45; margin: 0; }
+.code .n { color: #9a8b55; user-select: none; }
+.code .c { color: #2f7d4a; }
+.code .k { color: #b22a7a; }
+.code .trou { background: #fff; border: 1.5px dashed #c77700; border-radius: 4px; padding: 0 6px; }
+.tablewrap.pointage { max-height: 230px; overflow: auto; }
+.tablewrap.pointage table { min-width: 420px; font-size: .84rem; }
+.tablewrap.pointage td { font-variant-numeric: tabular-nums; padding: 3px 6px; }
+.tablewrap.pointage tr.vu td { background: var(--amber-soft); }
+.badge3d { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--surface); background: var(--navy); border-radius: 4px; padding: 1px 6px; vertical-align: 3px; }
+#maconc { width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cr[hidden] { display: none; }
+/* gabarit pédagogique : situation et modèle, prédiction, énergie, python, piège du bac */
+.parcours { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; counter-reset: et; font-size: .9rem; }
+.parcours li { counter-increment: et; color: var(--muted); }
+.parcours li::before { content: counter(et, decimal-leading-zero) " "; font-weight: 700; color: var(--navy); }
+.parcours li b { color: var(--ink); }
+.modele { border: 1.5px solid var(--amber); background: var(--amber-soft); border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 4px; font-size: .95rem; }
+.modele h3 { font-size: .95rem; color: var(--amber); }
+.modele ul { margin: 0; padding-left: 1.2em; }
+.predire { border: 2px solid var(--navy); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--navy-soft); }
+.predire h3 { font-size: 1rem; }
+.predire .chip { text-align: left; }
+.energies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; height: 150px; padding: 6px 10px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.energies .barre { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.energies .barre .j { position: relative; }
+.energies .barre .j i { position: absolute; bottom: 0; left: 15%; right: 15%; border-radius: 4px 4px 0 0; height: 0; background: var(--c); }
+.energies .barre b { color: var(--navy); }
+.piege { border: 1.5px solid #c77700; background: #fff4e0; color: #4a3200; border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 6px; }
+.piege h3 { color: #a05a00; font-size: 1rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .piege { background: #33291a; color: #f3e2c0; } }
+.legende3d { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .84rem; color: var(--muted); }
+.legende3d span::before { content: ""; display: inline-block; width: 16px; height: 4px; border-radius: 2px; background: var(--c); vertical-align: middle; margin-right: 5px; }
+
+.verse { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#goutte { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.ecran { font-family: ui-monospace, Consolas, monospace; background: #0d1f14; color: #7dffb0; border-radius: 8px; padding: 6px 12px; font-size: 1.25rem; font-weight: 700; display: inline-block; min-width: 9.5em; text-align: right; }
+.fits { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.fits label { font-size: .9rem; color: var(--muted); }
+.fits select { font: inherit; width: 100%; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+</style>
+<script src="lib/three-r128.min.js"></script>
+<style id="efir-colonnes">.wrap{grid-template-columns:minmax(0,1fr)}.wrap>*{min-width:0}canvas{max-width:100%}table{min-width:0;max-width:100%}th,td{overflow-wrap:anywhere}</style></head>
+<body>
+<div class="wrap">
+  <header class="fiche">
+    <a class="retour" href="#" onclick="parent.location.hash='terminale/matiere/M%C3%A9thodes%20chimiques%20d%27analyse';return false" style="display:inline-block;margin:0 0 8px;font-weight:700;color:#1f6fd1;text-decoration:none">← Retour au chapitre</a>
+    <p class="kicker">EFIR · Terminale spécialité · Chapitre 3 · Activité 4 p. 54 (expérimentale) · Simulation 3D <span class="badge3d">3D</span></p>
+    <h1>Titrage suivi par conductimétrie : la chaufferette défectueuse</h1>
+    <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+    <p class="pb"><span>Problématique :</span> comment exploiter un titrage suivi par conductimétrie pour déterminer une masse ?</p>
+    <details class="panel mots"><summary>📖 Mots utiles et données</summary><dl>
+      <dt>Chaufferette</dt><dd>Elle contient une solution d'éthanoate de sodium CH<sub>3</sub>CO<sub>2</sub><sup>−</sup>(aq) + Na<sup>+</sup>(aq) de pourcentage massique minimal 20 %. La solution a été diluée 25 fois : on obtient la solution S<sub>f</sub>.</dd>
+      <dt>Titrage</dt><dd>V<sub>0</sub> = 10,0 mL de S<sub>f</sub> + 200 mL d'eau distillée, titrés par l'acide chlorhydrique H<sub>3</sub>O<sup>+</sup>(aq) + Cl<sup>−</sup>(aq) de concentration c = 1,00 × 10<sup>−1</sup> mol·L<sup>−1</sup>. Réaction support : CH<sub>3</sub>CO<sub>2</sub><sup>−</sup>(aq) + H<sub>3</sub>O<sup>+</sup>(aq) → CH<sub>3</sub>CO<sub>2</sub>H(aq) + H<sub>2</sub>O(ℓ).</dd>
+      <dt>Conductivité σ</dt><dd>Elle dépend des ions présents : σ = Σ λ<sub>i</sub> [X<sub>i</sub>]. Conductivités ioniques molaires (mS·m<sup>2</sup>·mol<sup>−1</sup>) : H<sub>3</sub>O<sup>+</sup> 35,0 ; Na<sup>+</sup> 5,0 ; Cl<sup>−</sup> 7,6 ; CH<sub>3</sub>CO<sub>2</sub><sup>−</sup> 4,1.</dd>
+      <dt>Équivalence</dt><dd>Le graphe σ = f(V<sub>A</sub>) est modélisé par deux segments de droite : V<sub>E</sub> est l'abscisse de leur intersection.</dd>
+      <dt>Données</dt><dd>M(CH<sub>3</sub>CO<sub>2</sub>Na) = 82,0 g·mol<sup>−1</sup> ; ρ = (1,15 ± 0,03) g·mL<sup>−1</sup> ; u(V<sub>E</sub>) ≈ 0,03 V<sub>E</sub> ; u([H<sub>3</sub>O<sup>+</sup>]) = 4,00 × 10<sup>−3</sup> mol·L<sup>−1</sup> ; u(V<sub>0</sub>) = 0,05 mL. (Valeurs corrigées du manuel élève : c = 1,00 × 10<sup>−1</sup> mol·L<sup>−1</sup>.)</dd>
+      <dt>Incertitude</dt><dd>Si A = X × Y × Z / W : u(A) = A × √[(u(X)/X)<sup>2</sup> + (u(Y)/Y)<sup>2</sup> + (u(Z)/Z)<sup>2</sup> + (u(W)/W)<sup>2</sup>].</dd>
+    </dl></details>
+    <details class="panel mots" id="aide"><summary>❓ Aide</summary><dl>
+      <dt>Avant de manipuler</dt><dd>Mettre la blouse, les gants et les lunettes, puis mettre l'agitation en marche.</dd>
+      <dt>Verser</dt><dd>« + 1,0 mL » ou « + 0,5 mL » ; « Goutte à goutte » : maintenir le bouton appuyé. Après chaque ajout, cliquer sur « 📋 Noter la mesure » : le volume et la conductivité vont dans le tableau.</dd>
+      <dt>Tourner la scène</dt><dd>Glisser sur la scène ; boutons « Burette » et « Conductimètre » pour lire de près. Zoom : boutons + et −.</dd>
+      <dt>Modéliser</dt><dd>Sous le graphique, choisir les points de la droite 1 (avant l'équivalence) et de la droite 2 (après) : l'intersection s'affiche.</dd>
+      <dt>À la fin</dt><dd>Vider le bécher dans le <b>bidon de récupération</b> (l'évier est interdit).</dd>
+    </dl></details>
+  <div id="efir-lien-reel-tle-ch3-titrage-cond" style="margin:10px 0;padding:10px 14px;border:1px solid #E9D5FF;border-left:5px solid #C2185B;border-radius:12px;background:#F8F6FA;color:#1F1630;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font:15px/1.4 'Atkinson Hyperlegible',system-ui,sans-serif"><span style="flex:1 1 260px">🧪 <b>Paillasse réaliste</b> : un titrage conductimétrique avec un conductimètre de paillasse, une cellule à plaques de platine et une loupe sur les ions de la solution.</span><a href="#" onclick="try{parent.location.hash='tle-ch3-titrage-cond'}catch(e){};return false" style="background:#4A148C;color:#fff;border-radius:10px;padding:9px 14px;font-weight:700;text-decoration:none">Ouvrir la paillasse réaliste →</a></div><!--/lien-reel--><div id="efir-lien-sondes-tle-ch3-sondes" style="margin:10px 0;padding:10px 14px;border:1px solid #E9D5FF;border-left:5px solid #4A148C;border-radius:12px;background:#F8F6FA;color:#1F1630;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font:15px/1.4 'Atkinson Hyperlegible',system-ui,sans-serif"><span style="flex:1 1 260px">🔌 <b>Avec le matériel du labo</b> : la même démarche avec l'interface, les sondes pH et conductivité et le logiciel d'acquisition (étalonnage, gamme, mode Événements + valeurs).</span><a href="#" onclick="try{parent.location.hash='tle-ch3-sondes'}catch(e){};return false" style="background:#4A148C;color:#fff;border-radius:10px;padding:9px 14px;font-weight:700;text-decoration:none">Ouvrir la version sondes →</a></div><!--/lien--></header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-sc">
+      <header><h2 id="h-sc">La paillasse</h2><span class="row-actions"><button class="btn" id="demo" type="button">▶ Voir une démonstration</button><button class="btn ghost" id="reset" type="button">Tout remettre à zéro</button><button class="btn ghost" id="aidebtn" type="button">❓ Aide</button><button class="btn ghost" id="ecobtn" type="button" aria-pressed="false">🐢 Mode économe</button></span></header>
+      <details class="proto" open><summary>📋 Protocole à suivre (fiche activité 4) <span class="hint" id="protocount"></span></summary><ol id="proto"></ol><button class="btn ghost qbtn" id="prototout" type="button">Voir toutes les étapes</button></details>
+      <div class="epi" role="group" aria-label="Équipements de protection"><span class="hint">Je m'équipe :</span>
+        <button class="chip" type="button" data-epi="blouse" aria-pressed="false">🥼 Blouse</button><button class="chip" type="button" data-epi="gants" aria-pressed="false">🧤 Gants</button><button class="chip" type="button" data-epi="lunettes" aria-pressed="false">🥽 Lunettes</button></div>
+      <figure class="scene3d" id="fig3d">
+        <canvas class="c3d" role="img" aria-label="Paillasse en 3D : potence, burette d'acide chlorhydrique, bécher sur agitateur magnétique, cellule de conductimétrie reliée au conductimètre, bidon de récupération et évier"></canvas>
+        <div class="vues" role="group" aria-label="Point de vue"><button type="button" data-vue="d3" aria-pressed="true">Vue d'ensemble</button><button type="button" data-vue="burette">Burette</button><button type="button" data-vue="becher">Bécher</button><button type="button" data-vue="metre">Conductimètre</button></div>
+        <div class="zoom"><button type="button" data-z="+" aria-label="Zoomer">+</button><button type="button" data-z="-" aria-label="Dézoomer">−</button></div>
+        <div class="hud" id="hud"></div>
+        <span class="astuce">Glisser pour tourner</span>
+      </figure>
+      <div class="row-actions"><span class="ecran" id="ecran" aria-live="polite">— mS·cm⁻¹</span><span>V<sub>A</sub> versé : <b id="vlu">0,0 mL</b></span><button class="btn ghost" id="agit" type="button" aria-pressed="false">🌀 Agitation : arrêtée</button></div>
+      <div class="verse">
+        <button class="btn" id="v1" type="button">+ 1,0 mL</button><button class="btn" id="v05" type="button">+ 0,5 mL</button><button class="btn ghost" id="goutte" type="button">💧 Goutte à goutte (maintenir)</button>
+        <button class="btn" id="noter" type="button">📋 Noter la mesure</button>
+      </div>
+      <p class="toast info" id="msg" role="status" aria-live="polite">Équipez-vous (blouse, gants, lunettes) avant de manipuler.</p>
+      <div class="row-actions"><span class="hint">Fin de manipulation, vider le bécher :</span><button class="btn ghost" id="bidon" type="button">🛢 Dans le bidon de récupération</button><button class="btn warn" id="evier" type="button">🚰 Dans l'évier</button></div>
+    </section>
+
+    <div class="wrap" style="gap:18px">
+      <section class="panel" aria-labelledby="h-g">
+        <header><h2 id="h-g">σ = f(V<sub>A</sub>)</h2><span class="hint" id="nbmes"></span></header>
+        <div class="onglets" role="group" aria-label="Affichage"><button type="button" data-g="graphe" aria-pressed="true">Graphique</button><button type="button" data-g="tab" aria-pressed="false">Tableau de mesures</button></div>
+        <figure class="graphe" id="gfig"><canvas id="gcv" width="900" height="560" role="img" aria-label="Graphique de la conductivité en fonction du volume versé"></canvas></figure>
+        <div class="tablewrap pointage" id="tabwrap" hidden><table><thead><tr><th>n°</th><th>V<sub>A</sub> (mL)</th><th>σ (mS·cm⁻¹)</th></tr></thead><tbody id="tab"></tbody></table></div>
+        <div class="row-actions"><button class="btn ghost qbtn" id="suppr" type="button">Supprimer la dernière mesure</button></div>
+        <div class="fits">
+          <label>Droite 1 (avant l'équivalence) : points de 0 mL à<select id="d1"></select></label>
+          <label>Droite 2 (après l'équivalence) : points de<select id="d2"></select></label>
+        </div>
+        <p id="inter" style="font-weight:700;color:var(--navy);margin:0"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-q">
+        <header><h2 id="h-q">Questions de l'activité 4</h2><span class="hint">répondre dans l'ordre</span></header>
+
+        <div class="question">
+          <h3>1. Réaliser le titrage <span class="tag">RÉA</span></h3>
+          <p>Relevez σ après chaque ajout, millilitre par millilitre, jusqu'à V<sub>A</sub> = 25 mL (au moins 20 mesures). Comment évolue σ ?</p>
+          <label>Avant l'équivalence, σ :<select id="q1a" data-save data-lib="Q1 évolution de σ avant l'équivalence" data-bonne="augmente faiblement"><option value="">…</option><option>augmente faiblement</option><option>augmente fortement</option><option>diminue</option><option>reste nulle</option></select></label>
+          <label>Après l'équivalence, σ :<select id="q1b" data-save data-lib="Q1 évolution de σ après l'équivalence" data-bonne="augmente fortement"><option value="">…</option><option>augmente faiblement</option><option>augmente fortement</option><option>diminue</option></select></label>
+          <label>Pourquoi la pente est-elle plus forte après l'équivalence ?<select id="q1c" data-save data-lib="Q1 justification des pentes" data-bonne="on ajoute des ions H3O+ et Cl− qui ne réagissent plus, et H3O+ conduit très bien"><option value="">…</option><option>les ions CH3CO2− s'accumulent dans le bécher</option><option>on ajoute des ions H3O+ et Cl− qui ne réagissent plus, et H3O+ conduit très bien</option><option>la solution devient plus chaude</option></select></label>
+          <details class="pouce"><summary>Coup de pouce</summary>Avant l'équivalence, chaque ion CH<sub>3</sub>CO<sub>2</sub><sup>−</sup> consommé est remplacé par un ion Cl<sup>−</sup> (λ plus grande) : σ augmente un peu. Après, H<sub>3</sub>O<sup>+</sup> (λ = 35,0) et Cl<sup>−</sup> s'accumulent.</details>
+          <div class="row-actions"><button class="btn" type="button" data-check="q1a,q1b,q1c" data-pre="mes" data-ok="Avant l'équivalence, CH<sub>3</sub>CO<sub>2</sub><sup>−</sup> est remplacé par Cl<sup>−</sup> : faible hausse. Après, H<sub>3</sub>O<sup>+</sup> et Cl<sup>−</sup> en excès : forte hausse.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+
+        <div class="question">
+          <h3>2. Volume à l'équivalence <span class="tag">RÉA</span></h3>
+          <p>Modélisez les deux parties du graphe par deux droites (sous le graphique) et lisez l'abscisse de leur intersection.</p>
+          <label>V<sub>E</sub> ≈ <input type="text" id="q2" data-save data-lib="Q2 volume à l'équivalence VE (mL)" data-val="ve" data-tol="0.4" inputmode="decimal" size="6"> mL</label>
+          <div class="row-actions"><button class="btn" type="button" data-check="q2" data-pre="fit" data-ok="V<sub>E</sub> ≈ 16,0 mL.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+
+        <div class="question">
+          <h3>3. Masse d'éthanoate de sodium dans V<sub>0</sub> <span class="tag">ANA-RAIS</span></h3>
+          <p>À l'équivalence, n<sub>0</sub>(CH<sub>3</sub>CO<sub>2</sub><sup>−</sup>) = n<sub>E</sub>(H<sub>3</sub>O<sup>+</sup>) = c × V<sub>E</sub>. En déduire la masse m d'éthanoate de sodium dans les 10,0 mL de S<sub>f</sub> dosés.</p>
+          <label>m ≈ <input type="text" id="q3" data-save data-lib="Q3 masse dans V0 (g)" data-val="m" data-tol="0.006" inputmode="decimal" size="7"> g</label>
+          <details class="pouce"><summary>Coup de pouce</summary>m = c × V<sub>E</sub> × M, avec V<sub>E</sub> en L (16,0 mL = 16,0 × 10<sup>−3</sup> L).</details>
+          <div class="row-actions"><button class="btn" type="button" data-check="q3" data-ok="n<sub>0</sub> = 1,00 × 10<sup>−1</sup> × 16,0 × 10<sup>−3</sup> = 1,60 × 10<sup>−3</sup> mol, donc m = 1,60 × 10<sup>−3</sup> × 82,0 ≈ 0,131 g.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+
+        <span class="codebox" style="display:none"><label for="code">☎ Appel : faites vérifier vos réponses 1 à 3 par le professeur. Il vous donne un code pour débloquer les questions 4 et 5.</label><input id="code" type="text" autocomplete="off" aria-label="Code du professeur"></span>
+
+        <div class="question verrou-appel">
+          <h3>4. Pourcentage massique et incertitude <span class="tag">VAL</span></h3>
+          <p>a. La solution de la chaufferette est 25 fois plus concentrée que S<sub>f</sub>. Avec P<sub>m</sub> = 25 × c × V<sub>E</sub> × M / (ρ × V<sub>0</sub>), calculer P<sub>m</sub>.</p>
+          <label>P<sub>m</sub> ≈ <input type="text" id="q4a" data-save data-lib="Q4.a pourcentage massique (%)" data-val="pm" data-tol="1" inputmode="decimal" size="6"> %</label>
+          <p>b. Estimer l'incertitude type u(P<sub>m</sub>) (complément scientifique 2) et choisir l'encadrement.</p>
+          <label>u(P<sub>m</sub>) ≈ <input type="text" id="q4b" data-save data-lib="Q4.b incertitude type (%)" data-val="upm" data-tol="0.5" inputmode="decimal" size="6"> %</label>
+          <label>Encadrement :<select id="q4c" data-save data-lib="Q4.b encadrement de Pm" data-bonne="P_m est compris entre environ 27 % et 30 %"><option value="">…</option><option>P_m vaut exactement 28,5 %</option><option>P_m est compris entre environ 27 % et 30 %</option><option>P_m est compris entre 18 % et 22 %</option></select></label>
+          <details class="pouce"><summary>Coup de pouce</summary>u(P<sub>m</sub>) = P<sub>m</sub> × √[(4,00 × 10<sup>−3</sup> / 0,100)<sup>2</sup> + (0,03)<sup>2</sup> + (0,03 / 1,15)<sup>2</sup> + (0,05 / 10,0)<sup>2</sup>].</details>
+          <div class="row-actions"><button class="btn" type="button" data-check="q4a,q4b,q4c" data-ok="P<sub>m</sub> ≈ 28,5 % et u(P<sub>m</sub>) ≈ 1,6 % (arrondi à 2 %) : P<sub>m</sub> ∈ [27 % ; 30 %] environ.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+
+        <div class="question verrou-appel">
+          <h3>5. Pourquoi la chaufferette ne marche-t-elle pas ? <span class="tag">VAL</span></h3>
+          <select id="q5" data-save data-lib="Q5 hypothèse sur la défaillance" data-bonne="P_m est supérieur à 20 % : la solution est conforme, c'est sans doute le disque qui éjecte mal les grains"><option value="">…</option><option>P_m est inférieur à 20 % : la solution est trop diluée</option><option>P_m est supérieur à 20 % : la solution est conforme, c'est sans doute le disque qui éjecte mal les grains</option><option>La solution contient de l'acide chlorhydrique</option></select>
+          <div class="row-actions"><button class="btn" type="button" data-check="q5" data-ok="La composition est conforme (P<sub>m</sub> > 20 %) : la défaillance vient sûrement du disque métallique.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="h-conc">
+    <header><h2 id="h-conc">Un pas vers le cours · Réponse à la problématique</h2></header>
+    <p><b>6.</b> Quel organigramme permet de déterminer la masse d'une espèce à partir du volume versé à l'équivalence ?</p>
+    <div class="checks">
+      <button class="chip" type="button" data-concl="a" aria-pressed="false" data-juste>Équation de la réaction support → relation à l'équivalence n₀(A)/a = n_E(B)/b → n₀(A) = c_B × V_E (ici a = b = 1) → m = n₀(A) × M(A).</button>
+      <button class="chip" type="button" data-concl="b" aria-pressed="false" data-pourquoi="Non : à l'équivalence, ce sont les quantités de matière qui sont liées, pas les volumes ou les masses.">À l'équivalence, la masse de réactif titré est égale à la masse de réactif titrant versé.</button>
+      <button class="chip" type="button" data-concl="c" aria-pressed="false" data-pourquoi="Non : σ sert seulement à repérer V_E ; la masse se calcule avec la relation à l'équivalence.">On lit directement la masse sur le conductimètre à l'équivalence.</button>
+    </div>
+    <label for="maconc" style="display:block;margin:14px 0 6px"><b>Ma conclusion rédigée</b> : répondez à la problématique en deux ou trois phrases (repérage de V<sub>E</sub>, relation à l'équivalence, calcul de la masse).</label>
+    <textarea id="maconc" data-save rows="4"></textarea>
+    <div class="row-actions"><button class="btn" id="checkconcl" type="button" data-ok="On repère V_E à l'intersection des deux droites, on écrit la relation à l'équivalence pour obtenir n₀(A), puis m = n₀(A) × M.">Vérifier ma conclusion</button></div>
+    <p class="toast" id="outconcl" role="status" aria-live="polite" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-cr">
+    <header><h2 id="h-cr">Mon compte rendu</h2></header>
+    <div class="crform">
+      <label>Nom et prénom<input id="crnom" data-save type="text" autocomplete="name"></label>
+      <label>Classe<input id="crclasse" data-save type="text" placeholder="Tle…"></label>
+      <button class="btn ghost" id="crbtn" type="button">Afficher mon compte rendu</button><button class="btn" id="crpdf" type="button">⬇ Télécharger mon compte rendu (PDF)</button>
+    </div>
+    <div class="cr" id="cr" hidden></div>
+    <div class="row-actions"><span class="hint" id="crnote" role="status" aria-live="polite"></span></div>
+    <p class="hint">Déposez le PDF dans le devoir Google Classroom (Ajouter &gt; Fichier, puis Rendre). Votre travail est enregistré automatiquement dans ce navigateur. <button class="btn warn" id="effacer" type="button">Effacer mon travail</button></p>
+  </section>
+  <p class="foot">Simulation 3D d'après l'activité 4 p. 54 du manuel Hachette Terminale spécialité · Mme Messaoudi · EFIR 2026-2027. La conductivité est calculée à partir des conductivités ioniques molaires et de la dilution ; une petite erreur de mesure (± 0,005 mS·cm⁻¹) est ajoutée.</p>
+</div>
+
+<script>
+/* =====================================================================
+   Moteur commun des simulations 3D du labo virtuel EFIR (Terminale)
+   three.js r128 (cdnjs), caméra orbitale maison, graphiques 2D,
+   protocole, questions, appel professeur, sauvegarde, compte rendu PDF.
+   Mme Messaoudi · EFIR · 2026-2027
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+let REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+try { if (localStorage.getItem("efir-eco") === "1") REDUCED = true; } catch (e) {}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+/* nombre à la française : n chiffres significatifs, virgule décimale */
+function fr(x, n = 2) {
+  if (!isFinite(x)) return "–";
+  if (x === 0) return "0";
+  const ex = Math.floor(Math.log10(Math.abs(x)));
+  if (ex >= -2 && ex <= 3) { const d = Math.max(0, n - 1 - ex); return x.toFixed(d).replace(".", ","); }
+  let m = x / 10 ** ex, ms = m.toFixed(n - 1);
+  if (Math.abs(+ms) >= 10) return fr(x * 1.0000001, n);
+  return `${ms.replace(".", ",")} × 10<sup>${ex < 0 ? "−" + -ex : ex}</sup>`;
+}
+const fx = (x, d = 2) => (Math.round(x * 10 ** d) / 10 ** d).toFixed(d).replace(".", ",").replace("-", "−");
+const lireNombre = s => { const t = String(s).replace(/\s/g, "").replace(",", ".").replace("−", "-"); return t === "" ? NaN : +t; };
+const wait = ms => new Promise(r => setTimeout(r, REDUCED ? 60 : ms));
+const enc = s => btoa(unescape(encodeURIComponent(s)));
+const dec = s => { try { return decodeURIComponent(escape(atob(s))); } catch (e) { return ""; } };
+function say(html, kind = "info") { const m = $("#msg"); if (!m) return; m.className = "toast " + kind; m.innerHTML = html; }
+
+/* ---------------------------------------------------------------------
+   SCÈNE 3D
+   --------------------------------------------------------------------- */
+function Scene3D(fig, opt = {}) {
+  const canvas = fig.querySelector("canvas.c3d");
+  if (!window.THREE) { fig.innerHTML = '<p class="nogl">La 3D n\'a pas pu se charger (connexion internet ?). Rechargez la page.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: !REDUCED, alpha: false }); }
+  catch (e) { fig.innerHTML = '<p class="nogl">Votre navigateur ne permet pas l\'affichage 3D (WebGL). Essayez un autre navigateur.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  renderer.setPixelRatio(REDUCED ? 1 : Math.min(devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = !REDUCED;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(opt.fov || 40, 1.6, 0.05, 400);
+  const fond = () => { const dark = matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light"; scene.background = new THREE.Color(dark ? (opt.fondSombre || 0x101a26) : (opt.fond || 0xdfeaf3)); };
+  fond(); matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { fond(); demande(); });
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9a7a, 0.75));
+  const soleil = new THREE.DirectionalLight(0xffffff, 0.75); soleil.position.set(-6, 14, 9); soleil.castShadow = true;
+  soleil.shadow.mapSize.set(1024, 1024); Object.assign(soleil.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(soleil);
+  /* caméra orbitale */
+  const O = { cible: new THREE.Vector3(...(opt.cible || [0, 0, 0])), r: opt.r || 10, az: opt.az ?? -0.6, el: opt.el ?? 0.35, rmin: opt.rmin || 1, rmax: opt.rmax || 60 };
+  let anim = null;
+  function placer() {
+    O.el = Math.max(-0.2, Math.min(1.55, O.el)); O.r = Math.max(O.rmin, Math.min(O.rmax, O.r));
+    camera.position.set(O.cible.x + O.r * Math.cos(O.el) * Math.sin(O.az), O.cible.y + O.r * Math.sin(O.el), O.cible.z + O.r * Math.cos(O.el) * Math.cos(O.az));
+    camera.lookAt(O.cible); demande();
+  }
+  const pts = new Map(); let pinch0 = 0, actif = 0;
+  canvas.addEventListener("pointerdown", e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); actif = Date.now(); anim = null; api.onUser && api.onUser(); });
+  canvas.addEventListener("pointermove", e => {
+    if (!pts.has(e.pointerId)) return; const [x0, y0] = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 1) { O.az -= (e.clientX - x0) * 0.008; O.el += (e.clientY - y0) * 0.006; placer(); }
+    else if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch0) { O.r *= pinch0 / d; placer(); } pinch0 = d; }
+  });
+  const fin = e => { pts.delete(e.pointerId); pinch0 = 0; };
+  canvas.addEventListener("pointerup", fin); canvas.addEventListener("pointercancel", fin);
+  canvas.addEventListener("wheel", e => { if (!(e.ctrlKey || e.metaKey || Date.now() - actif < 4000)) return; e.preventDefault(); O.r *= Math.exp(e.deltaY * 0.0012); placer(); }, { passive: false });
+  const zb = fig.querySelector(".zoom"); if (zb) { zb.querySelector("[data-z='+']").onclick = () => { O.r /= 1.25; placer(); }; zb.querySelector("[data-z='-']").onclick = () => { O.r *= 1.25; placer(); }; }
+  /* vues prédéfinies, transition douce */
+  function vue(v, nom) {
+    const but = { r: v.r ?? O.r, az: v.az ?? O.az, el: v.el ?? O.el, c: v.cible ? new THREE.Vector3(...v.cible) : O.cible.clone() };
+    $$(".vues button", fig).forEach(b => b.setAttribute("aria-pressed", b.dataset.vue === nom));
+    if (REDUCED) { O.r = but.r; O.az = but.az; O.el = but.el; O.cible.copy(but.c); placer(); return; }
+    const d = { r: O.r, az: O.az, el: O.el, c: O.cible.clone() }; let t0 = performance.now();
+    anim = now => { let k = Math.min(1, (now - t0) / 700); k = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      O.r = d.r + (but.r - d.r) * k; O.az = d.az + (but.az - d.az) * k; O.el = d.el + (but.el - d.el) * k; O.cible.lerpVectors(d.c, but.c, k); placer(); if (k >= 1) anim = null; };
+    demande();
+  }
+  /* rendu à la demande + boucle d'animation */
+  let enAttente = false; const cbs = new Set(); let tPrec = performance.now();
+  function demande() { if (!enAttente) { enAttente = true; requestAnimationFrame(boucle); } }
+  function boucle(now) {
+    enAttente = false; const dt = Math.min(0.05, (now - tPrec) / 1000); tPrec = now;
+    if (anim) anim(now);
+    let encore = !!anim; cbs.forEach(f => { if (f(dt, now)) encore = true; });
+    renderer.render(scene, camera); if (encore) demande();
+  }
+  function taille() { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); demande(); }
+  new ResizeObserver(taille).observe(canvas); taille(); placer();
+  /* aides de dessin */
+  function etiquette(texte, o = {}) {
+    const c = document.createElement("canvas"), g = c.getContext("2d"), fs = 64, font = `${o.italic ? "italic " : ""}700 ${fs}px Atkinson Hyperlegible, Segoe UI, sans-serif`;
+    /* la flèche de vecteur (U+20D7) n'existe pas dans les polices : on la dessine au-dessus de la lettre */
+    const morceaux = []; [...texte].forEach(ch => { if (ch === "⃗" && morceaux.length) morceaux[morceaux.length - 1].vec = true; else morceaux.push({ ch }); });
+    g.font = font; const larg = morceaux.map(m => g.measureText(m.ch).width), w = Math.ceil(larg.reduce((a, b) => a + b, 0)) + 28;
+    const vec = morceaux.some(m => m.vec); c.width = w; c.height = fs + 26 + (vec ? 14 : 0);
+    g.font = font; g.textBaseline = "middle";
+    if (o.fond !== false) { g.fillStyle = o.fond || "rgba(255,255,255,.88)"; const rr = 18; g.beginPath(); g.moveTo(rr, 0); g.arcTo(w, 0, w, c.height, rr); g.arcTo(w, c.height, 0, c.height, rr); g.arcTo(0, c.height, 0, 0, rr); g.arcTo(0, 0, w, 0, rr); g.fill(); }
+    const coul = o.couleur || "#15212d"; g.fillStyle = g.strokeStyle = coul; let xx = 14; const ym = c.height / 2 + 2 + (vec ? 7 : 0);
+    morceaux.forEach((m, i) => {
+      g.fillText(m.ch, xx, ym);
+      if (m.vec) { const x0 = xx + larg[i] * (o.italic ? .25 : .1), x1 = xx + larg[i] * (o.italic ? 1.05 : .9), yv = ym - fs * .52; g.lineWidth = 5; g.beginPath(); g.moveTo(x0, yv); g.lineTo(x1, yv); g.stroke(); g.beginPath(); g.moveTo(x1 + 4, yv); g.lineTo(x1 - 10, yv - 8); g.lineTo(x1 - 10, yv + 8); g.closePath(); g.fill(); }
+      xx += larg[i];
+    });
+    const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: o.depthTest ?? false, transparent: true }));
+    const h = o.taille || 0.4; sp.scale.set(h * c.width / c.height, h, 1); sp.renderOrder = 10; return sp;
+  }
+  function fleche(couleur, epaisseur = 0.03) {
+    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: couleur, roughness: .5 });
+    const tige = new THREE.Mesh(new THREE.CylinderGeometry(epaisseur, epaisseur, 1, 12), mat);
+    const tete = new THREE.Mesh(new THREE.ConeGeometry(epaisseur * 3, epaisseur * 8, 16), mat); g.add(tige, tete);
+    g.regler = (orig, vec) => {
+      const L = vec.length(); g.visible = L > 1e-6; if (!g.visible) return; const lt = Math.max(0, L - epaisseur * 8);
+      g.position.copy(orig); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vec.clone().normalize());
+      tige.scale.set(1, Math.max(lt, 1e-4), 1); tige.position.set(0, lt / 2, 0); tete.position.set(0, lt + epaisseur * 4, 0);
+    };
+    return g;
+  }
+  const api = { THREE, scene, camera, renderer, O, vue, demande, placer, etiquette, fleche, anime: f => { cbs.add(f); demande(); return () => cbs.delete(f); }, onUser: null };
+  $$(".vues button", fig).forEach(b => b.addEventListener("click", () => { const x = opt.vues && opt.vues[b.dataset.vue]; if (x) vue(typeof x === "function" ? x() : x, b.dataset.vue); }));
+  return api;
+}
+
+/* ---------------------------------------------------------------------
+   GRAPHIQUE 2D (canvas) : axes gradués, séries de points et courbes
+   --------------------------------------------------------------------- */
+function Graphe(canvas) {
+  const ctx = canvas.getContext("2d");
+  function pas(etendue) { const b = 10 ** Math.floor(Math.log10(etendue / 5)), m = etendue / 5 / b; return b * (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10); }
+  function trace(cfg) {
+    const W = canvas.width, H = canvas.height, ink = css("--ink"), mut = css("--muted"), line = css("--line");
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = css("--surface"); ctx.fillRect(0, 0, W, H);
+    const m = { g: 74, d: 18, h: 34, b: 52 }, pw = W - m.g - m.d, ph = H - m.h - m.b;
+    let { xmin, xmax, ymin, ymax } = cfg;
+    const tous = cfg.series.flatMap(s => s.pts || []);
+    if (xmin == null) xmin = Math.min(0, ...tous.map(p => p[0])); if (xmax == null) xmax = Math.max(...tous.map(p => p[0]), xmin + 1e-9);
+    if (ymin == null) ymin = Math.min(0, ...tous.map(p => p[1])); if (ymax == null) ymax = Math.max(...tous.map(p => p[1]), ymin + 1e-9);
+    const py0 = (ymax - ymin) * 0.06; ymax += py0; if (ymin < 0) ymin -= py0;
+    const X = x => m.g + (x - xmin) / (xmax - xmin) * pw, Y = y => m.h + ph - (y - ymin) / (ymax - ymin) * ph;
+    ctx.font = "20px " + css("--font-body"); ctx.textBaseline = "middle";
+    const sx = pas(xmax - xmin), sy = pas(ymax - ymin);
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.fillStyle = mut;
+    for (let v = Math.ceil(xmin / sx) * sx; v <= xmax + 1e-9; v += sx) { ctx.beginPath(); ctx.moveTo(X(v), m.h); ctx.lineTo(X(v), m.h + ph); ctx.stroke(); ctx.textAlign = "center"; ctx.fillText(fx(v, sx < 1 ? (sx < .1 ? 2 : 1) : 0), X(v), m.h + ph + 18); }
+    for (let v = Math.ceil(ymin / sy) * sy; v <= ymax + 1e-9; v += sy) { ctx.beginPath(); ctx.moveTo(m.g, Y(v)); ctx.lineTo(m.g + pw, Y(v)); ctx.stroke(); ctx.textAlign = "right"; ctx.fillText(fx(v, sy < 1 ? (sy < .1 ? 2 : 1) : 0), m.g - 8, Y(v)); }
+    ctx.strokeStyle = ink; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(m.g, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.lineTo(m.g + pw, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.moveTo(X(Math.max(xmin, 0)), m.h); ctx.lineTo(X(Math.max(xmin, 0)), m.h + ph); ctx.stroke();
+    ctx.fillStyle = ink; ctx.font = "700 20px " + css("--font-body"); ctx.textAlign = "right"; ctx.fillText(cfg.xlab || "", m.g + pw, m.h + ph + 40); ctx.textAlign = "left"; ctx.fillText(cfg.ylab || "", 8, 16);
+    ctx.save(); ctx.beginPath(); ctx.rect(m.g, m.h - 4, pw, ph + 8); ctx.clip();
+    cfg.series.forEach(s => {
+      ctx.strokeStyle = ctx.fillStyle = s.c || ink; ctx.lineWidth = s.w || 2.5; ctx.setLineDash(s.dash || []);
+      if (s.f) { ctx.beginPath(); for (let i = 0; i <= 300; i++) { const x = xmin + (xmax - xmin) * i / 300, y = s.f(x); i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); } ctx.stroke(); }
+      else if (s.points) s.pts.forEach(([x, y]) => { ctx.beginPath(); if (s.croix) { ctx.lineWidth = 2; ctx.moveTo(X(x) - 5, Y(y) - 5); ctx.lineTo(X(x) + 5, Y(y) + 5); ctx.moveTo(X(x) - 5, Y(y) + 5); ctx.lineTo(X(x) + 5, Y(y) - 5); ctx.stroke(); } else { ctx.arc(X(x), Y(y), s.r || 4, 0, 7); ctx.fill(); } });
+      else { ctx.beginPath(); s.pts.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))); ctx.stroke(); }
+      ctx.setLineDash([]);
+    });
+    if (cfg.curseur != null) { ctx.strokeStyle = css("--amber"); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(X(cfg.curseur), m.h); ctx.lineTo(X(cfg.curseur), m.h + ph); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.restore();
+    /* légende */
+    ctx.font = "18px " + css("--font-body"); ctx.textAlign = "left";
+    const noms = cfg.series.filter(s => s.nom); let lx = W - m.d - noms.reduce((a, s) => a + ctx.measureText(s.nom).width + 44, 0) + 20;
+    ctx.font = "700 20px " + css("--font-body"); lx = Math.max(lx, 16 + ctx.measureText(cfg.ylab || "").width + 24); ctx.font = "18px " + css("--font-body");
+    noms.forEach(s => { ctx.fillStyle = s.c || ink; ctx.fillRect(lx, 14, 16, 4); ctx.fillStyle = ink; ctx.fillText(s.nom, lx + 22, 16); lx += ctx.measureText(s.nom).width + 44; });
+  }
+  return { trace };
+}
+/* régression polynomiale (moindres carrés), degré 1 ou 2, avec ou sans constante */
+function ajuste(pts, deg, constante = true) {
+  const base = x => { const b = []; if (constante) b.push(1); b.push(x); if (deg === 2) b.push(x * x); return b; };
+  const n = base(0).length, A = Array.from({ length: n }, () => Array(n + 1).fill(0));
+  pts.forEach(([x, y]) => { const b = base(x); for (let i = 0; i < n; i++) { for (let j = 0; j < n; j++) A[i][j] += b[i] * b[j]; A[i][n] += b[i] * y; } });
+  for (let i = 0; i < n; i++) { let p = i; for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > Math.abs(A[p][i])) p = k; [A[i], A[p]] = [A[p], A[i]];
+    for (let k = 0; k < n; k++) if (k !== i) { const f = A[k][i] / A[i][i]; for (let j = i; j <= n; j++) A[k][j] -= f * A[i][j]; } }
+  const c = A.map((r, i) => r[n] / r[i]); const res = { c0: constante ? c[0] : 0, c1: c[constante ? 1 : 0], c2: deg === 2 ? c[constante ? 2 : 1] : 0 };
+  res.f = x => res.c0 + res.c1 * x + res.c2 * x * x; return res;
+}
+
+/* ---------------------------------------------------------------------
+   QUESTIONS : <select data-b="(bonne réponse codée)"> ou
+   <input data-val="nom de la fonction LAB.val" data-tol="0.1" data-rel>
+   --------------------------------------------------------------------- */
+const LAB = { S: {}, val: {}, key: "", demarche: () => [], mesures: () => [], cr: {}, appel: true, choix: "" };
+function juste(id) {
+  const el = document.getElementById(id); if (!el || !el.value) return false;
+  if (el.dataset.b) return el.value === dec(el.dataset.b);
+  if (el.dataset.val) { const v = lireNombre(el.value), ref = LAB.val[el.dataset.val](), tol = +el.dataset.tol; if (!isFinite(v)) return false; return el.hasAttribute("data-rel") ? Math.abs(v - ref) <= tol * Math.abs(ref) : Math.abs(v - ref) <= tol; }
+  return false;
+}
+function brancherQuestions() {
+  /* coder les bonnes réponses écrites en clair dans data-bonne */
+  $$("select[data-bonne]").forEach(s => { s.dataset.b = enc(s.dataset.bonne); s.removeAttribute("data-bonne"); });
+  $$("[data-check]").forEach(btn => btn.addEventListener("click", () => {
+    const ids = btn.dataset.check.split(","), out = btn.closest(".question").querySelector(".toast[data-out]");
+    let nb = 0, vides = 0;
+    ids.forEach(id => { const el = document.getElementById(id); el.classList.remove("ok", "ko"); if (!el.value) { vides++; return; } const j = juste(id); el.classList.add(j ? "ok" : "ko"); if (j) nb++; });
+    const pre = btn.dataset.pre && LAB.pre && LAB.pre[btn.dataset.pre] ? LAB.pre[btn.dataset.pre]() : "";
+    out.hidden = false;
+    if (pre) { out.className = "toast info"; out.innerHTML = pre; return; }
+    if (vides) { out.className = "toast info"; out.innerHTML = "Répondez à toutes les parties de la question avant de vérifier."; return; }
+    if (nb === ids.length) { out.className = "toast ok"; out.innerHTML = "✓ " + (btn.dataset.ok || "Bonne réponse."); }
+    else { out.className = "toast err"; out.innerHTML = `✗ ${ids.length > 1 ? `${nb} réponse${nb > 1 ? "s" : ""} juste${nb > 1 ? "s" : ""} sur ${ids.length}. ` : ""}${btn.dataset.ko || "Revoyez la simulation et réessayez."}`; }
+  }));
+  /* appel professeur */
+  const code = $("#code");
+  if (code) code.addEventListener("input", () => { if (code.value.trim().toUpperCase() === "EFIR") { LAB.appel = true; majAppel(); say("✓ Code accepté : la suite est débloquée.", "ok"); } });
+  /* conclusion à choix */
+  $$("[data-concl]").forEach(b => b.addEventListener("click", () => { LAB.choix = b.dataset.concl; $$("[data-concl]").forEach(x => x.setAttribute("aria-pressed", x === b)); }));
+  const c2 = $("#checkconcl");
+  if (c2) c2.addEventListener("click", () => {
+    const o = $("#outconcl"); o.hidden = false; const mc = $("#maconc").value.trim();
+    if (!LAB.choix) { o.className = "toast info"; o.innerHTML = "Choisissez d'abord une réponse."; return; }
+    const b = $(`[data-concl="${LAB.choix}"]`);
+    if (b.hasAttribute("data-juste")) { o.className = "toast ok"; o.innerHTML = "✓ " + (c2.dataset.ok || "Bonne conclusion.") + (mc.length > 20 ? "" : "<br>Rédigez maintenant votre conclusion dans la case ci-dessus."); }
+    else { o.className = "toast err"; o.innerHTML = "✗ " + (b.dataset.pourquoi || "Ce n'est pas la bonne conclusion : relisez vos réponses."); }
+  });
+}
+function majAppel() {
+  $$(".question.verrou-appel").forEach(q => q.classList.toggle("verrou", !LAB.appel));
+  const c = $("#code"); if (c && LAB.appel) { c.value = "EFIR"; c.disabled = true; }
+}
+const conclJuste = () => { const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`); return !!(b && b.hasAttribute("data-juste")); };
+
+/* ---------------------------------------------------------------------
+   PROTOCOLE (étapes de la fiche, cochées automatiquement)
+   --------------------------------------------------------------------- */
+function Protocole(etapes) {
+  const ol = $("#proto");
+  function rendu() {
+    const etats = etapes.map(e => { const sous = (e.sous || []).map(x => !!x.ok()); return { ok: e.sous ? sous.every(Boolean) : !!e.ok(), sous }; });
+    const courant = etats.findIndex(x => !x.ok);
+    ol.innerHTML = etapes.map((e, k) => {
+      const st = etats[k], cls = st.ok ? "fait" : k === courant ? "cur" : "";
+      const sous = e.sous ? `<ul>${e.sous.map((x, j) => `<li class="${st.sous[j] ? "fait" : ""}">${st.sous[j] ? "✓" : "○"} ${x.html}</li>`).join("")}</ul>` : "";
+      const part = e.partie ? `<li class="partie">${e.partie}</li>` : "";
+      return `${part}<li class="${cls}"><span class="q">${e.q}</span><span class="tx">${e.html}${sous}</span><span class="st" aria-label="${st.ok ? "fait" : "à faire"}">${st.ok ? "✓" : k === courant ? "➜" : ""}</span></li>`;
+    }).join("");
+    const c = $("#protocount"); if (c) c.textContent = `${etats.filter(x => x.ok).length}/${etapes.length} étapes`;
+  }
+  const bx = ol.closest(".proto"), bt = $("#prototout");
+  if (bt) bt.addEventListener("click", () => { bx.classList.toggle("tout"); bt.textContent = bx.classList.contains("tout") ? "Voir seulement l'étape en cours" : "Voir toutes les étapes"; });
+  let t = 0; const plusTard = () => { clearTimeout(t); t = setTimeout(rendu, 250); };
+  ["click", "change", "pointerup", "input"].forEach(ev => document.addEventListener(ev, plusTard));
+  setInterval(rendu, 1500); rendu();
+  LAB.protoRendu = rendu;
+}
+
+/* ---------------------------------------------------------------------
+   COMPTE RENDU (affichage + PDF jsPDF)
+   --------------------------------------------------------------------- */
+function construireCR() {
+  const nom = $("#crnom").value.trim() || "(nom non renseigné)", cl = $("#crclasse").value.trim() || "…";
+  const d = new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
+  const rows = $$("[data-lib]").map(el => [el.dataset.lib, el.value, !el.value ? "–" : juste(el.id) ? "✓" : "✗"]);
+  const ok = rows.filter(r => r[2] === "✓").length;
+  const tab = rows.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1] ? esc(r[1]) : "<i>vide</i>"}</td><td>${r[2]}</td></tr>`).join("");
+  const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`), mc = $("#maconc").value.trim();
+  const mes = LAB.mesures(); const dem = LAB.demarche();
+  return { nom, html: `<h3>${LAB.cr.titre}</h3>
+<p><b>Élève :</b> ${esc(nom)} · <b>Classe :</b> ${esc(cl)} · <b>Date :</b> ${d}</p>
+<h4>Mes mesures et essais</h4><ol>${mes.length ? mes.map(m => `<li>${m}</li>`).join("") : "<li>Aucun essai.</li>"}</ol>
+${LAB.PRED ? LAB.PRED.cr() : ""}<h4>Démarche</h4><ul>${dem.map(([t, v]) => `<li>${t} : ${v ? "oui" : "non"}</li>`).join("")}</ul>
+<h4>Réponses : ${ok} juste${ok > 1 ? "s" : ""} sur ${rows.length}</h4>
+<table><thead><tr><th>Question</th><th>Réponse</th><th></th></tr></thead><tbody>${tab}</tbody></table>
+<h4>Conclusion</h4><p>${b ? b.textContent.trim() + (b.hasAttribute("data-juste") ? " → ✓" : " → ✗ à revoir.") : "Aucune réponse choisie."}</p>
+<h4>Ma conclusion rédigée</h4><p>${mc ? esc(mc).replace(/\n/g, "<br>") : "<i>non rédigée</i>"}</p>` };
+}
+const W1252 = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
+const SUPS = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁺": "+", "⁻": "-", "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9", "−": "-", "→": "->", "✓": "(juste)", "✗": "(faux)", "≤": "<=", "≥": ">=", "≈": "~", "α": "alpha", "Δ": "Delta", "√": "racine ", "×": "x", "⃗": "", "ℰ": "E", "σ": "sigma", "ρ": "rho", "λ": "lambda", " ": " ", " ": " " };
+const txtPDF = s => [...String(s).replace(/\s+/g, " ").trim()].map(c => SUPS[c] != null ? SUPS[c] : c).join("").split("").filter(c => c.charCodeAt(0) < 256 || W1252.includes(c)).join("").replace(/ {2,}/g, " ").trim();
+const plat = node => { const c = node.cloneNode(true); c.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); c.querySelectorAll("sub").forEach(s => s.replaceWith(s.textContent)); return c.textContent; };
+function chargerJsPDF() {
+  if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = () => window.jspdf ? ok(window.jspdf) : ko(); s.onerror = ko; document.head.appendChild(s); });
+}
+function faitPDF(r) {
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" });
+  const X = 18, Lg = 174, BAS = 282; let y = 18;
+  const place = h => { if (y + h > BAS) { doc.addPage(); y = 18; } };
+  const ligne = (t, o = {}) => { doc.setFont("helvetica", o.b ? "bold" : "normal"); doc.setFontSize(o.s || 10.5); doc.setTextColor(...(o.c || [21, 33, 45]));
+    const lh = (o.s || 10.5) * .45, ls = doc.splitTextToSize(txtPDF(t), Lg - (o.ind || 0)); ls.forEach(l => { place(lh); doc.text(l, X + (o.ind || 0), y); y += lh; }); y += o.ap || 1.2; };
+  doc.setFillColor(0, 51, 102); doc.rect(0, 0, 210, 8, "F");
+  const tmp = document.createElement("div"); tmp.innerHTML = r.html;
+  [...tmp.children].forEach(e => {
+    const tag = e.tagName;
+    if (tag === "H3") ligne(plat(e), { b: 1, s: 15, c: [0, 51, 102], ap: 2 });
+    else if (tag === "H4") { y += 2.5; ligne(plat(e), { b: 1, s: 12, c: [0, 51, 102], ap: 1.5 }); }
+    else if (tag === "P") ligne(plat(e));
+    else if (tag === "OL" || tag === "UL") [...e.children].forEach((li, k) => ligne((tag === "OL" ? (k + 1) + ". " : "- ") + plat(li), { ind: 2, ap: 1.6 }));
+    else if (tag === "TABLE") [...e.querySelectorAll("tbody tr")].forEach(tr => { const c = [...tr.children].map(td => plat(td).trim()); ligne(`${c[0]} : ${c[1]} ${c[2] === "–" ? "" : c[2]}`, { ind: 2, s: 10, ap: .8 }); });
+  });
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) { doc.setPage(p); doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(87, 103, 118); doc.text(txtPDF(`${LAB.cr.pied} · ${r.nom} · page ${p}/${n}`), X, 290); }
+  const nomF = (r.nom === "(nom non renseigné)" ? "eleve" : r.nom).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  doc.save(`${LAB.cr.fichier}_compte_rendu_${nomF || "eleve"}.pdf`);
+}
+function brancherCR() {
+  const box = $("#cr"), crnote = $("#crnote");
+  $("#crbtn").addEventListener("click", () => { const r = construireCR(); box.innerHTML = r.html; box.hidden = false; box.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); crnote.textContent = "Cliquez sur « Télécharger mon compte rendu (PDF) », puis déposez le fichier dans votre devoir Google Classroom."; });
+  $("#crpdf").addEventListener("click", () => {
+    if (!$("#crnom").value.trim()) { crnote.textContent = "Écrivez d'abord votre nom et prénom."; $("#crnom").focus(); return; }
+    const r = construireCR(); box.innerHTML = r.html; box.hidden = false; crnote.textContent = "Préparation du PDF…"; $("#crpdf").disabled = true;
+    chargerJsPDF().then(() => { faitPDF(r); crnote.textContent = "✓ PDF téléchargé : déposez-le dans votre devoir Google Classroom (Ajouter > Fichier, puis Rendre)."; })
+      .catch(() => { crnote.textContent = "Le PDF n'a pas pu être préparé (connexion ?). Utilisez Imprimer > Enregistrer au format PDF."; window.print(); })
+      .finally(() => { $("#crpdf").disabled = false; });
+  });
+}
+
+/* ---------------------------------------------------------------------
+   AIDE, MODE ÉCONOME, SAUVEGARDE
+   --------------------------------------------------------------------- */
+function brancherOutils() {
+  const aide = $("#aidebtn"), bx = $("#aide"), eco = $("#ecobtn");
+  aide.addEventListener("click", () => { bx.open = true; bx.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); bx.querySelector("summary").focus(); });
+  const show = () => { eco.setAttribute("aria-pressed", REDUCED); document.body.classList.toggle("eco", REDUCED); eco.textContent = REDUCED ? "🐢 Mode économe : activé" : "🐢 Mode économe"; };
+  eco.addEventListener("click", () => { REDUCED = !REDUCED; try { localStorage.setItem("efir-eco", REDUCED ? "1" : "0"); } catch (e) {} show(); say(REDUCED ? "Mode économe activé : animations raccourcies. Rechargez la page pour alléger aussi l'affichage 3D." : "Mode économe désactivé.", "info"); });
+  show();
+}
+function sauvegarde(apresChargement) {
+  function save() {
+    try { localStorage.setItem(LAB.key, JSON.stringify({ v: 1, S: LAB.S, appel: LAB.appel, choix: LAB.choix, champs: Object.fromEntries($$("[data-save]").map(e => [e.id, e.type === "checkbox" ? e.checked : e.value])) })); } catch (e) {}
+  }
+  let t = 0; const later = () => { clearTimeout(t); t = setTimeout(save, 400); };
+  ["change", "click", "input"].forEach(ev => document.addEventListener(ev, later)); setInterval(save, 5000);
+  let retrouve = false;
+  try {
+    const d = JSON.parse(localStorage.getItem(LAB.key) || "null");
+    if (d && d.v === 1) {
+      Object.assign(LAB.S, d.S || {}); LAB.appel = true;
+      for (const id in d.champs || {}) { const e = document.getElementById(id); if (e) { if (e.type === "checkbox") e.checked = !!d.champs[id]; else e.value = d.champs[id]; } }
+      if (d.choix) { const b = $(`[data-concl="${d.choix}"]`); if (b) b.click(); }
+      retrouve = true;
+    }
+  } catch (e) {}
+  majAppel(); apresChargement && apresChargement(retrouve);
+  $("#effacer").addEventListener("click", () => {
+    const eff = $("#effacer");
+    if (!eff.dataset.sure) { eff.dataset.sure = "1"; eff.textContent = "Cliquez encore pour tout effacer"; setTimeout(() => { delete eff.dataset.sure; eff.textContent = "Effacer mon travail"; }, 4000); return; }
+    try { localStorage.removeItem(LAB.key); } catch (e) {} location.reload();
+  });
+}
+function demarrerLAB() { brancherQuestions(); brancherCR(); brancherOutils(); }
+
+/* ---------------------------------------------------------------------
+   PRÉDICTIONS : l'élève prévoit AVANT de lancer, puis confronte.
+   liste : [{ id, consigne, q, opts: [...], bonne, expl, cond: essai => bool }]
+   --------------------------------------------------------------------- */
+function Predictions(el, liste) {
+  const S = LAB.S; S.pred = S.pred || {};
+  const idx = () => liste.findIndex(p => !(S.pred[p.id] && S.pred[p.id].vu));
+  let attente = false; /* prédiction confrontée, en attente du clic « suivante » */
+  function rendu() {
+    const k = attente !== false ? attente : idx();
+    if (k < 0) { el.innerHTML = `<p class="toast ok">✓ Toutes les prédictions ont été confrontées à l'expérience (${liste.filter(p => S.pred[p.id].juste).length}/${liste.length} justes du premier coup).</p>`; return; }
+    const p = liste[k], st = S.pred[p.id] || {};
+    el.innerHTML = `<p class="hint">Prédiction ${k + 1} sur ${liste.length}</p><p><b>${p.consigne}</b></p><p>${p.q}</p>
+      <div class="checks">${p.opts.map((o, i) => `<button class="chip" type="button" data-pi="${i}" aria-pressed="${st.choix === o}" ${st.vu ? "disabled" : ""}>${o}</button>`).join("")}</div>
+      ${st.vu ? `<p class="toast ${st.juste ? "ok" : "err"}">${st.juste ? "✓ Votre prédiction était juste." : "✗ L'expérience contredit votre prédiction : c'est en se trompant qu'on apprend !"} ${p.expl}</p><div class="row-actions"><button class="btn" type="button" data-suiv>Prédiction suivante →</button></div>`
+        : st.choix ? `<p class="hint">Prédiction enregistrée. Faites maintenant le lancer demandé pour la vérifier.</p>` : `<p class="hint">Choisissez votre prédiction : le lancer est bloqué tant que vous n'avez pas prévu le résultat.</p>`}`;
+    $$("[data-pi]", el).forEach(b => b.addEventListener("click", () => { S.pred[p.id] = { choix: p.opts[+b.dataset.pi] }; rendu(); }));
+    const sv = $("[data-suiv]", el); if (sv) sv.addEventListener("click", () => { attente = false; rendu(); });
+  }
+  const api = {
+    peutLancer() {
+      if (LAB.demo) return true; const k = idx(); if (attente !== false || k < 0) return true;
+      if (S.pred[liste[k].id] && S.pred[liste[k].id].choix) return true;
+      say("✋ Faites d'abord votre <b>prédiction</b> (cadre « Je prédis ») avant de lancer.", "err"); el.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" }); return false;
+    },
+    apres(essai) {
+      if (LAB.demo || attente !== false) return; const k = idx(); if (k < 0) return;
+      const p = liste[k], st = S.pred[p.id]; if (!st || !st.choix || !p.cond(essai)) return;
+      st.vu = true; st.juste = st.choix === p.bonne; attente = k; rendu();
+    },
+    fait: () => idx() < 0,
+    nb: () => liste.filter(p => S.pred[p.id] && S.pred[p.id].vu).length,
+    cr() { return `<h4>Mes prédictions</h4><ol>${liste.map(p => { const st = S.pred[p.id] || {}; return `<li>${p.q} Prédit : ${st.choix || "–"}${st.vu ? (st.juste ? " → confirmé ✓" : " → contredit par l'expérience ✗ (bonne réponse : " + p.bonne + ")") : " (non vérifiée)"}</li>`; }).join("")}</ol>`; },
+    rendu
+  };
+  LAB.PRED = api; rendu(); return api;
+}
+
+</script>
+<script>
+/* =================== Chapitre 3 · Activité 4 : titrage conductimétrique =================== */
+const C_A = 0.100, V0 = 10.0, VEAU = 200, C0 = 0.160, M_NA = 82.0, RHO = 1.15, VMAX = 25;   /* C0 : [CH3CO2-] dans Sf */
+const LAM = { H: 34.98, Na: 5.01, Cl: 7.63, Ac: 4.09 };                                      /* mS·m²·mol⁻¹ */
+const VE_TH = C0 * V0 / C_A;                                                                     /* 16,0 mL */
+LAB.key = "efir-tle-ch3-a4-3d-v1";
+LAB.cr = { titre: "Tle · Ch. 3 · Activité 4 p. 54 · Titrage suivi par conductimétrie (simulation 3D)", pied: "Tle Ch. 3 Activité 4 · Titrage conductimétrique 3D", fichier: "Tle_Ch3_A4" };
+Object.assign(LAB.S, { epi: {}, agit: false, V: 0, mes: [], vide: "", d1: "", d2: "", fit: false, evier: false, epiOubli: 0 });
+const S = LAB.S;
+/* σ en mS·cm⁻¹ (= 10 × S·m⁻¹) */
+function sigma(V) {
+  const nAc0 = C0 * V0 * 1e-3, nA = C_A * V * 1e-3, Vt = (V0 + VEAU + V) * 1e-6; /* m³ */
+  const nAc = Math.max(0, nAc0 - nA), nH = Math.max(0, nA - nAc0), nNa = nAc0, nCl = nA;
+  const s = (LAM.H * nH + LAM.Na * nNa + LAM.Cl * nCl + LAM.Ac * nAc) * 1e-3 / Vt; /* S·m⁻¹ (n/Vt en mol·m⁻³) */
+  return s * 10;
+}
+function bruit(V) { const x = Math.sin(V * 91.7 + 3.1) * 43758.5453; return ((x - Math.floor(x)) - .5) * 0.01; }
+const lecture = V => +(sigma(V) + bruit(V)).toFixed(3);
+LAB.val.ve = () => VE_TH; LAB.val.m = () => C_A * VE_TH * 1e-3 * M_NA;
+LAB.val.pm = () => 25 * C_A * VE_TH * 1e-3 * M_NA / (RHO * V0) * 100;
+LAB.val.upm = () => LAB.val.pm() * Math.sqrt((4e-3 / 0.1) ** 2 + 0.03 ** 2 + (0.03 / 1.15) ** 2 + (0.05 / 10) ** 2);
+const epiOK = () => ["blouse", "gants", "lunettes"].every(k => S.epi[k]);
+const nbApres = () => S.mes.filter(m => m.V > VE_TH + 1).length, nbAvant = () => S.mes.filter(m => m.V < VE_TH - 1).length;
+LAB.pre = {
+  mes: () => S.mes.length >= 8 && nbAvant() >= 3 && nbApres() >= 3 ? "" : "Faites d'abord des mesures avant <b>et</b> après le saut de pente (au moins 8 mesures, jusqu'à 20 mL ou plus).",
+  fit: () => S.fit ? "" : "Modélisez d'abord le graphe par deux droites (listes « Droite 1 » et « Droite 2 » sous le graphique)."
+};
+
+/* ---------- scène 3D (1 unité = 10 cm) ---------- */
+const fig = $("#fig3d");
+const V3 = Scene3D(fig, { cible: [0.4, 2.8, 0], r: 10.5, az: -0.4, el: 0.2, rmin: 1,
+  vues: { d3: { az: -0.4, el: 0.2, r: 10.5, cible: [0.4, 2.8, 0] }, burette: () => ({ az: 0, el: 0.02, r: 1.5, cible: [0, BU.haut - S.V / VMAX * (BU.haut - BU.bas), 0] }), becher: { az: -0.25, el: 0.32, r: 4.2, cible: [0, 0.9, 0] }, metre: { az: 0.15, el: 0.12, r: 3.4, cible: [2.6, 1.0, 0.3] } } });
+let liq, liqB, bar, drops = [], ecranTex, ecranCtx, robinet, niveauVue;
+const B = { r: .42, y0: .36, h: 1.15 };                 /* bécher 400 mL : rayon 4,2 cm */
+const BU = { x: 0, haut: 6.4, bas: 2.4, pointe: 1.75, r: .065 }; /* burette : 0 mL en haut, 25 mL en bas */
+if (V3) {
+  const T = THREE, sc = V3.scene;
+  const mat = (c, o = {}) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: .6 }, o));
+  const verre = new T.MeshPhysicalMaterial ? new T.MeshPhysicalMaterial({ color: 0xdfefff, transparent: true, opacity: .28, roughness: .05, metalness: 0, side: T.DoubleSide, depthWrite: false }) : mat(0xdfefff, { transparent: true, opacity: .28 });
+  /* paillasse */
+  const plan = new T.Mesh(new T.BoxGeometry(9, .2, 4), mat(0x3d4a57, { roughness: .9 })); plan.position.set(.4, -.1, 0); plan.receiveShadow = true; sc.add(plan);
+  const carreaux = new T.GridHelper(9, 18, 0x56677a, 0x56677a); carreaux.position.set(.4, .002, 0); carreaux.scale.z = 4 / 9; sc.add(carreaux);
+  /* potence */
+  const socle = new T.Mesh(new T.BoxGeometry(1.4, .1, 1), mat(0x2b2f36)); socle.position.set(-1.1, .05, -.4); socle.castShadow = true; sc.add(socle);
+  const tige = new T.Mesh(new T.CylinderGeometry(.045, .045, 7, 16), mat(0xb8c0c8, { metalness: .8, roughness: .3 })); tige.position.set(-1.1, 3.5, -.4); tige.castShadow = true; sc.add(tige);
+  const bras = new T.Mesh(new T.BoxGeometry(1.15, .07, .07), mat(0x2b2f36)); bras.position.set(-.55, 5.2, -.2); bras.rotation.y = -.35; sc.add(bras);
+  const pince = new T.Mesh(new T.TorusGeometry(.1, .025, 8, 20), mat(0x2b2f36)); pince.rotation.x = Math.PI / 2; pince.position.set(0, 5.2, 0); sc.add(pince);
+  /* burette */
+  const tube = new T.Mesh(new T.CylinderGeometry(BU.r, BU.r, BU.haut + .5 - BU.bas, 24, 1, true), verre); tube.position.set(0, (BU.haut + .5 + BU.bas) / 2, 0); sc.add(tube);
+  const pointe = new T.Mesh(new T.CylinderGeometry(BU.r * .6, .012, BU.bas - BU.pointe, 16, 1, true), verre); pointe.position.set(0, (BU.bas + BU.pointe) / 2, 0); sc.add(pointe);
+  robinet = new T.Group(); const rob = new T.Mesh(new T.BoxGeometry(.32, .06, .06), mat(0x1f6fd1)); robinet.add(rob); robinet.position.set(0, BU.bas - .12, 0); sc.add(robinet);
+  liqB = new T.Mesh(new T.CylinderGeometry(BU.r * .92, BU.r * .92, 1, 20), new T.MeshStandardMaterial({ color: 0xbfe0ff, transparent: true, opacity: .55, roughness: .1 })); sc.add(liqB);
+  for (let k = 0; k <= 25; k++) {
+    const y = BU.haut - k / VMAX * (BU.haut - BU.bas), long = k % 5 === 0;
+    const t = new T.Mesh(new T.BoxGeometry(long ? .07 : .04, .008, .004), new T.MeshBasicMaterial({ color: 0x1b2633 })); t.position.set(0, y, BU.r + .002); sc.add(t);
+    if (long) { const e = V3.etiquette(String(k), { taille: .09, fond: false }); e.position.set(.13, y, BU.r); sc.add(e); }
+  }
+  const eb = V3.etiquette("Burette : H₃O⁺ + Cl⁻ (0,100 mol/L)", { taille: .26 }); eb.position.set(0, BU.haut + .75, 0); sc.add(eb);
+  /* agitateur magnétique */
+  const ag = new T.Mesh(new T.BoxGeometry(1.5, .34, 1.3), mat(0xe9edf1)); ag.position.set(0, .17, 0); ag.castShadow = true; sc.add(ag);
+  const bt = new T.Mesh(new T.CylinderGeometry(.08, .08, .06, 16), mat(0xc0392b)); bt.rotation.x = Math.PI / 2; bt.position.set(.45, .17, .66); sc.add(bt);
+  /* bécher */
+  const bec = new T.Mesh(new T.CylinderGeometry(B.r, B.r, B.h, 40, 1, true), verre); bec.position.set(0, B.y0 + B.h / 2, 0); sc.add(bec);
+  const fond = new T.Mesh(new T.CircleGeometry(B.r, 40), verre); fond.rotation.x = -Math.PI / 2; fond.position.set(0, B.y0 + .005, 0); sc.add(fond);
+  liq = new T.Mesh(new T.CylinderGeometry(B.r * .97, B.r * .97, 1, 40), new T.MeshStandardMaterial({ color: 0xcfe6f7, transparent: true, opacity: .5, roughness: .1 })); sc.add(liq);
+  bar = new T.Mesh(new T.CylinderGeometry(.03, .03, .26, 10), mat(0xffffff)); bar.rotation.z = Math.PI / 2; bar.position.set(0, B.y0 + .04, 0); sc.add(bar);
+  const ebc = V3.etiquette("V₀ = 10,0 mL de S_f + 200 mL d'eau", { taille: .22 }); ebc.position.set(0, B.y0 + B.h + .25, .55); sc.add(ebc);
+  /* cellule de conductimétrie */
+  const cell = new T.Mesh(new T.CylinderGeometry(.06, .06, 1.6, 16), mat(0x2b2f36)); cell.position.set(.22, B.y0 + .2 + .8, -.12); cell.rotation.z = -.08; sc.add(cell);
+  const bout = new T.Mesh(new T.CylinderGeometry(.075, .075, .18, 16), mat(0x111111)); bout.position.set(.205 + .016, B.y0 + .28, -.12); sc.add(bout);
+  /* conductimètre */
+  const boite = new T.Mesh(new T.BoxGeometry(1.2, .8, .7), mat(0x1f4f8a)); boite.position.set(2.6, .4, .3); boite.castShadow = true; sc.add(boite);
+  const cv = document.createElement("canvas"); cv.width = 512; cv.height = 192; ecranCtx = cv.getContext("2d"); ecranTex = new T.CanvasTexture(cv);
+  const ecr = new T.Mesh(new T.PlaneGeometry(.95, .36), new T.MeshBasicMaterial({ map: ecranTex })); ecr.position.set(2.6, .52, .651); sc.add(ecr);
+  const em = V3.etiquette("Conductimètre", { taille: .24 }); em.position.set(2.6, 1.05, .3); sc.add(em);
+  const cable = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(.29, B.y0 + 1.8, -.15), new T.Vector3(1, 2.4, -.2), new T.Vector3(2.2, 1.3, 0), new T.Vector3(2.6, .8, .2)]), 40, .02, 8), mat(0x111111)); sc.add(cable);
+  /* bidon de récupération et évier */
+  const bid = new T.Mesh(new T.BoxGeometry(.7, 1, .5), mat(0xf2c94c)); bid.position.set(-2.9, .5, .6); bid.castShadow = true; sc.add(bid);
+  const bouch = new T.Mesh(new T.CylinderGeometry(.09, .09, .12, 16), mat(0x2b2f36)); bouch.position.set(-2.75, 1.06, .6); sc.add(bouch);
+  const ebid = V3.etiquette("Bidon de récupération", { taille: .22 }); ebid.position.set(-2.9, 1.35, .6); sc.add(ebid);
+  const ev = new T.Mesh(new T.BoxGeometry(1.2, .06, .9), mat(0x9aa7b4, { metalness: .7, roughness: .3 })); ev.position.set(3.95, .03, -1.2); sc.add(ev);
+  const rob2 = new T.Mesh(new T.TorusGeometry(.25, .04, 8, 16, Math.PI), mat(0x9aa7b4, { metalness: .8, roughness: .3 })); rob2.position.set(3.95, .3, -1.6); sc.add(rob2);
+  const eev = V3.etiquette("Évier (interdit)", { taille: .22, couleur: "#b42318" }); eev.position.set(3.95, .75, -1.2); sc.add(eev);
+  V3.dropGeo = new T.SphereGeometry(.028, 10, 8); V3.dropMat = new T.MeshStandardMaterial({ color: 0xbfe0ff, transparent: true, opacity: .8 });
+  /* animations : gouttes et barreau aimanté */
+  V3.anime(dt => {
+    let encore = false;
+    if (S.agit && !S.vide) { bar.rotation.y += dt * 9; encore = true; }
+    drops = drops.filter(d => { d.v += 9.8 * dt * 1.2; d.m.position.y -= d.v * dt; if (d.m.position.y <= niveauBecher()) { sc.remove(d.m); return false; } return true; });
+    if (drops.length) encore = true;
+    return encore;
+  });
+}
+const niveauBecher = () => B.y0 + ((V0 + VEAU + S.V) / (Math.PI * 4.2 * 4.2)) / 10; /* hauteur (cm) = V / (π r²), 1 unité = 10 cm */
+function ecrireEcran(txt) {
+  $("#ecran").innerHTML = txt; if (!V3) return;
+  const g = ecranCtx; g.fillStyle = "#0d1f14"; g.fillRect(0, 0, 512, 192); g.fillStyle = "#7dffb0"; g.font = "700 92px ui-monospace, Consolas, monospace"; g.textAlign = "right"; g.textBaseline = "middle";
+  g.fillText(txt.split(" ")[0], 470, 86); g.font = "700 34px ui-monospace, Consolas, monospace"; g.fillText("mS/cm", 470, 160); ecranTex.needsUpdate = true;
+}
+function majScene() {
+  const sig = S.vide ? null : lecture(S.V);
+  ecrireEcran(S.vide ? "– – – mS·cm⁻¹" : fx(sig, 3) + " mS·cm⁻¹");
+  $("#vlu").textContent = fx(S.V, 2).replace(/0$/, "") + " mL";
+  $("#hud").innerHTML = `V<sub>A</sub> = ${fx(S.V, 2)} mL · σ = ${S.vide ? "–" : fx(sig, 3)} mS·cm⁻¹`;
+  $("#agit").textContent = S.agit ? "🌀 Agitation : en marche" : "🌀 Agitation : arrêtée"; $("#agit").setAttribute("aria-pressed", S.agit);
+  $$("[data-epi]").forEach(b => b.setAttribute("aria-pressed", !!S.epi[b.dataset.epi]));
+  if (!V3) return;
+  const yl = BU.haut - S.V / VMAX * (BU.haut - BU.bas); liqB.scale.y = Math.max(.001, yl - BU.bas); liqB.position.set(0, (yl + BU.bas) / 2, 0);
+  const hb = S.vide ? .001 : niveauBecher() - B.y0; liq.visible = !S.vide; liq.scale.y = hb; liq.position.set(0, B.y0 + hb / 2, 0);
+  V3.demande();
+}
+/* ---------- manipulation ---------- */
+function peutManipuler() {
+  if (!epiOK()) { S.epiOubli++; say("⚠ Équipez-vous d'abord : blouse, gants et lunettes.", "err"); return false; }
+  if (S.vide) { say("Le bécher a été vidé. Cliquez sur « Tout remettre à zéro » pour recommencer un titrage.", "info"); return false; }
+  if (S.V >= VMAX - 1e-9) { say("La burette est vide (25 mL versés).", "info"); return false; }
+  return true;
+}
+function verser(dv, anim = true) {
+  if (!peutManipuler()) return false;
+  dv = Math.min(dv, VMAX - S.V); S.V = Math.round((S.V + dv) * 100) / 100;
+  if (V3 && anim) { const n = Math.max(1, Math.min(6, Math.round(dv / .2))); for (let i = 0; i < n; i++) { const m = new THREE.Mesh(V3.dropGeo, V3.dropMat); m.position.set(0, BU.pointe - i * .18, 0); V3.scene.add(m); drops.push({ m, v: 0 }); } robinet.rotation.y = Math.PI / 2; setTimeout(() => { robinet.rotation.y = 0; V3.demande(); }, 350); }
+  majScene();
+  say(S.agit ? `V<sub>A</sub> = ${fx(S.V, 2)} mL versés. Attendez que la mesure se stabilise, puis « 📋 Noter la mesure ».` : "⚠ Mettez l'agitation en marche : sans agitation, la solution n'est pas homogène et la mesure est fausse.", S.agit ? "info" : "err");
+  return true;
+}
+$("#v1").addEventListener("click", () => verser(1));
+$("#v05").addEventListener("click", () => verser(.5));
+(function () { const b = $("#goutte"); let it = 0; const stop = () => { clearInterval(it); it = 0; };
+  b.addEventListener("pointerdown", e => { e.preventDefault(); if (it) return; if (!verser(.05)) return; it = setInterval(() => { if (!verser(.05) || S.V >= VMAX) stop(); }, 160); });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, stop)); })();
+$("#agit").addEventListener("click", () => { if (!epiOK()) { say("⚠ Équipez-vous d'abord : blouse, gants et lunettes.", "err"); return; } S.agit = !S.agit; majScene(); say(S.agit ? "Agitation en marche : vous pouvez verser l'acide chlorhydrique." : "Agitation arrêtée."); });
+$$("[data-epi]").forEach(b => b.addEventListener("click", () => { S.epi[b.dataset.epi] = !S.epi[b.dataset.epi]; majScene(); if (epiOK()) say("✓ Vous êtes équipé(e). Mettez l'agitation en marche, notez la mesure à V<sub>A</sub> = 0 mL, puis versez.", "ok"); }));
+$("#noter").addEventListener("click", () => {
+  if (!epiOK()) { say("⚠ Équipez-vous d'abord : blouse, gants et lunettes.", "err"); return; }
+  if (S.vide) return;
+  if (!S.agit) { say("⚠ Mettez l'agitation en marche avant de mesurer.", "err"); return; }
+  const V = S.V, s = lecture(V), i = S.mes.findIndex(m => Math.abs(m.V - V) < 1e-6);
+  if (i >= 0) S.mes[i].s = s; else S.mes.push({ V, s }); S.mes.sort((a, b) => a.V - b.V);
+  say(`Noté : V<sub>A</sub> = ${fx(V, 2)} mL ; σ = ${fx(s, 3)} mS·cm<sup>−1</sup> (${S.mes.length} mesure${S.mes.length > 1 ? "s" : ""}).`, "ok");
+  majMesures();
+});
+$("#suppr").addEventListener("click", () => { S.mes.pop(); majMesures(); });
+function vider(ou) {
+  if (S.vide) return; if (!epiOK()) { say("⚠ Équipez-vous d'abord : blouse, gants et lunettes.", "err"); return; }
+  S.vide = ou; if (ou === "evier") { S.evier = true; say("✗ Interdit : les solutions de laboratoire ne vont jamais à l'évier. C'est noté dans le compte rendu. Utilisez le bidon de récupération.", "err"); }
+  else say("✓ Bécher vidé dans le bidon de récupération. Rangez la paillasse : la manipulation est terminée.", "ok");
+  majScene();
+}
+$("#bidon").addEventListener("click", () => vider("bidon")); $("#evier").addEventListener("click", () => vider("evier"));
+
+/* ---------- graphique, tableau, modélisation ---------- */
+const G = Graphe($("#gcv")); let vueG = "graphe";
+function droites() {
+  const a = S.d1 === "" ? null : +S.d1, b = S.d2 === "" ? null : +S.d2;
+  const p1 = a == null ? [] : S.mes.filter(m => m.V <= a + 1e-9).map(m => [m.V, m.s]), p2 = b == null ? [] : S.mes.filter(m => m.V >= b - 1e-9).map(m => [m.V, m.s]);
+  const f1 = p1.length >= 2 ? ajuste(p1, 1) : null, f2 = p2.length >= 2 ? ajuste(p2, 1) : null;
+  let VE = null; if (f1 && f2 && Math.abs(f1.c1 - f2.c1) > 1e-9) VE = (f2.c0 - f1.c0) / (f1.c1 - f2.c1);
+  return { f1, f2, VE };
+}
+function majMesures() {
+  const opts = ['<option value="">…</option>'].concat(S.mes.map(m => `<option value="${m.V}">${fx(m.V, 2)} mL</option>`)).join("");
+  $("#d1").innerHTML = opts; $("#d2").innerHTML = opts; $("#d1").value = S.d1; $("#d2").value = S.d2;
+  $("#tab").innerHTML = S.mes.map((m, i) => `<tr><td>${i + 1}</td><td>${fx(m.V, 2)}</td><td>${fx(m.s, 3)}</td></tr>`).join("") || '<tr><td colspan="3">Aucune mesure.</td></tr>';
+  $("#nbmes").textContent = S.mes.length ? S.mes.length + " mesure" + (S.mes.length > 1 ? "s" : "") : "";
+  dessiner();
+}
+function dessiner() {
+  $("#gfig").hidden = vueG !== "graphe"; $("#tabwrap").hidden = vueG !== "tab";
+  const { f1, f2, VE } = droites(), series = [{ pts: S.mes.map(m => [m.V, m.s]), points: true, croix: true, c: css("--navy"), nom: "mesures" }];
+  if (f1) series.push({ f: f1.f, c: "#e67e22", w: 2.2, nom: "droite 1" }); if (f2) series.push({ f: f2.f, c: "#2f8f4e", w: 2.2, nom: "droite 2" });
+  G.trace({ series, xmin: 0, xmax: 26, ymin: 0, ymax: Math.max(1, ...S.mes.map(m => m.s)) * 1.05, xlab: "VA (mL)", ylab: "σ (mS·cm⁻¹)", curseur: VE != null && VE > 0 && VE < 26 ? VE : null });
+  S.fit = !!(f1 && f2 && VE != null);
+  $("#inter").innerHTML = S.fit ? `Intersection des deux droites : V = ${fx(VE, 1)} mL` : (S.mes.length ? "Choisissez les points des deux droites pour obtenir leur intersection." : "");
+}
+$("#d1").addEventListener("change", e => { S.d1 = e.target.value; dessiner(); });
+$("#d2").addEventListener("change", e => { S.d2 = e.target.value; dessiner(); });
+$$(".onglets button").forEach(b => b.addEventListener("click", () => { vueG = b.dataset.g; $$(".onglets button").forEach(x => x.setAttribute("aria-pressed", x === b)); dessiner(); }));
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", dessiner);
+
+/* ---------- démonstration et remise à zéro ---------- */
+$("#demo").addEventListener("click", async () => {
+  const b = $("#demo"); b.disabled = true;
+  try {
+    if (S.vide) $("#reset").click();
+    say("Démonstration : on s'équipe (blouse, gants, lunettes)."); ["blouse", "gants", "lunettes"].forEach(k => S.epi[k] = true); majScene(); await wait(1400);
+    say("On met l'agitation en marche et on note σ à V<sub>A</sub> = 0 mL."); S.agit = true; majScene(); $("#noter").click(); await wait(1600);
+    V3 && V3.vue({ az: -0.25, el: 0.32, r: 4.2, cible: [0, 0.9, 0] }, "becher");
+    for (let k = 0; k < 3; k++) { verser(1); await wait(1100); $("#noter").click(); await wait(700); }
+    V3 && V3.vue({ az: 0.15, el: 0.12, r: 3.4, cible: [2.6, 1.0, 0.3] }, "metre"); await wait(1500);
+    V3 && V3.vue({ az: -0.4, el: 0.2, r: 10.5, cible: [0.4, 2.8, 0] }, "d3");
+    say("Démonstration terminée : continuez mL par mL jusqu'à 25 mL et notez chaque mesure !", "ok");
+  } finally { b.disabled = false; }
+});
+$("#reset").addEventListener("click", () => {
+  S.V = 0; S.vide = ""; S.mes = []; S.d1 = S.d2 = ""; S.fit = false; drops.forEach(d => V3 && V3.scene.remove(d.m)); drops = [];
+  majScene(); majMesures(); V3 && V3.vue({ az: -0.4, el: 0.2, r: 10.5, cible: [0.4, 2.8, 0] }, "d3");
+  say("Nouveau titrage : burette remplie à 0 mL, nouveau bécher. Vos réponses sont conservées.");
+});
+
+/* ---------- compte rendu ---------- */
+LAB.mesures = () => S.mes.length ? [`${S.mes.length} mesures (VA en mL ; σ en mS·cm⁻¹) : ` + S.mes.map(m => `${fx(m.V, 1)} ; ${fx(m.s, 3)}`).join(" | ")].concat(S.fit ? [`Intersection des deux droites : VE = ${fx(droites().VE, 1)} mL`] : []) : [];
+LAB.demarche = () => [["Blouse, gants et lunettes portés", epiOK()], ["Agitation en marche", S.agit], ["Au moins 20 mesures jusqu'à 20 mL ou plus", S.mes.length >= 20 && S.mes.some(m => m.V >= 20)], ["Graphe modélisé par deux droites", S.fit], ["Bécher vidé dans le bidon de récupération", S.vide === "bidon"], ["Solution jetée à l'évier (interdit)", S.evier]];
+
+Protocole([
+  { partie: "Sécurité et montage", q: "EPI", html: "Mettre la <b>blouse</b>, les <b>gants</b> et les <b>lunettes</b>, puis l'<b>agitation</b>.", sous: [
+    { html: "blouse, gants, lunettes", ok: epiOK }, { html: "agitation en marche", ok: () => S.agit } ] },
+  { partie: "Pratique expérimentale", q: "Q1", html: "Noter σ à 0 mL, puis après chaque ajout de <b>1,0 mL</b> jusqu'à 25 mL. Répondre à la question 1.", sous: [
+    { html: "au moins 20 mesures", ok: () => S.mes.length >= 20 }, { html: "mesures jusqu'à 20 mL ou plus", ok: () => S.mes.some(m => m.V >= 20) }, { html: "question 1 juste", ok: () => juste("q1a") && juste("q1b") && juste("q1c") } ] },
+  { q: "Q2", html: "Tracer σ = f(V<sub>A</sub>), modéliser par <b>deux droites</b> et lire V<sub>E</sub>.", sous: [
+    { html: "deux droites tracées", ok: () => S.fit }, { html: "V<sub>E</sub> juste", ok: () => juste("q2") } ] },
+  { q: "Q3", html: "Calculer la masse d'éthanoate de sodium dans V<sub>0</sub>.", ok: () => juste("q3") },
+  { q: "✔ Vérification", html: "Relire ses réponses avant de continuer.", ok: () => true },
+  { q: "Q4", html: "Calculer P<sub>m</sub>, son incertitude type et l'encadrement.", ok: () => juste("q4a") && juste("q4b") && juste("q4c") },
+  { q: "Q5", html: "Formuler une hypothèse sur la défaillance de la chaufferette.", ok: () => juste("q5") },
+  { partie: "Fin de séance", q: "Rangement", html: "Vider le bécher dans le <b>bidon de récupération</b>.", ok: () => S.vide === "bidon" },
+  { q: "Q6", html: "Répondre à la problématique (organigramme), rédiger sa conclusion, puis télécharger le compte rendu.", ok: () => conclJuste() && $("#maconc").value.trim().length > 20 }
+]);
+
+demarrerLAB();
+sauvegarde(retrouve => {
+  majScene(); majMesures();
+  if (retrouve && (S.mes.length || epiOK())) say("Votre travail précédent a été retrouvé (mesures et réponses).", "ok");
+});
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style id="charte-efir-2026">
+/* Code couleur « prune » du labo virtuel (accueil retenu le 06/11/2026), version claire pour les pages de TP */
+:root:root:root {
+  --bg: #FAF7FC; --surface: #ffffff; --surface-2: #F6F0F9; --ink: #1F1630; --muted: #6B5B78; --line: #E7DDEE;
+  --navy: #4A2C5A; --navy-soft: #F3E8F7; --blue: #4A2C5A; --line-2: #D9CBE3; --soft: #5B4A68;
+  --call-bg: #F6F0F9; --call-line: #E7DDEE; --call-ink: #4A2C5A;
+  --font-display: "Inter", "Segoe UI", system-ui, sans-serif; --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:root:root:not([data-theme="light"]) {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; } }
+:root:root:root[data-theme="dark"] {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; }
+body, button, input, select, textarea { font-family: var(--font-body); }
+body { font-family: var(--font-body); }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -.01em; }
+a.retour { color: var(--navy) !important; }
+</style>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!--efir1re:AE1 · Titrage colorimétrique 3D-->
+window.EFIR_RETOUR = "premiere/matiere/Titrage%20colorim%C3%A9trique";
+
+// Ch. 4 · AE1 · Titrage colorimétrique (ions fer (II) d'un produit anti-chlorose par les ions permanganate)
+// ====================================================================
+// Module commun : titrage direct avec repérage colorimétrique de l'équivalence
+// ====================================================================
+function makeTitrTP(cfg) {
+  let bu, er, stir, pip, S = null, flash = 0;
+  const fresh = () => ({ pip: false, ind: !cfg.indicator, fill: false, zero: false, V: 0, stir: false, crossed: null, n: 1, results: [] });
+  const fmtV = v => v.toFixed(2).replace('.', ',');
+  function colorAt(V) {
+    const VE = cfg.VE; const after = V >= VE - 1e-9;
+    if (after) { const k = Math.min(1, (V - VE + .05) / .4); return { c: new THREE.Color(cfg.colBefore).lerp(new THREE.Color(cfg.colAfter), k), o: cfg.opBefore + (cfg.opAfter - cfg.opBefore) * k }; }
+    return { c: new THREE.Color(cfg.colBefore), o: cfg.opBefore };
+  }
+  function paint() {
+    if (!er) return; const vol = cfg.V0 + (cfg.water || 0) + S.V; er.setVolume(S.pip ? vol : 0);
+    const { c, o } = colorAt(S.V); er.setColor(c, o);
+    if (flash > 0 && S.V < cfg.VE) { er.mat.color.lerp(new THREE.Color(cfg.colFlash || cfg.colAfter), flash); er.mat.opacity = Math.max(er.mat.opacity, o + .25 * flash); }
+    if (cfg.precip) { const k = Math.min(S.V, cfg.VE) / cfg.VE; er.mat.color.lerp(new THREE.Color(0xffffff), .18 * k); er.mat.opacity = Math.max(er.mat.opacity, .45 + .4 * k); }
+    if (S.fill) bu.set(S.zero ? S.V : 0, S.zero ? 0 : 1.2); else bu.empty();
+    const r = $('#tV'); if (r) r.innerHTML = S.zero ? `V versé = <b>${fmtV(S.V)} mL</b>` : '—';
+  }
+  const TP = Object.assign({
+    views: { ensemble: [[0, .85, 1.55], [0, .3, 0]] },
+    viewbar: [['Zoom burette (lecture)', () => { const y = bu ? .32 + .5 * .95 - .45 * S.V / 25 : .6; flyTo([.05, y + .02, .35], [0, y, 0], .9); }], ['Zoom erlenmeyer', () => flyTo([.1, .35, .55], [0, .12, 0])]],
+    build() {
+      stir = makeStirrer(); scene.add(stir.group);
+      er = makeErlen(125, 'Erlenmeyer'); er.group.position.y = stir.top; scene.add(er.group);
+      bu = makeBurette(25); scene.add(bu.group); bu.setColor(cfg.titrantColor, cfg.titrantOp);
+      pip = makeVessel({ cap: 20, r: .008, hgt: .3, kind: 'becher', label: 'Pipette jaugée 20,0 mL' }); pip.group.position.set(.42, .02, .1); scene.add(pip.group);
+      const fb = makeBottle(cfg.titrantBottle, cfg.titrantColor, { cap: 0x6a1b9a, brown: !!cfg.brown }); fb.position.set(-.5, 0, -.25); scene.add(fb);
+      const ft = makeBottle(cfg.titratedBottle, cfg.titratedColor ?? cfg.colBefore, { cap: 0x2e7d32 }); ft.position.set(.6, 0, -.25); scene.add(ft);
+      if (cfg.indicator) { const fi = makeBottle(cfg.indicator, cfg.indicatorColor || 0xffeb3b, { cap: 0xf9a825 }); fi.scale.setScalar(.6); fi.position.set(.85, 0, .15); scene.add(fi); }
+      const bid = new THREE.Mesh(new THREE.BoxGeometry(.26, .32, .18), new THREE.MeshStandardMaterial({ color: 0xffb74d })); bid.position.set(-.8, .16, .15); scene.add(bid);
+      const bl = label('Bidon de\nrécupération', { size: 30, scale: .0011 }); bl.position.set(-.8, .43, .15); scene.add(bl);
+      LAB.tick.push(dt => { if (flash > 0) { flash = Math.max(0, flash - dt / (S.V > cfg.VE * .9 ? 2.2 : .8)); paint(); } });
+      this.resetScene(); this.buildPanel();
+    },
+    resetScene(keep) { const res = keep && S ? S.results : []; const n = keep && S ? S.n + 1 : 1; S = fresh(); S.results = res; S.n = n; flash = 0; if (stir) stir.on = false; if (er) paint(); if ($('#tV')) this.refreshPanel(); },
+    buildPanel() {
+      $('#actions').append(
+        h('h3', {}, '1. Préparer'),
+        h('div', { class: 'row' },
+          h('button', { id: 'tPip', onclick: () => act({ t: 'pip' }) }, `Prélever ${cfg.V0.toFixed(1).replace('.', ',')} mL de ${cfg.titratedShort} (pipette jaugée)`),
+          cfg.indicator ? h('button', { id: 'tInd', onclick: () => act({ t: 'ind' }) }, 'Ajouter quelques gouttes de ' + cfg.indicatorShort) : null,
+          h('button', { id: 'tStir', onclick: () => act({ t: 'stir' }) }, 'Mettre l\'agitation'),
+          h('button', { id: 'tFill', onclick: () => act({ t: 'fill' }) }, 'Remplir la burette (' + cfg.titrantShort + ')'),
+          h('button', { id: 'tZero', onclick: () => act({ t: 'zero' }) }, 'Ajuster au zéro')),
+        h('h3', {}, '2. Titrer'),
+        h('div', { class: 'row' }, ...[[5, '+5 mL'], [1, '+1 mL'], [.5, '+0,5 mL'], [.1, '+0,1 mL'], [.05, '1 goutte (0,05 mL)']].map(([d, t]) => h('button', { 'data-add': d, onclick: () => act({ t: 'add', v: d }) }, t))),
+        h('div', { id: 'tV', style: 'margin:6px 0' }, '—'),
+        h('h3', {}, '3. Recommencer / ranger'),
+        h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Vider l\'erlenmeyer dans le bidon (nouveau titrage)'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 Vider à l\'évier')),
+        h('div', { class: 'note', id: 'tRes', style: 'margin-top:6px' }));
+      this.refreshPanel();
+    },
+    refreshPanel() {
+      const en = (s, ok) => $$(s).forEach(b => b.disabled = BUSY || !ok);
+      en('#tPip', !S.pip); en('#tInd', S.pip && !S.ind); en('#tStir', S.pip && !S.stir); en('#tFill', !S.fill); en('#tZero', S.fill && !S.zero);
+      en('[data-add]', S.pip && S.ind && S.zero && S.V < 25);
+      $('#tRes').innerHTML = S.results.length ? '<b>Mes titrages :</b><br>' + S.results.map((r, i) => `Titrage ${i + 1} : changement de couleur pour V = ${fmtV(r)} mL`).join('<br>') : '';
+      paint();
+    },
+    refresh() { this.refreshPanel(); },
+    async doAction(a) {
+      if (a.t === 'pip') {
+        pip.setColor(cfg.titratedColor ?? cfg.colBefore, .35); await tween(.7, p => pip.setVolume(20 * p));
+        const p0 = pip.group.position.clone(), p1 = new THREE.Vector3(0, stir.top + er.top() + .02, 0);
+        await tween(.7, p => pip.group.position.lerpVectors(p0, p1, ease(p)));
+        S.pip = true; await tween(.9, p => { pip.setVolume(20 * (1 - p)); er.setVolume((cfg.V0 + (cfg.water || 0)) * p); });
+        await tween(.6, p => pip.group.position.lerpVectors(p1, p0, ease(p)));
+        say(`${cfg.V0.toFixed(1).replace('.', ',')} mL de ${cfg.titratedShort} dans l'erlenmeyer.`); paint(); step('prep'); return;
+      }
+      if (a.t === 'ind') { S.ind = true; await dropInto({ group: er.group, top: () => er.top(), R: 0, level: .03 }, cfg.indicatorColor || 0xffeb3b, 3); say('Quelques gouttes de ' + cfg.indicatorShort + ' ajoutées : le mélange devient ' + cfg.indicatorEffect + '.'); paint(); return; }
+      if (a.t === 'stir') { S.stir = true; stir.on = true; say('Agitation magnétique en marche.'); return; }
+      if (a.t === 'fill') { S.fill = true; await tween(.8, p => bu.set(0, 1.2 * p)); say('Burette remplie au-dessus du zéro avec ' + cfg.titrantShort + '.'); return; }
+      if (a.t === 'zero') { await tween(.6, p => bu.set(0, 1.2 * (1 - p))); S.zero = true; say('Niveau ajusté au zéro : la burette affiche 0,00 mL.'); step('burette'); paint(); return; }
+      if (a.t === 'add') {
+        const v0 = S.V, v1 = Math.min(25, +(S.V + a.v).toFixed(2));
+        if (!S.stir) say('<b>Conseil :</b> mets l\'agitation pour bien mélanger.');
+        await tween(Math.min(1.2, .25 + a.v * .3), p => { S.V = v0 + (v1 - v0) * p; paint(); });
+        S.V = v1; if (S.V < cfg.VE) flash = Math.min(1, .5 + S.V / cfg.VE * .5);
+        paint();
+        if (S.V >= cfg.VE && S.crossed == null) {
+          S.crossed = S.V; S.results.push(S.V);
+          const msg = `Titrage ${S.results.length} : ${cfg.changeText} pour V = ${fmtV(S.V)} mL.`; observe(msg); say(msg);
+          step('titrage'); if (Math.abs(S.V - cfg.VE) <= .1) step('precis');
+        } else if (S.V < cfg.VE) say(`V = ${fmtV(S.V)} mL : ${S.V > cfg.VE * .85 ? cfg.nearText : cfg.beforeText}`);
+        else say(`V = ${fmtV(S.V)} mL : ${cfg.afterText}`);
+        return;
+      }
+      if (a.t === 'vider') {
+        if (!S.pip) { say('L\'erlenmeyer est vide.'); return false; }
+        if (a.where === 'evier') { ST.evier++; observe('Vidage de l\'erlenmeyer à l\'évier (interdit).'); say('<b>Interdit !</b> ' + cfg.wasteText); }
+        else { ST.bidon++; step('vider'); say('Erlenmeyer vidé dans le bidon et rincé. Tu peux faire un nouveau titrage (au goutte à goutte près de l\'équivalence).'); }
+        await tween(.6, p => er.setVolume(er.vol * (1 - p)));
+        this.resetScene(true); return;
+      }
+    },
+    async demo() {
+      say('Démonstration : préparation du titrage.');
+      await act({ t: 'pip' }, { record: false }); if (cfg.indicator) await act({ t: 'ind' }, { record: false });
+      await act({ t: 'stir' }, { record: false }); await act({ t: 'fill' }, { record: false }); await act({ t: 'zero' }, { record: false });
+      flyTo([.1, .35, .55], [0, .12, 0]);
+      for (let i = 0; i < 3; i++) { await act({ t: 'add', v: 1 }, { record: false }); await wait(500); }
+      say('Près de l\'équivalence, on verse goutte à goutte. À toi !'); await wait(1500);
+    },
+  }, cfg.tp);
+  return TP;
+}
+
+const VE41 = 14.3, C2_41 = 5.0e-3;
+const T41 = makeTitrTP({
+  V0: 20.0, VE: VE41, colBefore: 0xeef5e6, opBefore: .25, colAfter: 0xb0217a, opAfter: .7, colFlash: 0xd04a9a,
+  titrantColor: 0x6a1b6a, titrantOp: .85, titrantShort: 'la solution de permanganate', titratedShort: 'solution S\'1', brown: true,
+  titrantBottle: 'S2 : permanganate\nMnO₄⁻ (C₂ = 5,0×10⁻³ mol/L)', titratedBottle: 'S\'1 : anti-chlorose\ndilué 30 fois (Fe²⁺)',
+  changeText: 'la teinte rose persiste dans l\'erlenmeyer', beforeText: 'la couleur violette disparaît aussitôt en arrivant dans le mélange.', nearText: 'la teinte rose met plus longtemps à disparaître : verse goutte à goutte !', afterText: 'le mélange est rose-violet, l\'équivalence est dépassée.',
+  wasteText: 'Les solutions contenant du permanganate et des ions métalliques vont dans le bidon de récupération.',
+  tp: {
+    id: 'p1_ch04_ae1', code: 'AE1', short: 'Titrage colorimétrique 3D', epi: ['blouse', 'gants', 'lunettes'],
+    kicker: 'EFIR · 1re spé · Chapitre 4 · Activité expérimentale AE1 · Simulation 3D',
+    title: 'Titrage colorimétrique : la teneur en fer d\'un produit anti-chlorose',
+    problem: 'Un produit anti-chlorose pour plantes annonce une teneur en ions fer (II) de 30 g·L⁻¹. Comment le vérifier par un titrage ?',
+    mots: `<p>Réaction support du titrage : <span class="eq">MnO₄⁻(aq) + 5 Fe²⁺(aq) + 8 H⁺(aq) → Mn²⁺(aq) + 5 Fe³⁺(aq) + 4 H₂O(ℓ)</span><br>
+    Seul l'ion permanganate MnO₄⁻ est coloré (violet) ; les autres espèces sont incolores ou très peu colorées.<br>
+    <b>Équivalence</b> : réactifs titrant et titré introduits dans les proportions stœchiométriques ; il y a changement de réactif limitant.<br>
+    <b>V<sub>E</sub></b> : volume de solution titrante versé à l'équivalence. M(Fe) = 55,8 g·mol⁻¹.</p>`,
+    aide: `<p>1. Prélève 20,0 mL de S'1 à la pipette jaugée, mets l'agitation, remplis la burette et ajuste au zéro.<br>2. Fais un premier titrage rapide (+1 mL) pour encadrer V<sub>E</sub>.<br>
+    3. Vide l'erlenmeyer, recommence et verse goutte à goutte près de l'équivalence : V<sub>E</sub> est le volume pour lequel la teinte rose persiste.</p>`,
+    protocol: [
+      { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes.' },
+      { id: 'prep', html: 'Prélever 20,0 mL de solution S\'1 et les verser dans l\'erlenmeyer.' },
+      { id: 'burette', html: 'Remplir la burette de solution de permanganate et ajuster au zéro.' },
+      { id: 'titrage', q: 'Q1a', html: 'Titrage rapide : verser par 1 mL jusqu\'au changement de couleur.' },
+      { id: 'precis', q: 'Q1b', html: 'Titrage précis : recommencer et verser goutte à goutte près de l\'équivalence.' },
+      { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+      { id: 'extra', q: 'Q2-3', html: 'Calculer la concentration et la teneur en ions fer (II).' },
+      { id: 'conclusion', q: 'Q4', html: 'Choisir puis rédiger ta conclusion.' },
+      { id: 'vider', html: 'Vider l\'erlenmeyer dans le bidon de récupération.' },
+      { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+    ],
+    table: { rowTitle: 'Étape du titrage', rows: [{ label: 'Avant l\'équivalence', ans: [0, 0, 0] }, { label: 'Après l\'équivalence', ans: [1, 1, 1] }],
+      cols: [{ title: 'Couleur du mélange', options: ['incolore (vert très pâle)', 'rose-violet'] }, { title: 'Réactif limitant', options: ['MnO₄⁻ (réactif titrant)', 'Fe²⁺ (réactif titré)'] }, { title: 'MnO₄⁻ dans l\'erlenmeyer ?', options: ['non', 'oui'] }] },
+    extraTitle: 'Questions',
+    extra: [
+      { q: 'Q1b', num: true, text: 'Volume équivalent V<sub>E</sub> =', unit: 'mL', ans: VE41, tol: .015 },
+      { q: 'Q2a', text: 'À l\'équivalence :', options: ['n(Fe²⁺) / 5 = n<sub>E</sub>(MnO₄⁻) / 1'.replace(/<[^>]+>/g, ''), 'n(Fe²⁺) = n(MnO₄⁻)', '5 n(Fe²⁺) = n(MnO₄⁻)'], ans: 0 },
+      { q: 'Q2b', num: true, text: 'Concentration en ions fer (II) de S\'1 : C\'1 =', unit: 'mol·L⁻¹', ans: 5 * C2_41 * VE41 / 20, tol: .03 },
+      { q: 'Q2b', num: true, text: 'Concentration du produit (dilué 30 fois) : C₁ =', unit: 'mol·L⁻¹', ans: 30 * 5 * C2_41 * VE41 / 20, tol: .03 },
+      { q: 'Q3', num: true, text: 'Concentration en masse en ions fer (II) du produit : t =', unit: 'g·L⁻¹', ans: 30 * 5 * C2_41 * VE41 / 20 * 55.8, tol: .03 },
+    ],
+    conclusion: { q: 'Q4 · À l\'équivalence d\'un titrage a A + b B → c C + d D :', options: ['n₀(A)/a = n<sub>E</sub>(B)/b : les réactifs ont été introduits dans les proportions stœchiométriques, il y a changement de réactif limitant ; ici le produit contient bien environ 30 g·L⁻¹ d\'ions fer (II).'.replace(/<[^>]+>/g, ''), 'n₀(A) = n(B) toujours, quels que soient a et b.', 'L\'équivalence correspond à la disparition de tous les produits.', 'Le volume équivalent ne dépend pas de la concentration titrée.'], ans: 0 },
+  },
+});
+startTP(T41);
+
+</script></body></html>

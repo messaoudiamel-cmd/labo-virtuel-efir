@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel 3D · Notion d'équilibre dynamique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Paillasse : en-tête de fiche, puis deux colonnes (tubes à gauche, flacons et carnet à droite), une seule colonne sur téléphone */
+:root {
+  --bg: #eef2f5;          /* carrelage de paillasse, gris bleuté */
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #15212d;
+  --muted: #576776;
+  --line: #d3dce4;
+  --navy: #003366;        /* bleu marine EFIR */
+  --navy-soft: #e3ecf6;
+  --red: #b42318;         /* sécurité, interdit */
+  --red-soft: #fdecea;
+  --green: #2f6f45;       /* vérifié */
+  --green-soft: #e7f3eb;
+  --amber: #8c6d1f;
+  --amber-soft: #fbf3df;
+  --glass: rgba(120, 150, 175, .55);
+  --glass-fill: rgba(255, 255, 255, .55);
+  --water: rgba(170, 205, 230, .38);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+    --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+    --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+    --water: rgba(150, 190, 225, .28); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+  --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+  --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+  --water: rgba(150, 190, 225, .28); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; color: var(--navy); }
+h1 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); line-height: 1.15; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+sub, sup { font-size: .7em; line-height: 0; }
+.kicker { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+header.fiche { display: grid; gap: 10px; }
+.pb { border: 1.5px solid var(--red); background: var(--surface); border-radius: var(--radius); padding: 10px 14px; font-weight: 700; }
+.pb span { color: var(--red); }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .92rem; padding: 0; margin: 0; list-style: none; }
+.steps li b { color: var(--ink); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: .88rem; }
+
+/* sécurité */
+.epi { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .92rem; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--green); background: var(--green-soft); color: var(--green); font-weight: 700; }
+.chip:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+
+/* porte-tubes */
+.rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px 6px; }
+.tube { font: inherit; background: none; border: 2px solid transparent; border-radius: 10px; padding: 4px 2px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; color: var(--ink); }
+.tube[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); }
+.tube svg { width: 52px; height: 178px; overflow: visible; }
+.tube .lab { font-size: .72rem; line-height: 1.15; text-align: center; min-height: 2.3em; color: var(--muted); }
+.tube .num { font-weight: 700; font-size: .8rem; }
+.glass { fill: var(--glass-fill); stroke: var(--glass); stroke-width: 2; }
+.drop { animation: fall .55s ease-in forwards; }
+@keyframes fall { from { transform: translateY(-34px); opacity: 1; } to { transform: translateY(var(--dy, 120px)); opacity: .2; } }
+.ppt circle { transition: fill 9s linear, opacity .9s ease, transform 2.2s ease-in; }
+@media (prefers-reduced-motion: reduce) { .drop { animation: none; opacity: 0; } .ppt circle { transition: none; } }
+.bench-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sel-info { flex: 1 1 220px; min-width: 0; font-size: .92rem; }
+
+/* flacons */
+.bottles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bottle { font: inherit; text-align: left; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 8px 10px; cursor: pointer; display: grid; gap: 4px; }
+.bottle:hover { border-color: var(--navy); }
+.bottle .nm { font-weight: 700; line-height: 1.2; }
+.bottle .io { font-size: .85rem; color: var(--muted); }
+.bottle .act { font-size: .78rem; color: var(--navy); font-weight: 700; }
+.bottle.reagent { background: var(--navy-soft); }
+.bottle[disabled] { opacity: .45; cursor: not-allowed; }
+.pic { display: flex; gap: 4px; }
+.pic img { width: 30px; height: 30px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--glass); vertical-align: -1px; margin-right: 4px; }
+
+button.btn { font: inherit; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1.5px solid var(--navy); background: var(--navy); color: var(--surface); }
+button.btn.ghost { background: transparent; color: var(--navy); }
+button.btn.warn { border-color: var(--red); color: var(--red); background: transparent; }
+button.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* messages */
+.toast { border-radius: 8px; padding: 9px 12px; font-size: .95rem; border: 1px solid var(--line); background: var(--surface-2); }
+.toast.err { border-color: var(--red); background: var(--red-soft); }
+.toast.ok { border-color: var(--green); background: var(--green-soft); }
+.toast.info { border-color: var(--amber); background: var(--amber-soft); }
+
+/* carnet */
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.log li { font-size: .92rem; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.log li.pos { border-left-color: var(--navy); }
+.log li:empty { display: none; }
+.log .t { color: var(--muted); font-size: .8rem; }
+
+/* tableaux */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 640px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; vertical-align: middle; }
+thead th, tbody th { background: var(--navy-soft); color: var(--navy); font-weight: 700; }
+tbody th { text-align: left; }
+td select { font: inherit; font-size: .88rem; width: 100%; min-width: 0; padding: 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+td.good select { border-color: var(--green); background: var(--green-soft); }
+td.bad select { border-color: var(--red); background: var(--red-soft); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.foot { color: var(--muted); font-size: .82rem; text-align: center; }
+details summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+
+/* animation et guide (version 3e) */
+.guide { display: flex; gap: 12px; align-items: center; background: var(--navy); color: var(--surface); border-radius: var(--radius); padding: 12px 14px; font-size: 1.05rem; }
+.guide b { color: inherit; }
+.guide .gn { flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--surface); color: var(--navy); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; }
+.next { box-shadow: 0 0 0 3px var(--amber); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--amber) 35%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .next { animation: none; } }
+.bench { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 520px) { .bench { grid-template-columns: minmax(0, 1fr); } .stage svg { max-height: 260px; } }
+.stage { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; display: grid; gap: 6px; justify-items: center; }
+.stage svg { width: 100%; max-width: 200px; height: auto; overflow: hidden; }
+.stage .caption { font-size: .95rem; text-align: center; min-height: 4.5em; }
+.stlbl { font: 700 15px var(--font-body); fill: var(--ink); }
+.mots summary { font-size: 1rem; }
+.mots dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 0; }
+.mots dt { font-weight: 700; color: var(--navy); }
+.mots dd { margin: 0; }
+@media (max-width: 520px) { .mots dl { grid-template-columns: 1fr; } .mots dd { margin-bottom: 6px; } }
+.tube .lab { font-size: .78rem; }
+.bottle .act { font-size: .88rem; }
+
+/* version 2 : actions rapides et compte rendu */
+.quick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.quick:empty { display: none; }
+.qbtn { font-size: .9rem; padding: 6px 10px; }
+.crform { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.crform label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+.crform input { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; width: 100%; }
+.crform label:first-child { flex: 1 1 220px; } .crform label:nth-child(2) { flex: 0 1 120px; }
+.cr { border: 1.5px solid var(--navy); border-radius: var(--radius); padding: 14px; background: var(--surface); display: grid; gap: 8px; }
+.cr h3, .cr h4 { margin: 4px 0 0; color: var(--navy); font-family: var(--font-display); }
+.cr ol, .cr ul { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.cr table { min-width: 0; font-size: .88rem; } .cr td, .cr th { text-align: left; }
+.cr .t { display: none; } .cr[hidden] { display: none; }
+.codebox { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.codebox input { font: inherit; width: 9em; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-transform: uppercase; }
+
+/* version 3 : question ion utile, mode économe */
+.ask { display: grid; gap: 8px; max-width: 260px; font-size: .92rem; text-align: center; }
+.ask .toast { text-align: left; }
+body.eco *, body.eco *::before, body.eco *::after { animation: none !important; transition: none !important; }
+#effacer { font-size: .85rem; padding: 4px 10px; margin-left: 6px; }
+
+/* version 4 : manipulations pilotées par l'élève */
+.vol { font-size: .92rem; align-self: center; }
+#verser { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.askbox:empty { display: none; }
+.askbox .ask { max-width: 280px; }
+.stage svg { overflow: visible; }
+
+.qtitle { width: 100%; text-align: center; font-size: .92rem; margin: 2px 0 0; }
+.quick .qbtn.next { font-size: .95rem; }
+.prof { margin: -4px 0 0; color: var(--navy); font-size: 1rem; }
+
+/* protocole de la fiche */
+.proto { border: 1.5px solid var(--navy); border-radius: var(--radius); background: var(--surface); padding: 10px 12px; }
+.proto summary { font-weight: 700; color: var(--navy); cursor: pointer; }
+.proto ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.proto li { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 1.4em; gap: 8px; align-items: start; font-size: .92rem; padding: 6px 8px; border-radius: 8px; }
+.proto li.partie { display: block; grid-template-columns: none; font-family: var(--font-display); font-weight: 700; color: var(--navy); padding: 6px 0 0; font-size: .95rem; }
+.proto .q { font-weight: 700; color: var(--muted); font-size: .8rem; padding-top: 2px; }
+.proto .st { font-weight: 700; color: var(--green); text-align: center; }
+.proto li.cur { background: var(--amber-soft); outline: 1.5px solid var(--amber); }
+.proto li.cur .st { color: var(--amber); }
+.proto li.fait .tx { color: var(--muted); }
+.proto li.fait { background: var(--green-soft); }
+.proto ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.proto ul li { display: block; padding: 0; font-size: .88rem; background: none; outline: none; }
+.proto ul li.fait { color: var(--green); background: none; }
+
+#prototout { margin-top: 8px; }
+.proto:not(.tout) #proto > li:not(.cur) { display: none; }
+.proto li { grid-template-columns: 4.2em minmax(0, 1fr) 1.4em; }
+.extract{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center}.extract svg{width:120px;height:120px}
+
+/* ===== Compléments communs aux simulations 3D (Terminale) ===== */
+.scene3d { margin: 0; position: relative; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.scene3d canvas.c3d { width: 100%; aspect-ratio: 16 / 10; display: block; touch-action: none; cursor: grab; }
+.scene3d canvas.c3d:active { cursor: grabbing; }
+.scene3d .vues { position: absolute; top: 8px; left: 8px; display: flex; flex-wrap: wrap; gap: 4px; max-width: calc(100% - 16px); }
+.scene3d .vues button, .scene3d .zoom button { font: inherit; font-size: .78rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--navy); cursor: pointer; }
+.scene3d .vues button[aria-pressed="true"] { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.scene3d .zoom { position: absolute; right: 8px; bottom: 8px; display: grid; gap: 4px; }
+.scene3d .zoom button { width: 2rem; height: 2rem; padding: 0; font-size: 1.1rem; }
+.scene3d .hud { position: absolute; left: 8px; bottom: 8px; font-size: .8rem; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-variant-numeric: tabular-nums; max-width: calc(100% - 64px); }
+.scene3d .hud:empty { display: none; }
+.scene3d .astuce { position: absolute; right: 8px; top: 8px; font-size: .72rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 80%, transparent); border-radius: 6px; padding: 2px 6px; }
+@media (max-width: 520px) { .scene3d canvas.c3d { aspect-ratio: 4 / 3.6; } .scene3d .astuce { display: none; } }
+.nogl { padding: 30px 16px; text-align: center; color: var(--red); font-weight: 700; }
+.reglages { display: grid; gap: 10px; }
+.reglage { display: grid; grid-template-columns: 9em minmax(0, 1fr) 7.6em; gap: 10px; align-items: center; font-size: .95rem; }
+.reglage label { font-weight: 700; }
+.reglage output { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); text-align: right; }
+.reglage input[type=range] { width: 100%; accent-color: var(--navy); }
+@media (max-width: 520px) { .reglage { grid-template-columns: minmax(0, 1fr) auto; } .reglage input[type=range] { grid-column: 1 / -1; grid-row: 2; } }
+.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
+.calc div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .88rem; }
+.calc b { display: block; font-variant-numeric: tabular-nums; color: var(--navy); font-size: 1rem; }
+.question { border: 1.5px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--surface); min-width: 0; }
+.question h3 { font-size: 1rem; }
+.question .tag { font-size: .72rem; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: 2px; }
+.question select, .question input[type=text] { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.question select { width: 100%; }
+.question label { display: block; }
+.question label select { display: block; margin-top: 4px; }
+.question select.ok, .question input.ok { border-color: var(--green); background: var(--green-soft); }
+.question select.ko, .question input.ko { border-color: var(--red); background: var(--red-soft); }
+.question .pouce summary { font-size: .9rem; color: var(--amber); }
+.question .pouce { font-size: .88rem; }
+.question.verrou { opacity: .55; pointer-events: none; }
+.onglets { display: flex; flex-wrap: wrap; gap: 6px; }
+.onglets button { font: inherit; font-size: .88rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+.onglets button[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); color: var(--navy); }
+.graphe { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
+.graphe canvas { width: 100%; height: auto; aspect-ratio: 16 / 10; display: block; }
+.code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .84rem; background: #fffbe8; color: #2b2b2b; border: 1px solid #e8d9a0; border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre; line-height: 1.45; margin: 0; }
+.code .n { color: #9a8b55; user-select: none; }
+.code .c { color: #2f7d4a; }
+.code .k { color: #b22a7a; }
+.code .trou { background: #fff; border: 1.5px dashed #c77700; border-radius: 4px; padding: 0 6px; }
+.tablewrap.pointage { max-height: 230px; overflow: auto; }
+.tablewrap.pointage table { min-width: 420px; font-size: .84rem; }
+.tablewrap.pointage td { font-variant-numeric: tabular-nums; padding: 3px 6px; }
+.tablewrap.pointage tr.vu td { background: var(--amber-soft); }
+.badge3d { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--surface); background: var(--navy); border-radius: 4px; padding: 1px 6px; vertical-align: 3px; }
+#maconc { width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cr[hidden] { display: none; }
+/* gabarit pédagogique : situation et modèle, prédiction, énergie, python, piège du bac */
+.parcours { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; counter-reset: et; font-size: .9rem; }
+.parcours li { counter-increment: et; color: var(--muted); }
+.parcours li::before { content: counter(et, decimal-leading-zero) " "; font-weight: 700; color: var(--navy); }
+.parcours li b { color: var(--ink); }
+.modele { border: 1.5px solid var(--amber); background: var(--amber-soft); border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 4px; font-size: .95rem; }
+.modele h3 { font-size: .95rem; color: var(--amber); }
+.modele ul { margin: 0; padding-left: 1.2em; }
+.predire { border: 2px solid var(--navy); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--navy-soft); }
+.predire h3 { font-size: 1rem; }
+.predire .chip { text-align: left; }
+.energies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; height: 150px; padding: 6px 10px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.energies .barre { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.energies .barre .j { position: relative; }
+.energies .barre .j i { position: absolute; bottom: 0; left: 15%; right: 15%; border-radius: 4px 4px 0 0; height: 0; background: var(--c); }
+.energies .barre b { color: var(--navy); }
+.piege { border: 1.5px solid #c77700; background: #fff4e0; color: #4a3200; border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 6px; }
+.piege h3 { color: #a05a00; font-size: 1rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .piege { background: #33291a; color: #f3e2c0; } }
+.legende3d { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .84rem; color: var(--muted); }
+.legende3d span::before { content: ""; display: inline-block; width: 16px; height: 4px; border-radius: 2px; background: var(--c); vertical-align: middle; margin-right: 5px; }
+
+.ecran { font-family: ui-monospace, Consolas, monospace; background: #0d1f14; color: #7dffb0; border-radius: 8px; padding: 6px 12px; font-size: 1.2rem; font-weight: 700; display: inline-block; min-width: 7em; text-align: right; }
+.etape-h { font-weight: 700; margin: 6px 0 2px; color: var(--navy); }
+.hold { touch-action: none; user-select: none; -webkit-user-select: none; }
+.lecture { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); min-height: 1.4em; margin: 6px 0 0; }
+.fits { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.fits label { font-size: .9rem; color: var(--muted); }
+.fits select, .reglage select { font: inherit; width: 100%; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.doc { font-size: .9rem; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface-2); margin: 6px 0; }
+table.data { width: 100%; border-collapse: collapse; font-size: .86rem; margin: 6px 0; }
+table.data th, table.data td { border: 1px solid var(--line); padding: 4px 6px; text-align: center; }
+table.data th { background: var(--surface-2); }
+
+</style>
+<script src="lib/three-r128.min.js"></script>
+<style id="efir-colonnes">.wrap{grid-template-columns:minmax(0,1fr)}.wrap>*{min-width:0}canvas{max-width:100%}table{min-width:0;max-width:100%}th,td{overflow-wrap:anywhere}</style></head>
+<body>
+<div class="wrap">
+  <header class="fiche">
+    <a class="retour" href="#" onclick="parent.location.hash='terminale/matiere/Sens%20d%27%C3%A9volution%20spontan%C3%A9e%20d%27un%20syst%C3%A8me%20chimique';return false" style="display:inline-block;margin:0 0 8px;font-weight:700;color:#1f6fd1;text-decoration:none">← Retour au chapitre</a>
+    <p class="kicker">EFIR · Terminale spécialité · Chapitre 7 · Activité 1 p. 133 (expérimentale) · Simulation 3D <span class="badge3d">3D</span></p>
+    <h1>Notion d'équilibre dynamique : ions argent et ions fer</h1>
+    <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+    <p class="pb"><span>Problématique :</span> comment décrire une transformation non totale ?</p>
+    <ol class="parcours"><li><b>Réaliser</b> le mélange Ag⁺ + Fe²⁺</li><li><b>Mesurer</b> l'absorbance du filtrat</li><li><b>Tester</b> la présence des réactifs</li><li><b>Réaliser</b> la réaction inverse</li><li><b>Conclure</b> (compte rendu)</li></ol>
+    <details class="panel mots" open><summary>📖 Documents et données</summary><dl><dt>Protocole 1</dt><dd>Dans un bécher de 100 mL, verser 25 mL de S<sub>1</sub> (nitrate d'argent, [Ag<sup>+</sup>] = 1,0 × 10<sup>−1</sup> mol·L<sup>−1</sup>), ajouter 25 mL de S<sub>2</sub> (sel de fer(II), [Fe<sup>2+</sup>] = 1,0 × 10<sup>−1</sup> mol·L<sup>−1</sup>). Placer au bain-marie à 70 °C pendant 5 min, refroidir, filtrer, mesurer l'absorbance du filtrat à 480 nm.</dd>
+<dt>Protocole 2</dt><dd>Dans un bécher de 50 mL contenant un fil d'argent, verser 25 mL d'une solution S<sub>3</sub> de nitrate de fer(III), [Fe<sup>3+</sup>] = 5,0 × 10<sup>−2</sup> mol·L<sup>−1</sup>. Mesurer l'absorbance à 480 nm.</dd>
+<dt>Données</dt><dd>Coefficient d'absorption molaire de Fe<sup>3+</sup> à 480 nm : ε = 7,27 L·mol<sup>−1</sup>·cm<sup>−1</sup> (valeur utilisée par le guide pédagogique ; le manuel imprime 1,27), ℓ = 1,0 cm. Les ions Fe<sup>3+</sup> colorent la solution en jaune ; à 480 nm, Ag<sup>+</sup> et Fe<sup>2+</sup> n'absorbent pas. Couples : Fe<sup>3+</sup>/Fe<sup>2+</sup> et Ag<sup>+</sup>/Ag.</dd></dl></details>
+    <details class="panel mots" id="aide"><summary>❓ Aide</summary><dl><dt>Protocole 1</dt><dd>Les boutons s'enchaînent : mélange, bain-marie, refroidissement, filtration, mesure. Faites le blanc avant de mesurer.</dd>
+<dt>Tests</dt><dd>On prélève 10 mL de filtrat dans deux béchers ; on ajoute 5 mL de S<sub>1</sub> à l'un et 5 mL de S<sub>2</sub> à l'autre, puis on mesure A et on compare au témoin (filtrat + 5 mL d'eau).</dd>
+<dt>Protocole 2</dt><dd>Mesurez A à plusieurs instants : l'évolution est lente avec un simple fil d'argent (temps accéléré).</dd></dl></details>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-sc">
+      <header><h2 id="h-sc">La paillasse</h2><span class="row-actions"><button class="btn" id="demo" type="button">▶ Voir une démonstration</button><button class="btn ghost" id="reset" type="button">Tout remettre à zéro</button><button class="btn ghost" id="aidebtn" type="button">❓ Aide</button><button class="btn ghost" id="ecobtn" type="button" aria-pressed="false">🐢 Mode économe</button></span></header>
+      <details class="proto" open><summary>📋 Protocole à suivre (fiche activité 1) <span class="hint" id="protocount"></span></summary><ol id="proto"></ol><button class="btn ghost qbtn" id="prototout" type="button">Voir toutes les étapes</button></details>
+      <div class="epi" role="group" aria-label="Équipements de protection"><span class="hint">Je m'équipe :</span>
+        <button class="chip" type="button" data-epi="blouse" aria-pressed="false">🥼 Blouse</button><button class="chip" type="button" data-epi="gants" aria-pressed="false">🧤 Gants</button><button class="chip" type="button" data-epi="lunettes" aria-pressed="false">🥽 Lunettes</button></div>
+      <figure class="scene3d" id="fig3d">
+        <canvas class="c3d" role="img" aria-label="Paillasse en 3D : béchers, bain-marie, entonnoir et filtre, fil d'argent, spectrophotomètre"></canvas>
+        <div class="vues" role="group" aria-label="Point de vue"><button type="button" data-vue="d3" aria-pressed="true">Vue d'ensemble</button><button type="button" data-vue="p1" aria-pressed="false">Protocole 1</button><button type="button" data-vue="p2" aria-pressed="false">Protocole 2</button></div>
+        <div class="zoom"><button type="button" data-z="+" aria-label="Zoomer">+</button><button type="button" data-z="-" aria-label="Dézoomer">−</button></div>
+        <div class="hud" id="hud"></div>
+        <span class="astuce">Glisser pour tourner</span>
+      </figure>
+      <p class="etape-h">Spectrophotomètre (λ = 480 nm)</p>
+<div class="row-actions"><button class="btn ghost" id="blanc" type="button">Faire le blanc</button><span class="ecran" id="ecran">A = —</span></div>
+<p class="etape-h">Protocole 1</p>
+<div class="row-actions"><button class="btn ghost" id="m1" type="button">① 25 mL S₁ + 25 mL S₂</button><button class="btn ghost" id="m2" type="button">② Bain-marie 70 °C, 5 min</button><button class="btn ghost" id="m3" type="button">③ Refroidir</button><button class="btn ghost" id="m4" type="button">④ Filtrer</button><button class="btn" id="m5" type="button">⑤ Mesurer A du filtrat</button></div>
+<div class="row-actions"><button class="btn ghost" id="tAg" type="button">Test : 10 mL filtrat + 5 mL S₁ (Ag⁺)</button><button class="btn ghost" id="tFe" type="button">Test : 10 mL filtrat + 5 mL S₂ (Fe²⁺)</button></div>
+<p class="etape-h">Protocole 2</p>
+<div class="row-actions"><button class="btn ghost" id="p2" type="button">Fil d'argent + 25 mL S₃ (Fe³⁺)</button><button class="btn" id="m2A" type="button">Mesurer A de la solution S₃</button><span>t = <b id="tlu">—</b></span></div>
+      <p class="toast info" id="msg" role="status" aria-live="polite">Équipez-vous (blouse, gants, lunettes) avant de manipuler.</p>
+      <div class="row-actions"><span class="hint">Fin de manipulation :</span><button class="btn ghost" id="bidon" type="button">🛢 Dans le bidon de récupération</button><button class="btn warn" id="evier" type="button">🚰 Dans l'évier</button></div>
+    </section>
+
+    <div class="wrap" style="gap:18px">
+      <section class="panel" aria-labelledby="h-o"><header><h2 id="h-o">Observations et mesures</h2></header>
+<table class="data"><thead><tr><th>Solution</th><th>Observation</th><th>A (480 nm)</th></tr></thead><tbody id="tmes"></tbody></table>
+<figure class="graphe" id="gfig"><canvas id="gcv" width="900" height="420" role="img" aria-label="Absorbance de la solution du protocole 2 en fonction du temps"></canvas></figure></section>
+      <section class="panel" aria-labelledby="h-q">
+        <header><h2 id="h-q">Questions de l'activité</h2><span class="hint">répondre dans l'ordre</span></header>
+        <div class="question"><h3>1-2. Observations et transformation supposée totale <span class="tag">RÉA</span></h3>
+<label>Observation :<select id="q1" data-save data-lib="Q1 observations" data-bonne="un dépôt gris d'argent se forme et la solution jaunit (ions Fe³⁺)"><option value="">…</option><option>un dépôt gris d'argent se forme et la solution jaunit (ions Fe³⁺)</option><option>un précipité bleu se forme</option><option>rien ne se passe</option></select></label>
+<label>a. Équation :<select id="q2a" data-save data-lib="Q2.a équation" data-bonne="Ag⁺(aq) + Fe²⁺(aq) → Ag(s) + Fe³⁺(aq)"><option value="">…</option><option>Ag⁺(aq) + Fe²⁺(aq) → Ag(s) + Fe³⁺(aq)</option><option>Ag(s) + Fe³⁺(aq) → Ag⁺(aq) + Fe²⁺(aq)</option><option>2 Ag⁺(aq) + Fe²⁺(aq) → 2 Ag(s) + Fe³⁺(aq)</option></select></label>
+<label>b. Si la transformation était totale : [Fe<sup>3+</sup>]<sub>max</sub> = <input type="text" id="q2b" data-save data-lib="Q2.b [Fe3+]max (mol/L)" data-val="fmax" data-tol="0.05" data-rel inputmode="decimal" size="7"> mol·L<sup>−1</sup></label>
+<div class="row-actions"><button class="btn" type="button" data-check="q1,q2a,q2b" data-pre="p1" data-ok="n(Ag<sup>+</sup>) = n(Fe<sup>2+</sup>) = 2,5 mmol ; si x<sub>max</sub> = 2,5 mmol, [Fe<sup>3+</sup>]<sub>max</sub> = 2,5 / 50 = 5,0 × 10<sup>−2</sup> mol·L<sup>−1</sup>.">Vérifier</button></div><p class="toast" data-out hidden></p></div>
+<div class="question"><h3>3. Composition dans l'état final réel <span class="tag">ANA-RAIS</span></h3>
+<label>[Fe<sup>3+</sup>]<sub>f</sub> = A / (ε·ℓ) ≈ <input type="text" id="q3" data-save data-lib="Q3 [Fe3+]f (mol/L)" data-val="ff" data-tol="0.12" data-rel inputmode="decimal" size="7"> mol·L<sup>−1</sup></label>
+<div class="row-actions"><button class="btn" type="button" data-check="q3" data-pre="mes1" data-ok="[Fe<sup>3+</sup>]<sub>f</sub> ≈ 6,9 × 10<sup>−3</sup> mol·L<sup>−1</sup> &lt; [Fe<sup>3+</sup>]<sub>max</sub> : la transformation n'est pas totale.">Vérifier</button></div><p class="toast" data-out hidden></p></div>
+<span class="codebox" style="display:none"><label for="code">☎ Appel : proposez au professeur un protocole pour montrer que les deux réactifs sont encore présents. Il vous donne un code pour débloquer la suite.</label><input id="code" type="text" autocomplete="off" aria-label="Code du professeur"></span>
+<div class="question verrou-appel"><h3>4. Les réactifs sont-ils encore présents ? <span class="tag">ANA-RAIS · VAL</span></h3>
+<select id="q4" data-save data-lib="Q4 tests" data-bonne="dans les deux tests, A est plus grande que celle du témoin : du Fe³⁺ se forme, donc le filtrat contenait encore Fe²⁺ et Ag⁺ ; réactifs et produits coexistent"><option value="">…</option><option>dans les deux tests, A est plus grande que celle du témoin : du Fe³⁺ se forme, donc le filtrat contenait encore Fe²⁺ et Ag⁺ ; réactifs et produits coexistent</option><option>A est égale à celle du témoin : il ne reste aucun réactif</option><option>A est plus petite que celle du témoin : les ions Fe³⁺ disparaissent</option></select>
+<div class="row-actions"><button class="btn" type="button" data-check="q4" data-pre="tests" data-ok="À l'état d'équilibre chimique, réactifs et produits sont tous présents et la composition n'évolue plus.">Vérifier</button></div><p class="toast" data-out hidden></p></div>
+<div class="question verrou-appel"><h3>5. La réaction inverse <span class="tag">VAL</span></h3>
+<label>b. Équation :<select id="q5b" data-save data-lib="Q5.b équation" data-bonne="Ag(s) + Fe³⁺(aq) → Ag⁺(aq) + Fe²⁺(aq)"><option value="">…</option><option>Ag(s) + Fe³⁺(aq) → Ag⁺(aq) + Fe²⁺(aq)</option><option>Ag⁺(aq) + Fe²⁺(aq) → Ag(s) + Fe³⁺(aq)</option><option>Ag(s) + Fe²⁺(aq) → Ag⁺(aq) + Fe(s)</option></select></label>
+<label>c. Caractère non total :<select id="q5c" data-save data-lib="Q5.c non totale" data-bonne="l'argent est en excès, mais A se stabilise à une valeur non nulle : il reste des ions Fe³⁺"><option value="">…</option><option>l'argent est en excès, mais A se stabilise à une valeur non nulle : il reste des ions Fe³⁺</option><option>A devient nulle : tous les ions Fe³⁺ ont réagi</option><option>A ne varie pas : il ne se passe rien</option></select></label>
+<label>d. Condition :<select id="q5d" data-save data-lib="Q5.d condition" data-bonne="la transformation est modélisée par deux réactions opposées qui se produisent simultanément"><option value="">…</option><option>la transformation est modélisée par deux réactions opposées qui se produisent simultanément</option><option>un des réactifs doit être solide</option><option>la température doit être élevée</option></select></label>
+<div class="row-actions"><button class="btn" type="button" data-check="q5b,q5c,q5d" data-pre="p2" data-ok="Les deux réactions opposées conduisent au même état d'équilibre ([Fe<sup>3+</sup>] ≈ 6,9 × 10<sup>−3</sup> mol·L<sup>−1</sup>) !">Vérifier</button></div><p class="toast" data-out hidden></p></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="h-conc">
+    <header><h2 id="h-conc">Un pas vers le cours (question 6) · Réponse à la problématique</h2></header>
+    <p><b>6.</b> Formuler une hypothèse sur les vitesses de formation et de disparition des réactifs à l'état d'équilibre.</p>
+    
+    <div class="checks">
+      <button class="chip" type="button" data-concl="a" aria-pressed="false" data-juste>À l'équilibre, les deux réactions opposées se produisent toujours, à la même vitesse : chaque espèce se forme aussi vite qu'elle disparaît, la composition n'évolue plus. C'est un équilibre dynamique.</button>
+      <button class="chip" type="button" data-concl="b" aria-pressed="false" data-pourquoi="Non : les deux réactions continuent ; leurs effets se compensent (équilibre dynamique).">À l'équilibre, plus aucune réaction ne se produit : le système est figé.</button>
+      <button class="chip" type="button" data-concl="c" aria-pressed="false" data-pourquoi="Non : si c&#x27;était le cas, la composition continuerait d&#x27;évoluer.">À l'équilibre, la réaction directe est plus rapide que la réaction inverse.</button>
+    </div>
+    <label for="maconc" style="display:block;margin:14px 0 6px"><b>Ma conclusion rédigée</b> : décrivez une transformation non totale (état final, réactions opposées, vitesses).</label>
+    <textarea id="maconc" data-save rows="4"></textarea>
+    <div class="row-actions"><button class="btn" id="checkconcl" type="button" data-ok="Une transformation non totale conduit à un état d&#x27;équilibre chimique où réactifs et produits coexistent ; elle est modélisée par deux réactions opposées de même vitesse à l&#x27;équilibre (équilibre dynamique).">Vérifier ma conclusion</button></div>
+    <p class="toast" id="outconcl" role="status" aria-live="polite" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-cr">
+    <header><h2 id="h-cr">Mon compte rendu</h2></header>
+    <div class="crform">
+      <label>Nom et prénom<input id="crnom" data-save type="text" autocomplete="name"></label>
+      <label>Classe<input id="crclasse" data-save type="text" placeholder="Tle…"></label>
+      <button class="btn ghost" id="crbtn" type="button">Afficher mon compte rendu</button><button class="btn" id="crpdf" type="button">⬇ Télécharger mon compte rendu (PDF)</button>
+    </div>
+    <div class="cr" id="cr" hidden></div>
+    <div class="row-actions"><span class="hint" id="crnote" role="status" aria-live="polite"></span></div>
+    <p class="hint">Déposez le PDF dans le devoir Google Classroom (Ajouter &gt; Fichier, puis Rendre). Votre travail est enregistré automatiquement dans ce navigateur. <button class="btn warn" id="effacer" type="button">Effacer mon travail</button></p>
+  </section>
+  <p class="foot">Simulation 3D d'après l'activité 1 p. 133 du manuel Hachette Terminale spécialité · Mme Messaoudi · EFIR 2026-2027. Compositions calculées avec K = [Fe³⁺]/([Ag⁺][Fe²⁺]) ≈ 3,7 (cohérent avec A ≈ 0,050 donnée par le guide) et ε(Fe³⁺, 480 nm) = 7,27 L·mol⁻¹·cm⁻¹.</p>
+</div>
+
+<script>
+/* =====================================================================
+   Moteur commun des simulations 3D du labo virtuel EFIR (Terminale)
+   three.js r128 (cdnjs), caméra orbitale maison, graphiques 2D,
+   protocole, questions, appel professeur, sauvegarde, compte rendu PDF.
+   Mme Messaoudi · EFIR · 2026-2027
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+let REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+try { if (localStorage.getItem("efir-eco") === "1") REDUCED = true; } catch (e) {}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+/* nombre à la française : n chiffres significatifs, virgule décimale */
+function fr(x, n = 2) {
+  if (!isFinite(x)) return "–";
+  if (x === 0) return "0";
+  const ex = Math.floor(Math.log10(Math.abs(x)));
+  if (ex >= -2 && ex <= 3) { const d = Math.max(0, n - 1 - ex); return x.toFixed(d).replace(".", ","); }
+  let m = x / 10 ** ex, ms = m.toFixed(n - 1);
+  if (Math.abs(+ms) >= 10) return fr(x * 1.0000001, n);
+  return `${ms.replace(".", ",")} × 10<sup>${ex < 0 ? "−" + -ex : ex}</sup>`;
+}
+const fx = (x, d = 2) => (Math.round(x * 10 ** d) / 10 ** d).toFixed(d).replace(".", ",").replace("-", "−");
+const lireNombre = s => { const t = String(s).replace(/\s/g, "").replace(",", ".").replace("−", "-"); return t === "" ? NaN : +t; };
+const wait = ms => new Promise(r => setTimeout(r, REDUCED ? 60 : ms));
+const enc = s => btoa(unescape(encodeURIComponent(s)));
+const dec = s => { try { return decodeURIComponent(escape(atob(s))); } catch (e) { return ""; } };
+function say(html, kind = "info") { const m = $("#msg"); if (!m) return; m.className = "toast " + kind; m.innerHTML = html; }
+
+/* ---------------------------------------------------------------------
+   SCÈNE 3D
+   --------------------------------------------------------------------- */
+function Scene3D(fig, opt = {}) {
+  const canvas = fig.querySelector("canvas.c3d");
+  if (!window.THREE) { fig.innerHTML = '<p class="nogl">La 3D n\'a pas pu se charger (connexion internet ?). Rechargez la page.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: !REDUCED, alpha: false }); }
+  catch (e) { fig.innerHTML = '<p class="nogl">Votre navigateur ne permet pas l\'affichage 3D (WebGL). Essayez un autre navigateur.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  renderer.setPixelRatio(REDUCED ? 1 : Math.min(devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = !REDUCED;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(opt.fov || 40, 1.6, 0.05, 400);
+  const fond = () => { const dark = matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light"; scene.background = new THREE.Color(dark ? (opt.fondSombre || 0x101a26) : (opt.fond || 0xdfeaf3)); };
+  fond(); matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { fond(); demande(); });
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9a7a, 0.75));
+  const soleil = new THREE.DirectionalLight(0xffffff, 0.75); soleil.position.set(-6, 14, 9); soleil.castShadow = true;
+  soleil.shadow.mapSize.set(1024, 1024); Object.assign(soleil.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(soleil);
+  /* caméra orbitale */
+  const O = { cible: new THREE.Vector3(...(opt.cible || [0, 0, 0])), r: opt.r || 10, az: opt.az ?? -0.6, el: opt.el ?? 0.35, rmin: opt.rmin || 1, rmax: opt.rmax || 60 };
+  let anim = null;
+  function placer() {
+    O.el = Math.max(-0.2, Math.min(1.55, O.el)); O.r = Math.max(O.rmin, Math.min(O.rmax, O.r));
+    camera.position.set(O.cible.x + O.r * Math.cos(O.el) * Math.sin(O.az), O.cible.y + O.r * Math.sin(O.el), O.cible.z + O.r * Math.cos(O.el) * Math.cos(O.az));
+    camera.lookAt(O.cible); demande();
+  }
+  const pts = new Map(); let pinch0 = 0, actif = 0;
+  canvas.addEventListener("pointerdown", e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); actif = Date.now(); anim = null; api.onUser && api.onUser(); });
+  canvas.addEventListener("pointermove", e => {
+    if (!pts.has(e.pointerId)) return; const [x0, y0] = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 1) { O.az -= (e.clientX - x0) * 0.008; O.el += (e.clientY - y0) * 0.006; placer(); }
+    else if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch0) { O.r *= pinch0 / d; placer(); } pinch0 = d; }
+  });
+  const fin = e => { pts.delete(e.pointerId); pinch0 = 0; };
+  canvas.addEventListener("pointerup", fin); canvas.addEventListener("pointercancel", fin);
+  canvas.addEventListener("wheel", e => { if (!(e.ctrlKey || e.metaKey || Date.now() - actif < 4000)) return; e.preventDefault(); O.r *= Math.exp(e.deltaY * 0.0012); placer(); }, { passive: false });
+  const zb = fig.querySelector(".zoom"); if (zb) { zb.querySelector("[data-z='+']").onclick = () => { O.r /= 1.25; placer(); }; zb.querySelector("[data-z='-']").onclick = () => { O.r *= 1.25; placer(); }; }
+  /* vues prédéfinies, transition douce */
+  function vue(v, nom) {
+    const but = { r: v.r ?? O.r, az: v.az ?? O.az, el: v.el ?? O.el, c: v.cible ? new THREE.Vector3(...v.cible) : O.cible.clone() };
+    $$(".vues button", fig).forEach(b => b.setAttribute("aria-pressed", b.dataset.vue === nom));
+    if (REDUCED) { O.r = but.r; O.az = but.az; O.el = but.el; O.cible.copy(but.c); placer(); return; }
+    const d = { r: O.r, az: O.az, el: O.el, c: O.cible.clone() }; let t0 = performance.now();
+    anim = now => { let k = Math.min(1, (now - t0) / 700); k = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      O.r = d.r + (but.r - d.r) * k; O.az = d.az + (but.az - d.az) * k; O.el = d.el + (but.el - d.el) * k; O.cible.lerpVectors(d.c, but.c, k); placer(); if (k >= 1) anim = null; };
+    demande();
+  }
+  /* rendu à la demande + boucle d'animation */
+  let enAttente = false; const cbs = new Set(); let tPrec = performance.now();
+  function demande() { if (!enAttente) { enAttente = true; requestAnimationFrame(boucle); } }
+  function boucle(now) {
+    enAttente = false; const dt = Math.min(0.05, (now - tPrec) / 1000); tPrec = now;
+    if (anim) anim(now);
+    let encore = !!anim; cbs.forEach(f => { if (f(dt, now)) encore = true; });
+    renderer.render(scene, camera); if (encore) demande();
+  }
+  function taille() { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); demande(); }
+  new ResizeObserver(taille).observe(canvas); taille(); placer();
+  /* aides de dessin */
+  function etiquette(texte, o = {}) {
+    const c = document.createElement("canvas"), g = c.getContext("2d"), fs = 64, font = `${o.italic ? "italic " : ""}700 ${fs}px Atkinson Hyperlegible, Segoe UI, sans-serif`;
+    /* la flèche de vecteur (U+20D7) n'existe pas dans les polices : on la dessine au-dessus de la lettre */
+    const morceaux = []; [...texte].forEach(ch => { if (ch === "⃗" && morceaux.length) morceaux[morceaux.length - 1].vec = true; else morceaux.push({ ch }); });
+    g.font = font; const larg = morceaux.map(m => g.measureText(m.ch).width), w = Math.ceil(larg.reduce((a, b) => a + b, 0)) + 28;
+    const vec = morceaux.some(m => m.vec); c.width = w; c.height = fs + 26 + (vec ? 14 : 0);
+    g.font = font; g.textBaseline = "middle";
+    if (o.fond !== false) { g.fillStyle = o.fond || "rgba(255,255,255,.88)"; const rr = 18; g.beginPath(); g.moveTo(rr, 0); g.arcTo(w, 0, w, c.height, rr); g.arcTo(w, c.height, 0, c.height, rr); g.arcTo(0, c.height, 0, 0, rr); g.arcTo(0, 0, w, 0, rr); g.fill(); }
+    const coul = o.couleur || "#15212d"; g.fillStyle = g.strokeStyle = coul; let xx = 14; const ym = c.height / 2 + 2 + (vec ? 7 : 0);
+    morceaux.forEach((m, i) => {
+      g.fillText(m.ch, xx, ym);
+      if (m.vec) { const x0 = xx + larg[i] * (o.italic ? .25 : .1), x1 = xx + larg[i] * (o.italic ? 1.05 : .9), yv = ym - fs * .52; g.lineWidth = 5; g.beginPath(); g.moveTo(x0, yv); g.lineTo(x1, yv); g.stroke(); g.beginPath(); g.moveTo(x1 + 4, yv); g.lineTo(x1 - 10, yv - 8); g.lineTo(x1 - 10, yv + 8); g.closePath(); g.fill(); }
+      xx += larg[i];
+    });
+    const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: o.depthTest ?? false, transparent: true }));
+    const h = o.taille || 0.4; sp.scale.set(h * c.width / c.height, h, 1); sp.renderOrder = 10; return sp;
+  }
+  function fleche(couleur, epaisseur = 0.03) {
+    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: couleur, roughness: .5 });
+    const tige = new THREE.Mesh(new THREE.CylinderGeometry(epaisseur, epaisseur, 1, 12), mat);
+    const tete = new THREE.Mesh(new THREE.ConeGeometry(epaisseur * 3, epaisseur * 8, 16), mat); g.add(tige, tete);
+    g.regler = (orig, vec) => {
+      const L = vec.length(); g.visible = L > 1e-6; if (!g.visible) return; const lt = Math.max(0, L - epaisseur * 8);
+      g.position.copy(orig); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vec.clone().normalize());
+      tige.scale.set(1, Math.max(lt, 1e-4), 1); tige.position.set(0, lt / 2, 0); tete.position.set(0, lt + epaisseur * 4, 0);
+    };
+    return g;
+  }
+  const api = { THREE, scene, camera, renderer, O, vue, demande, placer, etiquette, fleche, anime: f => { cbs.add(f); demande(); return () => cbs.delete(f); }, onUser: null };
+  $$(".vues button", fig).forEach(b => b.addEventListener("click", () => { const x = opt.vues && opt.vues[b.dataset.vue]; if (x) vue(typeof x === "function" ? x() : x, b.dataset.vue); }));
+  return api;
+}
+
+/* ---------------------------------------------------------------------
+   GRAPHIQUE 2D (canvas) : axes gradués, séries de points et courbes
+   --------------------------------------------------------------------- */
+function Graphe(canvas) {
+  const ctx = canvas.getContext("2d");
+  function pas(etendue) { const b = 10 ** Math.floor(Math.log10(etendue / 5)), m = etendue / 5 / b; return b * (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10); }
+  function trace(cfg) {
+    const W = canvas.width, H = canvas.height, ink = css("--ink"), mut = css("--muted"), line = css("--line");
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = css("--surface"); ctx.fillRect(0, 0, W, H);
+    const m = { g: 74, d: 18, h: 34, b: 52 }, pw = W - m.g - m.d, ph = H - m.h - m.b;
+    let { xmin, xmax, ymin, ymax } = cfg;
+    const tous = cfg.series.flatMap(s => s.pts || []);
+    if (xmin == null) xmin = Math.min(0, ...tous.map(p => p[0])); if (xmax == null) xmax = Math.max(...tous.map(p => p[0]), xmin + 1e-9);
+    if (ymin == null) ymin = Math.min(0, ...tous.map(p => p[1])); if (ymax == null) ymax = Math.max(...tous.map(p => p[1]), ymin + 1e-9);
+    const py0 = (ymax - ymin) * 0.06; ymax += py0; if (ymin < 0) ymin -= py0;
+    const X = x => m.g + (x - xmin) / (xmax - xmin) * pw, Y = y => m.h + ph - (y - ymin) / (ymax - ymin) * ph;
+    ctx.font = "20px " + css("--font-body"); ctx.textBaseline = "middle";
+    const sx = pas(xmax - xmin), sy = pas(ymax - ymin);
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.fillStyle = mut;
+    for (let v = Math.ceil(xmin / sx) * sx; v <= xmax + 1e-9; v += sx) { ctx.beginPath(); ctx.moveTo(X(v), m.h); ctx.lineTo(X(v), m.h + ph); ctx.stroke(); ctx.textAlign = "center"; ctx.fillText(fx(v, sx < 1 ? (sx < .1 ? 2 : 1) : 0), X(v), m.h + ph + 18); }
+    for (let v = Math.ceil(ymin / sy) * sy; v <= ymax + 1e-9; v += sy) { ctx.beginPath(); ctx.moveTo(m.g, Y(v)); ctx.lineTo(m.g + pw, Y(v)); ctx.stroke(); ctx.textAlign = "right"; ctx.fillText(fx(v, sy < 1 ? (sy < .1 ? 2 : 1) : 0), m.g - 8, Y(v)); }
+    ctx.strokeStyle = ink; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(m.g, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.lineTo(m.g + pw, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.moveTo(X(Math.max(xmin, 0)), m.h); ctx.lineTo(X(Math.max(xmin, 0)), m.h + ph); ctx.stroke();
+    ctx.fillStyle = ink; ctx.font = "700 20px " + css("--font-body"); ctx.textAlign = "right"; ctx.fillText(cfg.xlab || "", m.g + pw, m.h + ph + 40); ctx.textAlign = "left"; ctx.fillText(cfg.ylab || "", 8, 16);
+    ctx.save(); ctx.beginPath(); ctx.rect(m.g, m.h - 4, pw, ph + 8); ctx.clip();
+    cfg.series.forEach(s => {
+      ctx.strokeStyle = ctx.fillStyle = s.c || ink; ctx.lineWidth = s.w || 2.5; ctx.setLineDash(s.dash || []);
+      if (s.f) { ctx.beginPath(); for (let i = 0; i <= 300; i++) { const x = xmin + (xmax - xmin) * i / 300, y = s.f(x); i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); } ctx.stroke(); }
+      else if (s.points) s.pts.forEach(([x, y]) => { ctx.beginPath(); if (s.croix) { ctx.lineWidth = 2; ctx.moveTo(X(x) - 5, Y(y) - 5); ctx.lineTo(X(x) + 5, Y(y) + 5); ctx.moveTo(X(x) - 5, Y(y) + 5); ctx.lineTo(X(x) + 5, Y(y) - 5); ctx.stroke(); } else { ctx.arc(X(x), Y(y), s.r || 4, 0, 7); ctx.fill(); } });
+      else { ctx.beginPath(); s.pts.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))); ctx.stroke(); }
+      ctx.setLineDash([]);
+    });
+    if (cfg.curseur != null) { ctx.strokeStyle = css("--amber"); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(X(cfg.curseur), m.h); ctx.lineTo(X(cfg.curseur), m.h + ph); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.restore();
+    /* légende */
+    ctx.font = "18px " + css("--font-body"); ctx.textAlign = "left";
+    const noms = cfg.series.filter(s => s.nom); let lx = W - m.d - noms.reduce((a, s) => a + ctx.measureText(s.nom).width + 44, 0) + 20;
+    ctx.font = "700 20px " + css("--font-body"); lx = Math.max(lx, 16 + ctx.measureText(cfg.ylab || "").width + 24); ctx.font = "18px " + css("--font-body");
+    noms.forEach(s => { ctx.fillStyle = s.c || ink; ctx.fillRect(lx, 14, 16, 4); ctx.fillStyle = ink; ctx.fillText(s.nom, lx + 22, 16); lx += ctx.measureText(s.nom).width + 44; });
+  }
+  return { trace };
+}
+/* régression polynomiale (moindres carrés), degré 1 ou 2, avec ou sans constante */
+function ajuste(pts, deg, constante = true) {
+  const base = x => { const b = []; if (constante) b.push(1); b.push(x); if (deg === 2) b.push(x * x); return b; };
+  const n = base(0).length, A = Array.from({ length: n }, () => Array(n + 1).fill(0));
+  pts.forEach(([x, y]) => { const b = base(x); for (let i = 0; i < n; i++) { for (let j = 0; j < n; j++) A[i][j] += b[i] * b[j]; A[i][n] += b[i] * y; } });
+  for (let i = 0; i < n; i++) { let p = i; for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > Math.abs(A[p][i])) p = k; [A[i], A[p]] = [A[p], A[i]];
+    for (let k = 0; k < n; k++) if (k !== i) { const f = A[k][i] / A[i][i]; for (let j = i; j <= n; j++) A[k][j] -= f * A[i][j]; } }
+  const c = A.map((r, i) => r[n] / r[i]); const res = { c0: constante ? c[0] : 0, c1: c[constante ? 1 : 0], c2: deg === 2 ? c[constante ? 2 : 1] : 0 };
+  res.f = x => res.c0 + res.c1 * x + res.c2 * x * x; return res;
+}
+
+/* ---------------------------------------------------------------------
+   QUESTIONS : <select data-b="(bonne réponse codée)"> ou
+   <input data-val="nom de la fonction LAB.val" data-tol="0.1" data-rel>
+   --------------------------------------------------------------------- */
+const LAB = { S: {}, val: {}, key: "", demarche: () => [], mesures: () => [], cr: {}, appel: true, choix: "" };
+function juste(id) {
+  const el = document.getElementById(id); if (!el || !el.value) return false;
+  if (el.dataset.b) return el.value === dec(el.dataset.b);
+  if (el.dataset.val) { const v = lireNombre(el.value), ref = LAB.val[el.dataset.val](), tol = +el.dataset.tol; if (!isFinite(v)) return false; return el.hasAttribute("data-rel") ? Math.abs(v - ref) <= tol * Math.abs(ref) : Math.abs(v - ref) <= tol; }
+  return false;
+}
+function brancherQuestions() {
+  /* coder les bonnes réponses écrites en clair dans data-bonne */
+  $$("select[data-bonne]").forEach(s => { s.dataset.b = enc(s.dataset.bonne); s.removeAttribute("data-bonne"); });
+  $$("[data-check]").forEach(btn => btn.addEventListener("click", () => {
+    const ids = btn.dataset.check.split(","), out = btn.closest(".question").querySelector(".toast[data-out]");
+    let nb = 0, vides = 0;
+    ids.forEach(id => { const el = document.getElementById(id); el.classList.remove("ok", "ko"); if (!el.value) { vides++; return; } const j = juste(id); el.classList.add(j ? "ok" : "ko"); if (j) nb++; });
+    const pre = btn.dataset.pre && LAB.pre && LAB.pre[btn.dataset.pre] ? LAB.pre[btn.dataset.pre]() : "";
+    out.hidden = false;
+    if (pre) { out.className = "toast info"; out.innerHTML = pre; return; }
+    if (vides) { out.className = "toast info"; out.innerHTML = "Répondez à toutes les parties de la question avant de vérifier."; return; }
+    if (nb === ids.length) { out.className = "toast ok"; out.innerHTML = "✓ " + (btn.dataset.ok || "Bonne réponse."); }
+    else { out.className = "toast err"; out.innerHTML = `✗ ${ids.length > 1 ? `${nb} réponse${nb > 1 ? "s" : ""} juste${nb > 1 ? "s" : ""} sur ${ids.length}. ` : ""}${btn.dataset.ko || "Revoyez la simulation et réessayez."}`; }
+  }));
+  /* appel professeur */
+  const code = $("#code");
+  if (code) code.addEventListener("input", () => { if (code.value.trim().toUpperCase() === "EFIR") { LAB.appel = true; majAppel(); say("✓ Code accepté : la suite est débloquée.", "ok"); } });
+  /* conclusion à choix */
+  $$("[data-concl]").forEach(b => b.addEventListener("click", () => { LAB.choix = b.dataset.concl; $$("[data-concl]").forEach(x => x.setAttribute("aria-pressed", x === b)); }));
+  const c2 = $("#checkconcl");
+  if (c2) c2.addEventListener("click", () => {
+    const o = $("#outconcl"); o.hidden = false; const mc = $("#maconc").value.trim();
+    if (!LAB.choix) { o.className = "toast info"; o.innerHTML = "Choisissez d'abord une réponse."; return; }
+    const b = $(`[data-concl="${LAB.choix}"]`);
+    if (b.hasAttribute("data-juste")) { o.className = "toast ok"; o.innerHTML = "✓ " + (c2.dataset.ok || "Bonne conclusion.") + (mc.length > 20 ? "" : "<br>Rédigez maintenant votre conclusion dans la case ci-dessus."); }
+    else { o.className = "toast err"; o.innerHTML = "✗ " + (b.dataset.pourquoi || "Ce n'est pas la bonne conclusion : relisez vos réponses."); }
+  });
+}
+function majAppel() {
+  $$(".question.verrou-appel").forEach(q => q.classList.toggle("verrou", !LAB.appel));
+  const c = $("#code"); if (c && LAB.appel) { c.value = "EFIR"; c.disabled = true; }
+}
+const conclJuste = () => { const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`); return !!(b && b.hasAttribute("data-juste")); };
+
+/* ---------------------------------------------------------------------
+   PROTOCOLE (étapes de la fiche, cochées automatiquement)
+   --------------------------------------------------------------------- */
+function Protocole(etapes) {
+  const ol = $("#proto");
+  function rendu() {
+    const etats = etapes.map(e => { const sous = (e.sous || []).map(x => !!x.ok()); return { ok: e.sous ? sous.every(Boolean) : !!e.ok(), sous }; });
+    const courant = etats.findIndex(x => !x.ok);
+    ol.innerHTML = etapes.map((e, k) => {
+      const st = etats[k], cls = st.ok ? "fait" : k === courant ? "cur" : "";
+      const sous = e.sous ? `<ul>${e.sous.map((x, j) => `<li class="${st.sous[j] ? "fait" : ""}">${st.sous[j] ? "✓" : "○"} ${x.html}</li>`).join("")}</ul>` : "";
+      const part = e.partie ? `<li class="partie">${e.partie}</li>` : "";
+      return `${part}<li class="${cls}"><span class="q">${e.q}</span><span class="tx">${e.html}${sous}</span><span class="st" aria-label="${st.ok ? "fait" : "à faire"}">${st.ok ? "✓" : k === courant ? "➜" : ""}</span></li>`;
+    }).join("");
+    const c = $("#protocount"); if (c) c.textContent = `${etats.filter(x => x.ok).length}/${etapes.length} étapes`;
+  }
+  const bx = ol.closest(".proto"), bt = $("#prototout");
+  if (bt) bt.addEventListener("click", () => { bx.classList.toggle("tout"); bt.textContent = bx.classList.contains("tout") ? "Voir seulement l'étape en cours" : "Voir toutes les étapes"; });
+  let t = 0; const plusTard = () => { clearTimeout(t); t = setTimeout(rendu, 250); };
+  ["click", "change", "pointerup", "input"].forEach(ev => document.addEventListener(ev, plusTard));
+  setInterval(rendu, 1500); rendu();
+  LAB.protoRendu = rendu;
+}
+
+/* ---------------------------------------------------------------------
+   COMPTE RENDU (affichage + PDF jsPDF)
+   --------------------------------------------------------------------- */
+function construireCR() {
+  const nom = $("#crnom").value.trim() || "(nom non renseigné)", cl = $("#crclasse").value.trim() || "…";
+  const d = new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
+  const rows = $$("[data-lib]").map(el => [el.dataset.lib, el.value, !el.value ? "–" : juste(el.id) ? "✓" : "✗"]);
+  const ok = rows.filter(r => r[2] === "✓").length;
+  const tab = rows.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1] ? esc(r[1]) : "<i>vide</i>"}</td><td>${r[2]}</td></tr>`).join("");
+  const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`), mc = $("#maconc").value.trim();
+  const mes = LAB.mesures(); const dem = LAB.demarche();
+  return { nom, html: `<h3>${LAB.cr.titre}</h3>
+<p><b>Élève :</b> ${esc(nom)} · <b>Classe :</b> ${esc(cl)} · <b>Date :</b> ${d}</p>
+<h4>Mes mesures et essais</h4><ol>${mes.length ? mes.map(m => `<li>${m}</li>`).join("") : "<li>Aucun essai.</li>"}</ol>
+${LAB.PRED ? LAB.PRED.cr() : ""}<h4>Démarche</h4><ul>${dem.map(([t, v]) => `<li>${t} : ${v ? "oui" : "non"}</li>`).join("")}</ul>
+<h4>Réponses : ${ok} juste${ok > 1 ? "s" : ""} sur ${rows.length}</h4>
+<table><thead><tr><th>Question</th><th>Réponse</th><th></th></tr></thead><tbody>${tab}</tbody></table>
+<h4>Conclusion</h4><p>${b ? b.textContent.trim() + (b.hasAttribute("data-juste") ? " → ✓" : " → ✗ à revoir.") : "Aucune réponse choisie."}</p>
+<h4>Ma conclusion rédigée</h4><p>${mc ? esc(mc).replace(/\n/g, "<br>") : "<i>non rédigée</i>"}</p>` };
+}
+const W1252 = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
+const SUPS = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁺": "+", "⁻": "-", "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9", "−": "-", "→": "->", "✓": "(juste)", "✗": "(faux)", "≤": "<=", "≥": ">=", "≈": "~", "α": "alpha", "Δ": "Delta", "√": "racine ", "×": "x", "⃗": "", "ℰ": "E", "σ": "sigma", "ρ": "rho", "λ": "lambda", " ": " ", " ": " " };
+const txtPDF = s => [...String(s).replace(/\s+/g, " ").trim()].map(c => SUPS[c] != null ? SUPS[c] : c).join("").split("").filter(c => c.charCodeAt(0) < 256 || W1252.includes(c)).join("").replace(/ {2,}/g, " ").trim();
+const plat = node => { const c = node.cloneNode(true); c.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); c.querySelectorAll("sub").forEach(s => s.replaceWith(s.textContent)); return c.textContent; };
+function chargerJsPDF() {
+  if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = () => window.jspdf ? ok(window.jspdf) : ko(); s.onerror = ko; document.head.appendChild(s); });
+}
+function faitPDF(r) {
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" });
+  const X = 18, Lg = 174, BAS = 282; let y = 18;
+  const place = h => { if (y + h > BAS) { doc.addPage(); y = 18; } };
+  const ligne = (t, o = {}) => { doc.setFont("helvetica", o.b ? "bold" : "normal"); doc.setFontSize(o.s || 10.5); doc.setTextColor(...(o.c || [21, 33, 45]));
+    const lh = (o.s || 10.5) * .45, ls = doc.splitTextToSize(txtPDF(t), Lg - (o.ind || 0)); ls.forEach(l => { place(lh); doc.text(l, X + (o.ind || 0), y); y += lh; }); y += o.ap || 1.2; };
+  doc.setFillColor(0, 51, 102); doc.rect(0, 0, 210, 8, "F");
+  const tmp = document.createElement("div"); tmp.innerHTML = r.html;
+  [...tmp.children].forEach(e => {
+    const tag = e.tagName;
+    if (tag === "H3") ligne(plat(e), { b: 1, s: 15, c: [0, 51, 102], ap: 2 });
+    else if (tag === "H4") { y += 2.5; ligne(plat(e), { b: 1, s: 12, c: [0, 51, 102], ap: 1.5 }); }
+    else if (tag === "P") ligne(plat(e));
+    else if (tag === "OL" || tag === "UL") [...e.children].forEach((li, k) => ligne((tag === "OL" ? (k + 1) + ". " : "- ") + plat(li), { ind: 2, ap: 1.6 }));
+    else if (tag === "TABLE") [...e.querySelectorAll("tbody tr")].forEach(tr => { const c = [...tr.children].map(td => plat(td).trim()); ligne(`${c[0]} : ${c[1]} ${c[2] === "–" ? "" : c[2]}`, { ind: 2, s: 10, ap: .8 }); });
+  });
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) { doc.setPage(p); doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(87, 103, 118); doc.text(txtPDF(`${LAB.cr.pied} · ${r.nom} · page ${p}/${n}`), X, 290); }
+  const nomF = (r.nom === "(nom non renseigné)" ? "eleve" : r.nom).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  doc.save(`${LAB.cr.fichier}_compte_rendu_${nomF || "eleve"}.pdf`);
+}
+function brancherCR() {
+  const box = $("#cr"), crnote = $("#crnote");
+  $("#crbtn").addEventListener("click", () => { const r = construireCR(); box.innerHTML = r.html; box.hidden = false; box.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); crnote.textContent = "Cliquez sur « Télécharger mon compte rendu (PDF) », puis déposez le fichier dans votre devoir Google Classroom."; });
+  $("#crpdf").addEventListener("click", () => {
+    if (!$("#crnom").value.trim()) { crnote.textContent = "Écrivez d'abord votre nom et prénom."; $("#crnom").focus(); return; }
+    const r = construireCR(); box.innerHTML = r.html; box.hidden = false; crnote.textContent = "Préparation du PDF…"; $("#crpdf").disabled = true;
+    chargerJsPDF().then(() => { faitPDF(r); crnote.textContent = "✓ PDF téléchargé : déposez-le dans votre devoir Google Classroom (Ajouter > Fichier, puis Rendre)."; })
+      .catch(() => { crnote.textContent = "Le PDF n'a pas pu être préparé (connexion ?). Utilisez Imprimer > Enregistrer au format PDF."; window.print(); })
+      .finally(() => { $("#crpdf").disabled = false; });
+  });
+}
+
+/* ---------------------------------------------------------------------
+   AIDE, MODE ÉCONOME, SAUVEGARDE
+   --------------------------------------------------------------------- */
+function brancherOutils() {
+  const aide = $("#aidebtn"), bx = $("#aide"), eco = $("#ecobtn");
+  aide.addEventListener("click", () => { bx.open = true; bx.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); bx.querySelector("summary").focus(); });
+  const show = () => { eco.setAttribute("aria-pressed", REDUCED); document.body.classList.toggle("eco", REDUCED); eco.textContent = REDUCED ? "🐢 Mode économe : activé" : "🐢 Mode économe"; };
+  eco.addEventListener("click", () => { REDUCED = !REDUCED; try { localStorage.setItem("efir-eco", REDUCED ? "1" : "0"); } catch (e) {} show(); say(REDUCED ? "Mode économe activé : animations raccourcies. Rechargez la page pour alléger aussi l'affichage 3D." : "Mode économe désactivé.", "info"); });
+  show();
+}
+function sauvegarde(apresChargement) {
+  function save() {
+    try { localStorage.setItem(LAB.key, JSON.stringify({ v: 1, S: LAB.S, appel: LAB.appel, choix: LAB.choix, champs: Object.fromEntries($$("[data-save]").map(e => [e.id, e.type === "checkbox" ? e.checked : e.value])) })); } catch (e) {}
+  }
+  let t = 0; const later = () => { clearTimeout(t); t = setTimeout(save, 400); };
+  ["change", "click", "input"].forEach(ev => document.addEventListener(ev, later)); setInterval(save, 5000);
+  let retrouve = false;
+  try {
+    const d = JSON.parse(localStorage.getItem(LAB.key) || "null");
+    if (d && d.v === 1) {
+      Object.assign(LAB.S, d.S || {}); LAB.appel = true;
+      for (const id in d.champs || {}) { const e = document.getElementById(id); if (e) { if (e.type === "checkbox") e.checked = !!d.champs[id]; else e.value = d.champs[id]; } }
+      if (d.choix) { const b = $(`[data-concl="${d.choix}"]`); if (b) b.click(); }
+      retrouve = true;
+    }
+  } catch (e) {}
+  majAppel(); apresChargement && apresChargement(retrouve);
+  $("#effacer").addEventListener("click", () => {
+    const eff = $("#effacer");
+    if (!eff.dataset.sure) { eff.dataset.sure = "1"; eff.textContent = "Cliquez encore pour tout effacer"; setTimeout(() => { delete eff.dataset.sure; eff.textContent = "Effacer mon travail"; }, 4000); return; }
+    try { localStorage.removeItem(LAB.key); } catch (e) {} location.reload();
+  });
+}
+function demarrerLAB() { brancherQuestions(); brancherCR(); brancherOutils(); }
+
+/* ---------------------------------------------------------------------
+   LABO 3D v3 : matériel de laboratoire réaliste (même mode d'emploi que la
+   v1 et la v2 : mêmes fonctions, mêmes paramètres, mêmes tailles et positions).
+   v3 : paillasse en résine (sans quadrillage), burette gravée tous les 0,1 mL
+   avec ménisque, afficheurs LCD à 7 segments, boîtiers d'appareils clairs à
+   clavier à membrane, compartiment à cuve du spectrophotomètre avec capot.
+   Verrerie tournée (profils réels : bécher à bec, erlenmeyer, éprouvette sur
+   pied, tube à essai), burette à robinet et bande de Schellbach, potence à
+   socle lourd, appareils reconnus d'après leur nom, bidon et évier.
+   --------------------------------------------------------------------- */
+function Labo3D(V3) {
+  const T = THREE, sc = V3.scene;
+  const mat = (c, o = {}) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: .6 }, o));
+  const verre = new T.MeshPhysicalMaterial({ color: 0xdfefff, transparent: true, opacity: .28, roughness: .05, metalness: 0, side: T.DoubleSide, depthWrite: false });
+  const verreBord = new T.MeshPhysicalMaterial({ color: 0xeaf4ff, transparent: true, opacity: .55, roughness: .05, metalness: 0, depthWrite: false });
+  const blanc = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .9, depthWrite: false });
+  const metal = mat(0xc4ccd4, { metalness: .55, roughness: .3 });
+  const caoutchouc = mat(0x2b2f36, { roughness: .85 });
+  const place = (m, x, y, z) => { m.position.set(x, y, z); sc.add(m); return m; };
+  const etiq = (txt, x, y, z, o = {}) => place(V3.etiquette(txt, Object.assign({ taille: .22 }, o)), x, y, z);
+  /* objet de révolution à partir d'un profil [[rayon, hauteur], …] */
+  const tour = (prof, seg = 40) => new T.LatheGeometry(prof.map(([r, y]) => new T.Vector2(Math.max(r, 1e-4), y)), seg);
+  /* boîte à coins arrondis (boîtiers d'appareils, bidon) */
+  function boiteRonde(w, h, p, r) {
+    r = Math.min(r, w / 2 - 1e-3, h / 2 - 1e-3);
+    const s = new T.Shape(), x = -w / 2, y = -h / 2;
+    s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r);
+    s.quadraticCurveTo(x + w, y + h, x + w - r, y + h); s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+    s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+    const b = Math.min(.02, p * .2);
+    const g = new T.ExtrudeGeometry(s, { depth: Math.max(p - 2 * b, 1e-3), bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 2, curveSegments: 6 });
+    g.translate(0, 0, -p / 2 + b); return g;
+  }
+  /* petite texture de texte (nom imprimé sur un boîtier, étiquette de bidon) */
+  function texte(lignes, o = {}) {
+    const cv = document.createElement("canvas"); cv.width = o.w || 256; cv.height = o.h || 64; const g = cv.getContext("2d");
+    if (o.fond) { g.fillStyle = o.fond; g.fillRect(0, 0, cv.width, cv.height); }
+    if (o.bande) { g.fillStyle = o.bande; g.fillRect(0, 0, cv.width, cv.height * .22); }
+    g.fillStyle = o.couleur || "#ffffff"; g.textAlign = "center"; g.textBaseline = "middle";
+    const L = [].concat(lignes), y0 = o.bande ? cv.height * .22 : 0, hh = (cv.height - y0) / L.length;
+    L.forEach((t, i) => { g.font = `700 ${Math.round(hh * .55)}px Atkinson Hyperlegible, Segoe UI, sans-serif`; g.fillText(t, cv.width / 2, y0 + hh * (i + .5), cv.width * .92); });
+    const tx = new T.CanvasTexture(cv); tx.anisotropy = 4; return tx;
+  }
+
+  /* ---------- paillasse : plan de travail en résine, chant clair ---------- */
+  function paillasse(l = 9, p = 4, cx = .4) {
+    /* plan de travail en résine époxy : teinte gris anthracite chaud, fin moucheté, reflets doux */
+    const cv = document.createElement("canvas"); cv.width = cv.height = 256; const c = cv.getContext("2d");
+    c.fillStyle = "#4d4a55"; c.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 2600; i++) { c.fillStyle = Math.random() < .5 ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.07)"; c.fillRect(Math.random() * 256, Math.random() * 256, 1.5, 1.5); }
+    const tx = new T.CanvasTexture(cv); tx.wrapS = tx.wrapT = T.RepeatWrapping; tx.repeat.set(l / 2, p / 2);
+    const plan = place(new T.Mesh(new T.BoxGeometry(l, .2, p), mat(0xffffff, { roughness: .42, metalness: .05, map: tx })), cx, -.1, 0); plan.receiveShadow = true;
+    /* chant arrondi clair à l'avant et caisson du meuble */
+    const chant = place(new T.Mesh(new T.CylinderGeometry(.06, .06, l, 12), mat(0xd9d6de, { roughness: .45 })), cx, -.06, p / 2); chant.rotation.z = Math.PI / 2;
+    place(new T.Mesh(new T.BoxGeometry(l - .2, .6, .05), mat(0xc9c3d3, { roughness: .7 })), cx, -.5, p / 2 - .15);
+  }
+
+  /* ---------- liquide (cylindre ou tronc de cône si le récipient s'évase) ---------- */
+  function liquide(r, couleur, op = .55, seg = 32, rBas) {
+    const matL = new T.MeshStandardMaterial({ color: couleur, transparent: true, opacity: op, roughness: .1 });
+    if (rBas == null || Math.abs(rBas - r) < 1e-3) {
+      const m = new T.Mesh(new T.CylinderGeometry(r, r, 1, seg), matL); sc.add(m);
+      m.regler = (y0, h, c) => { m.visible = h > 1e-4; m.scale.y = Math.max(h, 1e-4); m.position.y = y0 + Math.max(h, 1e-4) / 2; if (c != null) m.material.color.set(c); };
+      return m;
+    }
+    /* récipient conique (erlenmeyer) : la surface du liquide rétrécit quand le niveau monte */
+    const m = new T.Mesh(new T.CylinderGeometry(r, rBas, 1, seg), matL); sc.add(m); let hTot = 1, dernier = -1;
+    m.regler = (y0, h, c) => {
+      m.visible = h > 1e-4; const hh = Math.max(h, 1e-4);
+      if (Math.abs(hh - dernier) > 1e-4) { dernier = hh; const rh = rBas + (r - rBas) * Math.min(1, hh / (m.userData.hc || hTot));
+        m.geometry.dispose(); m.geometry = new T.CylinderGeometry(rh, rBas, hh, seg); }
+      m.position.y = y0 + hh / 2; if (c != null) m.material.color.set(c);
+    };
+    m.cone = hc => { m.userData.hc = hc; }; return m;
+  }
+
+  /* ---------- récipients : bécher, erlenmeyer, éprouvette, tube à essai ---------- */
+  function recipient(r, h, x, y0, z, o = {}) {
+    const g = new T.Group(); g.position.set(x, 0, z);
+    const fondR = o.fondR || 1, ep = Math.max(.006, r * .035);
+    let liq;
+    if (o.rond) {
+      /* tube à essai / tube à fond rond : col ourlé */
+      const prof = [[0, 0]]; for (let k = 1; k <= 8; k++) { const a = k / 8 * Math.PI / 2; prof.push([r * Math.sin(a), r - r * Math.cos(a)]); }
+      prof.push([r, h + r], [r + ep * 1.6, h + r + ep * .6], [r + ep * 1.2, h + r + ep * 1.8]);
+      const v = new T.Mesh(tour(prof.map(([a, b]) => [a, b - r]), 32), verre); v.position.y = y0; g.add(v);
+      liq = liquide(r * .94, o.couleur || 0xcfe6f7, o.op || .5);
+    } else if (fondR > 1.3) {
+      /* erlenmeyer : fond plat large, panse conique, col droit ourlé */
+      const R = r * fondR, hc = h * .72;
+      const v = new T.Mesh(tour([[0, .004], [R - ep * 3, 0], [R, ep * 3], [r * 1.05, hc], [r, hc + h * .06], [r, h], [r + ep * 1.5, h + ep], [r + ep, h + ep * 2.2]], 40), verre);
+      v.position.y = y0; g.add(v);
+      liq = liquide(r * .96, o.couleur || 0xcfe6f7, o.op || .5, 32, R * .95); liq.cone(hc);
+      etiquetteBlanche(g, R * .78, y0 + hc * .32, R, hc);
+    } else {
+      const tube = h / r > 3.2;
+      /* bécher (bec verseur) ou éprouvette graduée (pied hexagonal) */
+      const prof = [[0, .004], [r * fondR - ep * 2, 0], [r * fondR, ep * 2], [r, h * .98], [r + ep * 1.4, h], [r + ep * .6, h + ep * 1.2]];
+      const v = new T.Mesh(tour(prof, 40), verre); v.position.y = y0; g.add(v);
+      const bord = new T.Mesh(new T.TorusGeometry(r + ep * .7, ep * .9, 6, 40), verreBord); bord.rotation.x = Math.PI / 2; bord.position.y = y0 + h; g.add(bord);
+      const bec = new T.Mesh(new T.TorusGeometry(r * .16, ep * 1.1, 6, 12, Math.PI), verreBord);
+      bec.position.set(-r - ep, y0 + h - ep, 0); bec.rotation.set(Math.PI / 2, 0, Math.PI / 2); bec.scale.set(1, 1.5, 1); g.add(bec);
+      if (tube && y0 < .05 && r < .2) {
+        const pied = new T.Mesh(new T.CylinderGeometry(r * 2.1, r * 2.3, Math.max(.03, r * .25), 6), verreBord); pied.position.y = y0 + .015; g.add(pied);
+        v.position.y = y0 + Math.max(.03, r * .25);
+      }
+      /* graduations blanches (5 traits, ou 10 pour une éprouvette) */
+      const n = tube ? 10 : 5;
+      for (let k = 1; k <= n; k++) {
+        const yk = y0 + h * .1 + (h * .72) * k / n, long = tube ? k % 5 === 0 : k % 2 === 0;
+        const t = new T.Mesh(new T.BoxGeometry(Math.max(.012, r * (long ? .45 : .28)), Math.max(.004, h * .006), .002), blanc);
+        t.position.set(-r * .18, yk, r * fondR * .02 + r + .001); g.add(t);
+      }
+      if (!tube && r >= .2) etiquetteBlanche(g, r * .55, y0 + h * .55, r, h * .3);
+      liq = liquide(r * .96, o.couleur || 0xcfe6f7, o.op || .5, 32, fondR !== 1 ? r * fondR * .96 : undefined);
+      if (fondR !== 1) liq.cone(h);
+    }
+    sc.add(g); liq.position.x = x; liq.position.z = z; liq.regler(y0, 0);
+    return { g, liq, r, h, y0, x, z, niveau: hh => liq.regler(y0, Math.min(hh, h * .98)) };
+  }
+  /* zone blanche dépolie où l'on écrit au crayon (bécher, erlenmeyer) */
+  function etiquetteBlanche(g, l, y, r, hz) {
+    const e = new T.Mesh(new T.PlaneGeometry(l * .7, Math.min(hz * .35, l * .35)), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .55, depthWrite: false }));
+    e.position.set(r * .3, y, r * .96); e.rotation.y = .3; g.add(e);
+  }
+
+  /* ---------- potence : socle lourd peint, tige inox, noix ---------- */
+  function potence(x, z, h = 7) {
+    const s = place(new T.Mesh(boiteRonde(1.4, 1, .1, .08), mat(0x2b2f36, { roughness: .45, metalness: .3 })), x, .05, z); s.rotation.x = -Math.PI / 2; s.castShadow = true;
+    place(new T.Mesh(new T.CylinderGeometry(.09, .1, .08, 20), metal), x, .13, z);
+    [[-.55, -.38], [.55, -.38], [-.55, .38], [.55, .38]].forEach(([a, b]) => place(new T.Mesh(new T.CylinderGeometry(.05, .05, .02, 12), caoutchouc), x + a, .005, z + b));
+    place(new T.Mesh(new T.CylinderGeometry(.045, .045, h, 16), metal), x, h / 2, z).castShadow = true;
+    place(new T.Mesh(new T.SphereGeometry(.05, 12, 8), metal), x, h, z);
+  }
+
+  /* ---------- burette graduée : 0 mL en haut ; set(V) règle le niveau ---------- */
+  function burette(o) {
+    const B = Object.assign({ x: 0, z: 0, haut: 6.4, bas: 2.4, pointe: 1.75, r: .065, vmax: 25, couleur: 0xbfe0ff }, o);
+    const yTop = B.haut + .5;
+    const tube = new T.Mesh(new T.CylinderGeometry(B.r, B.r, yTop - B.bas, 24, 1, true), verre); place(tube, B.x, (yTop + B.bas) / 2, B.z);
+    /* col évasé en haut (remplissage à l'entonnoir) */
+    place(new T.Mesh(tour([[B.r, 0], [B.r * 1.25, .08], [B.r * 1.35, .12]], 24), verreBord), B.x, yTop, B.z);
+    /* bande de Schellbach : fond blanc et ligne bleue derrière le tube (lecture du ménisque) */
+    const dos = new T.Mesh(new T.PlaneGeometry(B.r * 1.3, B.haut - B.bas + .1), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .7, depthWrite: false }));
+    place(dos, B.x, (B.haut + B.bas) / 2, B.z - B.r * .7);
+    place(new T.Mesh(new T.PlaneGeometry(B.r * .25, B.haut - B.bas + .1), new T.MeshBasicMaterial({ color: 0x1f5fd1 })), B.x, (B.haut + B.bas) / 2, B.z - B.r * .68);
+    /* corps du robinet en verre + clé PTFE (tourne quand on ouvre) */
+    const yR = B.bas - .12;
+    place(new T.Mesh(new T.CylinderGeometry(B.r * .6, B.r * .6, .14, 16, 1, true), verre), B.x, B.bas - .06, B.z);
+    const corps = place(new T.Mesh(new T.CylinderGeometry(.045, .045, .2, 16), verreBord), B.x, yR, B.z); corps.rotation.x = Math.PI / 2;
+    const rob = new T.Group(); place(rob, B.x, yR, B.z);
+    const axe = new T.Mesh(new T.CylinderGeometry(.03, .03, .3, 12), mat(0xf2f2f2, { roughness: .4 })); axe.rotation.x = Math.PI / 2; rob.add(axe);
+    const cle = new T.Mesh(new T.BoxGeometry(.32, .06, .05), mat(0x1f6fd1, { roughness: .4 })); cle.position.z = .17; rob.add(cle);
+    const ecrou = new T.Mesh(new T.CylinderGeometry(.04, .04, .04, 6), mat(0x1f6fd1, { roughness: .4 })); ecrou.rotation.x = Math.PI / 2; ecrou.position.z = -.16; rob.add(ecrou);
+    place(new T.Mesh(new T.CylinderGeometry(B.r * .4, .01, B.bas - .2 - B.pointe, 16, 1, true), verre), B.x, (B.bas - .2 + B.pointe) / 2, B.z);
+    const liq = liquide(B.r * .92, B.couleur, .6, 20); liq.position.x = B.x; liq.position.z = B.z;
+    /* gravure : traits tous les 0,1 mL (0,05 mL au-delà de 25 mL : non), chiffres à chaque mL, inscriptions de la classe de précision */
+    { const H = 4096, cv = document.createElement("canvas"); cv.width = 256; cv.height = H; const c = cv.getContext("2d");
+      const marge = .07, yPx = k => (marge + (1 - 2 * marge) * k / B.vmax) * H, pas = B.vmax > 50 ? 1 : .1;
+      c.fillStyle = "#15212d"; c.strokeStyle = "#15212d"; c.textBaseline = "middle";
+      for (let v = 0; v <= B.vmax + 1e-6; v += pas) {
+        const k = Math.round(v / pas), y = yPx(v), mL = Math.abs(v - Math.round(v)) < 1e-6, demi = Math.abs(v * 2 - Math.round(v * 2)) < 1e-6;
+        c.lineWidth = mL ? 7 : 4; const L = mL ? 120 : demi ? 82 : 58; c.beginPath(); c.moveTo(40, y); c.lineTo(40 + L, y); c.stroke();
+        if (mL) { c.font = "700 64px Arial"; c.textAlign = "left"; c.fillText(String(Math.round(v)), 168, y); }
+      }
+      c.font = "700 40px Arial"; c.textAlign = "center"; c.fillText(B.vmax + " mL", 128, yPx(0) - 170); c.fillText("± 0,03  20 °C", 128, yPx(0) - 120); c.fillText("AS  Ex", 128, yPx(0) - 72);
+      const tx = new T.CanvasTexture(cv); tx.anisotropy = 8;
+      const hT = (B.haut - B.bas) / (1 - 2 * marge), yC = B.haut - (B.haut - B.bas) / 2;
+      const gr = new T.Mesh(new T.CylinderGeometry(B.r * 1.015, B.r * 1.015, hT, 24, 1, true, -.75, 1.5), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false }));
+      place(gr, B.x, yC, B.z); }
+    for (let k = 0; k <= B.vmax; k += 5) place(V3.etiquette(String(k), { taille: .09, fond: false }), B.x + .15, B.haut - k / B.vmax * (B.haut - B.bas), B.z + B.r);
+    /* ménisque : anneau sombre sur la surface du liquide (on lit le bas du ménisque) */
+    const men = new T.Mesh(new T.TorusGeometry(B.r * .82, B.r * .1, 6, 24), new T.MeshBasicMaterial({ color: 0x2a3a55, transparent: true, opacity: .55, depthWrite: false })); men.rotation.x = Math.PI / 2; place(men, B.x, B.haut, B.z);
+    const fond = new T.Mesh(new T.CircleGeometry(B.r * .9, 24), new T.MeshBasicMaterial({ color: 0x9fb7d9, transparent: true, opacity: .45, depthWrite: false, side: T.DoubleSide })); fond.rotation.x = -Math.PI / 2; place(fond, B.x, B.haut, B.z);
+    if (B.label) etiq(B.label, B.x, B.haut + .75, B.z, { taille: .24 });
+    if (B.pince !== false) {
+      /* pince à burette : mâchoires gainées + bras vers l'arrière */
+      const yP = 5.2;
+      [-1, 1].forEach(sx => { place(new T.Mesh(new T.BoxGeometry(.05, .16, .12), caoutchouc), B.x + sx * (B.r + .03), yP, B.z); });
+      place(new T.Mesh(new T.BoxGeometry(B.r * 2 + .16, .05, .05), metal), B.x, yP, B.z - .08);
+      const bras = place(new T.Mesh(new T.CylinderGeometry(.025, .025, .5, 10), metal), B.x, yP, B.z - .33); bras.rotation.x = Math.PI / 2;
+      place(new T.Mesh(new T.BoxGeometry(.1, .1, .1), mat(0x2b2f36, { metalness: .4, roughness: .4 })), B.x, yP, B.z - .6);
+    }
+    B.set = V => { const yl = B.haut - Math.min(V, B.vmax) / B.vmax * (B.haut - B.bas); liq.regler(B.bas, yl - B.bas); men.position.y = yl + B.r * .06; fond.position.y = yl - B.r * .05; men.visible = fond.visible = V < B.vmax - 1e-6; };
+    B.ouvre = () => { rob.rotation.z = Math.PI / 2; V3.demande(); setTimeout(() => { rob.rotation.z = 0; V3.demande(); }, 350); };
+    B.yLu = V => B.haut - V / B.vmax * (B.haut - B.bas); B.set(0); return B;
+  }
+
+  /* ---------- appareils de mesure : boîtier arrondi, écran encadré, accessoires selon le nom ---------- */
+  function appareil(x, y, z, o = {}) {
+    const w = o.w || 1.2, h = o.h || .8, p = o.p || .7, nom = (o.label || "").toLowerCase();
+    const coul = o.couleur || 0xdedce3, clair = !o.couleur, plat = p < .1;
+    const corps = place(new T.Mesh(plat ? new T.BoxGeometry(w, h, p) : boiteRonde(w, h, p, Math.min(w, h) * .12), mat(coul, { roughness: .45 })), x, y + h / 2, z); corps.castShadow = true;
+    const cv = document.createElement("canvas"); cv.width = 512; cv.height = 192; const g = cv.getContext("2d"), tex = new T.CanvasTexture(cv);
+    const eW = w * .8, eH = h * .45, eY = y + h * .62, eZ = z + p / 2;
+    if (!plat) place(new T.Mesh(new T.BoxGeometry(eW + Math.min(w, h) * .08, eH + Math.min(w, h) * .08, .012), mat(0x15181d, { roughness: .3 })), x, eY, eZ + .004);
+    place(new T.Mesh(new T.PlaneGeometry(eW, eH), new T.MeshBasicMaterial({ map: tex, toneMapped: false })), x, eY, eZ + (plat ? .001 : .012));
+    const face = (m, dx, dy) => place(m, x + dx, y + dy, eZ + .01);
+    if (!plat && h >= .25 && w >= .3) {
+      const bas = h * .13, petit = Math.min(w, h) * .055;
+      if (/multim|amp[eè]rem|voltm/.test(nom)) {
+        /* sélecteur rotatif + trois douilles (COM noire, V/mA rouges) */
+        const sel = face(new T.Mesh(new T.CylinderGeometry(petit * 2.2, petit * 2.2, .05, 24), mat(0x22252a, { roughness: .5 })), -w * .22, bas); sel.rotation.x = Math.PI / 2;
+        const rep = new T.Mesh(new T.BoxGeometry(petit * .5, petit * 2, .02), mat(0xffffff)); rep.position.set(0, .03, -petit); rep.rotation.x = -Math.PI / 2; sel.add(rep);
+        [[.1, 0x111111], [.22, 0xd32f2f], [.34, 0xd32f2f]].forEach(([dx, c]) => { const d = face(new T.Mesh(new T.CylinderGeometry(petit, petit, .05, 16), mat(c, { roughness: .4 })), w * dx, bas); d.rotation.x = Math.PI / 2; });
+      } else if (/g[ée]n[ée]rateur|alimentation/.test(nom)) {
+        [[-.3, 0xd32f2f], [-.15, 0x111111]].forEach(([dx, c]) => { const d = face(new T.Mesh(new T.CylinderGeometry(petit, petit, .06, 16), mat(c, { roughness: .4 })), w * dx, bas); d.rotation.x = Math.PI / 2; });
+        [.15, .3].forEach(dx => { const b = face(new T.Mesh(new T.CylinderGeometry(petit * 1.6, petit * 1.6, .06, 20), mat(0xdcdcdc, { roughness: .4 })), w * dx, bas); b.rotation.x = Math.PI / 2; });
+      } else {
+        /* clavier de 3 touches + voyant */
+        /* clavier à membrane : CAL, MODE, ▲, ▼ */
+        if (clair) face(new T.Mesh(new T.BoxGeometry(w * .62, petit * 2.4, .006), mat(0x4A148C, { roughness: .55 })), -w * .08, bas);
+        [-.3, -.15, 0, .15].forEach(dx => face(new T.Mesh(new T.BoxGeometry(petit * 2.2, petit * 1.3, .02), mat(0xe8e2f0, { roughness: .5 })), w * dx - w * .02, bas));
+        face(new T.Mesh(new T.SphereGeometry(petit * .6, 10, 8), new T.MeshBasicMaterial({ color: 0x55dd88 })), w * .3, bas);
+      }
+      /* douille de sonde sur le côté (pH-mètre, conductimètre, pressiomètre, thermomètre…) */
+      if (/ph-m|conductim|pressiom|thermom|capteur|oxym/.test(nom)) {
+        const d = place(new T.Mesh(new T.CylinderGeometry(.04, .04, .08, 16), metal), x + w / 2 + .03, y + h * .4, z); d.rotation.z = Math.PI / 2;
+      }
+      /* nom imprimé sous l'écran */
+      if (o.label && w >= .5) { const n = place(new T.Mesh(new T.PlaneGeometry(w * .5, h * .09), new T.MeshBasicMaterial({ map: texte(o.label.toUpperCase(), { couleur: clair ? "#2d1b4e" : "#e8eef5" }), transparent: true, depthWrite: false })), x, y + h * .29, eZ + .012); }
+    }
+    /* accessoires sur le dessus */
+    if (/spectro/.test(nom)) {
+      /* compartiment à cuve : puits surélevé, capot noir à charnière, repère du trajet de la lumière */
+      const cw = Math.min(w * .3, p * .5), ch = h * .22;
+      place(new T.Mesh(new T.BoxGeometry(cw, ch, cw), mat(0x2a2730, { roughness: .5 })), x - w * .25, y + h + ch / 2, z - p * .1);
+      const cap = place(new T.Mesh(boiteRonde(cw * 1.05, cw * 1.05, ch * .45, .02), mat(0x15131a, { roughness: .35 })), x - w * .25, y + h + ch + ch * .22, z - p * .1); cap.rotation.x = -Math.PI / 2;
+      place(new T.Mesh(new T.BoxGeometry(cw * .4, ch * .2, ch * .3), mat(0x4A148C, { roughness: .5 })), x - w * .25, y + h + ch + ch * .25, z - p * .1 + cw * .55);
+    } else if (/balance/.test(nom)) {
+      place(new T.Mesh(new T.CylinderGeometry(Math.min(w, p) * .36, Math.min(w, p) * .36, .025, 40), mat(0xe3e7eb, { metalness: .35, roughness: .3 })), x, y + h + .02, z - p * .08);
+      place(new T.Mesh(new T.CylinderGeometry(.04, .04, .02, 12), metal), x, y + h + .005, z - p * .08);
+    } else if (/[ée]tuve/.test(nom)) {
+      place(new T.Mesh(new T.BoxGeometry(w * .05, h * .4, .04), metal), x + w * .42, y + h * .5, eZ + .03);
+    }
+    if (o.label) etiq(o.label, x, y + h + .25, z, { taille: .22 });
+    /* afficheur à cristaux liquides : segments sombres sur fond gris-vert, segments éteints à peine visibles */
+    const SEG = { "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg", "-": "g", "−": "g", " ": "", "E": "adefg", "r": "eg", "o": "cdeg", "L": "def", "O": "abcdef", "H": "bcefg", "P": "abefg", "C": "adef", "A": "abcefg", "n": "ceg", "u": "cde", "b": "cdefg", "d": "bcdeg", "t": "defg" };
+    function seg7(txt, xd, y, hh, coul) {
+      let n = 0; for (const ch of txt) if (ch !== "." && ch !== ",") n++;
+      const h0 = hh; hh = Math.min(hh, (xd - 22) / Math.max(1, n * .72)); y += (h0 - hh) / 2;
+      const ww = hh * .5, e = hh * .11, pas = ww + hh * .22;
+      let cx = xd - n * pas;
+      for (const ch of txt) {
+        if (ch === "." || ch === ",") { g.fillStyle = coul; g.fillRect(cx - hh * .17, y + hh - e, e, e); continue; }
+        const s = SEG[ch] || "", P = { a: [cx + e, y, ww - 2 * e, e], d: [cx + e, y + hh - e, ww - 2 * e, e], g: [cx + e, y + hh / 2 - e / 2, ww - 2 * e, e], f: [cx, y + e, e, hh / 2 - 1.5 * e], b: [cx + ww - e, y + e, e, hh / 2 - 1.5 * e], e: [cx, y + hh / 2 + e / 2, e, hh / 2 - 1.5 * e], c: [cx + ww - e, y + hh / 2 + e / 2, e, hh / 2 - 1.5 * e] };
+        for (const k in P) { g.fillStyle = s.includes(k) ? coul : "rgba(30,40,25,.07)"; const [a, b, w2, h2] = P[k]; g.save(); g.translate(a + w2 / 2, b + h2 / 2); g.transform(1, 0, -.1, 1, 0, 0); g.fillRect(-w2 / 2, -h2 / 2, w2, h2); g.restore(); }
+        cx += pas;
+      }
+    }
+    const ecrire = (val, unite = "") => {
+      const v = String(val), lcd = /^[\s\d.,+\-−EroLOHPCAnubdt]*$/.test(v) && v.replace(/[.,\s]/g, "").length <= 7;
+      const fondL = g.createLinearGradient(0, 0, 0, 192); fondL.addColorStop(0, "#c9d4b0"); fondL.addColorStop(1, "#b4c19a"); g.fillStyle = fondL; g.fillRect(0, 0, 512, 192);
+      g.textAlign = "right"; g.textBaseline = "middle";
+      if (lcd) seg7(v.replace(/\+/g, " "), unite ? 400 : 492, 26, 118, "#1b2214");
+      else { g.fillStyle = "#1b2214"; g.font = "700 72px Arial, sans-serif"; g.fillText(v, 492, 90, 480); }
+      if (unite) { g.fillStyle = "#1b2214"; g.font = "700 40px Arial, sans-serif"; g.textAlign = "left"; g.fillText(unite, 412, 150, 96); }
+      tex.needsUpdate = true; V3.demande(); };
+    ecrire("- - -"); return { ecrire };
+  }
+
+  /* ---------- bidon de récupération (jerrican) et évier avec robinet col de cygne ---------- */
+  function bidonEvier(xb = -2.9, zb = .6, xe = 3.95, ze = -1.2) {
+    const jaune = mat(0xf2c94c, { roughness: .55 });
+    place(new T.Mesh(boiteRonde(.7, 1, .5, .1), jaune), xb, .5, zb).castShadow = true;
+    const anse = place(new T.Mesh(new T.TorusGeometry(.14, .04, 8, 20, Math.PI), jaune), xb - .1, 1.0, zb); anse.rotation.y = 0;
+    place(new T.Mesh(new T.CylinderGeometry(.09, .09, .12, 16), mat(0x2b2f36)), xb + .15, 1.06, zb);
+    const e = place(new T.Mesh(new T.PlaneGeometry(.5, .45), new T.MeshBasicMaterial({ map: texte(["Déchets", "chimiques"], { w: 256, h: 230, fond: "#ffffff", bande: "#e08a00", couleur: "#15212d" }) })), xb, .48, zb + .256);
+    /* pictogramme danger (losange rouge) */
+    const pic = place(new T.Mesh(new T.PlaneGeometry(.12, .12), new T.MeshBasicMaterial({ color: 0xd32f2f })), xb + .18, .78, zb + .257); pic.rotation.z = Math.PI / 4;
+    etiq("Bidon de récupération", xb, 1.35, zb);
+    const inox = mat(0x9aa7b4, { metalness: .7, roughness: .3 });
+    place(new T.Mesh(new T.BoxGeometry(1.2, .06, .9), inox), xe, .03, ze);
+    place(new T.Mesh(new T.BoxGeometry(.95, .02, .65), mat(0x5d6873, { metalness: .6, roughness: .35 })), xe, .065, ze);
+    place(new T.Mesh(new T.CylinderGeometry(.05, .05, .01, 16), mat(0x222222)), xe, .08, ze);
+    /* robinet col de cygne + deux poignées */
+    place(new T.Mesh(new T.CylinderGeometry(.04, .05, .5, 12), inox), xe, .3, ze - .4);
+    const col = new T.Mesh(new T.TorusGeometry(.2, .035, 8, 16, Math.PI), mat(0x9aa7b4, { metalness: .8, roughness: .3 })); place(col, xe, .55, ze - .2); col.rotation.y = Math.PI / 2;
+    [-.14, .14].forEach(dx => place(new T.Mesh(new T.BoxGeometry(.12, .03, .03), inox), xe + dx, .45, ze - .4));
+    etiq("Évier (interdit)", xe, .75, ze, { couleur: "#b42318" });
+  }
+
+  /* ---------- gouttes qui tombent jusqu'à une hauteur cible ---------- */
+  const geo = new T.SphereGeometry(.028, 10, 8); let drops = [];
+  function goutte(x, y, z, yFin, couleur = 0xbfe0ff, n = 1) {
+    for (let i = 0; i < n; i++) { const m = place(new T.Mesh(geo, new T.MeshStandardMaterial({ color: couleur, transparent: true, opacity: .85 })), x, y - i * .18, z); m.scale.y = 1.3; drops.push({ m, v: 0, yFin }); }
+    V3.demande();
+  }
+  V3.anime(dt => { drops = drops.filter(d => { d.v += 9.8 * dt * 1.2; d.m.position.y -= d.v * dt; if (d.m.position.y <= d.yFin()) { sc.remove(d.m); return false; } return true; }); return drops.length > 0; });
+  const viderGouttes = () => { drops.forEach(d => sc.remove(d.m)); drops = []; };
+  return { T, sc, mat, verre, place, etiq, paillasse, liquide, recipient, potence, burette, appareil, bidonEvier, goutte, viderGouttes, tour, boiteRonde };
+}
+
+/* ---------------------------------------------------------------------
+   AIDES DE PAILLASSE (gabarit 08/11/2026) : EPI, garde, bouton maintenu,
+   vidage bidon / évier. Utilise LAB.S.epi, LAB.S.vide, LAB.S.evier.
+   --------------------------------------------------------------------- */
+const epiPret = () => ["blouse", "gants", "lunettes"].every(k => LAB.S.epi && LAB.S.epi[k]);
+function brancherEPI(apres) {
+  LAB.S.epi = LAB.S.epi || {};
+  const maj = () => $$("[data-epi]").forEach(b => b.setAttribute("aria-pressed", !!(LAB.S.epi && LAB.S.epi[b.dataset.epi])));
+  $$("[data-epi]").forEach(b => b.addEventListener("click", () => { LAB.S.epi[b.dataset.epi] = !LAB.S.epi[b.dataset.epi]; maj(); if (epiPret()) say("✓ Vous êtes équipé(e). " + (apres || "Vous pouvez manipuler."), "ok"); }));
+  LAB.majEPI = maj; maj();
+}
+function gardeLabo() {
+  if (!epiPret()) { LAB.S.epiOubli = (LAB.S.epiOubli || 0) + 1; say("⚠ Équipez-vous d'abord : blouse, gants et lunettes.", "err"); return false; }
+  if (LAB.S.vide) { say("La paillasse a été rangée. Cliquez sur « Tout remettre à zéro » pour recommencer.", "info"); return false; }
+  return true;
+}
+function maintenir(btn, pas, ms = 140) {
+  let it = 0; const stop = () => { clearInterval(it); it = 0; };
+  btn.addEventListener("pointerdown", e => { e.preventDefault(); if (it) return; if (!pas()) return; it = setInterval(() => { if (!pas()) stop(); }, ms); });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => btn.addEventListener(ev, stop));
+}
+function brancherVidage(apres, quoi = "Les produits ont été") {
+  const vider = ou => { if (!epiPret()) { say("⚠ Équipez-vous d'abord.", "err"); return; } if (LAB.S.vide) return; LAB.S.vide = ou;
+    if (ou === "evier") { LAB.S.evier = true; say("✗ Interdit : les produits du laboratoire ne vont jamais à l'évier. C'est noté dans le compte rendu.", "err"); }
+    else say(`✓ ${quoi} vidés dans le bidon de récupération. Rangez la paillasse.`, "ok");
+    apres && apres(ou); };
+  const b = $("#bidon"), e = $("#evier"); b && b.addEventListener("click", () => vider("bidon")); e && e.addEventListener("click", () => vider("evier"));
+}
+
+/* ---------------------------------------------------------------------
+   PRÉDICTIONS : l'élève prévoit AVANT de lancer, puis confronte.
+   liste : [{ id, consigne, q, opts: [...], bonne, expl, cond: essai => bool }]
+   --------------------------------------------------------------------- */
+function Predictions(el, liste) {
+  const S = LAB.S; S.pred = S.pred || {};
+  const idx = () => liste.findIndex(p => !(S.pred[p.id] && S.pred[p.id].vu));
+  let attente = false; /* prédiction confrontée, en attente du clic « suivante » */
+  function rendu() {
+    const k = attente !== false ? attente : idx();
+    if (k < 0) { el.innerHTML = `<p class="toast ok">✓ Toutes les prédictions ont été confrontées à l'expérience (${liste.filter(p => S.pred[p.id].juste).length}/${liste.length} justes du premier coup).</p>`; return; }
+    const p = liste[k], st = S.pred[p.id] || {};
+    el.innerHTML = `<p class="hint">Prédiction ${k + 1} sur ${liste.length}</p><p><b>${p.consigne}</b></p><p>${p.q}</p>
+      <div class="checks">${p.opts.map((o, i) => `<button class="chip" type="button" data-pi="${i}" aria-pressed="${st.choix === o}" ${st.vu ? "disabled" : ""}>${o}</button>`).join("")}</div>
+      ${st.vu ? `<p class="toast ${st.juste ? "ok" : "err"}">${st.juste ? "✓ Votre prédiction était juste." : "✗ L'expérience contredit votre prédiction : c'est en se trompant qu'on apprend !"} ${p.expl}</p><div class="row-actions"><button class="btn" type="button" data-suiv>Prédiction suivante →</button></div>`
+        : st.choix ? `<p class="hint">Prédiction enregistrée. Faites maintenant le lancer demandé pour la vérifier.</p>` : `<p class="hint">Choisissez votre prédiction : le lancer est bloqué tant que vous n'avez pas prévu le résultat.</p>`}`;
+    $$("[data-pi]", el).forEach(b => b.addEventListener("click", () => { S.pred[p.id] = { choix: p.opts[+b.dataset.pi] }; rendu(); }));
+    const sv = $("[data-suiv]", el); if (sv) sv.addEventListener("click", () => { attente = false; rendu(); });
+  }
+  const api = {
+    peutLancer() {
+      if (LAB.demo) return true; const k = idx(); if (attente !== false || k < 0) return true;
+      if (S.pred[liste[k].id] && S.pred[liste[k].id].choix) return true;
+      say("✋ Faites d'abord votre <b>prédiction</b> (cadre « Je prédis ») avant de lancer.", "err"); el.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" }); return false;
+    },
+    apres(essai) {
+      if (LAB.demo || attente !== false) return; const k = idx(); if (k < 0) return;
+      const p = liste[k], st = S.pred[p.id]; if (!st || !st.choix || !p.cond(essai)) return;
+      st.vu = true; st.juste = st.choix === p.bonne; attente = k; rendu();
+    },
+    fait: () => idx() < 0,
+    nb: () => liste.filter(p => S.pred[p.id] && S.pred[p.id].vu).length,
+    cr() { return `<h4>Mes prédictions</h4><ol>${liste.map(p => { const st = S.pred[p.id] || {}; return `<li>${p.q} Prédit : ${st.choix || "–"}${st.vu ? (st.juste ? " → confirmé ✓" : " → contredit par l'expérience ✗ (bonne réponse : " + p.bonne + ")") : " (non vérifiée)"}</li>`; }).join("")}</ol>`; },
+    rendu
+  };
+  LAB.PRED = api; rendu(); return api;
+}
+
+</script>
+<script>
+
+LAB.key = "efir-tle-ch7-a1-3d-v1";
+LAB.cr = { titre: "Tle · Ch. 7 · Activité 1 p. 133 · Notion d'équilibre dynamique (simulation 3D)", pied: "Tle Ch. 7 Activité 1 · Équilibre dynamique 3D", fichier: "Tle_Ch7_A1" };
+Object.assign(LAB.S, { epi: {}, blanc: false, e1: 0, A1: null, tests: {}, p2: false, t2: 0, mes2: [], obs: [], vide: "", evier: false });
+const S = LAB.S, K = 3.7, EPS = 7.27, C0 = .05;
+const eq = (a, b, c) => { /* a = [Ag+], b = [Fe2+], c = [Fe3+] initiaux ; renvoie y avancé */ let lo = -Math.min(c, 1), hi = Math.min(a, b); lo = -c; for (let i = 0; i < 80; i++) { const y = (lo + hi) / 2, q = (c + y) / ((a - y) * (b - y)); if (q > K) hi = y; else lo = y; } return (lo + hi) / 2; };
+const yf = eq(C0, C0, 0), FF = yf; LAB.val.fmax = () => C0; LAB.val.ff = () => S.A1 != null ? S.A1 / EPS : FF;
+const bruit = k => Math.sin(k * 12.9898) * .0015;
+LAB.pre = { p1: () => S.e1 >= 1 ? "" : "Réalisez d'abord le mélange de S₁ et S₂.", mes1: () => S.A1 != null ? "" : "Mesurez l'absorbance du filtrat (après le blanc).",
+  tests: () => S.tests.ag && S.tests.fe ? "" : "Réalisez les deux tests sur le filtrat.", p2: () => S.mes2.length >= 3 && S.t2 >= 15 ? "" : "Réalisez le protocole 2 et mesurez A à plusieurs instants, jusqu'à stabilisation." };
+brancherEPI("Faites le blanc du spectrophotomètre, puis commencez le protocole 1.");
+const fig = $("#fig3d");
+const VUES = { d3: { az: -0.25, el: 0.33, r: 8, cible: [0, .7, 0] }, p1: { az: -0.1, el: .3, r: 4, cible: [-1.5, .6, 0] }, p2: { az: .15, el: .3, r: 3.4, cible: [1.3, .5, .3] } };
+const V3 = Scene3D(fig, Object.assign({ rmin: .8, vues: VUES }, VUES.d3));
+let L, b1, b2, bain, dep, filt, filtrat, fil, ecr;
+const JAUNE = 0xf2d04a, INC = 0xeef4fa;
+if (V3) {
+  L = Labo3D(V3); const T = THREE; L.paillasse(9, 4, 0);
+  [["S₁ Ag⁺", -3.6, INC], ["S₂ Fe²⁺", -3.0, 0xe6f2df], ["S₃ Fe³⁺", -2.4, JAUNE]].forEach(([n, x, c]) => { const f = L.recipient(.2, .7, x, 0, -.8, { couleur: c, op: .7 }); f.niveau(.5); L.etiq(n, x, 1, -.8, { taille: .15 }); });
+  bain = L.place(new T.Mesh(new T.BoxGeometry(1.1, .3, 1.1), new T.MeshStandardMaterial({ color: 0xff9a6b, transparent: true, opacity: .25, depthWrite: false })), -1.6, .15, 0); L.etiq("Bain-marie 70 °C", -1.6, .45, .65, { taille: .13 });
+  b1 = L.recipient(.32, .7, -1.6, 0, 0, { couleur: INC }); L.etiq("Bécher 100 mL", -1.6, .95, 0, { taille: .14 });
+  dep = L.place(new T.Mesh(new T.CylinderGeometry(.29, .29, .03, 24), L.mat(0x8f9399, { metalness: .6 })), -1.6, .02, 0); dep.visible = false;
+  L.place(new T.Mesh(new T.ConeGeometry(.3, .4, 24, 1, true), L.verre), -.4, 1.05, 0).rotation.x = Math.PI; L.place(new T.Mesh(new T.CylinderGeometry(.03, .03, .35, 10, 1, true), L.verre), -.4, .7, 0);
+  filt = L.place(new T.Mesh(new T.ConeGeometry(.27, .36, 24, 1, true), new T.MeshStandardMaterial({ color: 0xf6f6f6, side: T.DoubleSide })), -.4, 1.07, 0); filt.rotation.x = Math.PI;
+  filtrat = L.recipient(.22, .45, -.4, 0, 0, { couleur: 0xf7ecb8 }); L.etiq("Filtrat", -.4, 1.45, 0, { taille: .14 });
+  b2 = L.recipient(.25, .55, 1.2, 0, .4, { couleur: JAUNE, op: .6 }); L.etiq("Protocole 2", 1.2, .85, .4, { taille: .14 });
+  fil = L.place(new T.Mesh(new T.TorusGeometry(.12, .012, 8, 40), L.mat(0xd9dde2, { metalness: .9, roughness: .2 })), 1.2, .08, .4); fil.rotation.x = Math.PI / 2; fil.visible = false;
+  L.place(new T.Mesh(new T.BoxGeometry(1.3, .5, .9), L.mat(0xe9edf1)), 2.8, .25, -.4); L.etiq("Spectrophotomètre", 2.8, 1.2, -.4, { taille: .18 });
+  ecr = L.appareil(3.15, .5, -.35, { w: .5, h: .3, p: .05, couleur: 0x2b2f36 });
+  L.bidonEvier(-4.4, 1, 4.0, 1.2);
+}
+const jaune = c => new THREE.Color(INC).lerp(new THREE.Color(JAUNE), Math.min(1, c / C0));
+function majScene() {
+  LAB.majEPI(); $("#hud").innerHTML = `λ = 480 nm · ${S.blanc ? "blanc fait" : "blanc non fait"}${S.e1 ? " · protocole 1 : étape " + S.e1 + "/5" : ""}`; $("#tlu").textContent = S.p2 ? fx(S.t2, 0) + " min" : "—";
+  $("#tmes").innerHTML = S.obs.length ? S.obs.map(o => `<tr><td>${o[0]}</td><td>${o[1]}</td><td>${o[2] == null ? "—" : fx(o[2], 3)}</td></tr>`).join("") : '<tr><td colspan="3">Aucune observation.</td></tr>';
+  $$("#m2,#m3,#m4,#m5").forEach((b, i) => b.disabled = S.e1 < i + 1); $$("#tAg,#tFe").forEach(b => b.disabled = S.e1 < 4);
+  if (!V3) return; const v = !S.vide; bain.visible = S.e1 === 2;
+  b1.niveau(v && S.e1 >= 1 && S.e1 < 4 ? .45 : 0); b1.liq.material.color.copy(jaune(S.e1 >= 2 ? FF * 1.6 : 0)); dep.visible = v && S.e1 >= 2;
+  filt.visible = v && S.e1 >= 4; filtrat.niveau(v && S.e1 >= 4 ? .3 : 0); filtrat.liq.material.color.copy(jaune(FF * 1.6));
+  b2.niveau(v && S.p2 ? .35 : 0); fil.visible = v && S.p2; b2.liq.material.color.copy(jaune(c3(S.t2))); V3.demande();
+}
+const c3 = t => C0 - (C0 - FF) * (1 - Math.exp(-t / 4));
+const obs = (a, b, c) => { S.obs = S.obs.filter(o => o[0] !== a); S.obs.push([a, b, c]); };
+const ecran = A => { $("#ecran").textContent = "A = " + fx(A, 3); ecr && ecr.ecrire(fx(A, 3), "480 nm"); };
+$("#blanc").addEventListener("click", () => { if (!gardeLabo()) return; S.blanc = true; majScene(); say("✓ Blanc fait à 480 nm avec de l'eau distillée.", "ok"); });
+$("#m1").addEventListener("click", () => { if (!gardeLabo()) return; S.e1 = 1; S.tests = {}; S.A1 = null; obs("Mélange S₁ + S₂", "incolore au départ", null); majScene(); V3 && V3.vue(VUES.p1, "p1"); say("✓ 25 mL de S₁ et 25 mL de S₂ dans le bécher de 100 mL.", "ok"); });
+$("#m2").addEventListener("click", async () => { if (!gardeLabo() || S.e1 < 1) return; S.e1 = 2; majScene(); say("Bain-marie à 70 °C pendant 5 min : un dépôt gris d'argent apparaît, la solution jaunit légèrement.", "info"); obs("Mélange chauffé", "dépôt gris d'argent, solution jaune pâle", null); majScene(); });
+$("#m3").addEventListener("click", () => { if (!gardeLabo() || S.e1 < 2) return; S.e1 = 3; majScene(); say("✓ Bécher refroidi à température ambiante.", "ok"); });
+$("#m4").addEventListener("click", () => { if (!gardeLabo() || S.e1 < 3) return; S.e1 = 4; majScene(); say("✓ Solution filtrée : l'argent reste sur le filtre, le filtrat est jaune pâle.", "ok"); });
+$("#m5").addEventListener("click", () => { if (!gardeLabo() || S.e1 < 4) return; const A = EPS * FF + (S.blanc ? 0 : .04) + bruit(1); S.e1 = 5; if (S.blanc) S.A1 = +A.toFixed(3); ecran(A); obs("Filtrat", "jaune pâle", A); majScene(); say(S.blanc ? `✓ A(filtrat) = ${fx(A, 3)}.` : `A = ${fx(A, 3)} ⚠ sans blanc : la mesure n'est pas exploitable. Faites le blanc puis remesurez.`, S.blanc ? "ok" : "err"); });
+const test = (k, txt, a, b) => () => { if (!gardeLabo() || S.e1 < 4) return; if (!S.blanc) { say("Faites d'abord le blanc.", "info"); return; } const V0 = 10, V = 15, ag = FF * 0 + (C0 - FF) * V0 / V + a, fe = (C0 - FF) * V0 / V + b, c = FF * V0 / V, y = eq(ag, fe, c), A = EPS * (c + y) + bruit(k === "ag" ? 2 : 3);
+  S.tests[k] = +A.toFixed(3); obs(txt, "plus jaune que le témoin", A); ecran(A); majScene(); say(`${txt} : A = ${fx(A, 3)} ; témoin (10 mL de filtrat + 5 mL d'eau) : A = ${fx(EPS * c, 3)}.`, "ok"); };
+$("#tAg").addEventListener("click", test("ag", "Filtrat + 5 mL S₁ (Ag⁺)", .5 / 15, 0)); $("#tFe").addEventListener("click", test("fe", "Filtrat + 5 mL S₂ (Fe²⁺)", 0, .5 / 15));
+let it2 = 0; $("#p2").addEventListener("click", () => { if (!gardeLabo()) return; S.p2 = true; S.t2 = 0; S.mes2 = []; clearInterval(it2); majScene(); V3 && V3.vue(VUES.p2, "p2"); say("Fil d'argent plongé dans 25 mL de S₃ (jaune). Le temps s'écoule (accéléré) : mesurez A régulièrement.");
+  it2 = setInterval(() => { S.t2 = Math.min(30, S.t2 + 1); majScene(); if (S.t2 >= 30) clearInterval(it2); }, REDUCED ? 30 : 700); });
+$("#m2A").addEventListener("click", () => { if (!gardeLabo() || !S.p2) return; if (!S.blanc) { say("Faites d'abord le blanc.", "info"); return; } const A = EPS * c3(S.t2) + bruit(S.mes2.length + 5); S.mes2.push([S.t2, +A.toFixed(3)]); obs(`S₃ + fil d'argent (t = ${fx(S.t2, 0)} min)`, A > .3 ? "jaune" : "jaune pâle", A); ecran(A); majScene(); dessiner(); say(`A(t = ${fx(S.t2, 0)} min) = ${fx(A, 3)}.`, "ok"); });
+const G = Graphe($("#gcv"));
+function dessiner() { G.trace({ series: [{ pts: S.mes2, points: true, croix: true, c: "#c0392b", nom: "protocole 2" }, { pts: S.mes2, c: "#c0392b", w: 1.5 }].concat(S.A1 != null ? [{ pts: [[0, S.A1], [30, S.A1]], c: "#1f3b5c", w: 1.5, dash: [6, 4], nom: "filtrat (protocole 1)" }] : []), xmin: 0, xmax: 30, ymin: 0, ymax: .4, xlab: "t (min)", ylab: "A" }); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", dessiner);
+brancherVidage(() => { clearInterval(it2); majScene(); }, "Les produits ont été");
+$("#demo").addEventListener("click", async () => { const b = $("#demo"); b.disabled = true;
+  try { if (S.vide) $("#reset").click(); ["blouse", "gants", "lunettes"].forEach(k => S.epi[k] = true); majScene(); say("Démonstration du protocole 1."); await wait(1000);
+    for (const id of ["blanc", "m1", "m2", "m3", "m4", "m5"]) { $("#" + id).click(); await wait(1200); } V3 && V3.vue(VUES.d3, "d3"); say("Comparez A à l'absorbance attendue si la transformation était totale (ε × 0,050 ≈ 0,36).", "ok");
+  } finally { b.disabled = false; } });
+$("#reset").addEventListener("click", () => { clearInterval(it2); Object.assign(S, { e1: 0, p2: false, t2: 0, vide: "" }); majScene(); V3 && V3.vue(VUES.d3, "d3"); say("Paillasse remise à zéro. Vos mesures et réponses sont conservées."); });
+LAB.mesures = () => S.obs.map(o => `${o[0]} : ${o[1]}${o[2] == null ? "" : `, A = ${fx(o[2], 3)}`}`);
+LAB.demarche = () => [["Blouse, gants et lunettes portés", epiPret()], ["Blanc fait avant les mesures", !!S.blanc], ["Filtrat mesuré", S.A1 != null], ["Deux tests de présence des réactifs", !!(S.tests.ag && S.tests.fe)], ["Protocole 2 suivi jusqu'à stabilisation", S.mes2.length >= 3 && S.t2 >= 15], ["Produits vidés dans le bidon de récupération", S.vide === "bidon"], ["Produits jetés à l'évier (interdit)", !!S.evier]];
+Protocole([
+  { partie: "Sécurité", q: "EPI", html: "Blouse, gants, lunettes (nitrate d'argent corrosif).", ok: epiPret },
+  { partie: "Pratique expérimentale", q: "Q1-Q2", html: "Protocole 1 ; équation ; composition si la transformation était totale.", sous: [{ html: "protocole 1 réalisé", ok: () => S.e1 >= 4 }, { html: "réponses justes", ok: () => juste("q1") && juste("q2a") && juste("q2b") }] },
+  { q: "Q3", html: "Mesurer A du filtrat ; en déduire [Fe<sup>3+</sup>]<sub>f</sub>.", sous: [{ html: "mesure avec blanc", ok: () => S.A1 != null }, { html: "calcul juste", ok: () => juste("q3") }] },
+  { q: "✔ Vérification", html: "Relire ses réponses avant de continuer.", ok: () => true },
+  { q: "Q4", html: "Tester la présence des deux réactifs dans le filtrat.", sous: [{ html: "deux tests", ok: () => !!(S.tests.ag && S.tests.fe) }, { html: "conclusion juste", ok: () => juste("q4") }] },
+  { q: "Q5", html: "Protocole 2 : réaction inverse, suivi de A jusqu'à stabilisation.", sous: [{ html: "suivi réalisé", ok: () => !LAB.pre.p2() }, { html: "réponses justes", ok: () => juste("q5b") && juste("q5c") && juste("q5d") }] },
+  { partie: "Fin de séance", q: "Rangement", html: "Vider dans le <b>bidon de récupération</b>.", ok: () => S.vide === "bidon" },
+  { q: "Q6", html: "Conclure, rédiger, télécharger le compte rendu.", ok: () => conclJuste() && $("#maconc").value.trim().length > 20 }
+]);
+demarrerLAB();
+sauvegarde(r => { majScene(); dessiner(); if (r && S.obs.length) say("Votre travail précédent a été retrouvé.", "ok"); });
+
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style id="charte-efir-2026">
+/* Code couleur « prune » du labo virtuel (accueil retenu le 06/11/2026), version claire pour les pages de TP */
+:root:root:root {
+  --bg: #FAF7FC; --surface: #ffffff; --surface-2: #F6F0F9; --ink: #1F1630; --muted: #6B5B78; --line: #E7DDEE;
+  --navy: #4A2C5A; --navy-soft: #F3E8F7; --blue: #4A2C5A; --line-2: #D9CBE3; --soft: #5B4A68;
+  --call-bg: #F6F0F9; --call-line: #E7DDEE; --call-ink: #4A2C5A;
+  --font-display: "Inter", "Segoe UI", system-ui, sans-serif; --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:root:root:not([data-theme="light"]) {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; } }
+:root:root:root[data-theme="dark"] {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; }
+body, button, input, select, textarea { font-family: var(--font-body); }
+body { font-family: var(--font-body); }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -.01em; }
+a.retour { color: var(--navy) !important; }
+</style>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!--efir1re:AE1 · Force pressante 3D-->
+window.EFIR_RETOUR = "premiere/mouvement/Description%20d%27un%20fluide%20au%20repos";
+
+// ====================================================================
+// Ch. 11 · AE1 · Pression et force pressante (ventouses sous cloche à vide)
+// ====================================================================
+const CUPS = { small: { nom: 'petite ventouse', d: 2.5, x: -.06, lx: -.055 }, large: { nom: 'grande ventouse', d: 5.0, x: .06, lx: .06 } };
+for (const k in CUPS) CUPS[k].S = Math.PI * (CUPS[k].d / 200) ** 2; // m²
+const P0K = 101.3, YPL = .25, G = 9.81;
+let bell11, mano11, cup11 = {}, S11 = null;
+const fresh11 = () => ({ P: P0K, closed: false, cups: { small: { on: false, m: 500, fell: false }, large: { on: false, m: 500, fell: false } }, res: [], firstSurf: null });
+const kpa = v => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
+function makeCup(k) {
+  const c = CUPS[k], r = c.d / 200, g = new THREE.Group();
+  const rub = new THREE.MeshStandardMaterial({ color: 0xb71c1c, transparent: true, opacity: .8, roughness: .6, side: THREE.DoubleSide });
+  const cone = new THREE.Mesh(new THREE.CylinderGeometry(r, r * .3, r * .6, 32, 1, true), rub); cone.position.y = -r * .3; g.add(cone);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(.003, .003, .02, 8), rub); stem.position.y = -r * .6 - .01; g.add(stem);
+  const hook = new THREE.Mesh(new THREE.TorusGeometry(.004, .0012, 6, 16), new THREE.MeshStandardMaterial({ color: 0x9e9e9e, metalness: .8 })); hook.position.y = -r * .6 - .024; g.add(hook);
+  const str = new THREE.Mesh(new THREE.CylinderGeometry(.0006, .0006, .04, 4), new THREE.MeshBasicMaterial({ color: 0x333333 })); str.position.y = -r * .6 - .048; g.add(str);
+  const mass = new THREE.Group(); mass.position.y = -r * .6 - .068; g.add(mass); g.mass = mass;
+  const l = label((k === 'small' ? 'Petite' : 'Grande') + `\nd = ${String(c.d).replace('.', ',')} cm`, { size: 22, scale: .0006 }); l.position.set(c.lx, -.03, .03); g.add(l);
+  g.home = new THREE.Vector3(c.x, YPL, 0); g.table = new THREE.Vector3(c.x * 4 + .35, .005 + r * .6 + .08, .25);
+  return g;
+}
+function setMass(k, m) {
+  const g = cup11[k].mass; g.clear(); if (!m) return;
+  const h = m === 1000 ? .045 : .03, mesh = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, h, 24), new THREE.MeshStandardMaterial({ color: 0xbfa25a, metalness: .85, roughness: .3 })); mesh.position.y = -h / 2; g.add(mesh);
+  const l = label(m === 1000 ? '1 kg' : m + ' g', { size: 24, scale: .0006 }); l.position.set(.03, -h / 2, .01); g.add(l);
+}
+const C11 = {
+  id: 'p1_ch11_ae1', code: 'AE1', short: 'Force pressante 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 11 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Pression et force pressante',
+  problem: 'Comment Alain Robert peut-il escalader une paroi vitrée verticale avec des ventouses ? De quels paramètres dépend la valeur d\'une force pressante ?',
+  mots: `<p><b>Force pressante</b> : un fluide au repos exerce sur toute la surface S d'une paroi une action modélisée par une force pressante F, perpendiculaire à la paroi, dirigée du fluide vers la paroi.<br>
+  <b>Pression</b> P : grandeur macroscopique qui traduit les chocs des particules du fluide sur la paroi ; elle se mesure avec un manomètre ; unité : le pascal (Pa). 1 kPa = 10³ Pa.<br>
+  <b>Relation</b> : F = P × S (F en N, P en Pa, S en m²).<br>
+  Ici on chasse tout l'air sous les ventouses : seul l'air de la cloche les plaque contre le support. Une ventouse se décolle quand F devient inférieure au poids m·g de la masse accrochée (g = 9,81 N·kg⁻¹).</p>`,
+  aide: `<p>1. Accroche la même masse aux deux ventouses, place-les sous la cloche, ferme et fais le vide progressivement : laquelle se décolle en premier ?<br>
+  2. Note la pression de décollement de chaque ventouse (lue sur le manomètre).<br>
+  3. Recommence avec une autre masse pour une même ventouse.<br>
+  4. Le « casse-vide » fait rentrer l'air dans la cloche pour recommencer.<br>
+  5. Calcule F = P × S au moment du décollement et compare-la au poids m·g.</p>`,
+  views: { ensemble: [[0, .5, .95], [0, .2, 0]] },
+  viewbar: [['Zoom ventouses', () => flyTo([0, .26, .45], [0, .21, 0])], ['Zoom manomètre', () => flyTo([.32, .22, .45], [.3, .12, 0])]],
+  protocol: [
+    { id: 'montage', q: 'Q1', html: 'Accrocher une masse aux ventouses, les placer sous la cloche et fermer.' },
+    { id: 'surface', q: 'Q1', html: 'Même masse, même pression, surfaces différentes : observer quelle ventouse se décolle en premier.' },
+    { id: 'pression', q: 'Q1', html: 'Diminuer la pression et relever la pression de décollement au manomètre.' },
+    { id: 'masse', q: 'Q1', html: 'Recommencer avec une autre masse pour la même ventouse.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q2-3', html: 'Calculer la force pressante et répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: ['lunettes'], secu: '',
+  table: { rowTitle: 'Ventouse et masse accrochée', rows: [{ label: 'Petite ventouse, 500 g', ans: [2] }, { label: 'Grande ventouse, 500 g', ans: [0] }, { label: 'Petite ventouse, 1 kg', ans: [3] }, { label: 'Grande ventouse, 1 kg', ans: [1] }],
+    cols: [{ title: 'Pression de décollement', options: ['≈ 2,5 kPa', '≈ 5 kPa', '≈ 10 kPa', '≈ 20 kPa'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'À même pression et même masse, la ventouse qui se décolle en premier est…', options: ['la petite ventouse (surface plus faible)', 'la grande ventouse', 'les deux en même temps'], ans: 0 },
+    { q: 'Q1', num: true, text: 'Surface de la petite ventouse (d = 2,5 cm) : S =', unit: 'm²', ans: CUPS.small.S, tol: .04 },
+    { q: 'Q1', num: true, text: 'Force pressante sur la petite ventouse quand elle se décolle avec 500 g (P ≈ 10 kPa) : F = P × S =', unit: 'N', ans: 10e3 * CUPS.small.S, tol: .08 },
+    { q: 'Q1', text: 'Cette valeur est égale…', options: ['au poids de la masse accrochée (m·g ≈ 4,9 N)', 'à la pression de l\'air', 'à 101 300 N'], ans: 0 },
+    { q: 'Q2', text: 'Alain Robert chasse l\'air sous ses ventouses ; elles restent collées car…', options: ['la force pressante de l\'air extérieur (P × S) est bien plus grande que celle de l\'air restant sous la ventouse', 'le caoutchouc est collant', 'la vitre attire le caoutchouc'], ans: 0 },
+    { q: 'Q3', text: 'La valeur de la force pressante exercée par un fluide sur une paroi…', options: ['augmente avec la pression P du fluide et avec la surface S de la paroi', 'ne dépend que de la surface', 'ne dépend que de la masse accrochée'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['La force pressante exercée par un fluide sur une paroi dépend de la pression P du fluide et de la surface S de contact : F = P × S. La ventouse se décolle quand P × S devient inférieure au poids accroché ; plus S est grande, plus la pression de décollement est faible.', 'La force pressante ne dépend pas de la surface de la ventouse.', 'Plus la pression diminue, plus la ventouse adhère.', 'La force pressante est égale à la pression.'], ans: 0 },
+  build() {
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(.17, .17, .02, 48), new THREE.MeshStandardMaterial({ color: 0x546e7a, metalness: .4 })); base.position.y = .01; scene.add(base);
+    const met = new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: .8, roughness: .3 });
+    for (const x of [-.12, .12]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, YPL - .02, 10), met); p.position.set(x, .02 + (YPL - .02) / 2, 0); scene.add(p); }
+    const pl = new THREE.Mesh(new THREE.BoxGeometry(.27, .012, .08), new THREE.MeshPhysicalMaterial({ color: 0xe3f2fd, transparent: true, opacity: .55, roughness: .05 })); pl.position.set(0, YPL + .006, 0); scene.add(pl);
+    const pll = label('Support lisse (vitre)', { size: 22, scale: .0007 }); pll.position.set(0, YPL + .03, -.03); scene.add(pll);
+    bell11 = new THREE.Group(); const gm = GLASS(); gm.opacity = .16;
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, .3, 48, 1, true), gm); cyl.position.y = .15; const dome = new THREE.Mesh(new THREE.SphereGeometry(.16, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), gm); dome.position.y = .3; const knob = new THREE.Mesh(new THREE.SphereGeometry(.015, 16, 10), new THREE.MeshStandardMaterial({ color: 0x263238 })); knob.position.y = .465;
+    bell11.add(cyl, dome, knob); const bl = label('Cloche à vide', { size: 24, scale: .0008 }); bl.position.set(-.13, .42, 0); bell11.add(bl); bell11.position.y = .02; scene.add(bell11);
+    const pump = new THREE.Mesh(new THREE.BoxGeometry(.16, .1, .12), new THREE.MeshStandardMaterial({ color: 0x1565c0 })); pump.position.set(-.38, .05, .02); scene.add(pump);
+    const pul = label('Pompe à vide', { size: 24, scale: .0008 }); pul.position.set(-.38, .14, .02); scene.add(pul);
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-.3, .04, .02), new THREE.Vector3(-.22, .015, .05), new THREE.Vector3(-.16, .012, .04)]), 20, .006, 8), new THREE.MeshStandardMaterial({ color: 0x8d6e63 })));
+    const mb = new THREE.Mesh(new THREE.BoxGeometry(.11, .07, .05), new THREE.MeshStandardMaterial({ color: 0x37474f })); mb.position.set(.3, .1, 0); scene.add(mb);
+    mano11 = makeScreen(.09, .035, { px: 300, text: '101,3 kPa', bg: '#0f2a1a', fg: '#7CFC9A' }); mano11.mesh.position.set(.3, .105, .026); scene.add(mano11.mesh);
+    const ml = label('Capteur de pression (manomètre)', { size: 22, scale: .0007 }); ml.position.set(.3, .17, 0); scene.add(ml);
+    const stand = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, .065, 8), met); stand.position.set(.3, .033, 0); scene.add(stand);
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(.25, .07, 0), new THREE.Vector3(.2, .03, .03), new THREE.Vector3(.16, .012, .03)]), 20, .003, 6), new THREE.MeshStandardMaterial({ color: 0x212121 })));
+    for (const k of ['small', 'large']) { cup11[k] = makeCup(k); scene.add(cup11[k]); }
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene() {
+    S11 = fresh11(); if (!bell11) return; bell11.position.y = .34; bell11.visible = true;
+    for (const k of ['small', 'large']) { cup11[k].position.copy(cup11[k].table); setMass(k, 0); }
+    mano11.set('101,3 kPa'); this.drawRes(); if ($('#p11')) this.refreshPanel();
+  },
+  drawRes() {
+    const t = $('#rTab'); if (!t) return;
+    t.innerHTML = '<thead><tr><th>Ventouse</th><th>S (m²)</th><th>m</th><th>P de décollement</th></tr></thead><tbody>' + (S11.res.map(r => `<tr><td>${CUPS[r.k].nom}</td><td>${CUPS[r.k].S.toExponential(2).replace('.', ',').replace('e-', '×10⁻').replace(/⁻(\d)/, (m, d) => '⁻' + '⁰¹²³⁴⁵⁶⁷⁸⁹'[d])}</td><td>${r.m === 1000 ? '1 kg' : r.m + ' g'}</td><td>${kpa(r.P)} kPa</td></tr>`).join('') || '<tr><td colspan="4">Aucun décollement observé pour l\'instant.</td></tr>') + '</tbody>';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act(typeof a === 'function' ? a() : { ...a }) }, t);
+    const sel = id => h('select', { id }, h('option', { value: '500' }, '500 g'), h('option', { value: '1000' }, '1 kg'));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'rTab' }))));
+    $('#actions').append(
+      h('h3', {}, '1. Préparer (cloche ouverte)'),
+      h('div', { class: 'row' }, h('span', {}, 'Petite ventouse :'), sel('ms'), B('v1', 'Coller et accrocher', () => ({ t: 'mount', k: 'small', m: +$('#ms').value })), B('v1b', 'Retirer', { t: 'unmount', k: 'small' })),
+      h('div', { class: 'row' }, h('span', {}, 'Grande ventouse :'), sel('ml'), B('v2', 'Coller et accrocher', () => ({ t: 'mount', k: 'large', m: +$('#ml').value })), B('v2b', 'Retirer', { t: 'unmount', k: 'large' })),
+      B('v3', 'Poser la cloche à vide', { t: 'close' }),
+      h('h3', {}, '2. Faire le vide'),
+      h('div', { class: 'row' }, B('p1', 'Pomper : −20 kPa', { t: 'pump', d: 20 }), B('p2', '−5 kPa', { t: 'pump', d: 5 }), B('p3', '−1 kPa', { t: 'pump', d: 1 }), B('p4', '−0,5 kPa', { t: 'pump', d: .5 })),
+      h('div', { class: 'row' }, B('p5', '🔓 Casse-vide : faire rentrer l\'air et ouvrir', { t: 'vent' })),
+      h('div', { id: 'p11', class: 'note', style: 'margin-top:6px' }));
+    this.drawRes(); this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S11, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#v1', !s.closed && !s.cups.small.on); en('#v2', !s.closed && !s.cups.large.on); en('#v1b', !s.closed && s.cups.small.on); en('#v2b', !s.closed && s.cups.large.on);
+    en('#v3', !s.closed && (s.cups.small.on || s.cups.large.on)); en('#p1,#p2,#p3,#p4', s.closed && s.P > .5); en('#p5', s.closed);
+    $('#p11').innerHTML = `Pression dans la cloche : <b>${kpa(s.P)} kPa</b>` + ['small', 'large'].filter(k => s.cups[k].on).map(k => ` · ${CUPS[k].nom} (${s.cups[k].m === 1000 ? '1 kg' : s.cups[k].m + ' g'}) : ${s.cups[k].fell ? '<b>décollée</b>' : 'collée'}`).join('');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S11;
+    if (a.t === 'mount') {
+      const c = s.cups[a.k]; c.on = true; c.m = a.m; c.fell = false; setMass(a.k, a.m);
+      const g = cup11[a.k]; if (INSTANT) g.position.copy(g.home); else { const p0 = g.position.clone(); await tween(.9, p => g.position.lerpVectors(p0, g.home, ease(p))); }
+      say(`${CUPS[a.k].nom[0].toUpperCase() + CUPS[a.k].nom.slice(1)} collée sous le support (air chassé), masse de ${a.m === 1000 ? '1 kg' : a.m + ' g'} accrochée.`); return;
+    }
+    if (a.t === 'unmount') { const c = s.cups[a.k]; c.on = false; c.fell = false; setMass(a.k, 0); const g = cup11[a.k]; if (INSTANT) g.position.copy(g.table); else { const p0 = g.position.clone(); await tween(.7, p => g.position.lerpVectors(p0, g.table, ease(p))); } say('Ventouse retirée.'); return; }
+    if (a.t === 'close') { if (INSTANT) bell11.position.y = .02; else await tween(1, p => bell11.position.y = .34 - .32 * ease(p)); s.closed = true; s.firstSurf = s.cups.small.on && s.cups.large.on && s.cups.small.m === s.cups.large.m ? s.cups.small.m : null; if (!INSTANT) flyTo([0, .26, .5], [0, .19, 0]); step('montage'); say('Cloche posée et étanche. Fais le vide progressivement en surveillant le manomètre.'); return; }
+    if (a.t === 'pump') {
+      const P1 = Math.max(.5, +(s.P - a.d).toFixed(1)), P0 = s.P;
+      if (INSTANT) s.P = P1; else await tween(Math.min(1.2, .3 + a.d * .04), p => { s.P = P0 + (P1 - P0) * p; mano11.set(kpa(s.P) + ' kPa'); });
+      s.P = P1; mano11.set(kpa(s.P) + ' kPa');
+      const fell = [];
+      for (const k of ['small', 'large']) { const c = s.cups[k]; if (!c.on || c.fell) continue; const F = s.P * 1000 * CUPS[k].S; if (F < c.m / 1000 * G) { c.fell = true; fell.push(k); s.res.push({ k, m: c.m, P: s.P }); } }
+      for (const k of fell) {
+        const g = cup11[k], y0 = g.position.y, y1 = .02 + CUPS[k].d / 200 * .6 + .068 + (s.cups[k].m === 1000 ? .045 : .03);
+        if (!INSTANT) await tween(.5, p => g.position.y = y0 - (y0 - y1) * p * p); g.position.y = y1;
+        const msg = `P = ${kpa(s.P)} kPa : la ${CUPS[k].nom} (d = ${String(CUPS[k].d).replace('.', ',')} cm) avec ${s.cups[k].m === 1000 ? '1 kg' : s.cups[k].m + ' g'} se décolle et tombe.`;
+        observe(msg); step('pression');
+        if (s.firstSurf && k === 'small' && s.cups.large.on && !s.cups.large.fell) step('surface');
+        const same = s.res.filter(r => r.k === k); if (new Set(same.map(r => r.m)).size >= 2) step('masse');
+      }
+      this.drawRes();
+      say(fell.length ? `P = ${kpa(s.P)} kPa : ` + fell.map(k => `la ${CUPS[k].nom} se décolle !`).join(' ') : `P = ${kpa(s.P)} kPa dans la cloche.` + (['small', 'large'].some(k => s.cups[k].on && !s.cups[k].fell) ? ' Les ventouses tiennent encore.' : ''));
+      if (s.P <= .5 && !INSTANT) say(`P = ${kpa(s.P)} kPa : c'est la limite de la pompe.`);
+      return;
+    }
+    if (a.t === 'vent') {
+      const P0 = s.P; if (!INSTANT) await tween(1, p => { s.P = P0 + (P0K - P0) * p; mano11.set(kpa(s.P) + ' kPa'); }); s.P = P0K; mano11.set('101,3 kPa');
+      if (INSTANT) bell11.position.y = .34; else await tween(.9, p => bell11.position.y = .02 + .32 * ease(p)); s.closed = false;
+      for (const k of ['small', 'large']) { const c = s.cups[k]; if (c.fell) { c.on = false; c.fell = false; setMass(k, 0); cup11[k].position.copy(cup11[k].table); } }
+      say('L\'air est rentré, la cloche est ouverte. Les ventouses tombées sont reposées sur la paillasse.'); return;
+    }
+  },
+  async demo() {
+    say('Démonstration : deux ventouses, même masse, sous la cloche.');
+    await act({ t: 'mount', k: 'small', m: 500 }, { record: false }); await act({ t: 'mount', k: 'large', m: 500 }, { record: false }); await act({ t: 'close' }, { record: false });
+    flyTo([0, .26, .45], [0, .21, 0]);
+    for (const d of [20, 20, 20, 20]) { await act({ t: 'pump', d }, { record: false }); await wait(500); }
+    say('La pression a beaucoup diminué : continue toi-même, doucement, pour repérer le décollement.'); await wait(1500);
+  },
+};
+startTP(C11);
+
+</script></body></html>

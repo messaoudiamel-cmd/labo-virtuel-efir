@@ -1,0 +1,242 @@
+<!--efir1re:AE2 · Couples oxydant/réducteur 3D-->
+window.EFIR_RETOUR = "premiere/matiere/R%C3%A9actions%20d%27oxydor%C3%A9duction";
+
+// ====================================================================
+// AE2 · Chapitre 2 · Les couples oxydant / réducteur (acide chlorhydrique + métaux)
+// ====================================================================
+const M2 = {
+  Zn: { nom: 'zinc', label: 'Zinc (poudre)', rate: .55, ion: 'Zn', look: 'Zn' },
+  Fe: { nom: 'fer', label: 'Fer (paille)', rate: .22, ion: 'Fe', look: 'Fe' },
+  Cu: { nom: 'cuivre', label: 'Cuivre (tournure)', rate: 0, ion: null, look: 'Cu' },
+  X: { nom: 'échantillon de la cuve', label: 'Échantillon de la cuve', rate: .2, ion: 'Fe', look: 'Fe' },
+};
+const P2 = { Zn: { c: 0xfafafa, n: 'blanc', ions: 'ions zinc Zn²⁺' }, Fe: { c: 0x4f7a2a, n: 'vert', ions: 'ions fer (II) Fe²⁺' } };
+const N2 = 4;
+let rack2, tubes2 = [], sel2 = -1, chosen2 = null, unlocked = true;
+const ACID = 0xf2f7fb;
+
+const AE2 = {
+  id: 'p1_ch02_ae2', code: 'AE2', short: 'Couples oxydant/réducteur 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 2 · Activité expérimentale AE2 · Simulation 3D',
+  title: 'Les couples oxydant / réducteur : l\'acide chlorhydrique attaque-t-il les métaux ?',
+  problem: 'Le 15 juillet 2008, de l\'acide chlorhydrique versé par erreur dans une cuve métallique l\'a percée avec un dégagement gazeux. Comment décrire une réaction d\'oxydoréduction ?',
+  mots: `<p><b>Acide chlorhydrique</b> : solution contenant des ions hydrogène H⁺(aq) et des ions chlorure Cl⁻(aq).<br>
+  <b>Test du dihydrogène</b> : une allumette enflammée approchée de l'ouverture du tube provoque une petite détonation (« pop »).<br>
+  <b>Oxydant</b> : entité capable de capter un ou plusieurs électrons. <b>Réducteur</b> : entité capable de céder un ou plusieurs électrons.<br>
+  <b>Couple oxydant / réducteur</b> Ox/Red : deux entités conjuguées reliées par une demi-équation électronique Ox + n e⁻ = Red.</p>`,
+  aide: `<p>1. Choisis un métal et clique sur « Ajouter l'acide ». Observe s'il y a des bulles.<br>
+  2. Pour identifier le gaz : sélectionne le tube, <b>bouche-le</b> et agite pour recueillir le gaz, puis approche l'allumette (le tube est débouché à ce moment).<br>
+  3. Ajoute de la soude pour identifier l'ion métallique formé.<br>
+  4. L'échantillon prélevé sur la cuve n'est donné qu'après appel du professeur (code).<br>
+  5. La vue microscopique montre qui cède et qui capte les électrons.</p>`,
+  views: { ensemble: [[0, 1.6, 4.0], [0, .3, -.05]] },
+  protocol: [
+    { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes.' },
+    { id: 'melanges', q: 'Q1', html: 'Mettre le zinc, le fer et le cuivre chacun en contact avec de l\'acide chlorhydrique.' },
+    { id: 'gaz', q: 'Q1', html: 'Boucher, agiter puis approcher une allumette des tubes où un gaz se dégage.' },
+    { id: 'tests', q: 'Q1', html: 'Ajouter de la soude dans les tubes du zinc, du fer et du cuivre pour identifier les ions formés.' },
+    { id: 'cuve', q: 'Q1', html: 'Appeler le professeur, puis tester l\'échantillon prélevé sur la cuve (allumette et soude).' },
+    { id: 'micro', q: 'Q2b', html: 'Observer en vue microscopique la réaction du zinc ou du fer avec l\'acide.' },
+    { id: 'tableau', q: 'Q1-2', html: 'Compléter le tableau de résultats puis cliquer sur « Vérifier le tableau ».' },
+    { id: 'extra', q: 'Q2-3', html: 'Identifier oxydant, réducteur, couples et demi-équations.' },
+    { id: 'conclusion', q: 'Q4', html: 'Choisir puis rédiger ta conclusion en utilisant les mots oxydant, réducteur et couple.' },
+    { id: 'vider', html: 'Vider les tubes dans le bidon de récupération.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  table: {
+    rowTitle: 'Métal + acide chlorhydrique',
+    rows: [
+      { label: 'Zinc', ans: [0, 0, 0] }, { label: 'Fer', ans: [0, 0, 1] }, { label: 'Cuivre', ans: [1, 1, 2] }, { label: 'Échantillon de la cuve', ans: [0, 0, 1] },
+    ],
+    cols: [
+      { title: 'Dégagement gazeux ?', options: ['oui', 'non'] },
+      { title: 'Allumette (gaz recueilli)', options: ['détonation : dihydrogène H₂', 'pas de détonation'] },
+      { title: 'Test HO⁻', options: ['précipité blanc : ions Zn²⁺', 'précipité vert : ions Fe²⁺', 'pas de précipité'] },
+    ],
+  },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'Métal(aux) qui aurai(en)t pu constituer la cuve :', options: ['le cuivre seulement', 'le fer ou le zinc (ils réagissent avec l\'acide en libérant H₂)', 'les trois métaux'], ans: 1 },
+    { q: 'Q1', text: 'L\'échantillon prélevé sur la cuve est en :', options: ['zinc', 'fer', 'cuivre'], ans: 1 },
+    { q: 'Q2a', text: 'Réactifs de la transformation entre le zinc et l\'acide :', options: ['Zn(s) et Cl⁻(aq)', 'Zn²⁺(aq) et H₂(g)', 'Zn(s) et H⁺(aq)'], ans: 2 },
+    { q: 'Q2a', text: 'Produits de cette transformation :', options: ['Zn²⁺(aq) et H₂(g)', 'Zn(s) et H⁺(aq)', 'Zn²⁺(aq) et O₂(g)'], ans: 0 },
+    { q: 'Q2b', text: 'Le réducteur (il cède des électrons) est :', options: ['l\'ion hydrogène H⁺', 'le zinc Zn', 'l\'ion chlorure Cl⁻'], ans: 1 },
+    { q: 'Q2b', text: 'L\'oxydant (il capte des électrons) est :', options: ['l\'ion hydrogène H⁺', 'le zinc Zn', 'le dihydrogène H₂'], ans: 0 },
+    { q: 'Q3', text: 'Demi-équation électronique du couple Zn²⁺/Zn :', options: ['Zn²⁺(aq) = Zn(s) + 2 e⁻', 'Zn²⁺(aq) + 2 e⁻ = Zn(s)', 'Zn²⁺(aq) + e⁻ = Zn(s)'], ans: 1 },
+    { q: 'Q3', text: 'Demi-équation électronique du couple H⁺/H₂ :', options: ['H⁺(aq) + e⁻ = H₂(g)', '2 H⁺(aq) + 2 e⁻ = H₂(g)', '2 H⁺(aq) = H₂(g) + 2 e⁻'], ans: 1 },
+    { q: 'Q3', text: 'Couples mis en jeu dans la réaction entre le fer et l\'acide :', options: ['Fe/Fe²⁺ et H₂/H⁺', 'Fe²⁺/Fe et Cl⁻/H₂', 'Fe²⁺/Fe et H⁺/H₂'], ans: 2 },
+  ],
+  conclusion: {
+    q: 'Q4 · Décris une réaction d\'oxydoréduction avec les mots oxydant, réducteur et couple.',
+    options: [
+      'L\'oxydant et le réducteur d\'un même couple réagissent ensemble.',
+      'L\'ion chlorure Cl⁻ est l\'oxydant qui attaque le métal.',
+      'L\'oxydant d\'un couple réagit avec le réducteur d\'un autre couple ; il se forme le réducteur et l\'oxydant conjugués.',
+      'Tous les métaux réagissent avec l\'acide chlorhydrique.',
+    ], ans: 2,
+  },
+
+  build() {
+    rack2 = makeRack(N2, .3); scene.add(rack2);
+    ['Zn', 'Fe', 'Cu'].forEach((m, k) => { const d = makeDish(M2[m].label, SAMPLES[m]()); d.position.set(-1.5, 0, -.45 + k * .42); scene.add(d); d.userData.onPick = () => choose2(m); LAB.pick.push(d); });
+    const ac = makeBottle('Acide chlorhydrique\nH⁺ + Cl⁻', ACID, { cap: 0x1565c0 }); ac.position.set(1.2, 0, -.35); scene.add(ac);
+    const so = makeBottle('Soude\nNa⁺ + HO⁻', 0xf5f5f5, { cap: 0xc62828 }); so.position.set(1.55, 0, .2); scene.add(so);
+    // boîte d'allumettes
+    const bx = new THREE.Mesh(new THREE.BoxGeometry(.14, .03, .09), new THREE.MeshStandardMaterial({ color: 0x1565c0 })); bx.position.set(.95, .015, .45); bx.castShadow = true; scene.add(bx);
+    const bid = new THREE.Group(); const bm = new THREE.Mesh(new THREE.BoxGeometry(.32, .38, .22), new THREE.MeshStandardMaterial({ color: 0xffb74d, roughness: .7 }));
+    bm.position.y = .19; bm.castShadow = true; const bl = label('Bidon de\nrécupération', { size: 30, scale: .0012 }); bl.position.y = .58; bid.add(bm, bl); bid.position.set(-1.0, 0, -.75); scene.add(bid);
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene() {
+    tubes2.forEach(T => { if (T) { scene.remove(T.group); LAB.pick.splice(LAB.pick.indexOf(T.group), 1); } });
+    tubes2 = new Array(N2).fill(null); sel2 = -1; this.refreshPanel && $('#tsel') && this.refreshPanel();
+  },
+  selected() { return sel2 >= 0 ? tubes2[sel2] : null; },
+  buildPanel() {
+    $('#actions').append(
+      h('h3', {}, '1. Métal + acide chlorhydrique'),
+      h('div', { class: 'chips', id: 'chM' }, ...['Zn', 'Fe', 'Cu'].map(m => h('button', { 'data-m': m, onclick: () => choose2(m) }, M2[m].label)),
+        h('button', { 'data-m': 'X', id: 'bX', onclick: () => { if (!unlocked) { $('#codebox').hidden = false; $('#code').focus(); say('Échantillon de la cuve : appelle le professeur pour obtenir le code.'); } else choose2('X'); } }, 'Échantillon de la cuve')),
+      h('div', { class: 'codebox', id: 'codebox', hidden: true }, h('input', { type: 'text', id: 'code', placeholder: 'Code du professeur', onkeydown: e => { if (e.key === 'Enter') tryCode(); } }), h('button', { onclick: tryCode }, 'Valider')),
+      h('button', { class: 'go', id: 'bPrep', onclick: prepare2, style: 'margin-top:6px' }, 'Ajouter l\'acide dans le tube suivant'),
+      h('h3', {}, '2. Tester un tube'),
+      h('div', { class: 'tubesel', id: 'tsel' }),
+      h('div', { class: 'row', style: 'margin-top:6px' },
+        h('button', { id: 'bBouch', onclick: () => sel2 >= 0 && act({ t: 'boucher', slot: sel2 }) }, 'Boucher et agiter'),
+        h('button', { id: 'bFlam', onclick: () => sel2 >= 0 && act({ t: 'flamme', slot: sel2 }) }, '🔥 Déboucher et approcher une allumette'),
+        h('button', { id: 'bNaoh', onclick: () => sel2 >= 0 && act({ t: 'naoh', slot: sel2 }) }, 'Ajouter de la soude (HO⁻)')),
+      h('h3', {}, '3. Ranger'),
+      h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Vider les tubes dans le bidon'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 Vider à l\'évier')));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    $$('#chM button').forEach(b => b.classList.toggle('on', b.dataset.m === chosen2));
+    const bx = $('#bX'); if (bx) bx.textContent = unlocked ? 'Échantillon de la cuve' : '🔒 Échantillon de la cuve';
+    const ts = $('#tsel'); if (!ts) return; ts.innerHTML = '';
+    tubes2.forEach((T, k) => { if (T) ts.append(h('button', { class: k === sel2 ? 'on' : '', onclick: () => select2(k) }, `Tube ${k + 1} : ${M2[T.m].nom}`)); });
+    if (!tubes2.some(Boolean)) ts.append(h('span', { class: 'note' }, 'Aucun tube préparé.'));
+    const T = this.selected();
+    $('#bBouch').disabled = BUSY || !T || T.stopper.visible || T.naoh;
+    $('#bFlam').disabled = BUSY || !T || T.naoh;
+    $('#bNaoh').disabled = BUSY || !T || T.naoh;
+    $('#bPrep').disabled = BUSY;
+  },
+  refresh() { this.refreshPanel(); },
+
+  async doAction(a) {
+    if (a.t === 'unlock') { unlocked = true; $('#codebox').hidden = true; say('Code accepté : l\'échantillon prélevé sur la cuve est disponible.'); this.refreshPanel(); return; }
+    if (a.t === 'prep') {
+      const T = makeTube(); T.m = a.metal; T.slot = a.slot; T.gas = false;
+      T.group.position.set(rack2.userData.slotX(a.slot), .028, 0); scene.add(T.group); tubes2[a.slot] = T;
+      T.group.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      const lb = label(`${a.slot + 1}`, { size: 40, scale: .0011 }); lb.position.y = .82; T.group.add(lb);
+      T.group.userData.onPick = () => select2(a.slot); LAB.pick.push(T.group);
+      select2(a.slot, true);
+      if (!INSTANT) { const x = T.group.position.x; flyTo([x + .2, .75, 1.25], [x, .3, 0], .9); }
+      say(`Tube ${a.slot + 1} : ${M2[a.metal].nom}, puis quelques millilitres d'acide chlorhydrique.`);
+      await addSample(T, M2[a.metal].look);
+      await pourInto(T, ACID, .2, .22);
+      T.bubbleRate = M2[a.metal].rate;
+      if (M2[a.metal].ion === 'Fe') { const c0 = new THREE.Color(ACID), c1 = new THREE.Color(0xd4e9b8); tween(6, p => { T.liquidMat.color.lerpColors(c0, c1, p); T.liquidMat.opacity = lerp(.22, .32, p); }); }
+      await wait(2200);
+      const msg = M2[a.metal].rate > 0
+        ? `${cap2(M2[a.metal].nom)} + acide chlorhydrique : des bulles de gaz se forment sur le métal${M2[a.metal].rate > .4 ? ' (dégagement important)' : ''}${M2[a.metal].ion === 'Fe' ? ' ; la solution devient très légèrement verte' : ''}.`
+        : 'Cuivre + acide chlorhydrique : aucun dégagement gazeux, aucun changement visible.';
+      observe(msg); say(msg);
+      if (['Zn', 'Fe', 'Cu'].every(m => tubes2.some(t => t && t.m === m))) step('melanges');
+      return;
+    }
+    const T = tubes2[a.slot];
+    if (a.t === 'boucher') {
+      if (!T || T.stopper.visible) return false;
+      select2(a.slot, true); T.stopper.visible = true;
+      say('Tube bouché. On agite pour que le gaz éventuel s\'accumule…'); await shake(T, 1);
+      await wait(1500); T.gas = T.bubbleRate > 0;
+      say(T.gas ? 'Du gaz s\'est accumulé sous le bouchon. Approche l\'allumette en débouchant.' : 'Rien ne se passe dans ce tube.');
+      return;
+    }
+    if (a.t === 'flamme') {
+      if (!T) return false;
+      select2(a.slot, true);
+      if (!INSTANT) { const x = T.group.position.x; flyTo([x + .35, .95, 1.1], [x, .55, 0], .8); }
+      const had = T.stopper.visible; T.stopper.visible = false;
+      const pop = T.gas; T.gas = false;
+      await flame(T, pop);
+      let msg;
+      if (pop) { msg = `Tube ${a.slot + 1} (${M2[T.m].nom}) : petite détonation à l'approche de la flamme, le gaz est du dihydrogène H₂.`; T.popped = true; }
+      else if (T.bubbleRate > 0) msg = had ? 'Pas assez de gaz recueilli : rebouche et agite encore.' : `Tube ${a.slot + 1} : pas de détonation, le gaz s'est échappé. Bouche d'abord le tube pour recueillir le gaz.`;
+      else msg = `Tube ${a.slot + 1} (${M2[T.m].nom}) : pas de détonation, aucun gaz ne s'est formé.`;
+      if (pop || !T.bubbleRate) { observe(msg); T.flamed = true; }
+      say(msg);
+      if (['Zn', 'Fe'].every(m => tubes2.some(t => t && t.m === m && t.popped))) step('gaz');
+      checkCuve();
+      return;
+    }
+    if (a.t === 'naoh') {
+      if (!T || T.naoh) return false;
+      select2(a.slot, true); T.stopper.visible = false;
+      if (!INSTANT) { const x = T.group.position.x; flyTo([x + .2, .75, 1.2], [x, .3, 0], .8); }
+      await dropInto(T, 0xf5f5f5, 5); T.naoh = true; T.bubbleRate *= .3;
+      const ion = M2[T.m].ion; let msg;
+      if (ion) { await precipitate(T, P2[ion].c); msg = `Tube ${a.slot + 1} (${M2[T.m].nom}) + soude : précipité ${P2[ion].n}, donc présence d'${P2[ion].ions}.`; }
+      else { await wait(1200); msg = `Tube ${a.slot + 1} (cuivre) + soude : pas de précipité, aucun ion métallique ne s'est formé.`; }
+      observe(msg); say(msg);
+      if (['Zn', 'Fe', 'Cu'].every(m => tubes2.some(t => t && t.m === m && t.naoh))) step('tests');
+      checkCuve();
+      return;
+    }
+    if (a.t === 'vider') {
+      if (!tubes2.some(Boolean)) { say('Il n\'y a aucun tube à vider.'); return false; }
+      if (a.where === 'evier') { ST.evier++; say('<b>Interdit !</b> Les solutions acides et les solutions d\'ions métalliques vont dans le bidon de récupération, jamais à l\'évier. C\'est noté dans ton compte rendu.'); observe('Vidage des tubes à l\'évier (interdit).'); }
+      else { ST.bidon++; say('Tubes vidés dans le bidon de récupération. Paillasse rangée.'); step('vider'); }
+      await tween(.8, p => tubes2.forEach(T => T && T.setLevel(T.level * (1 - p))));
+      this.resetScene(); flyTo(...this.views.ensemble);
+      return;
+    }
+  },
+  micro() {
+    const T = this.selected();
+    if (!T) return say('Sélectionne d\'abord un tube.');
+    const ion = M2[T.m].ion;
+    if (!ion) return say('Tube du cuivre : aucune transformation, donc aucun transfert d\'électrons entre le cuivre et les ions H⁺.');
+    const nm = ion === 'Zn' ? 'zinc' : 'fer';
+    openMicro({
+      title: `Vue microscopique · ${nm} + acide chlorhydrique`,
+      red: { name: `${cap2(nm)} métallique ${ion}(s)`, color: ion === 'Zn' ? 0x9aa4ad : 0x6b6f76, ion: ion + '²⁺', ionColor: ion === 'Zn' ? 0xe0e0e0 : 0x8bc34a },
+      ox: { type: 'H', ion: 'H⁺', ionColor: 0xff7043 },
+      spect: 'Cl⁻',
+      caption: `L'atome de ${nm} <b>cède 2 électrons</b> : c'est le <b>réducteur</b>. Deux ions H⁺ <b>captent chacun 1 électron</b> et forment une molécule de dihydrogène H₂ : H⁺ est l'<b>oxydant</b>. Les ions chlorure Cl⁻ ne participent pas (ions spectateurs).<br>
+      <span class="eq">${ion}²⁺(aq) + 2 e⁻ = ${ion}(s)</span> &nbsp; <span class="eq">2 H⁺(aq) + 2 e⁻ = H₂(g)</span><br>
+      <span class="eq">${ion}(s) + 2 H⁺(aq) → ${ion}²⁺(aq) + H₂(g)</span>
+      <div class="legend"><span><i style="background:#ff7043"></i>ion H⁺</span><span><i style="background:#8bc34a"></i>ion Cl⁻ (spectateur)</span><span><i style="background:#ffeb3b"></i>électron e⁻</span><span>L'eau n'est pas représentée.</span></div>`,
+    });
+    step('micro');
+  },
+  async demo() {
+    flyTo(...this.views.ensemble);
+    say('Démonstration : du zinc dans l\'acide chlorhydrique.'); await wait(1200);
+    choose2('Zn'); await wait(500);
+    await act({ t: 'prep', slot: 0, metal: 'Zn' }, { record: false }); await wait(800);
+    await act({ t: 'boucher', slot: 0 }, { record: false }); await wait(500);
+    await act({ t: 'flamme', slot: 0 }, { record: false }); await wait(1200);
+    say('Que se passe-t-il entre le zinc et les ions H⁺ ?');
+    this.micro(); await wait(9000); closeMicro();
+  },
+};
+const cap2 = s => s[0].toUpperCase() + s.slice(1);
+function checkCuve() { if (tubes2.some(t => t && t.m === 'X' && t.popped && t.naoh)) step('cuve'); }
+function tryCode() { if ($('#code').value.trim().toLowerCase() === 'efir') { act({ t: 'unlock' }); } else say('Code incorrect : appelle le professeur.'); }
+function choose2(m) { chosen2 = m; AE2.refreshPanel(); say(`Métal choisi : ${M2[m].nom}.`); }
+function select2(k, silent) {
+  sel2 = k; tubes2.forEach((T, j) => T && highlight(T, j === k)); AE2.refreshPanel();
+  if (!silent && tubes2[k]) say(`Tube ${k + 1} sélectionné : ${M2[tubes2[k].m].nom} + acide chlorhydrique.`);
+}
+function prepare2() {
+  if (!chosen2) return say('Choisis d\'abord un métal.');
+  if (tubes2.some(t => t && t.m === chosen2)) return say('Ce métal est déjà dans un tube.');
+  const slot = tubes2.findIndex(t => !t); if (slot < 0) return say('Le portoir est plein : vide les tubes dans le bidon pour recommencer.');
+  act({ t: 'prep', slot, metal: chosen2 });
+}
+startTP(AE2);
+
+</script></body></html>

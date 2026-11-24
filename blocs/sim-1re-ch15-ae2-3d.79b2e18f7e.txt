@@ -1,0 +1,157 @@
+<!--efir1re:AE2 · Télémètre à ultrasons 3D-->
+window.EFIR_RETOUR = "premiere/ondes/Ondes%20m%C3%A9caniques";
+
+// ====================================================================
+// Ch. 15 · AE2 · Mesure d'une distance avec un télémètre à ultrasons
+// ====================================================================
+const X0_22 = -.3, TROOM = 20, cT = T => 331.3 + .606 * T; // face avant du capteur (m) ; célérité réelle (m/s)
+let wall22, lcd22, tape22, tapeL22, waves22 = [], phoneScr22, S22 = null;
+const fresh22 = () => ({ D: 30, v: '345', up: true, meas: [], last: null, ruban: false, phone: false });
+const f22 = (x, k) => x.toFixed(k).replace('.', ',');
+const C22 = {
+  id: 'p1_ch15_ae2', code: 'AE2', short: 'Télémètre à ultrasons 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 15 · Activité expérimentale AE2 · Simulation 3D',
+  title: 'Mesure d\'une distance avec un télémètre',
+  problem: 'Pour détecter les obstacles, un robot utilise des télémètres à ultrasons. Comment calculer une distance à partir de la durée de propagation d\'un signal ?',
+  mots: `<p><b>Télémètre à ultrasons</b> : un émetteur envoie une salve d'ultrasons ; elle se réfléchit sur l'obstacle et revient vers le récepteur placé à côté.<br>
+  <b>duree_echo</b> : durée (en µs) mesurée par le microcontrôleur entre l'émission et la réception de l'écho, c'est-à-dire la durée de l'<b>aller-retour</b>.<br>
+  <b>Célérité</b> v d'une perturbation : v = d / Δt, avec d la distance parcourue pendant la durée Δt.<br>
+  Donnée : célérité du son dans l'air (m·s⁻¹) en fonction de la température : 17 °C : 341,6 · 19 °C : 342,8 · 20 °C : 343,4 · 22 °C : 344,6 · 25 °C : 346,5 · 27 °C : 347,7.<br>
+  Température de la salle : ${TROOM} °C.</p>`,
+  aide: `<p>1. Place l'obstacle à une certaine distance du télémètre puis lance une mesure : l'écran LCD affiche la distance D calculée par le sketch.<br>
+  2. Mesure la même distance au mètre ruban, puis avec l'application « télémètre » du téléphone.<br>
+  3. Recommence pour au moins trois positions de l'obstacle.<br>
+  4. Lis la ligne 51 du sketch : à quoi sert chaque facteur ? Pourquoi divise-t-on par 2 ?<br>
+  5. Pour corriger l'écart, tu peux modifier la valeur de v à la ligne 51 et téléverser à nouveau.</p>`,
+  views: { ensemble: [[0, .45, .85], [0, .06, 0]] },
+  viewbar: [['Zoom écran LCD', () => flyTo([-.42, .2, .15], [-.42, .12, -.13])], ['Zoom obstacle', () => flyTo([S22 ? X0_22 + S22.D / 100 : 0, .25, .5], [S22 ? X0_22 + S22.D / 100 - .1 : 0, .05, 0])]],
+  protocol: [
+    { id: 'mesure', q: 'Q1', html: 'Placer l\'obstacle et mesurer la distance avec le télémètre (microcontrôleur).' },
+    { id: 'ruban', q: 'Q3', html: 'Mesurer la même distance au mètre ruban.' },
+    { id: 'phone', q: 'Q3', html: 'Mesurer la distance avec l\'application « télémètre » du téléphone.' },
+    { id: 'positions', q: 'Q3', html: 'Recommencer pour au moins 3 positions de l\'obstacle.' },
+    { id: 'tableau', q: 'Q2', html: 'Compléter le tableau : rôle de chaque facteur de la ligne 51, puis le vérifier.' },
+    { id: 'extra', q: 'Q2-5', html: 'Répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'aucun produit chimique ; ne pas regarder de près l\'émetteur en fonctionnement prolongé (ultrasons inaudibles)',
+  table: { rowTitle: 'Facteur de la ligne 51', rows: [{ label: 'duree_echo', ans: [0] }, { label: '1E-06', ans: [1] }, { label: '345', ans: [2] }, { label: '/ 2', ans: [3] }, { label: '* 100', ans: [4] }],
+    cols: [{ title: 'Rôle dans le calcul de la distance', options: ['durée de l\'aller-retour des ultrasons, mesurée en µs', 'convertit la durée de µs en s', 'valeur de la célérité v des ultrasons dans l\'air (m·s⁻¹)', 'les ultrasons parcourent deux fois la distance D (aller-retour)', 'convertit la distance de m en cm'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q2', text: 'D\'après le sketch, la distance affichée est exprimée en…', options: ['cm', 'm', 'mm', 'µs'], ans: 0 },
+    { q: 'Q2', num: true, text: 'Le microcontrôleur mesure duree_echo = 1 200 µs. Calcule la distance D affichée (avec v = 345 m·s⁻¹) :', unit: 'cm', ans: 1200e-6 * 345 / 2 * 100, tol: .01 },
+    { q: 'Q3', text: 'À 20 °C, la distance affichée par le télémètre est légèrement supérieure à celle du mètre ruban car…', options: ['le sketch utilise v = 345 m·s⁻¹ alors qu\'à 20 °C les ultrasons vont à 343,4 m·s⁻¹ : la distance calculée est trop grande', 'les ultrasons sont ralentis par l\'obstacle', 'le mètre ruban est faux', 'le microcontrôleur compte mal le temps'], ans: 0 },
+    { q: 'Q3', text: 'L\'application du téléphone donne une valeur moins proche de la vraie valeur car…', options: ['le haut-parleur et le micro du téléphone captent des échos parasites (murs, table…) et la mesure est moins précise', 'le téléphone utilise la lumière', 'le téléphone ne mesure pas de durée'], ans: 0 },
+    { q: 'Q4', text: 'Comment un robot repère-t-il un obstacle ?', options: ['il mesure la durée de l\'aller-retour d\'une salve d\'ultrasons réfléchie par l\'obstacle et calcule D = v × Δt / 2 ; plusieurs capteurs orientés différemment donnent sa position', 'il photographie l\'obstacle', 'il mesure la température de l\'obstacle'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Connaissant la célérité v d\'une onde et la durée Δt de son aller-retour jusqu\'à un obstacle, on calcule la distance D = v × Δt / 2. La précision dépend de la valeur de v utilisée (elle varie avec la température) et des échos parasites.', 'La distance est égale à v × Δt, sans diviser par 2.', 'La distance ne dépend pas de la célérité de l\'onde.', 'Le télémètre mesure directement la distance sans mesurer de durée.'], ans: 0 },
+  build() {
+    const M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, ...o });
+    // microcontrôleur + LCD
+    const board = new THREE.Mesh(new THREE.BoxGeometry(.1, .012, .07), M(0x00796b)); board.position.set(-.45, .006, .06); scene.add(board);
+    const bl = label('Microcontrôleur', { size: 22, scale: .0007 }); bl.position.set(-.45, .035, .12); scene.add(bl);
+    const lb = new THREE.Mesh(new THREE.BoxGeometry(.12, .05, .012), M(0x1b5e20)); lb.position.set(-.42, .13, -.14); scene.add(lb);
+    const ls = new THREE.Mesh(new THREE.BoxGeometry(.004, .09, .004), M(0x9e9e9e)); ls.position.set(-.42, .055, -.142); scene.add(ls);
+    lcd22 = makeScreen(.1, .035, { px: 360, text: ['D=', '---'], bg: '#1565c0', fg: '#e3f2fd' }); lcd22.mesh.position.set(-.42, .13, -.133); scene.add(lcd22.mesh);
+    // capteur HC-SR04 (face vers +x)
+    const sg = new THREE.Group(); sg.position.set(X0_22 - .012, .05, 0); scene.add(sg);
+    const pcb = new THREE.Mesh(new THREE.BoxGeometry(.004, .022, .046), M(0x1565c0)); sg.add(pcb);
+    for (const z of [-.013, .013]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .012, 20), M(0xcfd8dc, { metalness: .8, roughness: .3 })); c.rotation.z = Math.PI / 2; c.position.set(.008, 0, z); sg.add(c); const m = new THREE.Mesh(new THREE.CircleGeometry(.006, 20), M(0x263238)); m.rotation.y = Math.PI / 2; m.position.set(.0142, 0, z); sg.add(m); }
+    const post = new THREE.Mesh(new THREE.BoxGeometry(.01, .04, .02), M(0x546e7a)); post.position.set(X0_22 - .016, .02, 0); scene.add(post);
+    const el = label('Émetteur-récepteur\nd\'ultrasons', { size: 20, scale: .0006 }); el.position.set(X0_22 + .03, .1, .05); scene.add(el);
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(X0_22 - .02, .04, .01), new THREE.Vector3(-.36, .01, .05), new THREE.Vector3(-.41, .012, .06)]), 20, .0015, 6), M(0xc62828)));
+    // mètre ruban posé sur la paillasse
+    const rul = new THREE.Mesh(new THREE.BoxGeometry(.85, .002, .02), M(0xfdd835)); rul.position.set(X0_22 + .425, .001, .07); scene.add(rul);
+    for (let c = 0; c <= 85; c += 5) { const t = new THREE.Mesh(new THREE.BoxGeometry(.001, .0025, c % 10 ? .007 : .014), new THREE.MeshBasicMaterial({ color: 0x212121 })); t.position.set(X0_22 + c / 100, .002, .066); scene.add(t); if (c % 10 === 0) { const l = label(String(c), { size: 18, scale: .0005, bg: 'rgba(255,255,255,0)' }); l.position.set(X0_22 + c / 100, .012, .075); scene.add(l); } }
+    tape22 = new THREE.Mesh(new THREE.BoxGeometry(1, .003, .012), M(0xffb300, { emissive: 0x332200 })); tape22.position.set(0, .03, .03); scene.add(tape22);
+    // obstacle
+    wall22 = new THREE.Group(); const pl = new THREE.Mesh(new THREE.BoxGeometry(.012, .16, .22), M(0x8d6e63)); pl.position.y = .08; wall22.add(pl); const ft = new THREE.Mesh(new THREE.BoxGeometry(.06, .01, .1), M(0x5d4037)); ft.position.set(.02, .005, 0); wall22.add(ft); const wl = label('Obstacle', { size: 22, scale: .0007 }); wl.position.set(.02, .19, 0); wall22.add(wl); scene.add(wall22);
+    // téléphone
+    const ph = new THREE.Group(); ph.position.set(-.15, .005, -.2); ph.rotation.y = .15; ph.rotation.x = .0; scene.add(ph);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(.09, .008, .17), M(0x212121)); ph.add(body);
+    phoneScr22 = makeScreen(.08, .15, { px: 240, text: ['Télémètre', '---'], bg: '#fafafa', fg: '#1565c0' }); phoneScr22.mesh.rotation.x = -Math.PI / 2; phoneScr22.mesh.position.y = .0045; ph.add(phoneScr22.mesh);
+    const pl2 = label('Téléphone (appli télémètre)', { size: 22, scale: .0007 }); pl2.position.set(0, .05, -.08); ph.add(pl2);
+    // fronts d'onde
+    for (let i = 0; i < 3; i++) { const w = new THREE.Mesh(new THREE.TorusGeometry(.05, .0015, 4, 30, 1.2), new THREE.MeshBasicMaterial({ color: 0x00bcd4, transparent: true, opacity: .85 })); w.visible = false; scene.add(w); waves22.push(w); }
+    // sketch (lecture + v modifiable)
+    this.draft = '345';
+    const code = h('div', { class: 'card' }, h('h2', {}, 'Sketch du microcontrôleur (extrait)'),
+      h('pre', { style: 'font-size:13px;line-height:1.55;background:#f7f9fc;border:1px solid var(--line);border-radius:8px;padding:8px;white-space:pre-wrap;margin:0' },
+        '40 void loop() {\n42   // Envoi d\'une impulsion\n43   digitalWrite(trig, HIGH);\n44   // Cette impulsion dure 10 microsecondes\n45   delayMicroseconds(10);\n47   digitalWrite(trig, LOW);\n48   // Mesure de la durée de propagation (µs)\n49   duree_echo = pulseIn(echo, HIGH);\n50   // Calcul de la distance\n51   dist = (duree_echo * 1E-06 * ', h('select', { id: 'sk_v', onchange: e => { this.draft = e.target.value; } }, ...['340', '343', '345', '347', '350'].map(v => h('option', { value: v }, v))), ' / 2) * 100;\n52   lcd.clear();\n54   lcd.setCursor(0, 0);\n55   lcd.print("D=");\n56   lcd.print(dist, 2);\n57   lcd.print(" cm");\n58   delay(500);\n59 }'),
+      h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { id: 'up22', onclick: () => act({ t: 'upload', v: this.draft }) }, '⬆ Téléverser le sketch')), h('div', { class: 'note', id: 'sk22' }));
+    sideCard(code);
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'mTab22' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  place() {
+    const s = S22, xw = X0_22 + s.D / 100; wall22.position.set(xw, 0, 0);
+    tape22.visible = s.ruban; tape22.scale.x = s.D / 100; tape22.position.x = X0_22 + s.D / 200; tape22.position.z = .03;
+    if (tapeL22) { scene.remove(tapeL22); tapeL22 = null; }
+    if (s.ruban) { tapeL22 = label(`D = ${f22(s.D, 1)} cm`, { size: 24, scale: .0008, color: '#E65100' }); tapeL22.position.set(X0_22 + s.D / 200, .06, .04); scene.add(tapeL22); }
+    lcd22.set(s.last ? ['D=' + f22(s.last.dist, 2) + ' cm', 'v = ' + s.v + ' m/s'] : ['D=', '---']);
+    phoneScr22.set(s.phone ? ['Télémètre', f22(s.phone, 0) + ' cm'] : ['Télémètre', '---']);
+  },
+  resetScene() { S22 = fresh22(); if (!wall22) return; this.draft = '345'; const e = $('#sk_v'); if (e) e.value = '345'; waves22.forEach(w => w.visible = false); this.place(); this.drawData(); if ($('#q22')) this.refreshPanel(); },
+  drawData() {
+    const s = S22, t = $('#mTab22'); if (!t) return;
+    t.innerHTML = '<thead><tr><th>v sketch (m·s⁻¹)</th><th>duree_echo (µs)</th><th>D télémètre (cm)</th><th>D ruban (cm)</th><th>D téléphone (cm)</th></tr></thead><tbody>' + (s.meas.map(m => `<tr><td>${m.v}</td><td>${m.dur}</td><td>${f22(m.dist, 2)}</td><td>${m.ruban ? f22(m.D, 1) : '—'}</td><td>${m.phone ? f22(m.phone, 0) : '—'}</td></tr>`).join('') || '<tr><td colspan="5">Aucune mesure.</td></tr>') + '</tbody>';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('h3', {}, '1. Placer l\'obstacle'),
+      h('div', { class: 'row' }, B('d1', '◀ −10 cm', { t: 'move', d: -10 }), B('d2', '◀ −1 cm', { t: 'move', d: -1 }), B('d3', '+1 cm ▶', { t: 'move', d: 1 }), B('d4', '+10 cm ▶', { t: 'move', d: 10 })),
+      h('h3', {}, '2. Mesurer la distance'),
+      h('div', { class: 'row' }, h('button', { id: 'm1', onclick: () => act({ t: 'echo', nz: Math.round((Math.random() - .5) * 10) }) }, '📡 Mesure au télémètre (microcontrôleur)')),
+      h('div', { class: 'row' }, B('m2', '📏 Mesure au mètre ruban', { t: 'ruban' }), h('button', { id: 'm3', onclick: () => act({ t: 'phone', nz: Math.round((Math.random() * 7 - 2) * 10) / 10 }) }, '📱 Mesure avec le téléphone')),
+      h('div', { class: 'row' }, B('m4', 'Effacer mes mesures', { t: 'clear' })),
+      h('div', { id: 'q22', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S22, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#d1', s.D - 10 >= 10); en('#d2', s.D - 1 >= 10); en('#d3', s.D + 1 <= 80); en('#d4', s.D + 10 <= 80);
+    en('#m1', true); en('#m2', !!s.last && !s.ruban); en('#m3', !!s.last && !s.phone); en('#m4', s.meas.length > 0); en('#up22', true);
+    $('#q22').innerHTML = `Obstacle placé · température de la salle : ${TROOM} °C · ${s.last ? 'écran LCD : <b>D = ' + f22(s.last.dist, 2) + ' cm</b>' : 'aucune mesure à cette position'}${s.ruban ? ' · mètre ruban : <b>' + f22(s.D, 1) + ' cm</b>' : ''}${s.phone ? ' · téléphone : <b>' + f22(s.phone, 0) + ' cm</b>' : ''}`;
+    $('#sk22').innerHTML = `Sketch téléversé avec v = <b>${s.v} m·s⁻¹</b> (ligne 51).`;
+  },
+  refresh() { this.refreshPanel(); },
+  async pulse(D) {
+    const x0 = X0_22 + .002, d = D / 100, T = 1.2 + d * 2.2;
+    await tween(T, p => {
+      const r = 2 * d * p; waves22.forEach((w, i) => { const ri = r - i * .015; w.visible = ri > .005 && ri < 2 * d - .005; if (!w.visible) return; const out = ri <= d;
+        const rr = out ? ri : 2 * d - ri, cx = out ? x0 : x0 + d; w.geometry.dispose(); w.geometry = new THREE.TorusGeometry(Math.max(rr, .004), .0015, 4, 30, 1.2); w.position.set(out ? cx : cx, .05, 0); w.rotation.set(0, 0, out ? -.6 : Math.PI - .6); w.material.color.set(out ? 0x00bcd4 : 0x7e57c2); });
+    });
+    waves22.forEach(w => w.visible = false);
+  },
+  async doAction(a) {
+    const s = S22;
+    if (a.t === 'move') { const D0 = s.D, D1 = Math.max(10, Math.min(80, s.D + a.d)); s.last = null; s.ruban = false; s.phone = false; if (!INSTANT) await tween(.5, p => { s.D = D0 + (D1 - D0) * p; this.place(); }); s.D = D1; this.place(); say(`Obstacle déplacé. Lance une mesure au télémètre.`); return; }
+    if (a.t === 'upload') { s.v = a.v; const e = $('#sk_v'); if (e) e.value = a.v; this.draft = a.v; s.last = null; this.place(); say(`Sketch téléversé : la distance est calculée avec v = ${a.v} m·s⁻¹.`); return; }
+    if (a.t === 'echo') {
+      if (!INSTANT) { flyTo([X0_22 + s.D / 200, .35, .55], [X0_22 + s.D / 200, .06, 0]); await this.pulse(s.D); }
+      const dur = Math.round(2 * (s.D / 100) / cT(TROOM) * 1e6 + a.nz), dist = dur * 1e-6 * +s.v / 2 * 100;
+      s.last = { dur, dist }; s.ruban = false; s.phone = false; s.meas.push({ v: s.v, dur, dist, D: s.D, ruban: false, phone: null }); this.place(); this.drawData(); step('mesure');
+      if (new Set(s.meas.map(m => m.D)).size >= 3) step('positions');
+      const msg = `Télémètre : duree_echo = ${dur} µs → D = (${dur} × 10⁻⁶ × ${s.v} / 2) × 100 = ${f22(dist, 2)} cm.`; observe(msg); say(msg); return;
+    }
+    if (a.t === 'ruban') { s.ruban = true; const m = s.meas[s.meas.length - 1]; if (m) m.ruban = true; this.place(); this.drawData(); step('ruban'); const msg = `Mètre ruban : D = ${f22(s.D, 1)} cm (télémètre : ${f22(s.last.dist, 2)} cm, écart ${f22(s.last.dist - s.D, 2)} cm).`; observe(msg); say(msg); return; }
+    if (a.t === 'phone') {
+      if (!INSTANT) await this.pulse(s.D);
+      s.phone = Math.round(s.D + a.nz); const m = s.meas[s.meas.length - 1]; if (m) m.phone = s.phone; this.place(); this.drawData(); step('phone');
+      const msg = `Application du téléphone : D ≈ ${f22(s.phone, 0)} cm (mesure moins précise : échos parasites, émetteur et micro du téléphone mal orientés).`; observe(msg); say(msg); return;
+    }
+    if (a.t === 'clear') { s.meas = []; this.drawData(); say('Mesures effacées.'); return; }
+  },
+  async demo() {
+    say('Démonstration : une salve d\'ultrasons part vers l\'obstacle, s\'y réfléchit et revient au récepteur.');
+    await act({ t: 'echo', nz: 2 }, { record: false }); await wait(1200);
+    await act({ t: 'ruban' }, { record: false }); await wait(1200);
+    say('À toi : fais tes mesures pour plusieurs positions et compare-les.'); await wait(1200);
+  },
+};
+startTP(C22);
+
+</script></body></html>

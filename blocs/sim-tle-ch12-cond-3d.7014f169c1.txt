@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel 3D · Particule dans un condensateur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Paillasse : en-tête de fiche, puis deux colonnes (tubes à gauche, flacons et carnet à droite), une seule colonne sur téléphone */
+:root {
+  --bg: #eef2f5;          /* carrelage de paillasse, gris bleuté */
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #15212d;
+  --muted: #576776;
+  --line: #d3dce4;
+  --navy: #003366;        /* bleu marine EFIR */
+  --navy-soft: #e3ecf6;
+  --red: #b42318;         /* sécurité, interdit */
+  --red-soft: #fdecea;
+  --green: #2f6f45;       /* vérifié */
+  --green-soft: #e7f3eb;
+  --amber: #8c6d1f;
+  --amber-soft: #fbf3df;
+  --glass: rgba(120, 150, 175, .55);
+  --glass-fill: rgba(255, 255, 255, .55);
+  --water: rgba(170, 205, 230, .38);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+    --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+    --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+    --water: rgba(150, 190, 225, .28); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+  --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+  --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+  --water: rgba(150, 190, 225, .28); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; color: var(--navy); }
+h1 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); line-height: 1.15; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+sub, sup { font-size: .7em; line-height: 0; }
+.kicker { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+header.fiche { display: grid; gap: 10px; }
+.pb { border: 1.5px solid var(--red); background: var(--surface); border-radius: var(--radius); padding: 10px 14px; font-weight: 700; }
+.pb span { color: var(--red); }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .92rem; padding: 0; margin: 0; list-style: none; }
+.steps li b { color: var(--ink); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: .88rem; }
+
+/* sécurité */
+.epi { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .92rem; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--green); background: var(--green-soft); color: var(--green); font-weight: 700; }
+.chip:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+
+/* porte-tubes */
+.rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px 6px; }
+.tube { font: inherit; background: none; border: 2px solid transparent; border-radius: 10px; padding: 4px 2px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; color: var(--ink); }
+.tube[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); }
+.tube svg { width: 52px; height: 178px; overflow: visible; }
+.tube .lab { font-size: .72rem; line-height: 1.15; text-align: center; min-height: 2.3em; color: var(--muted); }
+.tube .num { font-weight: 700; font-size: .8rem; }
+.glass { fill: var(--glass-fill); stroke: var(--glass); stroke-width: 2; }
+.drop { animation: fall .55s ease-in forwards; }
+@keyframes fall { from { transform: translateY(-34px); opacity: 1; } to { transform: translateY(var(--dy, 120px)); opacity: .2; } }
+.ppt circle { transition: fill 9s linear, opacity .9s ease, transform 2.2s ease-in; }
+@media (prefers-reduced-motion: reduce) { .drop { animation: none; opacity: 0; } .ppt circle { transition: none; } }
+.bench-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sel-info { flex: 1 1 220px; min-width: 0; font-size: .92rem; }
+
+/* flacons */
+.bottles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bottle { font: inherit; text-align: left; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 8px 10px; cursor: pointer; display: grid; gap: 4px; }
+.bottle:hover { border-color: var(--navy); }
+.bottle .nm { font-weight: 700; line-height: 1.2; }
+.bottle .io { font-size: .85rem; color: var(--muted); }
+.bottle .act { font-size: .78rem; color: var(--navy); font-weight: 700; }
+.bottle.reagent { background: var(--navy-soft); }
+.bottle[disabled] { opacity: .45; cursor: not-allowed; }
+.pic { display: flex; gap: 4px; }
+.pic img { width: 30px; height: 30px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--glass); vertical-align: -1px; margin-right: 4px; }
+
+button.btn { font: inherit; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1.5px solid var(--navy); background: var(--navy); color: var(--surface); }
+button.btn.ghost { background: transparent; color: var(--navy); }
+button.btn.warn { border-color: var(--red); color: var(--red); background: transparent; }
+button.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* messages */
+.toast { border-radius: 8px; padding: 9px 12px; font-size: .95rem; border: 1px solid var(--line); background: var(--surface-2); }
+.toast.err { border-color: var(--red); background: var(--red-soft); }
+.toast.ok { border-color: var(--green); background: var(--green-soft); }
+.toast.info { border-color: var(--amber); background: var(--amber-soft); }
+
+/* carnet */
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.log li { font-size: .92rem; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.log li.pos { border-left-color: var(--navy); }
+.log li:empty { display: none; }
+.log .t { color: var(--muted); font-size: .8rem; }
+
+/* tableaux */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 640px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; vertical-align: middle; }
+thead th, tbody th { background: var(--navy-soft); color: var(--navy); font-weight: 700; }
+tbody th { text-align: left; }
+td select { font: inherit; font-size: .88rem; width: 100%; min-width: 0; padding: 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+td.good select { border-color: var(--green); background: var(--green-soft); }
+td.bad select { border-color: var(--red); background: var(--red-soft); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.foot { color: var(--muted); font-size: .82rem; text-align: center; }
+details summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+
+/* animation et guide (version 3e) */
+.guide { display: flex; gap: 12px; align-items: center; background: var(--navy); color: var(--surface); border-radius: var(--radius); padding: 12px 14px; font-size: 1.05rem; }
+.guide b { color: inherit; }
+.guide .gn { flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--surface); color: var(--navy); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; }
+.next { box-shadow: 0 0 0 3px var(--amber); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--amber) 35%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .next { animation: none; } }
+.bench { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 520px) { .bench { grid-template-columns: minmax(0, 1fr); } .stage svg { max-height: 260px; } }
+.stage { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; display: grid; gap: 6px; justify-items: center; }
+.stage svg { width: 100%; max-width: 200px; height: auto; overflow: hidden; }
+.stage .caption { font-size: .95rem; text-align: center; min-height: 4.5em; }
+.stlbl { font: 700 15px var(--font-body); fill: var(--ink); }
+.mots summary { font-size: 1rem; }
+.mots dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 0; }
+.mots dt { font-weight: 700; color: var(--navy); }
+.mots dd { margin: 0; }
+@media (max-width: 520px) { .mots dl { grid-template-columns: 1fr; } .mots dd { margin-bottom: 6px; } }
+.tube .lab { font-size: .78rem; }
+.bottle .act { font-size: .88rem; }
+
+/* version 2 : actions rapides et compte rendu */
+.quick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.quick:empty { display: none; }
+.qbtn { font-size: .9rem; padding: 6px 10px; }
+.crform { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.crform label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+.crform input { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; width: 100%; }
+.crform label:first-child { flex: 1 1 220px; } .crform label:nth-child(2) { flex: 0 1 120px; }
+.cr { border: 1.5px solid var(--navy); border-radius: var(--radius); padding: 14px; background: var(--surface); display: grid; gap: 8px; }
+.cr h3, .cr h4 { margin: 4px 0 0; color: var(--navy); font-family: var(--font-display); }
+.cr ol, .cr ul { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.cr table { min-width: 0; font-size: .88rem; } .cr td, .cr th { text-align: left; }
+.cr .t { display: none; } .cr[hidden] { display: none; }
+.codebox { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.codebox input { font: inherit; width: 9em; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-transform: uppercase; }
+
+/* version 3 : question ion utile, mode économe */
+.ask { display: grid; gap: 8px; max-width: 260px; font-size: .92rem; text-align: center; }
+.ask .toast { text-align: left; }
+body.eco *, body.eco *::before, body.eco *::after { animation: none !important; transition: none !important; }
+#effacer { font-size: .85rem; padding: 4px 10px; margin-left: 6px; }
+
+/* version 4 : manipulations pilotées par l'élève */
+.vol { font-size: .92rem; align-self: center; }
+#verser { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.askbox:empty { display: none; }
+.askbox .ask { max-width: 280px; }
+.stage svg { overflow: visible; }
+
+.qtitle { width: 100%; text-align: center; font-size: .92rem; margin: 2px 0 0; }
+.quick .qbtn.next { font-size: .95rem; }
+.prof { margin: -4px 0 0; color: var(--navy); font-size: 1rem; }
+
+/* protocole de la fiche */
+.proto { border: 1.5px solid var(--navy); border-radius: var(--radius); background: var(--surface); padding: 10px 12px; }
+.proto summary { font-weight: 700; color: var(--navy); cursor: pointer; }
+.proto ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.proto li { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 1.4em; gap: 8px; align-items: start; font-size: .92rem; padding: 6px 8px; border-radius: 8px; }
+.proto li.partie { display: block; grid-template-columns: none; font-family: var(--font-display); font-weight: 700; color: var(--navy); padding: 6px 0 0; font-size: .95rem; }
+.proto .q { font-weight: 700; color: var(--muted); font-size: .8rem; padding-top: 2px; }
+.proto .st { font-weight: 700; color: var(--green); text-align: center; }
+.proto li.cur { background: var(--amber-soft); outline: 1.5px solid var(--amber); }
+.proto li.cur .st { color: var(--amber); }
+.proto li.fait .tx { color: var(--muted); }
+.proto li.fait { background: var(--green-soft); }
+.proto ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.proto ul li { display: block; padding: 0; font-size: .88rem; background: none; outline: none; }
+.proto ul li.fait { color: var(--green); background: none; }
+
+#prototout { margin-top: 8px; }
+.proto:not(.tout) #proto > li:not(.cur) { display: none; }
+.proto li { grid-template-columns: 4.2em minmax(0, 1fr) 1.4em; }
+.extract{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center}.extract svg{width:120px;height:120px}
+
+/* ===== Compléments communs aux simulations 3D (Terminale) ===== */
+.scene3d { margin: 0; position: relative; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.scene3d canvas.c3d { width: 100%; aspect-ratio: 16 / 10; display: block; touch-action: none; cursor: grab; }
+.scene3d canvas.c3d:active { cursor: grabbing; }
+.scene3d .vues { position: absolute; top: 8px; left: 8px; display: flex; flex-wrap: wrap; gap: 4px; max-width: calc(100% - 16px); }
+.scene3d .vues button, .scene3d .zoom button { font: inherit; font-size: .78rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--navy); cursor: pointer; }
+.scene3d .vues button[aria-pressed="true"] { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.scene3d .zoom { position: absolute; right: 8px; bottom: 8px; display: grid; gap: 4px; }
+.scene3d .zoom button { width: 2rem; height: 2rem; padding: 0; font-size: 1.1rem; }
+.scene3d .hud { position: absolute; left: 8px; bottom: 8px; font-size: .8rem; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-variant-numeric: tabular-nums; max-width: calc(100% - 64px); }
+.scene3d .hud:empty { display: none; }
+.scene3d .astuce { position: absolute; right: 8px; top: 8px; font-size: .72rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 80%, transparent); border-radius: 6px; padding: 2px 6px; }
+@media (max-width: 520px) { .scene3d canvas.c3d { aspect-ratio: 4 / 3.6; } .scene3d .astuce { display: none; } }
+.nogl { padding: 30px 16px; text-align: center; color: var(--red); font-weight: 700; }
+.reglages { display: grid; gap: 10px; }
+.reglage { display: grid; grid-template-columns: 9em minmax(0, 1fr) 7.6em; gap: 10px; align-items: center; font-size: .95rem; }
+.reglage label { font-weight: 700; }
+.reglage output { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); text-align: right; }
+.reglage input[type=range] { width: 100%; accent-color: var(--navy); }
+@media (max-width: 520px) { .reglage { grid-template-columns: minmax(0, 1fr) auto; } .reglage input[type=range] { grid-column: 1 / -1; grid-row: 2; } }
+.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
+.calc div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .88rem; }
+.calc b { display: block; font-variant-numeric: tabular-nums; color: var(--navy); font-size: 1rem; }
+.question { border: 1.5px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--surface); min-width: 0; }
+.question h3 { font-size: 1rem; }
+.question .tag { font-size: .72rem; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: 2px; }
+.question select, .question input[type=text] { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.question select { width: 100%; }
+.question label { display: block; }
+.question label select { display: block; margin-top: 4px; }
+.question select.ok, .question input.ok { border-color: var(--green); background: var(--green-soft); }
+.question select.ko, .question input.ko { border-color: var(--red); background: var(--red-soft); }
+.question .pouce summary { font-size: .9rem; color: var(--amber); }
+.question .pouce { font-size: .88rem; }
+.question.verrou { opacity: .55; pointer-events: none; }
+.onglets { display: flex; flex-wrap: wrap; gap: 6px; }
+.onglets button { font: inherit; font-size: .88rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+.onglets button[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); color: var(--navy); }
+.graphe { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
+.graphe canvas { width: 100%; height: auto; aspect-ratio: 16 / 10; display: block; }
+.code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .84rem; background: #fffbe8; color: #2b2b2b; border: 1px solid #e8d9a0; border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre; line-height: 1.45; margin: 0; }
+.code .n { color: #9a8b55; user-select: none; }
+.code .c { color: #2f7d4a; }
+.code .k { color: #b22a7a; }
+.code .trou { background: #fff; border: 1.5px dashed #c77700; border-radius: 4px; padding: 0 6px; }
+.tablewrap.pointage { max-height: 230px; overflow: auto; }
+.tablewrap.pointage table { min-width: 420px; font-size: .84rem; }
+.tablewrap.pointage td { font-variant-numeric: tabular-nums; padding: 3px 6px; }
+.tablewrap.pointage tr.vu td { background: var(--amber-soft); }
+.badge3d { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--surface); background: var(--navy); border-radius: 4px; padding: 1px 6px; vertical-align: 3px; }
+#maconc { width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cr[hidden] { display: none; }
+/* gabarit pédagogique : situation et modèle, prédiction, énergie, python, piège du bac */
+.parcours { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; counter-reset: et; font-size: .9rem; }
+.parcours li { counter-increment: et; color: var(--muted); }
+.parcours li::before { content: counter(et, decimal-leading-zero) " "; font-weight: 700; color: var(--navy); }
+.parcours li b { color: var(--ink); }
+.modele { border: 1.5px solid var(--amber); background: var(--amber-soft); border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 4px; font-size: .95rem; }
+.modele h3 { font-size: .95rem; color: var(--amber); }
+.modele ul { margin: 0; padding-left: 1.2em; }
+.predire { border: 2px solid var(--navy); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--navy-soft); }
+.predire h3 { font-size: 1rem; }
+.predire .chip { text-align: left; }
+.energies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; height: 150px; padding: 6px 10px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.energies .barre { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.energies .barre .j { position: relative; }
+.energies .barre .j i { position: absolute; bottom: 0; left: 15%; right: 15%; border-radius: 4px 4px 0 0; height: 0; background: var(--c); }
+.energies .barre b { color: var(--navy); }
+.piege { border: 1.5px solid #c77700; background: #fff4e0; color: #4a3200; border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 6px; }
+.piege h3 { color: #a05a00; font-size: 1rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .piege { background: #33291a; color: #f3e2c0; } }
+.legende3d { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .84rem; color: var(--muted); }
+.legende3d span::before { content: ""; display: inline-block; width: 16px; height: 4px; border-radius: 2px; background: var(--c); vertical-align: middle; margin-right: 5px; }
+
+.particules { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+</style>
+<script src="lib/three-r128.min.js"></script>
+<style id="efir-colonnes">.wrap{grid-template-columns:minmax(0,1fr)}.wrap>*{min-width:0}canvas{max-width:100%}table{min-width:0;max-width:100%}th,td{overflow-wrap:anywhere}</style></head>
+<body>
+<div class="wrap">
+  <header class="fiche">
+    <a class="retour" href="#" onclick="parent.location.hash='terminale/mouvement/Mouvement%20dans%20un%20champ%20uniforme';return false" style="display:inline-block;margin:0 0 8px;font-weight:700;color:#1f6fd1;text-decoration:none">← Retour au chapitre</a>
+    <p class="kicker">EFIR · Terminale spécialité · Chapitre 12 · Cours p. 243 et activité 3 p. 241 · Simulation 3D <span class="badge3d">3D</span></p>
+    <h1>Une particule chargée dans un condensateur plan</h1>
+    <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+    <p class="pb"><span>Problématique :</span> comment prévoir le mouvement d'une particule chargée qui entre dans un champ électrique uniforme ?</p>
+    <ol class="parcours"><li><b>Prédire</b> avant de lancer</li><li><b>Expérimenter</b> en 3D</li><li><b>Mettre en équations</b></li><li><b>Confronter</b> avec Python</li><li><b>Garder une trace</b> (compte rendu)</li></ol>
+    <div class="modele"><h3>Le dispositif et le modèle</h3><ul>
+      <li>Condensateur plan : armatures de <b>10 cm</b> de long, placées en <b>y = +5 cm</b> (armature −) et <b>y = −5 cm</b> (armature +). Le champ E⃗ est uniforme, dirigé vers le haut (de + vers −).</li>
+      <li>Référentiel terrestre supposé galiléen. La particule est ponctuelle et entre en O avec une vitesse v⃗₀ inclinée d'un angle α.</li>
+      <li>Seule force : la force électrique F⃗ = q E⃗. Le poids est négligé (environ 10<sup>15</sup> fois plus petit) ; effets de bord négligés ; mécanique classique (v reste petite devant c).</li>
+      <li>L'animation est ralentie (le passage dure quelques nanosecondes), mais les valeurs affichées sont physiques.</li></ul></div>
+    <details class="panel mots"><summary>📖 Mots utiles et données</summary><dl>
+      <dt>Force électrique</dt><dd>F⃗ = q E⃗ : même sens que E⃗ si q &gt; 0, sens opposé si q &lt; 0.</dd>
+      <dt>Deuxième loi de Newton</dt><dd>m a⃗ = q E⃗, donc a<sub>x</sub> = 0 et a<sub>y</sub> = q E / m.</dd>
+      <dt>Équations horaires</dt><dd>x(t) = v<sub>0</sub> cos α × t ; y(t) = ½ (q E / m) t<sup>2</sup> + v<sub>0</sub> sin α × t.</dd>
+      <dt>Trajectoire</dt><dd>y = q E / (2 m (v<sub>0</sub> cos α)<sup>2</sup>) × x<sup>2</sup> + tan α × x : une parabole.</dd>
+      <dt>Données</dt><dd>e = 1,60 × 10<sup>−19</sup> C ; m<sub>e</sub> = 9,11 × 10<sup>−31</sup> kg (électron et positon) ; m<sub>p</sub> = 1,67 × 10<sup>−27</sup> kg (proton) ; 1 ns = 10<sup>−9</sup> s.</dd>
+    </dl></details>
+    <details class="panel mots" id="aide"><summary>❓ Aide</summary><dl>
+      <dt>Lancer</dt><dd>1. Faire sa prédiction (cadre « Je prédis »). 2. Choisir la particule et régler E, v<sub>0</sub>, α. 3. « ▶ Lancer ». Les trajectoires restent affichées (5 au maximum) pour comparer.</dd>
+      <dt>Comparer</dt><dd>Entre deux lancers, on ne change qu'<b>une seule</b> grandeur.</dd>
+      <dt>Tourner la scène</dt><dd>Glisser sur la scène ; « De face » donne la vue du plan (O ; x, y). Zoom : boutons + et −.</dd>
+      <dt>Écrire un nombre</dt><dd>−3,52 ou −3.52 (sans la puissance de 10, déjà écrite).</dd>
+    </dl></details>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-sc">
+      <header><h2 id="h-sc">Le condensateur</h2><span class="row-actions"><button class="btn" id="demo" type="button">▶ Voir une démonstration</button><button class="btn ghost" id="reset" type="button">Tout remettre à zéro</button><button class="btn ghost" id="aidebtn" type="button">❓ Aide</button><button class="btn ghost" id="ecobtn" type="button" aria-pressed="false">🐢 Mode économe</button></span></header>
+      <details class="proto" open><summary>📋 Étapes à suivre <span class="hint" id="protocount"></span></summary><ol id="proto"></ol><button class="btn ghost qbtn" id="prototout" type="button">Voir toutes les étapes</button></details>
+      <figure class="scene3d" id="fig3d">
+        <canvas class="c3d" role="img" aria-label="Condensateur plan en 3D : armature négative en haut, armature positive en bas, lignes de champ vers le haut, particule lancée depuis O avec ses vecteurs vitesse et force"></canvas>
+        <div class="vues" role="group" aria-label="Point de vue"><button type="button" data-vue="d3" aria-pressed="true">Vue 3D</button><button type="button" data-vue="face">De face</button><button type="button" data-vue="dessus">De dessus</button></div>
+        <div class="zoom"><button type="button" data-z="+" aria-label="Zoomer">+</button><button type="button" data-z="-" aria-label="Dézoomer">−</button></div>
+        <div class="hud" id="hud"></div>
+        <span class="astuce">Glisser pour tourner</span>
+      </figure>
+      <div class="legende3d" id="leg3d"></div>
+      <div class="predire"><h3>🔮 Je prédis avant de lancer</h3><div id="predict"></div></div>
+      <div class="particules" role="group" aria-label="Particule"><span class="hint">Particule :</span>
+        <button class="chip" type="button" data-part="electron" aria-pressed="true">Électron (q = −e)</button><button class="chip" type="button" data-part="positon" aria-pressed="false">Positon (q = +e)</button><button class="chip" type="button" data-part="proton" aria-pressed="false">Proton (q = +e)</button></div>
+      <div class="reglages">
+        <div class="reglage"><label for="rE">Champ E</label><input type="range" id="rE" min="0.5" max="4" step="0.1" value="2" data-save><output id="oE"></output></div>
+        <div class="reglage"><label for="rv">Vitesse v<sub>0</sub></label><input type="range" id="rv" min="1" max="4" step="0.05" value="2" data-save><output id="ov"></output></div>
+        <div class="reglage"><label for="ra">Angle α</label><input type="range" id="ra" min="-30" max="30" step="1" value="0" data-save><output id="oa"></output></div>
+      </div>
+      <div class="calc" aria-live="polite">
+        <div>a<sub>x</sub><b>0</b></div>
+        <div>a<sub>y</sub> = q E / m<b id="cA"></b></div>
+        <div>Durée pour traverser (10 cm)<b id="cT"></b></div>
+      </div>
+      <div class="row-actions">
+        <button class="btn" id="lancer" type="button">▶ Lancer</button>
+        <button class="btn ghost" id="effacertr" type="button">Effacer les trajectoires</button>
+        <label class="hint"><input type="checkbox" id="vect" data-save checked> Vecteurs v⃗, F⃗ et E⃗</label>
+      </div>
+      <p class="toast info" id="msg" role="status" aria-live="polite">Faites votre première prédiction, puis lancez l'électron.</p>
+    </section>
+
+    <div class="wrap" style="gap:18px">
+      <section class="panel" aria-labelledby="h-g">
+        <header><h2 id="h-g">Trajectoires y = f(x)</h2></header>
+        <figure class="graphe" id="gfig"><canvas id="gcv" width="900" height="560" role="img" aria-label="Graphique des trajectoires dans le plan (O ; x, y), en centimètres"></canvas></figure>
+      </section>
+
+      <section class="panel" aria-labelledby="h-q">
+        <header><h2 id="h-q">Mettre en équations</h2><span class="hint">répondre dans l'ordre</span></header>
+        <div class="question">
+          <h3>1. Deuxième loi de Newton <span class="tag">RAI</span></h3>
+          <label>Le vecteur accélération de la particule est :<select id="q1" data-save data-lib="Q1 vecteur accélération" data-bonne="a⃗ = q E⃗ / m : vertical, constant"><option value="">…</option><option>a⃗ = q E⃗ / m : vertical, constant</option><option>a⃗ = g⃗ : vertical vers le bas</option><option>a⃗ = q E⃗ × m : horizontal</option><option>a⃗ = 0⃗ : le mouvement est rectiligne uniforme</option></select></label>
+          <label>Pour un électron (q = −e), F⃗ et E⃗ sont :<select id="q1b" data-save data-lib="Q1 sens de F pour un électron" data-bonne="de sens opposés"><option value="">…</option><option>de même sens</option><option>de sens opposés</option><option>perpendiculaires</option></select></label>
+          <div class="row-actions"><button class="btn" type="button" data-check="q1,q1b" data-ok="m a⃗ = q E⃗ : a⃗ est constant et vertical (aₓ = 0). Pour q &lt; 0, F⃗ = q E⃗ est opposée à E⃗.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+        <div class="question">
+          <h3>2. Équations horaires et trajectoire <span class="tag">RÉA</span></h3>
+          <label>y(t) =<select id="q2" data-save data-lib="Q2 équation horaire y(t)" data-bonne="½ (qE/m) t² + v0 sin α × t"><option value="">…</option><option>½ (qE/m) t² + v0 sin α × t</option><option>(qE/m) t + v0 sin α</option><option>v0 cos α × t</option><option>−½ g t² + v0 sin α × t</option></select></label>
+          <label>En éliminant t, la trajectoire est :<select id="q3" data-save data-lib="Q2 équation de la trajectoire y(x)" data-bonne="y = qE / (2m (v0 cos α)²) × x² + tan α × x"><option value="">…</option><option>y = qE / (2m (v0 cos α)²) × x² + tan α × x</option><option>y = qE / (2m) × x² + v0 sin α × x</option><option>y = qE / (2m v0) × x + tan α</option></select></label>
+          <div class="row-actions"><button class="btn" type="button" data-check="q2,q3" data-ok="La trajectoire est une parabole ; sa courbure est proportionnelle à qE / (m v₀²).">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+        <div class="question">
+          <h3>3. Calculer et vérifier <span class="tag">ANA-RAIS</span></h3>
+          <p>Électron, E = 2,0 × 10<sup>4</sup> V·m<sup>−1</sup>, v<sub>0</sub> = 2,0 × 10<sup>7</sup> m·s<sup>−1</sup>, α = 0°. Calculez a<sub>y</sub>, puis l'ordonnée y<sub>S</sub> du point de sortie (x = 10 cm). Vérifiez avec un lancer.</p>
+          <label>a<sub>y</sub> ≈ <input type="text" id="q4a" data-save data-lib="Q3 ay (× 10^15 m/s²)" data-val="ay" data-tol="0.06" inputmode="decimal" size="6"> × 10<sup>15</sup> m·s<sup>−2</sup></label>
+          <label>y<sub>S</sub> ≈ <input type="text" id="q4b" data-save data-lib="Q3 ordonnée de sortie (cm)" data-val="ys" data-tol="0.12" inputmode="decimal" size="6"> cm</label>
+          <details class="pouce"><summary>Coup de pouce</summary>Durée de traversée : t<sub>S</sub> = 0,10 / v<sub>0</sub>. Puis y<sub>S</sub> = ½ a<sub>y</sub> t<sub>S</sub><sup>2</sup> (attention au signe).</details>
+          <div class="row-actions"><button class="btn" type="button" data-check="q4a,q4b" data-ok="a<sub>y</sub> = −1,60 × 10<sup>−19</sup> × 2,0 × 10<sup>4</sup> / 9,11 × 10<sup>−31</sup> ≈ −3,51 × 10<sup>15</sup> m·s<sup>−2</sup> ; t<sub>S</sub> = 5,0 ns ; y<sub>S</sub> ≈ −4,4 cm : l'électron sort de justesse.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+        <div class="question">
+          <h3>4. Confronter avec Python <span class="tag">capacité numérique</span></h3>
+          <p>Ce programme calcule la trajectoire pas à pas (méthode d'Euler, dt = 10 ps). Complétez la ligne masquée et exécutez : la courbe doit se superposer au dernier lancer de l'électron (E = 2,0 × 10<sup>4</sup> ; v<sub>0</sub> = 2,0 × 10<sup>7</sup> ; α = 0°).</p>
+<pre class="code"><span class="n"> 1 </span>q, m = -1.6e-19, 9.11e-31       <span class="c"># électron</span>
+<span class="n"> 2 </span>E, v0, dt = 2.0e4, 2.0e7, 1e-11
+<span class="n"> 3 </span>x, y, vx, vy = 0, 0, v0, 0
+<span class="n"> 4 </span>X, Y = [x], [y]
+<span class="n"> 5 </span><span class="k">while</span> x &lt; 0.10 <span class="k">and</span> abs(y) &lt; 0.05:
+<span class="n"> 6 </span>    ay = <span class="trou">  ?  </span>               <span class="c"># 2e loi de Newton</span>
+<span class="n"> 7 </span>    vy = vy + ay*dt
+<span class="n"> 8 </span>    x, y = x + vx*dt, y + vy*dt
+<span class="n"> 9 </span>    X.append(x); Y.append(y)
+<span class="n">10 </span>plt.plot(X, Y); plt.show()</pre>
+          <label>Ligne 6 : ay =<select id="qpy" data-save data-lib="Python : ligne ay du programme" data-bonne="q*E/m"><option value="">…</option><option>-q*E/m</option><option>q*E/m</option><option>q*E*m</option><option>E/m</option></select></label>
+          <div class="row-actions"><button class="btn" type="button" id="runpy">▶ Exécuter le programme</button></div>
+          <p class="toast" id="outpy" hidden></p>
+        </div>
+
+        <span class="codebox" style="display:none"><label for="code">☎ Appel : faites vérifier vos réponses 1 à 4 par le professeur. Il vous donne un code pour débloquer le défi.</label><input id="code" type="text" autocomplete="off" aria-label="Code du professeur"></span>
+
+        <div class="question verrou-appel piege">
+          <h3>⚠ Défi et piège du bac</h3>
+          <p>Électron, E = 2,0 × 10<sup>4</sup> V·m<sup>−1</sup>, α = 0°. Quelle est la vitesse minimale v<sub>0</sub> pour qu'il sorte sans toucher l'armature ? Calculez-la, puis vérifiez par deux lancers (un peu au-dessus, un peu en dessous).</p>
+          <label>v<sub>0 min</sub> ≈ <input type="text" id="q5" data-save data-lib="Défi : vitesse minimale (× 10^7 m/s)" data-val="vmin" data-tol="0.05" inputmode="decimal" size="6"> × 10<sup>7</sup> m·s<sup>−1</sup></label>
+          <p class="hint">Piège classique : « la force électrique a le sens du champ ». C'est faux pour une charge négative (électron) !</p>
+          <div class="row-actions"><button class="btn" type="button" data-check="q5" data-ok="Il faut |y<sub>S</sub>| ≤ 5 cm : v<sub>0</sub> ≥ L × √(|a<sub>y</sub>| / (2 × 0,05)) ≈ 1,9 × 10<sup>7</sup> m·s<sup>−1</sup>.">Vérifier</button><button class="btn ghost" type="button" onclick="parent.location.hash='tle-qcm-ch12'">Réviser avec le QCM du chapitre 12 →</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+      </section>
+
+      <section class="panel essais" aria-labelledby="h-ess">
+        <header><h2 id="h-ess">Mes lancers</h2><span class="hint" id="nbess"></span></header>
+        <div class="tablewrap"><table style="min-width:460px"><thead><tr><th>n°</th><th>Particule</th><th>E (V·m⁻¹)</th><th>v<sub>0</sub> (m·s⁻¹)</th><th>α</th><th>Résultat</th></tr></thead><tbody id="ess"></tbody></table></div>
+        <p class="hint" id="essvide">Aucun lancer pour l'instant.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="h-conc">
+    <header><h2 id="h-conc">Réponse à la problématique</h2></header>
+    <p>Comment prévoir le mouvement d'une particule chargée qui entre dans un champ électrique uniforme ?</p>
+    <div class="checks">
+      <button class="chip" type="button" data-concl="a" aria-pressed="false" data-juste>On applique la deuxième loi de Newton (a⃗ = qE⃗/m, poids négligé), on en déduit les équations horaires puis y(x) : une parabole dont la courbure dépend de q, E, m et v₀.</button>
+      <button class="chip" type="button" data-concl="b" aria-pressed="false" data-pourquoi="Non : la force électrique est constante mais perpendiculaire à v⃗₀ ; le mouvement n'est pas rectiligne.">La particule garde une trajectoire rectiligne car la force électrique est constante.</button>
+      <button class="chip" type="button" data-concl="c" aria-pressed="false" data-pourquoi="Non : la déviation dépend de q/m ; le proton, 1 836 fois plus lourd, est presque pas dévié.">Toutes les particules de même charge sont déviées de la même façon, quelle que soit leur masse.</button>
+    </div>
+    <label for="maconc" style="display:block;margin:14px 0 6px"><b>Ma conclusion rédigée</b> : répondez en deux ou trois phrases (loi utilisée, forme de la trajectoire, grandeurs qui changent la déviation).</label>
+    <textarea id="maconc" data-save rows="4"></textarea>
+    <div class="row-actions"><button class="btn" id="checkconcl" type="button" data-ok="La deuxième loi de Newton donne a⃗ = qE⃗/m ; la trajectoire est une parabole, d'autant plus courbée que |q|E est grand et que m v₀² est petit ; le signe de q fixe le sens de la déviation.">Vérifier ma conclusion</button></div>
+    <p class="toast" id="outconcl" role="status" aria-live="polite" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-cr">
+    <header><h2 id="h-cr">Mon compte rendu</h2></header>
+    <div class="crform">
+      <label>Nom et prénom<input id="crnom" data-save type="text" autocomplete="name"></label>
+      <label>Classe<input id="crclasse" data-save type="text" placeholder="Tle…"></label>
+      <button class="btn ghost" id="crbtn" type="button">Afficher mon compte rendu</button><button class="btn" id="crpdf" type="button">⬇ Télécharger mon compte rendu (PDF)</button>
+    </div>
+    <div class="cr" id="cr" hidden></div>
+    <div class="row-actions"><span class="hint" id="crnote" role="status" aria-live="polite"></span></div>
+    <p class="hint">Déposez le PDF dans le devoir Google Classroom (Ajouter &gt; Fichier, puis Rendre). Votre travail est enregistré automatiquement dans ce navigateur. <button class="btn warn" id="effacer" type="button">Effacer mon travail</button></p>
+  </section>
+  <p class="foot">Simulation 3D d'après le cours du chapitre 12 (manuel Hachette Terminale spécialité) · Mme Messaoudi · EFIR 2026-2027. Mouvement calculé avec la deuxième loi de Newton (poids négligé, champ uniforme vers le haut, armatures de 10 cm à ± 5 cm).</p>
+</div>
+
+<script>
+/* =====================================================================
+   Moteur commun des simulations 3D du labo virtuel EFIR (Terminale)
+   three.js r128 (cdnjs), caméra orbitale maison, graphiques 2D,
+   protocole, questions, appel professeur, sauvegarde, compte rendu PDF.
+   Mme Messaoudi · EFIR · 2026-2027
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+let REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+try { if (localStorage.getItem("efir-eco") === "1") REDUCED = true; } catch (e) {}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+/* nombre à la française : n chiffres significatifs, virgule décimale */
+function fr(x, n = 2) {
+  if (!isFinite(x)) return "–";
+  if (x === 0) return "0";
+  const ex = Math.floor(Math.log10(Math.abs(x)));
+  if (ex >= -2 && ex <= 3) { const d = Math.max(0, n - 1 - ex); return x.toFixed(d).replace(".", ","); }
+  let m = x / 10 ** ex, ms = m.toFixed(n - 1);
+  if (Math.abs(+ms) >= 10) return fr(x * 1.0000001, n);
+  return `${ms.replace(".", ",")} × 10<sup>${ex < 0 ? "−" + -ex : ex}</sup>`;
+}
+const fx = (x, d = 2) => (Math.round(x * 10 ** d) / 10 ** d).toFixed(d).replace(".", ",").replace("-", "−");
+const lireNombre = s => { const t = String(s).replace(/\s/g, "").replace(",", ".").replace("−", "-"); return t === "" ? NaN : +t; };
+const wait = ms => new Promise(r => setTimeout(r, REDUCED ? 60 : ms));
+const enc = s => btoa(unescape(encodeURIComponent(s)));
+const dec = s => { try { return decodeURIComponent(escape(atob(s))); } catch (e) { return ""; } };
+function say(html, kind = "info") { const m = $("#msg"); if (!m) return; m.className = "toast " + kind; m.innerHTML = html; }
+
+/* ---------------------------------------------------------------------
+   SCÈNE 3D
+   --------------------------------------------------------------------- */
+function Scene3D(fig, opt = {}) {
+  const canvas = fig.querySelector("canvas.c3d");
+  if (!window.THREE) { fig.innerHTML = '<p class="nogl">La 3D n\'a pas pu se charger (connexion internet ?). Rechargez la page.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: !REDUCED, alpha: false }); }
+  catch (e) { fig.innerHTML = '<p class="nogl">Votre navigateur ne permet pas l\'affichage 3D (WebGL). Essayez un autre navigateur.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  renderer.setPixelRatio(REDUCED ? 1 : Math.min(devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = !REDUCED;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(opt.fov || 40, 1.6, 0.05, 400);
+  const fond = () => { const dark = matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light"; scene.background = new THREE.Color(dark ? (opt.fondSombre || 0x101a26) : (opt.fond || 0xdfeaf3)); };
+  fond(); matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { fond(); demande(); });
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9a7a, 0.75));
+  const soleil = new THREE.DirectionalLight(0xffffff, 0.75); soleil.position.set(-6, 14, 9); soleil.castShadow = true;
+  soleil.shadow.mapSize.set(1024, 1024); Object.assign(soleil.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(soleil);
+  /* caméra orbitale */
+  const O = { cible: new THREE.Vector3(...(opt.cible || [0, 0, 0])), r: opt.r || 10, az: opt.az ?? -0.6, el: opt.el ?? 0.35, rmin: opt.rmin || 1, rmax: opt.rmax || 60 };
+  let anim = null;
+  function placer() {
+    O.el = Math.max(-0.2, Math.min(1.55, O.el)); O.r = Math.max(O.rmin, Math.min(O.rmax, O.r));
+    camera.position.set(O.cible.x + O.r * Math.cos(O.el) * Math.sin(O.az), O.cible.y + O.r * Math.sin(O.el), O.cible.z + O.r * Math.cos(O.el) * Math.cos(O.az));
+    camera.lookAt(O.cible); demande();
+  }
+  const pts = new Map(); let pinch0 = 0, actif = 0;
+  canvas.addEventListener("pointerdown", e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); actif = Date.now(); anim = null; api.onUser && api.onUser(); });
+  canvas.addEventListener("pointermove", e => {
+    if (!pts.has(e.pointerId)) return; const [x0, y0] = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 1) { O.az -= (e.clientX - x0) * 0.008; O.el += (e.clientY - y0) * 0.006; placer(); }
+    else if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch0) { O.r *= pinch0 / d; placer(); } pinch0 = d; }
+  });
+  const fin = e => { pts.delete(e.pointerId); pinch0 = 0; };
+  canvas.addEventListener("pointerup", fin); canvas.addEventListener("pointercancel", fin);
+  canvas.addEventListener("wheel", e => { if (!(e.ctrlKey || e.metaKey || Date.now() - actif < 4000)) return; e.preventDefault(); O.r *= Math.exp(e.deltaY * 0.0012); placer(); }, { passive: false });
+  const zb = fig.querySelector(".zoom"); if (zb) { zb.querySelector("[data-z='+']").onclick = () => { O.r /= 1.25; placer(); }; zb.querySelector("[data-z='-']").onclick = () => { O.r *= 1.25; placer(); }; }
+  /* vues prédéfinies, transition douce */
+  function vue(v, nom) {
+    const but = { r: v.r ?? O.r, az: v.az ?? O.az, el: v.el ?? O.el, c: v.cible ? new THREE.Vector3(...v.cible) : O.cible.clone() };
+    $$(".vues button", fig).forEach(b => b.setAttribute("aria-pressed", b.dataset.vue === nom));
+    if (REDUCED) { O.r = but.r; O.az = but.az; O.el = but.el; O.cible.copy(but.c); placer(); return; }
+    const d = { r: O.r, az: O.az, el: O.el, c: O.cible.clone() }; let t0 = performance.now();
+    anim = now => { let k = Math.min(1, (now - t0) / 700); k = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      O.r = d.r + (but.r - d.r) * k; O.az = d.az + (but.az - d.az) * k; O.el = d.el + (but.el - d.el) * k; O.cible.lerpVectors(d.c, but.c, k); placer(); if (k >= 1) anim = null; };
+    demande();
+  }
+  /* rendu à la demande + boucle d'animation */
+  let enAttente = false; const cbs = new Set(); let tPrec = performance.now();
+  function demande() { if (!enAttente) { enAttente = true; requestAnimationFrame(boucle); } }
+  function boucle(now) {
+    enAttente = false; const dt = Math.min(0.05, (now - tPrec) / 1000); tPrec = now;
+    if (anim) anim(now);
+    let encore = !!anim; cbs.forEach(f => { if (f(dt, now)) encore = true; });
+    renderer.render(scene, camera); if (encore) demande();
+  }
+  function taille() { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); demande(); }
+  new ResizeObserver(taille).observe(canvas); taille(); placer();
+  /* aides de dessin */
+  function etiquette(texte, o = {}) {
+    const c = document.createElement("canvas"), g = c.getContext("2d"), fs = 64, font = `${o.italic ? "italic " : ""}700 ${fs}px Atkinson Hyperlegible, Segoe UI, sans-serif`;
+    /* la flèche de vecteur (U+20D7) n'existe pas dans les polices : on la dessine au-dessus de la lettre */
+    const morceaux = []; [...texte].forEach(ch => { if (ch === "⃗" && morceaux.length) morceaux[morceaux.length - 1].vec = true; else morceaux.push({ ch }); });
+    g.font = font; const larg = morceaux.map(m => g.measureText(m.ch).width), w = Math.ceil(larg.reduce((a, b) => a + b, 0)) + 28;
+    const vec = morceaux.some(m => m.vec); c.width = w; c.height = fs + 26 + (vec ? 14 : 0);
+    g.font = font; g.textBaseline = "middle";
+    if (o.fond !== false) { g.fillStyle = o.fond || "rgba(255,255,255,.88)"; const rr = 18; g.beginPath(); g.moveTo(rr, 0); g.arcTo(w, 0, w, c.height, rr); g.arcTo(w, c.height, 0, c.height, rr); g.arcTo(0, c.height, 0, 0, rr); g.arcTo(0, 0, w, 0, rr); g.fill(); }
+    const coul = o.couleur || "#15212d"; g.fillStyle = g.strokeStyle = coul; let xx = 14; const ym = c.height / 2 + 2 + (vec ? 7 : 0);
+    morceaux.forEach((m, i) => {
+      g.fillText(m.ch, xx, ym);
+      if (m.vec) { const x0 = xx + larg[i] * (o.italic ? .25 : .1), x1 = xx + larg[i] * (o.italic ? 1.05 : .9), yv = ym - fs * .52; g.lineWidth = 5; g.beginPath(); g.moveTo(x0, yv); g.lineTo(x1, yv); g.stroke(); g.beginPath(); g.moveTo(x1 + 4, yv); g.lineTo(x1 - 10, yv - 8); g.lineTo(x1 - 10, yv + 8); g.closePath(); g.fill(); }
+      xx += larg[i];
+    });
+    const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: o.depthTest ?? false, transparent: true }));
+    const h = o.taille || 0.4; sp.scale.set(h * c.width / c.height, h, 1); sp.renderOrder = 10; return sp;
+  }
+  function fleche(couleur, epaisseur = 0.03) {
+    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: couleur, roughness: .5 });
+    const tige = new THREE.Mesh(new THREE.CylinderGeometry(epaisseur, epaisseur, 1, 12), mat);
+    const tete = new THREE.Mesh(new THREE.ConeGeometry(epaisseur * 3, epaisseur * 8, 16), mat); g.add(tige, tete);
+    g.regler = (orig, vec) => {
+      const L = vec.length(); g.visible = L > 1e-6; if (!g.visible) return; const lt = Math.max(0, L - epaisseur * 8);
+      g.position.copy(orig); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vec.clone().normalize());
+      tige.scale.set(1, Math.max(lt, 1e-4), 1); tige.position.set(0, lt / 2, 0); tete.position.set(0, lt + epaisseur * 4, 0);
+    };
+    return g;
+  }
+  const api = { THREE, scene, camera, renderer, O, vue, demande, placer, etiquette, fleche, anime: f => { cbs.add(f); demande(); return () => cbs.delete(f); }, onUser: null };
+  $$(".vues button", fig).forEach(b => b.addEventListener("click", () => { const x = opt.vues && opt.vues[b.dataset.vue]; if (x) vue(typeof x === "function" ? x() : x, b.dataset.vue); }));
+  return api;
+}
+
+/* ---------------------------------------------------------------------
+   GRAPHIQUE 2D (canvas) : axes gradués, séries de points et courbes
+   --------------------------------------------------------------------- */
+function Graphe(canvas) {
+  const ctx = canvas.getContext("2d");
+  function pas(etendue) { const b = 10 ** Math.floor(Math.log10(etendue / 5)), m = etendue / 5 / b; return b * (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10); }
+  function trace(cfg) {
+    const W = canvas.width, H = canvas.height, ink = css("--ink"), mut = css("--muted"), line = css("--line");
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = css("--surface"); ctx.fillRect(0, 0, W, H);
+    const m = { g: 74, d: 18, h: 34, b: 52 }, pw = W - m.g - m.d, ph = H - m.h - m.b;
+    let { xmin, xmax, ymin, ymax } = cfg;
+    const tous = cfg.series.flatMap(s => s.pts || []);
+    if (xmin == null) xmin = Math.min(0, ...tous.map(p => p[0])); if (xmax == null) xmax = Math.max(...tous.map(p => p[0]), xmin + 1e-9);
+    if (ymin == null) ymin = Math.min(0, ...tous.map(p => p[1])); if (ymax == null) ymax = Math.max(...tous.map(p => p[1]), ymin + 1e-9);
+    const py0 = (ymax - ymin) * 0.06; ymax += py0; if (ymin < 0) ymin -= py0;
+    const X = x => m.g + (x - xmin) / (xmax - xmin) * pw, Y = y => m.h + ph - (y - ymin) / (ymax - ymin) * ph;
+    ctx.font = "20px " + css("--font-body"); ctx.textBaseline = "middle";
+    const sx = pas(xmax - xmin), sy = pas(ymax - ymin);
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.fillStyle = mut;
+    for (let v = Math.ceil(xmin / sx) * sx; v <= xmax + 1e-9; v += sx) { ctx.beginPath(); ctx.moveTo(X(v), m.h); ctx.lineTo(X(v), m.h + ph); ctx.stroke(); ctx.textAlign = "center"; ctx.fillText(fx(v, sx < 1 ? (sx < .1 ? 2 : 1) : 0), X(v), m.h + ph + 18); }
+    for (let v = Math.ceil(ymin / sy) * sy; v <= ymax + 1e-9; v += sy) { ctx.beginPath(); ctx.moveTo(m.g, Y(v)); ctx.lineTo(m.g + pw, Y(v)); ctx.stroke(); ctx.textAlign = "right"; ctx.fillText(fx(v, sy < 1 ? (sy < .1 ? 2 : 1) : 0), m.g - 8, Y(v)); }
+    ctx.strokeStyle = ink; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(m.g, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.lineTo(m.g + pw, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.moveTo(X(Math.max(xmin, 0)), m.h); ctx.lineTo(X(Math.max(xmin, 0)), m.h + ph); ctx.stroke();
+    ctx.fillStyle = ink; ctx.font = "700 20px " + css("--font-body"); ctx.textAlign = "right"; ctx.fillText(cfg.xlab || "", m.g + pw, m.h + ph + 40); ctx.textAlign = "left"; ctx.fillText(cfg.ylab || "", 8, 16);
+    ctx.save(); ctx.beginPath(); ctx.rect(m.g, m.h - 4, pw, ph + 8); ctx.clip();
+    cfg.series.forEach(s => {
+      ctx.strokeStyle = ctx.fillStyle = s.c || ink; ctx.lineWidth = s.w || 2.5; ctx.setLineDash(s.dash || []);
+      if (s.f) { ctx.beginPath(); for (let i = 0; i <= 300; i++) { const x = xmin + (xmax - xmin) * i / 300, y = s.f(x); i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); } ctx.stroke(); }
+      else if (s.points) s.pts.forEach(([x, y]) => { ctx.beginPath(); if (s.croix) { ctx.lineWidth = 2; ctx.moveTo(X(x) - 5, Y(y) - 5); ctx.lineTo(X(x) + 5, Y(y) + 5); ctx.moveTo(X(x) - 5, Y(y) + 5); ctx.lineTo(X(x) + 5, Y(y) - 5); ctx.stroke(); } else { ctx.arc(X(x), Y(y), s.r || 4, 0, 7); ctx.fill(); } });
+      else { ctx.beginPath(); s.pts.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))); ctx.stroke(); }
+      ctx.setLineDash([]);
+    });
+    if (cfg.curseur != null) { ctx.strokeStyle = css("--amber"); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(X(cfg.curseur), m.h); ctx.lineTo(X(cfg.curseur), m.h + ph); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.restore();
+    /* légende */
+    ctx.font = "18px " + css("--font-body"); ctx.textAlign = "left";
+    const noms = cfg.series.filter(s => s.nom); let lx = W - m.d - noms.reduce((a, s) => a + ctx.measureText(s.nom).width + 44, 0) + 20;
+    ctx.font = "700 20px " + css("--font-body"); lx = Math.max(lx, 16 + ctx.measureText(cfg.ylab || "").width + 24); ctx.font = "18px " + css("--font-body");
+    noms.forEach(s => { ctx.fillStyle = s.c || ink; ctx.fillRect(lx, 14, 16, 4); ctx.fillStyle = ink; ctx.fillText(s.nom, lx + 22, 16); lx += ctx.measureText(s.nom).width + 44; });
+  }
+  return { trace };
+}
+/* régression polynomiale (moindres carrés), degré 1 ou 2, avec ou sans constante */
+function ajuste(pts, deg, constante = true) {
+  const base = x => { const b = []; if (constante) b.push(1); b.push(x); if (deg === 2) b.push(x * x); return b; };
+  const n = base(0).length, A = Array.from({ length: n }, () => Array(n + 1).fill(0));
+  pts.forEach(([x, y]) => { const b = base(x); for (let i = 0; i < n; i++) { for (let j = 0; j < n; j++) A[i][j] += b[i] * b[j]; A[i][n] += b[i] * y; } });
+  for (let i = 0; i < n; i++) { let p = i; for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > Math.abs(A[p][i])) p = k; [A[i], A[p]] = [A[p], A[i]];
+    for (let k = 0; k < n; k++) if (k !== i) { const f = A[k][i] / A[i][i]; for (let j = i; j <= n; j++) A[k][j] -= f * A[i][j]; } }
+  const c = A.map((r, i) => r[n] / r[i]); const res = { c0: constante ? c[0] : 0, c1: c[constante ? 1 : 0], c2: deg === 2 ? c[constante ? 2 : 1] : 0 };
+  res.f = x => res.c0 + res.c1 * x + res.c2 * x * x; return res;
+}
+
+/* ---------------------------------------------------------------------
+   QUESTIONS : <select data-b="(bonne réponse codée)"> ou
+   <input data-val="nom de la fonction LAB.val" data-tol="0.1" data-rel>
+   --------------------------------------------------------------------- */
+const LAB = { S: {}, val: {}, key: "", demarche: () => [], mesures: () => [], cr: {}, appel: true, choix: "" };
+function juste(id) {
+  const el = document.getElementById(id); if (!el || !el.value) return false;
+  if (el.dataset.b) return el.value === dec(el.dataset.b);
+  if (el.dataset.val) { const v = lireNombre(el.value), ref = LAB.val[el.dataset.val](), tol = +el.dataset.tol; if (!isFinite(v)) return false; return el.hasAttribute("data-rel") ? Math.abs(v - ref) <= tol * Math.abs(ref) : Math.abs(v - ref) <= tol; }
+  return false;
+}
+function brancherQuestions() {
+  /* coder les bonnes réponses écrites en clair dans data-bonne */
+  $$("select[data-bonne]").forEach(s => { s.dataset.b = enc(s.dataset.bonne); s.removeAttribute("data-bonne"); });
+  $$("[data-check]").forEach(btn => btn.addEventListener("click", () => {
+    const ids = btn.dataset.check.split(","), out = btn.closest(".question").querySelector(".toast[data-out]");
+    let nb = 0, vides = 0;
+    ids.forEach(id => { const el = document.getElementById(id); el.classList.remove("ok", "ko"); if (!el.value) { vides++; return; } const j = juste(id); el.classList.add(j ? "ok" : "ko"); if (j) nb++; });
+    const pre = btn.dataset.pre && LAB.pre && LAB.pre[btn.dataset.pre] ? LAB.pre[btn.dataset.pre]() : "";
+    out.hidden = false;
+    if (pre) { out.className = "toast info"; out.innerHTML = pre; return; }
+    if (vides) { out.className = "toast info"; out.innerHTML = "Répondez à toutes les parties de la question avant de vérifier."; return; }
+    if (nb === ids.length) { out.className = "toast ok"; out.innerHTML = "✓ " + (btn.dataset.ok || "Bonne réponse."); }
+    else { out.className = "toast err"; out.innerHTML = `✗ ${ids.length > 1 ? `${nb} réponse${nb > 1 ? "s" : ""} juste${nb > 1 ? "s" : ""} sur ${ids.length}. ` : ""}${btn.dataset.ko || "Revoyez la simulation et réessayez."}`; }
+  }));
+  /* appel professeur */
+  const code = $("#code");
+  if (code) code.addEventListener("input", () => { if (code.value.trim().toUpperCase() === "EFIR") { LAB.appel = true; majAppel(); say("✓ Code accepté : la suite est débloquée.", "ok"); } });
+  /* conclusion à choix */
+  $$("[data-concl]").forEach(b => b.addEventListener("click", () => { LAB.choix = b.dataset.concl; $$("[data-concl]").forEach(x => x.setAttribute("aria-pressed", x === b)); }));
+  const c2 = $("#checkconcl");
+  if (c2) c2.addEventListener("click", () => {
+    const o = $("#outconcl"); o.hidden = false; const mc = $("#maconc").value.trim();
+    if (!LAB.choix) { o.className = "toast info"; o.innerHTML = "Choisissez d'abord une réponse."; return; }
+    const b = $(`[data-concl="${LAB.choix}"]`);
+    if (b.hasAttribute("data-juste")) { o.className = "toast ok"; o.innerHTML = "✓ " + (c2.dataset.ok || "Bonne conclusion.") + (mc.length > 20 ? "" : "<br>Rédigez maintenant votre conclusion dans la case ci-dessus."); }
+    else { o.className = "toast err"; o.innerHTML = "✗ " + (b.dataset.pourquoi || "Ce n'est pas la bonne conclusion : relisez vos réponses."); }
+  });
+}
+function majAppel() {
+  $$(".question.verrou-appel").forEach(q => q.classList.toggle("verrou", !LAB.appel));
+  const c = $("#code"); if (c && LAB.appel) { c.value = "EFIR"; c.disabled = true; }
+}
+const conclJuste = () => { const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`); return !!(b && b.hasAttribute("data-juste")); };
+
+/* ---------------------------------------------------------------------
+   PROTOCOLE (étapes de la fiche, cochées automatiquement)
+   --------------------------------------------------------------------- */
+function Protocole(etapes) {
+  const ol = $("#proto");
+  function rendu() {
+    const etats = etapes.map(e => { const sous = (e.sous || []).map(x => !!x.ok()); return { ok: e.sous ? sous.every(Boolean) : !!e.ok(), sous }; });
+    const courant = etats.findIndex(x => !x.ok);
+    ol.innerHTML = etapes.map((e, k) => {
+      const st = etats[k], cls = st.ok ? "fait" : k === courant ? "cur" : "";
+      const sous = e.sous ? `<ul>${e.sous.map((x, j) => `<li class="${st.sous[j] ? "fait" : ""}">${st.sous[j] ? "✓" : "○"} ${x.html}</li>`).join("")}</ul>` : "";
+      const part = e.partie ? `<li class="partie">${e.partie}</li>` : "";
+      return `${part}<li class="${cls}"><span class="q">${e.q}</span><span class="tx">${e.html}${sous}</span><span class="st" aria-label="${st.ok ? "fait" : "à faire"}">${st.ok ? "✓" : k === courant ? "➜" : ""}</span></li>`;
+    }).join("");
+    const c = $("#protocount"); if (c) c.textContent = `${etats.filter(x => x.ok).length}/${etapes.length} étapes`;
+  }
+  const bx = ol.closest(".proto"), bt = $("#prototout");
+  if (bt) bt.addEventListener("click", () => { bx.classList.toggle("tout"); bt.textContent = bx.classList.contains("tout") ? "Voir seulement l'étape en cours" : "Voir toutes les étapes"; });
+  let t = 0; const plusTard = () => { clearTimeout(t); t = setTimeout(rendu, 250); };
+  ["click", "change", "pointerup", "input"].forEach(ev => document.addEventListener(ev, plusTard));
+  setInterval(rendu, 1500); rendu();
+  LAB.protoRendu = rendu;
+}
+
+/* ---------------------------------------------------------------------
+   COMPTE RENDU (affichage + PDF jsPDF)
+   --------------------------------------------------------------------- */
+function construireCR() {
+  const nom = $("#crnom").value.trim() || "(nom non renseigné)", cl = $("#crclasse").value.trim() || "…";
+  const d = new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
+  const rows = $$("[data-lib]").map(el => [el.dataset.lib, el.value, !el.value ? "–" : juste(el.id) ? "✓" : "✗"]);
+  const ok = rows.filter(r => r[2] === "✓").length;
+  const tab = rows.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1] ? esc(r[1]) : "<i>vide</i>"}</td><td>${r[2]}</td></tr>`).join("");
+  const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`), mc = $("#maconc").value.trim();
+  const mes = LAB.mesures(); const dem = LAB.demarche();
+  return { nom, html: `<h3>${LAB.cr.titre}</h3>
+<p><b>Élève :</b> ${esc(nom)} · <b>Classe :</b> ${esc(cl)} · <b>Date :</b> ${d}</p>
+<h4>Mes mesures et essais</h4><ol>${mes.length ? mes.map(m => `<li>${m}</li>`).join("") : "<li>Aucun essai.</li>"}</ol>
+${LAB.PRED ? LAB.PRED.cr() : ""}<h4>Démarche</h4><ul>${dem.map(([t, v]) => `<li>${t} : ${v ? "oui" : "non"}</li>`).join("")}</ul>
+<h4>Réponses : ${ok} juste${ok > 1 ? "s" : ""} sur ${rows.length}</h4>
+<table><thead><tr><th>Question</th><th>Réponse</th><th></th></tr></thead><tbody>${tab}</tbody></table>
+<h4>Conclusion</h4><p>${b ? b.textContent.trim() + (b.hasAttribute("data-juste") ? " → ✓" : " → ✗ à revoir.") : "Aucune réponse choisie."}</p>
+<h4>Ma conclusion rédigée</h4><p>${mc ? esc(mc).replace(/\n/g, "<br>") : "<i>non rédigée</i>"}</p>` };
+}
+const W1252 = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
+const SUPS = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁺": "+", "⁻": "-", "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9", "−": "-", "→": "->", "✓": "(juste)", "✗": "(faux)", "≤": "<=", "≥": ">=", "≈": "~", "α": "alpha", "Δ": "Delta", "√": "racine ", "×": "x", "⃗": "", "ℰ": "E", "σ": "sigma", "ρ": "rho", "λ": "lambda", " ": " ", " ": " " };
+const txtPDF = s => [...String(s).replace(/\s+/g, " ").trim()].map(c => SUPS[c] != null ? SUPS[c] : c).join("").split("").filter(c => c.charCodeAt(0) < 256 || W1252.includes(c)).join("").replace(/ {2,}/g, " ").trim();
+const plat = node => { const c = node.cloneNode(true); c.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); c.querySelectorAll("sub").forEach(s => s.replaceWith(s.textContent)); return c.textContent; };
+function chargerJsPDF() {
+  if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = () => window.jspdf ? ok(window.jspdf) : ko(); s.onerror = ko; document.head.appendChild(s); });
+}
+function faitPDF(r) {
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" });
+  const X = 18, Lg = 174, BAS = 282; let y = 18;
+  const place = h => { if (y + h > BAS) { doc.addPage(); y = 18; } };
+  const ligne = (t, o = {}) => { doc.setFont("helvetica", o.b ? "bold" : "normal"); doc.setFontSize(o.s || 10.5); doc.setTextColor(...(o.c || [21, 33, 45]));
+    const lh = (o.s || 10.5) * .45, ls = doc.splitTextToSize(txtPDF(t), Lg - (o.ind || 0)); ls.forEach(l => { place(lh); doc.text(l, X + (o.ind || 0), y); y += lh; }); y += o.ap || 1.2; };
+  doc.setFillColor(0, 51, 102); doc.rect(0, 0, 210, 8, "F");
+  const tmp = document.createElement("div"); tmp.innerHTML = r.html;
+  [...tmp.children].forEach(e => {
+    const tag = e.tagName;
+    if (tag === "H3") ligne(plat(e), { b: 1, s: 15, c: [0, 51, 102], ap: 2 });
+    else if (tag === "H4") { y += 2.5; ligne(plat(e), { b: 1, s: 12, c: [0, 51, 102], ap: 1.5 }); }
+    else if (tag === "P") ligne(plat(e));
+    else if (tag === "OL" || tag === "UL") [...e.children].forEach((li, k) => ligne((tag === "OL" ? (k + 1) + ". " : "- ") + plat(li), { ind: 2, ap: 1.6 }));
+    else if (tag === "TABLE") [...e.querySelectorAll("tbody tr")].forEach(tr => { const c = [...tr.children].map(td => plat(td).trim()); ligne(`${c[0]} : ${c[1]} ${c[2] === "–" ? "" : c[2]}`, { ind: 2, s: 10, ap: .8 }); });
+  });
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) { doc.setPage(p); doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(87, 103, 118); doc.text(txtPDF(`${LAB.cr.pied} · ${r.nom} · page ${p}/${n}`), X, 290); }
+  const nomF = (r.nom === "(nom non renseigné)" ? "eleve" : r.nom).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  doc.save(`${LAB.cr.fichier}_compte_rendu_${nomF || "eleve"}.pdf`);
+}
+function brancherCR() {
+  const box = $("#cr"), crnote = $("#crnote");
+  $("#crbtn").addEventListener("click", () => { const r = construireCR(); box.innerHTML = r.html; box.hidden = false; box.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); crnote.textContent = "Cliquez sur « Télécharger mon compte rendu (PDF) », puis déposez le fichier dans votre devoir Google Classroom."; });
+  $("#crpdf").addEventListener("click", () => {
+    if (!$("#crnom").value.trim()) { crnote.textContent = "Écrivez d'abord votre nom et prénom."; $("#crnom").focus(); return; }
+    const r = construireCR(); box.innerHTML = r.html; box.hidden = false; crnote.textContent = "Préparation du PDF…"; $("#crpdf").disabled = true;
+    chargerJsPDF().then(() => { faitPDF(r); crnote.textContent = "✓ PDF téléchargé : déposez-le dans votre devoir Google Classroom (Ajouter > Fichier, puis Rendre)."; })
+      .catch(() => { crnote.textContent = "Le PDF n'a pas pu être préparé (connexion ?). Utilisez Imprimer > Enregistrer au format PDF."; window.print(); })
+      .finally(() => { $("#crpdf").disabled = false; });
+  });
+}
+
+/* ---------------------------------------------------------------------
+   AIDE, MODE ÉCONOME, SAUVEGARDE
+   --------------------------------------------------------------------- */
+function brancherOutils() {
+  const aide = $("#aidebtn"), bx = $("#aide"), eco = $("#ecobtn");
+  aide.addEventListener("click", () => { bx.open = true; bx.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); bx.querySelector("summary").focus(); });
+  const show = () => { eco.setAttribute("aria-pressed", REDUCED); document.body.classList.toggle("eco", REDUCED); eco.textContent = REDUCED ? "🐢 Mode économe : activé" : "🐢 Mode économe"; };
+  eco.addEventListener("click", () => { REDUCED = !REDUCED; try { localStorage.setItem("efir-eco", REDUCED ? "1" : "0"); } catch (e) {} show(); say(REDUCED ? "Mode économe activé : animations raccourcies. Rechargez la page pour alléger aussi l'affichage 3D." : "Mode économe désactivé.", "info"); });
+  show();
+}
+function sauvegarde(apresChargement) {
+  function save() {
+    try { localStorage.setItem(LAB.key, JSON.stringify({ v: 1, S: LAB.S, appel: LAB.appel, choix: LAB.choix, champs: Object.fromEntries($$("[data-save]").map(e => [e.id, e.type === "checkbox" ? e.checked : e.value])) })); } catch (e) {}
+  }
+  let t = 0; const later = () => { clearTimeout(t); t = setTimeout(save, 400); };
+  ["change", "click", "input"].forEach(ev => document.addEventListener(ev, later)); setInterval(save, 5000);
+  let retrouve = false;
+  try {
+    const d = JSON.parse(localStorage.getItem(LAB.key) || "null");
+    if (d && d.v === 1) {
+      Object.assign(LAB.S, d.S || {}); LAB.appel = true;
+      for (const id in d.champs || {}) { const e = document.getElementById(id); if (e) { if (e.type === "checkbox") e.checked = !!d.champs[id]; else e.value = d.champs[id]; } }
+      if (d.choix) { const b = $(`[data-concl="${d.choix}"]`); if (b) b.click(); }
+      retrouve = true;
+    }
+  } catch (e) {}
+  majAppel(); apresChargement && apresChargement(retrouve);
+  $("#effacer").addEventListener("click", () => {
+    const eff = $("#effacer");
+    if (!eff.dataset.sure) { eff.dataset.sure = "1"; eff.textContent = "Cliquez encore pour tout effacer"; setTimeout(() => { delete eff.dataset.sure; eff.textContent = "Effacer mon travail"; }, 4000); return; }
+    try { localStorage.removeItem(LAB.key); } catch (e) {} location.reload();
+  });
+}
+function demarrerLAB() { brancherQuestions(); brancherCR(); brancherOutils(); }
+
+/* ---------------------------------------------------------------------
+   PRÉDICTIONS : l'élève prévoit AVANT de lancer, puis confronte.
+   liste : [{ id, consigne, q, opts: [...], bonne, expl, cond: essai => bool }]
+   --------------------------------------------------------------------- */
+function Predictions(el, liste) {
+  const S = LAB.S; S.pred = S.pred || {};
+  const idx = () => liste.findIndex(p => !(S.pred[p.id] && S.pred[p.id].vu));
+  let attente = false; /* prédiction confrontée, en attente du clic « suivante » */
+  function rendu() {
+    const k = attente !== false ? attente : idx();
+    if (k < 0) { el.innerHTML = `<p class="toast ok">✓ Toutes les prédictions ont été confrontées à l'expérience (${liste.filter(p => S.pred[p.id].juste).length}/${liste.length} justes du premier coup).</p>`; return; }
+    const p = liste[k], st = S.pred[p.id] || {};
+    el.innerHTML = `<p class="hint">Prédiction ${k + 1} sur ${liste.length}</p><p><b>${p.consigne}</b></p><p>${p.q}</p>
+      <div class="checks">${p.opts.map((o, i) => `<button class="chip" type="button" data-pi="${i}" aria-pressed="${st.choix === o}" ${st.vu ? "disabled" : ""}>${o}</button>`).join("")}</div>
+      ${st.vu ? `<p class="toast ${st.juste ? "ok" : "err"}">${st.juste ? "✓ Votre prédiction était juste." : "✗ L'expérience contredit votre prédiction : c'est en se trompant qu'on apprend !"} ${p.expl}</p><div class="row-actions"><button class="btn" type="button" data-suiv>Prédiction suivante →</button></div>`
+        : st.choix ? `<p class="hint">Prédiction enregistrée. Faites maintenant le lancer demandé pour la vérifier.</p>` : `<p class="hint">Choisissez votre prédiction : le lancer est bloqué tant que vous n'avez pas prévu le résultat.</p>`}`;
+    $$("[data-pi]", el).forEach(b => b.addEventListener("click", () => { S.pred[p.id] = { choix: p.opts[+b.dataset.pi] }; rendu(); }));
+    const sv = $("[data-suiv]", el); if (sv) sv.addEventListener("click", () => { attente = false; rendu(); });
+  }
+  const api = {
+    peutLancer() {
+      if (LAB.demo) return true; const k = idx(); if (attente !== false || k < 0) return true;
+      if (S.pred[liste[k].id] && S.pred[liste[k].id].choix) return true;
+      say("✋ Faites d'abord votre <b>prédiction</b> (cadre « Je prédis ») avant de lancer.", "err"); el.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" }); return false;
+    },
+    apres(essai) {
+      if (LAB.demo || attente !== false) return; const k = idx(); if (k < 0) return;
+      const p = liste[k], st = S.pred[p.id]; if (!st || !st.choix || !p.cond(essai)) return;
+      st.vu = true; st.juste = st.choix === p.bonne; attente = k; rendu();
+    },
+    fait: () => idx() < 0,
+    nb: () => liste.filter(p => S.pred[p.id] && S.pred[p.id].vu).length,
+    cr() { return `<h4>Mes prédictions</h4><ol>${liste.map(p => { const st = S.pred[p.id] || {}; return `<li>${p.q} Prédit : ${st.choix || "–"}${st.vu ? (st.juste ? " → confirmé ✓" : " → contredit par l'expérience ✗ (bonne réponse : " + p.bonne + ")") : " (non vérifiée)"}</li>`; }).join("")}</ol>`; },
+    rendu
+  };
+  LAB.PRED = api; rendu(); return api;
+}
+
+</script>
+<script>
+/* =================== Particule chargée dans un condensateur plan =================== */
+const e0 = 1.6e-19, L = 0.10, H = 0.05;
+const PART = { electron: { nom: "électron", q: -e0, m: 9.11e-31, c: 0x1f6fd1 }, positon: { nom: "positon", q: e0, m: 9.11e-31, c: 0xc0392b }, proton: { nom: "proton", q: e0, m: 1.67e-27, c: 0x8e44ad } };
+const COUL = [0xe67e22, 0x1f6fd1, 0x2f8f4e, 0x8e44ad, 0xc0392b];
+LAB.key = "efir-tle-ch12-cond-3d-v1";
+LAB.cr = { titre: "Tle · Ch. 12 · Particule chargée dans un condensateur plan (simulation 3D)", pied: "Tle Ch. 12 · Condensateur 3D", fichier: "Tle_Ch12_Condensateur" };
+Object.assign(LAB.S, { part: "electron", essais: [], py: "", pyJuste: false, pred: {} });
+const S = LAB.S;
+const rad = d => d * Math.PI / 180;
+const reg = () => ({ part: S.part, E: +$("#rE").value * 1e4, v0: +$("#rv").value * 1e7, a: +$("#ra").value });
+function mouvement(r) {
+  const P = PART[r.part], ay = P.q * r.E / P.m, vx = r.v0 * Math.cos(rad(r.a)), vy = r.v0 * Math.sin(rad(r.a));
+  const pos = t => [vx * t, .5 * ay * t * t + vy * t];
+  /* première sortie : x = L, ou |y| = H */
+  let tf = L / vx, fin = "sortie";
+  const racines = yc => { const A = .5 * ay, B = vy, C = -yc; if (Math.abs(A) < 1e-30) { const t = -C / B; return t > 0 ? [t] : []; } const D = B * B - 4 * A * C; if (D < 0) return []; const s = Math.sqrt(D); return [(-B - s) / (2 * A), (-B + s) / (2 * A)].filter(t => t > 1e-15); };
+  [[H, "haut"], [-H, "bas"]].forEach(([yc, nm]) => racines(yc).forEach(t => { if (t < tf) { tf = t; fin = nm; } }));
+  return { ay, vx, vy, tf, fin, pos, vit: t => [vx, ay * t + vy], ys: pos(tf)[1] };
+}
+LAB.val.ay = () => PART.electron.q * 2e4 / PART.electron.m / 1e15;
+LAB.val.ys = () => .5 * PART.electron.q * 2e4 / PART.electron.m * (L / 2e7) ** 2 * 100;
+LAB.val.vmin = () => L * Math.sqrt(Math.abs(PART.electron.q * 2e4 / PART.electron.m) / (2 * H)) / 1e7;
+const RES = { sortie: "sort du condensateur", haut: "touche l'armature du haut (−)", bas: "touche l'armature du bas (+)" };
+const proche = (a, b, t) => Math.abs(a - b) < t;
+const memeR = (e, part, E, v0, a) => e.part === part && proche(e.E, E, 50) && proche(e.v0, v0, 2e5) && proche(e.a, a, .5);
+
+/* ---------- scène 3D (1 unité = 1 cm) ---------- */
+const fig = $("#fig3d");
+const V = Scene3D(fig, { cible: [5, 0, 0], r: 24, az: -0.55, el: 0.3, rmin: 5, rmax: 60, fond: 0xe6eef4,
+  vues: { d3: { az: -0.55, el: 0.3, r: 24, cible: [5, 0, 0] }, face: { az: 0, el: 0, r: 25, cible: [5, -0.6, 0] }, dessus: { az: 0, el: 1.55, r: 22, cible: [5, 0, 0] } } });
+let part, vV, vF, eV, eF, trait, tracesG, ghost;
+if (V) {
+  const T = THREE, sc = V.scene;
+  const plaque = (y, col, signe) => {
+    const m = new T.Mesh(new T.BoxGeometry(10, .25, 6), new T.MeshStandardMaterial({ color: col, metalness: .6, roughness: .35, transparent: true, opacity: .85 })); m.position.set(5, y, 0); m.castShadow = false; sc.add(m);
+    for (let i = 0; i < 5; i++) for (const z of [-1.8, 1.8]) { const e = V.etiquette(signe, { taille: .7, fond: false, couleur: signe === "+" ? "#b42318" : "#1f3b5c" }); e.position.set(1 + i * 2, y + (y > 0 ? .55 : -.55), z); sc.add(e); }
+  };
+  plaque(5.13, 0x8aa4bf, "−"); plaque(-5.13, 0xd9a35b, "+");
+  /* lignes de champ E (vers le haut) */
+  const champ = new T.Group(); sc.add(champ);
+  for (const x of [1.5, 4, 6.5, 9]) for (const z of [-2, 0, 2]) { const f = V.fleche(0x6fb3c8, .035); f.regler(new T.Vector3(x, -4.7, z), new T.Vector3(0, 9.2, 0)); f.children.forEach(c => { c.material = c.material.clone(); c.material.transparent = true; c.material.opacity = z === 0 ? .55 : .25; }); champ.add(f); }
+  const eE = V.etiquette("E⃗", { taille: .9, couleur: "#1b7f99", italic: true, fond: false }); eE.position.set(10.9, 3.6, 0); sc.add(eE);
+  /* axes */
+  const ax = (dir, lab, col) => { const f = V.fleche(col, .04); f.regler(new T.Vector3(0, 0, 0), dir); sc.add(f); const e = V.etiquette(lab, { taille: .7, italic: true, fond: false, couleur: "#" + col.toString(16).padStart(6, "0") }); e.position.copy(dir.clone().multiplyScalar(1.07)); sc.add(e); };
+  ax(new T.Vector3(11.5, 0, 0), "x", 0x15212d); ax(new T.Vector3(0, 6.2, 0), "y", 0x15212d);
+  const eo = V.etiquette("O", { taille: .6, fond: false }); eo.position.set(-.5, -.5, 0); sc.add(eo);
+  [[10, "10 cm"], [5, "5 cm"]].forEach(([x, t]) => { const e = V.etiquette(t, { taille: .5 }); e.position.set(x, -6.2, 3.2); sc.add(e); });
+  const ey = V.etiquette("+5 cm", { taille: .5 }); ey.position.set(-1.4, 5.1, 0); sc.add(ey); const ey2 = V.etiquette("−5 cm", { taille: .5 }); ey2.position.set(-1.4, -5.1, 0); sc.add(ey2);
+  /* canon à particules */
+  const canon = new T.Mesh(new T.CylinderGeometry(.45, .45, 2.2, 24), new T.MeshStandardMaterial({ color: 0x3b4552, metalness: .5, roughness: .4 })); canon.rotation.z = Math.PI / 2; canon.position.set(-1.6, 0, 0); sc.add(canon);
+  /* particule */
+  part = new T.Mesh(new T.SphereGeometry(.28, 24, 16), new T.MeshStandardMaterial({ color: 0x1f6fd1, emissive: 0x1f6fd1, emissiveIntensity: .7 })); sc.add(part);
+  ghost = new T.Mesh(new T.SphereGeometry(.6, 16, 12), new T.MeshBasicMaterial({ color: 0x6fb7ff, transparent: true, opacity: .2 })); part.add(ghost);
+  vV = V.fleche(0x2f8f4e, .07); vF = V.fleche(0xe67e22, .07); sc.add(vV, vF);
+  eV = V.etiquette("v⃗", { taille: .7, couleur: "#2f8f4e", italic: true, fond: false }); eF = V.etiquette("F⃗ = qE⃗", { taille: .55, couleur: "#c26a12", italic: true, fond: false }); sc.add(eV, eF);
+  trait = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0xe67e22 })); sc.add(trait);
+  tracesG = new T.Group(); sc.add(tracesG);
+  V.onUser = () => $$(".vues button", fig).forEach(b => b.setAttribute("aria-pressed", "false"));
+}
+function placer(r, t) {
+  if (!V) return; const m = mouvement(r), [x, y] = m.pos(t), [vx, vy] = m.vit(t), on = $("#vect").checked, o = new THREE.Vector3(x * 100, y * 100, 0);
+  part.position.copy(o); part.material.color.setHex(PART[r.part].c); part.material.emissive.setHex(PART[r.part].c);
+  vV.visible = vF.visible = eV.visible = eF.visible = on; if (!on) { V.demande(); return; }
+  const dv = new THREE.Vector3(vx, vy, 0).multiplyScalar(1.4e-7), fdir = Math.sign(PART[r.part].q), df = new THREE.Vector3(0, 1.8 * fdir, 0);
+  vV.regler(o, dv); vF.regler(o, df); eV.position.copy(o.clone().add(dv).add(new THREE.Vector3(.3, .5, 0))); eF.position.copy(o.clone().add(df).add(new THREE.Vector3(1.3, fdir * .3, 0)));
+  V.demande();
+}
+/* ---------- réglages ---------- */
+function majSorties() {
+  const r = reg(), m = mouvement(r);
+  $("#oE").innerHTML = fr(r.E) + " V·m<sup>−1</sup>"; $("#ov").innerHTML = fr(r.v0, 3) + " m·s<sup>−1</sup>"; $("#oa").textContent = r.a + " °";
+  $("#cA").innerHTML = fr(m.ay, 3) + " m·s<sup>−2</sup>"; $("#cT").innerHTML = fx(L / m.vx * 1e9, 2) + " ns";
+  if (!enCours) placer(r, 0);
+}
+["rE", "rv", "ra"].forEach(id => $("#" + id).addEventListener("input", majSorties));
+$$("[data-part]").forEach(b => b.addEventListener("click", () => { S.part = b.dataset.part; $$("[data-part]").forEach(x => x.setAttribute("aria-pressed", x === b)); majSorties(); }));
+$("#vect").addEventListener("change", majSorties);
+/* ---------- lancer ---------- */
+let enCours = false, stop = null;
+function lancer() {
+  if (!V || enCours) return;
+  if (!LAB.PRED.peutLancer()) return;
+  const r = reg(), m = mouvement(r), DUREE = REDUCED ? .05 : 2.4; let k = 0; enCours = true;
+  trait.material.color.setHex(COUL[tracesG.children.length % COUL.length]);
+  const pts = []; for (let i = 0; i <= 160; i++) { const [x, y] = m.pos(m.tf * i / 160); pts.push(new THREE.Vector3(x * 100, y * 100, 0)); }
+  say(`Lancer : ${PART[r.part].nom}, E = ${fr(r.E)} V·m<sup>−1</sup>, v<sub>0</sub> = ${fr(r.v0, 3)} m·s<sup>−1</sup>, α = ${r.a}°…`);
+  stop = V.anime(dt => {
+    k = Math.min(1, k + dt / DUREE); const t = m.tf * k, [x, y] = m.pos(t), [vx, vy] = m.vit(t);
+    placer(r, t); trait.geometry.dispose(); trait.geometry = new THREE.BufferGeometry().setFromPoints(pts.slice(0, Math.round(k * 160) + 1));
+    $("#hud").innerHTML = `t = ${fx(t * 1e9, 2)} ns · x = ${fx(x * 100, 2)} cm · y = ${fx(y * 100, 2)} cm · v = ${fr(Math.hypot(vx, vy), 3)} m·s<sup>−1</sup>`;
+    if (k >= 1) { enCours = false; stop(); fin(r, m, pts); return false; } return true;
+  });
+}
+function fin(r, m, pts) {
+  const n = tracesG.children.length, col = COUL[n % COUL.length]; if (n >= 5) tracesG.remove(tracesG.children[0]);
+  const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: col }));
+  ln.userData = { col, r, pts: pts.map(p => [p.x, p.y]), txt: `${PART[r.part].nom}, E = ${fr(r.E)}, v₀ = ${fr(r.v0, 3)}, α = ${r.a}° : ${RES[m.fin]}` };
+  tracesG.add(ln); trait.geometry = new THREE.BufferGeometry(); legende();
+  S.essais.push({ part: r.part, E: r.E, v0: r.v0, a: r.a, fin: m.fin, ys: +(m.ys * 100).toFixed(2), tf: +(m.tf * 1e9).toFixed(2) });
+  tableEssais(); dessiner();
+  say(`${r.part === "proton" ? "Le proton" : "L'" + PART[r.part].nom} ${RES[m.fin]} après ${fx(m.tf * 1e9, 2)} ns, en x = ${fx(m.pos(m.tf)[0] * 100, 2)} cm, y = ${fx(m.ys * 100, 2)} cm.`, m.fin === "sortie" ? "ok" : "info");
+  LAB.PRED.apres({ r, m });
+}
+$("#lancer").addEventListener("click", lancer);
+function legende() { $("#leg3d").innerHTML = V ? tracesG.children.map(l => `<span style="--c:#${l.userData.col.toString(16).padStart(6, "0")}">${l.userData.txt.replace(/<[^>]+>/g, "")}</span>`).join("") : ""; }
+function effacer() { if (!V) return; tracesG.clear(); trait.geometry = new THREE.BufferGeometry(); legende(); dessiner(); V.demande(); }
+$("#effacertr").addEventListener("click", effacer);
+/* ---------- graphique des trajectoires ---------- */
+const G = Graphe($("#gcv"));
+const PYF = { "q*E/m": 1, "-q*E/m": -1, "q*E*m": 0, "E/m": 2 };
+function trajPython(choix) {
+  const P = PART.electron, E = 2e4, dt = 1e-11; let x = 0, y = 0, vx = 2e7, vy = 0; const out = [[0, 0]];
+  const ay = choix === "q*E/m" ? P.q * E / P.m : choix === "-q*E/m" ? -P.q * E / P.m : choix === "q*E*m" ? P.q * E * P.m : E / P.m;
+  for (let i = 0; i < 100000 && x < L && Math.abs(y) < H; i++) { vy += ay * dt; x += vx * dt; y += vy * dt; if (i % 5 === 0) out.push([x * 100, y * 100]); }
+  out.push([x * 100, y * 100]); return out;
+}
+function dessiner() {
+  const series = V ? tracesG.children.map(l => ({ pts: l.userData.pts, c: "#" + l.userData.col.toString(16).padStart(6, "0"), w: 3 })) : [];
+  series.push({ pts: [[0, 5], [10, 5]], c: css("--ink"), w: 4 }, { pts: [[0, -5], [10, -5]], c: "#d9a35b", w: 4 });
+  if (S.py) series.push({ pts: trajPython(S.py).filter((p, i) => i % 3 === 0), points: true, r: 3.5, c: "#d62728", nom: "programme Python (Euler)" });
+  G.trace({ series, xmin: 0, xmax: 11, ymin: -6, ymax: 6, xlab: "x (cm)", ylab: "y (cm)" });
+}
+$("#runpy").addEventListener("click", () => {
+  const o = $("#outpy"), c = $("#qpy").value; o.hidden = false;
+  if (!c) { o.className = "toast info"; o.innerHTML = "Complétez d'abord la ligne 6."; return; }
+  const ref = S.essais.some(e => memeR(e, "electron", 2e4, 2e7, 0));
+  S.py = c; S.pyJuste = juste("qpy"); dessiner();
+  o.className = "toast " + (S.pyJuste ? "ok" : "err");
+  o.innerHTML = (S.pyJuste ? "✓ Les points rouges du programme se superposent à la trajectoire simulée : le calcul pas à pas retrouve la parabole." : "✗ Les points rouges ne suivent pas la trajectoire de l'électron : relisez la deuxième loi de Newton (m a⃗ = q E⃗).") + (ref ? "" : " Faites aussi le lancer de référence (électron, E = 2,0 × 10<sup>4</sup>, v<sub>0</sub> = 2,0 × 10<sup>7</sup>, α = 0°) pour comparer.");
+});
+function tableEssais() {
+  $("#ess").innerHTML = S.essais.map((e, i) => `<tr><td>${i + 1}</td><td>${PART[e.part].nom}</td><td>${fr(e.E)}</td><td>${fr(e.v0, 3)}</td><td>${e.a}°</td><td>${RES[e.fin]}</td></tr>`).join("");
+  $("#essvide").hidden = S.essais.length > 0; $("#nbess").textContent = S.essais.length ? S.essais.length + " lancer" + (S.essais.length > 1 ? "s" : "") : "";
+}
+/* ---------- prédictions ---------- */
+const dejaR = (part, E, v0, a) => S.essais.slice(0, -1).some(e => memeR(e, part, E, v0, a));
+Predictions($("#predict"), [
+  { id: "sens", consigne: "Réglez : électron, E = 2,0 × 10⁴ V·m⁻¹, v₀ = 2,0 × 10⁷ m·s⁻¹, α = 0°.", q: "Le champ E⃗ est dirigé vers le haut. L'électron sera dévié :", opts: ["vers le haut, dans le sens de E⃗", "vers le bas, dans le sens opposé à E⃗", "il ne sera pas dévié"], bonne: "vers le bas, dans le sens opposé à E⃗",
+    cond: e => e.r.part === "electron" && e.r.a === 0, expl: "F⃗ = qE⃗ avec q = −e < 0 : la force est opposée au champ. L'électron est attiré par l'armature + (en bas)." },
+  { id: "proton", consigne: "Gardez les mêmes réglages et lancez maintenant un proton.", q: "Le proton sera dévié :", opts: ["vers le bas, autant que l'électron", "vers le haut, autant que l'électron", "vers le haut, mais beaucoup moins (presque pas)"], bonne: "vers le haut, mais beaucoup moins (presque pas)",
+    cond: e => e.r.part === "proton", expl: "q > 0 : F⃗ a le sens de E⃗. Mais m(proton) ≈ 1 836 m(électron) : son accélération est 1 836 fois plus petite, la déviation est invisible sur 10 cm." },
+  { id: "v0", consigne: "Électron, E = 2,0 × 10⁴ V·m⁻¹, α = 0° : lancez à v₀ = 2,0 × 10⁷ m·s⁻¹, puis à v₀ = 4,0 × 10⁷ m·s⁻¹.", q: "Quand v₀ double, la déviation à la sortie (x = 10 cm) :", opts: ["est divisée par 2", "est divisée par 4", "ne change pas"], bonne: "est divisée par 4",
+    cond: e => memeR(e.r, "electron", 2e4, 4e7, 0) && dejaR("electron", 2e4, 2e7, 0), expl: "y_S = a_y L² / (2 v₀²) : la déviation varie comme 1/v₀². Doubler v₀ la divise par 4 (−4,4 cm → −1,1 cm)." },
+  { id: "E", consigne: "Électron, v₀ = 2,0 × 10⁷ m·s⁻¹, α = 0° : doublez le champ (E = 4,0 × 10⁴ V·m⁻¹).", q: "Avec un champ deux fois plus intense, l'électron :", opts: ["sort, deux fois plus dévié", "touche l'armature du bas avant la sortie", "n'est plus dévié"], bonne: "touche l'armature du bas avant la sortie",
+    cond: e => memeR(e.r, "electron", 4e4, 2e7, 0), expl: "a_y double : la déviation calculée en x = 10 cm serait −8,8 cm, plus que les 5 cm disponibles. L'électron touche l'armature + avant de sortir." }
+]);
+/* ---------- démonstration et remise à zéro ---------- */
+const regle = (id, v) => { const el = $("#" + id); el.value = v; el.dispatchEvent(new Event("input")); };
+$("#demo").addEventListener("click", async () => {
+  const b = $("#demo"); b.disabled = true; LAB.demo = true;
+  try {
+    say("Démonstration : un électron, E = 2,0 × 10<sup>4</sup> V·m<sup>−1</sup>, v<sub>0</sub> = 2,0 × 10<sup>7</sup> m·s<sup>−1</sup>, α = 0°. (En temps normal, vous prédisez d'abord !)");
+    $("[data-part=electron]").click(); regle("rE", 2); regle("rv", 2); regle("ra", 0); V && V.vue({ az: 0, el: 0, r: 25, cible: [5, -0.6, 0] }, "face"); await wait(1500);
+    lancer(); await wait(3000);
+    say("On ne change qu'une grandeur : v<sub>0</sub> passe à 4,0 × 10<sup>7</sup> m·s<sup>−1</sup>. La trajectoire précédente reste affichée."); regle("rv", 4); await wait(1200);
+    lancer(); await wait(3000);
+    V && V.vue({ az: -0.55, el: 0.3, r: 24, cible: [5, 0, 0] }, "d3");
+    say("Démonstration terminée : la déviation a été divisée par 4. À vous : faites vos prédictions !", "ok");
+  } finally { b.disabled = false; LAB.demo = false; }
+});
+$("#reset").addEventListener("click", () => { regle("rE", 2); regle("rv", 2); regle("ra", 0); $("[data-part=electron]").click(); effacer(); V && V.vue({ az: -0.55, el: 0.3, r: 24, cible: [5, 0, 0] }, "d3"); say("Réglages remis à zéro. Vos lancers et vos réponses sont conservés."); });
+/* ---------- compte rendu et protocole ---------- */
+LAB.mesures = () => S.essais.map(e => `${PART[e.part].nom}, E = ${fr(e.E)} V·m⁻¹, v0 = ${fr(e.v0, 3)} m·s⁻¹, α = ${e.a}° : ${RES[e.fin]} (t = ${fx(e.tf, 2)} ns, y = ${fx(e.ys, 2)} cm)`);
+LAB.demarche = () => [[`Prédictions confrontées à l'expérience (${LAB.PRED.nb()} sur 4)`, LAB.PRED.fait()], ["Électron et proton comparés", S.essais.some(e => e.part === "electron") && S.essais.some(e => e.part === "proton")], ["Lancer de référence (question 3)", S.essais.some(e => memeR(e, "electron", 2e4, 2e7, 0))], ["Programme Python exécuté et validé", S.pyJuste]];
+Protocole([
+  { partie: "Prédire et expérimenter", q: "Prédire", html: "Faire les <b>4 prédictions</b> du cadre « Je prédis », en lançant à chaque fois la particule demandée.", ok: () => LAB.PRED.fait() },
+  { partie: "Mettre en équations", q: "Q1", html: "Écrire la deuxième loi de Newton et le sens de F⃗.", ok: () => juste("q1") && juste("q1b") },
+  { q: "Q2", html: "Équations horaires et trajectoire.", ok: () => juste("q2") && juste("q3") },
+  { q: "Q3", html: "Calculer a<sub>y</sub> et y<sub>S</sub>, puis vérifier avec le lancer de référence.", sous: [
+    { html: "lancer de référence fait", ok: () => S.essais.some(e => memeR(e, "electron", 2e4, 2e7, 0)) }, { html: "valeurs justes", ok: () => juste("q4a") && juste("q4b") } ] },
+  { partie: "Confronter", q: "Python", html: "Compléter la ligne 6, exécuter et comparer à la simulation.", ok: () => S.pyJuste },
+  { q: "✔ Vérification", html: "Relire ses réponses avant de continuer.", ok: () => true },
+  { q: "Défi", html: "Trouver la vitesse minimale de sortie de l'électron.", ok: () => juste("q5") },
+  { partie: "Garder une trace", q: "Bilan", html: "Répondre à la problématique, rédiger sa conclusion, télécharger le compte rendu.", ok: () => conclJuste() && $("#maconc").value.trim().length > 20 }
+]);
+demarrerLAB();
+sauvegarde(retrouve => {
+  $$("[data-part]").forEach(x => x.setAttribute("aria-pressed", x.dataset.part === S.part)); majSorties(); tableEssais(); dessiner(); LAB.PRED.rendu();
+  if (retrouve && S.essais.length) say("Votre travail précédent a été retrouvé (lancers et réponses).", "ok");
+});
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style id="charte-efir-2026">
+/* Code couleur « prune » du labo virtuel (accueil retenu le 06/11/2026), version claire pour les pages de TP */
+:root:root:root {
+  --bg: #FAF7FC; --surface: #ffffff; --surface-2: #F6F0F9; --ink: #1F1630; --muted: #6B5B78; --line: #E7DDEE;
+  --navy: #4A2C5A; --navy-soft: #F3E8F7; --blue: #4A2C5A; --line-2: #D9CBE3; --soft: #5B4A68;
+  --call-bg: #F6F0F9; --call-line: #E7DDEE; --call-ink: #4A2C5A;
+  --font-display: "Inter", "Segoe UI", system-ui, sans-serif; --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:root:root:not([data-theme="light"]) {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; } }
+:root:root:root[data-theme="dark"] {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; }
+body, button, input, select, textarea { font-family: var(--font-body); }
+body { font-family: var(--font-body); }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -.01em; }
+a.retour { color: var(--navy) !important; }
+</style>
+</body>
+</html>

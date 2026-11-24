@@ -1,0 +1,166 @@
+<!--efir1re:AE1 · Bilan de matière 3D-->
+window.EFIR_RETOUR = "premiere/matiere/Tableau%20d%27avancement";
+
+// ====================================================================
+// Ch. 3 · AE1 · Bilan de matière d'une transformation chimique (diiode + thiosulfate)
+// ====================================================================
+const C1 = 1.0e-2, C2 = 1.0e-2; // mol/L
+let E1, E2, B1, B2, S3 = null; const W3 = { v1: 0, v2: 0 };
+const I2COL = 0xd2600a;
+const fresh3 = () => ({ v1: null, v2: null, mixed: false, x: 0, exps: [] });
+const nI = v => C1 * v;           // mmol (v en mL)
+const nS = v => C2 * v;
+function etat(v1, v2, frac) { // frac : part du bécher 1 versée
+  const a = nI(v1) * frac, b = nS(v2); const x = Math.min(a, b / 2);
+  return { I2: a - x, S2O3: b - 2 * x, Im: 2 * x, S4O6: x, x };
+}
+const f2 = v => v.toFixed(2).replace('.', ',');
+function bars(st) {
+  const cv = $('#chBar'); if (!cv) return; const W = cv.width = (cv.clientWidth || 300) * 2, H = cv.height = Math.round(W * .55); const c = cv.getContext('2d');
+  c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
+  const items = [['I₂', st.I2, '#c8641e'], ['S₂O₃²⁻', st.S2O3, '#7e57c2'], ['I⁻', st.Im, '#546e7a'], ['S₄O₆²⁻', st.S4O6, '#26a69a']];
+  const max = .6, L = 70, B = 60, T = 20, ph = H - B - T, bw = (W - L - 20) / 4;
+  c.strokeStyle = '#e3e8f0'; c.font = '22px Inter, Arial'; c.fillStyle = '#5b6475'; c.textAlign = 'right';
+  for (let i = 0; i <= 6; i++) { const y = T + ph * (1 - i / 6); c.beginPath(); c.moveTo(L, y); c.lineTo(W - 10, y); c.stroke(); c.fillText((max * i / 6).toFixed(1).replace('.', ','), L - 8, y + 7); }
+  items.forEach(([n, v, col], i) => { const x = L + i * bw + bw * .2, hh = ph * Math.min(1, v / max); c.fillStyle = col; c.fillRect(x, T + ph - hh, bw * .6, hh);
+    c.fillStyle = '#1d2433'; c.textAlign = 'center'; c.font = '600 24px Inter, Arial'; c.fillText(n, x + bw * .3, H - 30); c.font = '22px Inter, Arial'; c.fillText(f2(v), x + bw * .3, T + ph - hh - 8); });
+  c.fillStyle = '#1A237E'; c.textAlign = 'left'; c.font = '600 22px Inter, Arial'; c.fillText('n (mmol)', 6, 16);
+  $('#chBarInfo').innerHTML = `Avancement x = <b>${f2(st.x)} mmol</b>`;
+}
+const C3 = {
+  id: 'p1_ch03_ae2', code: 'AE1', short: 'Bilan de matière 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 3 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Bilan de matière d\'une transformation chimique',
+  problem: 'On mélange une solution de diiode et une solution d\'ions thiosulfate. Quel réactif est entièrement consommé et quelle est la composition du système à l\'état final ?',
+  mots: `<p>Équation : <span class="eq">I₂(aq) + 2 S₂O₃²⁻(aq) → 2 I⁻(aq) + S₄O₆²⁻(aq)</span><br>
+  Le diiode I₂ est la seule espèce colorée (jaune-orangé à brun) ; les autres sont incolores.<br>
+  <b>Réactif limitant</b> : réactif entièrement consommé à l'état final. <b>Avancement x</b> (mol) ; <b>avancement final x<sub>f</sub></b>.<br>
+  Solutions : S1 diiode C₁ = 1,0×10⁻² mol·L⁻¹ ; S2 thiosulfate de sodium C₂ = 1,0×10⁻² mol·L⁻¹.</p>`,
+  aide: `<p>Expérience 1 : 10 mL de S1 dans le bécher 1 et 40 mL de S2 dans le bécher 2, puis verse le bécher 1 dans le bécher 2.<br>
+  Expérience 2 : recommence avec 30 mL de S1 et 40 mL de S2.<br>Le diagramme montre les quantités de matière pendant le mélange : observe laquelle s'annule.</p>`,
+  views: { ensemble: [[0, 1.05, 2.3], [0, .15, 0]] },
+  viewbar: [['Zoom béchers', () => flyTo([.05, .45, .9], [.05, .08, .1])]],
+  protocol: [
+    { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes.' },
+    { id: 'exp1', q: 'Q1', html: 'Expérience 1 : 10 mL de S1 (bécher 1) et 40 mL de S2 (bécher 2), puis mélanger.' },
+    { id: 'exp2', q: 'Q6', html: 'Expérience 2 : 30 mL de S1 et 40 mL de S2, puis mélanger.' },
+    { id: 'tableau', q: 'Q3-6', html: 'Compléter le tableau de résultats puis le vérifier.' },
+    { id: 'extra', q: 'Q2-5', html: 'Calculer les quantités initiales et finales (cadre « Questions »).' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'vider', html: 'Vider les béchers dans le bidon de récupération.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  table: {
+    rowTitle: 'Expérience',
+    rows: [{ label: 'Exp. 1 : 10 mL S1 + 40 mL S2', ans: [0, 0, 0, 0] }, { label: 'Exp. 2 : 30 mL S1 + 40 mL S2', ans: [1, 1, 1, 1] }],
+    cols: [
+      { title: 'Couleur finale', options: ['incolore', 'jaune-orangé'] },
+      { title: 'Réactif limitant', options: ['diiode I₂', 'ion thiosulfate S₂O₃²⁻'] },
+      { title: 'x<sub>f</sub> (mmol)'.replace(/<[^>]+>/g, ''), options: ['0,10', '0,20', '0,30', '0,40'] },
+      { title: 'n(I₂) final (mmol)', options: ['0', '0,10', '0,20', '0,30'] },
+    ],
+  },
+  extraTitle: 'Questions (expérience 1)',
+  extra: [
+    { q: 'Q1', text: 'Une transformation a lieu car…', options: ['la couleur du diiode disparaît au cours du mélange', 'un gaz se dégage', 'un précipité se forme'], ans: 0 },
+    { q: 'Q2', num: true, text: 'Quantité initiale de diiode n₀(I₂) =', unit: 'mmol', ans: .10, tol: .03 },
+    { q: 'Q2', num: true, text: 'Quantité initiale d\'ions thiosulfate n₀(S₂O₃²⁻) =', unit: 'mmol', ans: .40, tol: .03 },
+    { q: 'Q4', num: true, text: 'Avancement final x<sub>f</sub> =', unit: 'mmol', ans: .10, tol: .03 },
+    { q: 'Q5', num: true, text: 'Quantité finale d\'ions thiosulfate =', unit: 'mmol', ans: .20, tol: .03 },
+    { q: 'Q5', num: true, text: 'Quantité finale d\'ions iodure I⁻ =', unit: 'mmol', ans: .20, tol: .03 },
+    { q: 'Q5', num: true, text: 'Quantité finale d\'ions tétrathionate S₄O₆²⁻ =', unit: 'mmol', ans: .10, tol: .03 },
+  ],
+  conclusion: {
+    q: 'Comment déterminer la composition de l\'état final ?',
+    options: [
+      'Le réactif limitant est celui qui reste en plus grande quantité.',
+      'On écrit le tableau d\'avancement ; x<sub>f</sub> est la plus petite valeur de x qui annule la quantité d\'un réactif (le réactif limitant) ; on en déduit toutes les quantités finales.'.replace(/<[^>]+>/g, ''),
+      'Tous les réactifs sont toujours entièrement consommés.',
+      'L\'état final ne dépend pas des quantités initiales.',
+    ], ans: 1,
+  },
+  build() {
+    E1 = makeVessel({ cap: 50, r: .02, hgt: .28, kind: 'eprouvette', grad: 1, label: 'Éprouvette 50 mL\n(S1)' }); E1.group.position.set(-.55, .012, -.15);
+    E2 = makeVessel({ cap: 50, r: .02, hgt: .28, kind: 'eprouvette', grad: 1, label: 'Éprouvette 50 mL\n(S2)' }); E2.group.position.set(.55, .012, -.15);
+    B1 = makeVessel({ cap: 150, r: .065, hgt: .14, grad: 25, label: 'Bécher 1' }); B1.group.position.set(-.2, 0, .2);
+    B2 = makeVessel({ cap: 150, r: .065, hgt: .14, grad: 25, label: 'Bécher 2' }); B2.group.position.set(.25, 0, .2);
+    [E1, E2, B1, B2].forEach(v => scene.add(v.group));
+    const f1 = makeBottle('S1 : diiode\nC₁ = 1,0×10⁻² mol/L', I2COL, { brown: true }); f1.position.set(-.85, 0, -.45); scene.add(f1);
+    const f2b = makeBottle('S2 : thiosulfate\nC₂ = 1,0×10⁻² mol/L', 0xf2f7fb); f2b.position.set(.85, 0, -.45); scene.add(f2b);
+    const bid = new THREE.Mesh(new THREE.BoxGeometry(.3, .36, .2), new THREE.MeshStandardMaterial({ color: 0xffb74d })); bid.position.set(0, .18, -.6); scene.add(bid);
+    const bl = label('Bidon de récupération', { size: 30, scale: .0012 }); bl.position.set(0, .45, -.6); scene.add(bl);
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene(keepExps) {
+    const keep = keepExps && S3 ? S3.exps : []; S3 = fresh3(); S3.exps = keep; W3.v1 = 0; W3.v2 = 0;
+    if (!B1) return; [E1, E2, B1, B2].forEach(v => v.setVolume(0)); E1.setColor(I2COL, .55); B1.setColor(I2COL, .55); E2.setColor(0xf2f7fb, .25); B2.setColor(0xf2f7fb, .25);
+    B1.group.rotation.z = 0; bars(etat(0, 0, 0)); if ($('#d_v1')) this.refreshPanel();
+  },
+  buildPanel() {
+    const dose = (id, steps) => h('div', { class: 'row', style: 'margin:4px 0' }, ...steps.map(([t, d]) => h('button', { 'data-g': id, onclick: () => adj3(id, d) }, t)), h('b', { id: 'd_' + id, style: 'margin-left:6px' }, '0 mL'));
+    $('#actions').append(
+      h('div', { class: 'note' }, 'Solution S1 de diiode (éprouvette 50 mL) :'), dose('v1', [['+10', 10], ['+5', 5], ['+1', 1], ['−1', -1]]),
+      h('button', { class: 'go', id: 'b1', onclick: () => act({ t: 'm1', v: W3.v1 }) }, 'Verser dans le bécher 1'),
+      h('div', { class: 'note', style: 'margin-top:6px' }, 'Solution S2 de thiosulfate (éprouvette 50 mL) :'), dose('v2', [['+10', 10], ['+5', 5], ['+1', 1], ['−1', -1]]),
+      h('button', { class: 'go', id: 'b2', onclick: () => act({ t: 'm2', v: W3.v2 }) }, 'Verser dans le bécher 2'),
+      h('h3', {}, 'Mélange'),
+      h('button', { class: 'primary', id: 'bMix3', onclick: () => act({ t: 'mix' }) }, 'Verser le bécher 1 dans le bécher 2 (petit à petit)'),
+      h('h3', {}, 'Ranger / recommencer'),
+      h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Vider dans le bidon (nouvelle expérience)'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 Vider à l\'évier')),
+      h('div', { class: 'note', id: 'expList', style: 'margin-top:8px' }));
+    sideCard(chartCard('Quantités de matière pendant le mélange', 'chBar'));
+    new ResizeObserver(() => bars(S3.mixed ? etat(S3.v1, S3.v2, 1) : etat(S3.v1 || 0, S3.v2 || 0, 0))).observe($('#chBar'));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    $('#d_v1').textContent = W3.v1 + ' mL'; $('#d_v2').textContent = W3.v2 + ' mL';
+    const en = (s, ok) => $$(s).forEach(b => b.disabled = BUSY || !ok);
+    en('[data-g="v1"]', S3.v1 == null); en('#b1', S3.v1 == null && W3.v1 > 0); en('[data-g="v2"]', S3.v2 == null); en('#b2', S3.v2 == null && W3.v2 > 0);
+    en('#bMix3', S3.v1 != null && S3.v2 != null && !S3.mixed);
+    $('#expList').innerHTML = S3.exps.length ? '<b>Expériences réalisées :</b><br>' + S3.exps.map((e, i) => `${i + 1}. ${e.v1} mL S1 + ${e.v2} mL S2 → ${e.col}`).join('<br>') : '';
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    if (a.t === 'm1') { S3.v1 = a.v; E1.setVolume(a.v); await pourVessel(E1, B1, a.v); say(`${a.v} mL de solution de diiode dans le bécher 1.`); bars(etat(S3.v1, S3.v2 || 0, 0)); return; }
+    if (a.t === 'm2') { S3.v2 = a.v; E2.setVolume(a.v); await pourVessel(E2, B2, a.v); say(`${a.v} mL de solution de thiosulfate dans le bécher 2.`); bars(etat(S3.v1 || 0, S3.v2, 0)); return; }
+    if (a.t === 'mix') {
+      const v1 = S3.v1, v2 = S3.v2; S3.mixed = true;
+      const pa = B1.group.position.clone(), up = new THREE.Vector3(.25 - .11, .25, .2);
+      if (!INSTANT) flyTo([.05, .45, .9], [.05, .08, .1]);
+      await tween(.7, p => B1.group.position.lerpVectors(pa, up, ease(p)));
+      await tween(.5, p => B1.group.rotation.z = -1.5 * ease(p));
+      const ci = new THREE.Color(I2COL), cw = new THREE.Color(0xf2f7fb);
+      await tween(5, p => {
+        const st = etat(v1, v2, p); B1.setVolume(v1 * (1 - p)); B2.setVolume(v2 + v1 * p);
+        const conc = st.I2 / ((v2 + v1 * p) || 1); const k = Math.min(1, Math.sqrt(conc / (C1 * .5)));
+        B2.mat.color.lerpColors(cw, ci, k); B2.mat.opacity = .25 + .55 * k; bars(st);
+      });
+      await tween(.5, p => B1.group.rotation.z = -1.5 * (1 - ease(p)));
+      await tween(.7, p => B1.group.position.lerpVectors(up, pa, ease(p)));
+      const st = etat(v1, v2, 1); bars(st);
+      const col = st.I2 > 1e-6 ? 'jaune-orangé' : 'incolore';
+      const msg = `Mélange de ${v1} mL de S1 et ${v2} mL de S2 : la couleur du diiode disparaît au fur et à mesure du versement${st.I2 > 1e-6 ? ', puis persiste : la solution finale est jaune-orangé' : ' ; la solution finale est incolore'}. x = ${f2(st.x)} mmol.`;
+      observe(msg); say(msg);
+      S3.exps.push({ v1, v2, col });
+      if (v1 === 10 && v2 === 40) step('exp1'); if (v1 === 30 && v2 === 40) step('exp2');
+      return;
+    }
+    if (a.t === 'vider') {
+      if (S3.v1 == null && S3.v2 == null) { say('Il n\'y a rien à vider.'); return false; }
+      if (a.where === 'evier') { ST.evier++; observe('Vidage à l\'évier (interdit).'); say('<b>Interdit !</b> Les solutions de diiode vont dans le bidon de récupération.'); }
+      else { ST.bidon++; step('vider'); say('Béchers vidés dans le bidon. Tu peux faire une nouvelle expérience.'); }
+      await tween(.6, p => [B1, B2].forEach(v => v.setVolume(v.vol * (1 - p))));
+      this.resetScene(true); return;
+    }
+  },
+  async demo() {
+    say('Démonstration : expérience 1.');
+    adj3('v1', 10); await wait(400); await act({ t: 'm1', v: 10 }, { record: false });
+    for (let i = 0; i < 4; i++) { adj3('v2', 10); await wait(250); }
+    await act({ t: 'm2', v: 40 }, { record: false }); await act({ t: 'mix' }, { record: false }); await wait(1500);
+  },
+};
+function adj3(k, d) { if (BUSY) return; W3[k] = Math.max(0, Math.min(50, W3[k] + d)); (k === 'v1' ? E1 : E2).setVolume(W3[k]); C3.refreshPanel(); }
+startTP(C3);
+
+</script></body></html>

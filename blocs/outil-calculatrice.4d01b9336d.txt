@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculatrice scientifique · Ma science physique-chimie</title>
+<style>
+:root { --bg: #F8F6FA; --bg2: #E9E4F0; --ink: #24133a; --muted: #6b5a80; --prune: #4A148C; --prune-h: #380E6B; --p100: #EDE7F6; --p200: #D1C4E9; --rose: #c2185b; --ok: #1b7a46; --ok-bg: #e5f5ec; --ko: #b3261e; --ko-bg: #fdeceb; --card: #fff; }
+* { box-sizing: border-box; }
+html { background: #E9E4F0; } html, body { margin: 0; }
+body { font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%); min-height: 100vh; font-size: 15px; line-height: 1.45; }
+.page { max-width: 1180px; margin: 0 auto; padding: 14px 16px 40px; }
+a.retour { display: inline-block; color: var(--prune); font-weight: 700; text-decoration: none; margin-bottom: 8px; }
+a.retour:hover { text-decoration: underline; } a.btn { text-decoration: none; display: inline-block; }
+header.tete { background: var(--card); border: 1px solid var(--p200); border-radius: 16px; padding: 14px 18px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 18px; align-items: center; }
+.tete .sur { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.tete h1 { margin: 2px 0; font-size: 1.45rem; color: var(--prune); }
+.tete .prof { margin: 0; font-size: .85rem; color: var(--muted); }
+.onglets { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0 10px; }
+.onglets button { font: inherit; font-weight: 700; border: 1px solid var(--p200); background: var(--card); color: var(--prune); padding: 9px 16px; border-radius: 999px; cursor: pointer; }
+.onglets button[aria-selected="true"] { background: var(--prune); color: #fff; border-color: var(--prune); }
+.onglets button:hover:not([aria-selected="true"]) { background: var(--p100); }
+.grille { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 860px) { .grille { grid-template-columns: minmax(0, 1fr); } }
+.carte { background: var(--card); border: 1px solid var(--p200); border-radius: 16px; padding: 14px 16px; min-width: 0; }
+.carte h2 { font-size: 1.08rem; margin: 0 0 8px; color: var(--prune); }
+.carte h3 { font-size: .98rem; margin: 12px 0 6px; color: var(--prune); }
+.aide { font-size: .85rem; color: var(--muted); margin: 4px 0 8px; }
+.btn { font: inherit; font-weight: 700; background: var(--prune); color: #fff; border: 0; border-radius: 10px; padding: 9px 14px; cursor: pointer; transition: background .2s; }
+.btn:hover { background: var(--prune-h); }
+.btn.ghost { background: var(--card); color: var(--prune); border: 1px solid var(--p200); }
+.btn.ghost:hover { background: var(--p100); }
+.btn.petit { padding: 6px 10px; font-size: .85rem; }
+.btn:disabled { opacity: .5; cursor: default; }
+.rangee { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+input[type=text], input[type=number], textarea, select { font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--p200); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--prune); outline-offset: 1px; }
+textarea { width: 100%; resize: vertical; }
+label.ch { display: flex; flex-direction: column; gap: 3px; font-size: .82rem; color: var(--muted); font-weight: 700; }
+.ok { background: var(--ok-bg); color: var(--ok); border: 1px solid #a8dcbd; border-radius: 10px; padding: 8px 10px; font-weight: 700; }
+.ko { background: var(--ko-bg); color: var(--ko); border: 1px solid #f2b8b3; border-radius: 10px; padding: 8px 10px; }
+.cache { display: none !important; }
+/* ---- Calculatrice ---- */
+.ecran { background: #faf8fd; border: 1px solid var(--p200); border-radius: 14px; padding: 10px 12px; }
+.ecran input { width: 100%; font-size: 1.25rem; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; border: 0; background: transparent; padding: 4px 2px; }
+.ecran input:focus { outline: none; }
+.res { min-height: 2.2em; text-align: right; font-size: 1.5rem; font-weight: 700; color: var(--prune); overflow-x: auto; white-space: nowrap; }
+.res .sci { display: block; font-size: .95rem; color: var(--muted); font-weight: 600; }
+.res.err { color: var(--ko); font-size: 1rem; white-space: normal; }
+.options { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .85rem; margin: 8px 0; }
+.bascule { display: inline-flex; border: 1px solid var(--p200); border-radius: 999px; overflow: hidden; }
+.bascule button { font: inherit; font-weight: 700; font-size: .8rem; border: 0; background: #fff; color: var(--prune); padding: 5px 11px; cursor: pointer; }
+.bascule button[aria-pressed="true"] { background: var(--prune); color: #fff; }
+.clavier { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.clavier button { font: inherit; font-size: .98rem; font-weight: 700; min-height: 42px; border-radius: 10px; border: 1px solid var(--p200); background: #fff; color: var(--ink); cursor: pointer; padding: 4px 2px; }
+.clavier button:hover { background: var(--p100); }
+.clavier button.f { color: var(--prune); background: #f6f2fb; font-size: .88rem; }
+.clavier button.op { background: var(--p100); color: var(--prune); }
+.clavier button.eg { background: var(--prune); color: #fff; border-color: var(--prune); }
+.clavier button.eg:hover { background: var(--prune-h); }
+.clavier button.ef { color: var(--rose); }
+@media (max-width: 420px) { .clavier button { min-height: 40px; font-size: .9rem; } }
+.histo { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow: auto; }
+.histo li { border-bottom: 1px solid var(--p100); padding: 6px 2px; cursor: pointer; }
+.histo li:hover { background: #faf8fd; }
+.histo .e { font-family: ui-monospace, Consolas, monospace; font-size: .85rem; color: var(--muted); word-break: break-all; }
+.histo .r { font-weight: 700; text-align: right; color: var(--prune); }
+.consts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.consts button { font: inherit; text-align: left; font-size: .8rem; border: 1px solid var(--p200); background: #fff; border-radius: 10px; padding: 6px 8px; cursor: pointer; color: var(--ink); }
+.consts button b { color: var(--prune); }
+.consts button:hover { background: var(--p100); }
+details.repli > summary { cursor: pointer; font-weight: 700; color: var(--prune); padding: 4px 0; }
+code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: .88em; background: #f6f2fb; padding: 1px 4px; border-radius: 5px; }
+/* ---- Graphe ---- */
+.fonctions .lf { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+.pastille { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+.fenetre { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.zone-graphe { position: relative; width: 100%; aspect-ratio: 16 / 11; border: 1px solid var(--p200); border-radius: 12px; overflow: hidden; background: #fff; touch-action: none; }
+.zone-graphe canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+.lecture { font-size: .85rem; color: var(--muted); min-height: 1.4em; margin-top: 4px; }
+table.t { border-collapse: collapse; width: 100%; font-size: .85rem; }
+table.t th, table.t td { border: 1px solid var(--p100); padding: 4px 6px; text-align: right; }
+table.t th { background: #f6f2fb; color: var(--prune); }
+.tab-defile { max-height: 260px; overflow: auto; }
+/* ---- Incertitudes ---- */
+.sous-onglets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.sous-onglets button { font: inherit; font-size: .85rem; font-weight: 700; border: 1px solid var(--p200); background: #fff; color: var(--prune); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.sous-onglets button[aria-selected="true"] { background: var(--p100); border-color: var(--prune); }
+.formule { background: #faf8fd; border-left: 4px solid var(--prune); border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: .95rem; }
+.resultat { font-size: 1.15rem; font-weight: 700; color: var(--prune); background: var(--p100); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+.l2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.tvars td input { width: 100%; }
+.tvars td { padding: 3px; }
+canvas#histoA { width: 100%; height: 170px; border: 1px solid var(--p100); border-radius: 10px; background: #fff; }
+/* ---- Travail ---- */
+.journal { list-style: none; padding: 0; margin: 0; }
+.journal li { border: 1px solid var(--p100); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; background: #fdfcfe; }
+.journal li .t { font-weight: 700; color: var(--prune); font-size: .88rem; display: flex; justify-content: space-between; gap: 8px; }
+.journal li .t button { font: inherit; font-size: .75rem; border: 0; background: none; color: var(--ko); cursor: pointer; }
+.journal li pre { margin: 4px 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: .88rem; }
+.journal li img { max-width: 100%; border-radius: 8px; border: 1px solid var(--p100); margin-top: 4px; }
+.journal-vide { color: var(--muted); font-size: .88rem; }
+.zone-code { font-family: ui-monospace, Consolas, monospace; font-size: .75rem; }
+.securite { margin-top: 16px; background: #fff7e6; border: 1px solid #f3d29a; border-radius: 12px; padding: 10px 14px; font-size: .88rem; color: #6b4a00; }
+.toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--prune); color: #fff; padding: 8px 16px; border-radius: 999px; font-weight: 700; font-size: .9rem; box-shadow: 0 6px 18px rgba(74,20,140,.3); z-index: 10; }
+.chargement { padding: 30px; text-align: center; color: var(--muted); }
+/* ---- Calculatrice graphique (design EFIR) ---- */
+.grille-g { display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grille-g { grid-template-columns: minmax(0, 1fr); } }
+.tg { background: linear-gradient(165deg, #5b1fa3 0%, #4A148C 45%, #2f0b5c 100%); border-radius: 30px 30px 44px 44px; padding: 16px 14px 20px; box-shadow: 0 14px 34px rgba(74,20,140,.35), inset 0 1px 0 rgba(255,255,255,.18); outline: none; max-width: 430px; width: 100%; margin: 0 auto; }
+.tg:focus-visible { box-shadow: 0 0 0 3px #F4B4C1, 0 14px 34px rgba(74,20,140,.35); }
+.tg-haut { display: flex; justify-content: space-between; align-items: center; color: #F4B4C1; font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; padding: 0 8px 8px; }
+.tg-ecran { background: #fbfaf6; border-radius: 14px; border: 6px solid #241238; box-shadow: inset 0 2px 8px rgba(0,0,0,.18); display: flex; flex-direction: column; height: 268px; overflow: hidden; color: #24133a; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .86rem; }
+.tg-etat { display: flex; gap: 8px; font-size: .64rem; font-weight: 700; color: #6b5a80; padding: 3px 7px; border-bottom: 1px solid #e4dcef; background: #f4f0fa; }
+.tg-etat .tg-2 { margin-left: auto; color: transparent; }
+.tg-etat .tg-2.on { color: #fff; background: #c2185b; border-radius: 4px; padding: 0 5px; }
+.tg-vue { flex: 1; overflow-y: auto; padding: 4px 8px; }
+#tgCv { flex: 1; width: 100%; min-height: 0; display: block; }
+#tgCv.cache { display: none; }
+.tg-pied { font-size: .64rem; color: #6b5a80; padding: 2px 7px; border-top: 1px solid #e4dcef; min-height: 1.3em; background: #f4f0fa; }
+.tg-e { word-break: break-all; }
+.tg-r { text-align: right; font-weight: 700; color: #4A148C; margin-bottom: 3px; word-break: break-all; }
+.tg-r.tg-multi { text-align: left; font-weight: 600; background: #f4f0fa; border-radius: 6px; padding: 3px 6px; }
+.tg-r.tg-err { color: #b3261e; text-align: left; font-weight: 700; }
+.tg-in { min-height: 1.3em; word-break: break-all; }
+.tg-cur { background: #4A148C; color: #fff; animation: tgclig 1s steps(1) infinite; }
+@keyframes tgclig { 50% { background: transparent; color: inherit; } }
+@media (prefers-reduced-motion: reduce) { .tg-cur { animation: none; } }
+.tg-titre { font-weight: 700; color: #4A148C; margin: 2px 0 4px; }
+.tg-tabs { display: flex; gap: 4px; margin-bottom: 4px; flex-wrap: wrap; }
+.tg-tabs span { padding: 1px 7px; border-radius: 5px; cursor: pointer; font-weight: 700; color: #6b5a80; }
+.tg-tabs span.on { background: #4A148C; color: #fff; }
+.tg-it, .tg-y { padding: 2px 5px; border-radius: 5px; cursor: pointer; word-break: break-all; }
+.tg-it.on, .tg-y.sel { background: #EDE7F6; }
+.tg-mode { padding: 3px 4px; border-radius: 5px; }
+.tg-mode.sel { background: #EDE7F6; }
+.tg-mode b { display: block; font-size: .72rem; color: #6b5a80; }
+.tg-mode span { display: inline-block; padding: 0 6px; margin: 1px 2px 1px 0; border-radius: 5px; cursor: pointer; }
+.tg-mode span.on { background: #4A148C; color: #fff; }
+.tg-tab { border-collapse: collapse; width: 100%; font-size: .8rem; }
+.tg-tab th, .tg-tab td { border: 1px solid #e4dcef; padding: 2px 5px; text-align: right; height: 1.45em; }
+.tg-tab th { background: #f4f0fa; color: #4A148C; text-align: center; }
+.tg-tab th.on { background: #4A148C; color: #fff; }
+.tg-tab td { cursor: pointer; }
+.tg-tab td.sel { background: #EDE7F6; outline: 2px solid #4A148C; outline-offset: -2px; }
+.tg-clavier { margin-top: 14px; display: grid; gap: 4px; }
+.tg-rang { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.tg-r0 { margin-bottom: 4px; }
+.tg-k { display: flex; flex-direction: column; align-items: center; }
+.tg-l2 { font-size: .6rem; line-height: 1.1; min-height: 1.1em; color: #F4B4C1; font-weight: 700; white-space: nowrap; }
+.tg-k.sec-on .tg-l2:not(:empty) { color: #fff; text-shadow: 0 0 6px #F4B4C1; }
+.tg-k button { width: 100%; font: inherit; font-weight: 700; font-size: .82rem; border: 0; border-radius: 10px; min-height: 34px; cursor: pointer; padding: 3px 2px; box-shadow: 0 2px 0 rgba(0,0,0,.28); transition: transform .05s, filter .15s; }
+.tg-k button:active { transform: translateY(2px); box-shadow: none; }
+.tg-k button:hover { filter: brightness(1.08); }
+.tg-k button.kt { background: #D1C4E9; color: #2f0b5c; border-radius: 7px; min-height: 26px; font-size: .72rem; }
+.tg-k button.kfn { background: #6a2fb3; color: #fff; }
+.tg-k button.kf { background: #8e6cc0; color: #fff; }
+.tg-k button.k2 { background: #c2185b; color: #fff; }
+.tg-k button.kn { background: #F8F6FA; color: #24133a; font-size: .98rem; }
+.tg-k button.kop { background: #EDE7F6; color: #4A148C; font-size: 1rem; }
+.tg-k button.kc { background: #9a8bb0; color: #fff; }
+.tg-k button.ke { background: #F4B4C1; color: #2f0b5c; }
+.exemples-g code { white-space: nowrap; }
+.exemples-g li { margin-bottom: 4px; }
+@media print { .onglets, .retour, .clavier, button { display: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="retour" href="#" id="retour">← Outils numériques</a>
+  <header class="tete">
+    <div>
+      <p class="sur">EFIR · Outil numérique · Physique-chimie · 3e à Terminale</p>
+      <h1>Calculatrice scientifique</h1>
+      <p class="prof">Calculs, calculatrice graphique, complexes, graphes et incertitudes · Professeure : Mme Messaoudi · EFIR · 2026-2027</p>
+    </div>
+    <div class="rangee" style="margin:0">
+      <a class="btn ghost petit" href="#travail" id="allerTravail">📋 Mon travail (<span id="nbTravail">0</span>)</a>
+    </div>
+  </header>
+
+  <nav class="onglets" role="tablist" aria-label="Modules">
+    <button role="tab" aria-selected="true" data-onglet="calc">🧮 Calculatrice</button>
+    <button role="tab" aria-selected="false" data-onglet="graphique">📟 Calculatrice graphique</button>
+    <button role="tab" aria-selected="false" data-onglet="graphe">📈 Graphes</button>
+    <button role="tab" aria-selected="false" data-onglet="incert">🎯 Incertitudes</button>
+    <button role="tab" aria-selected="false" data-onglet="travail">📋 Mon travail</button>
+  </nav>
+
+  <div id="attente" class="carte chargement">Chargement de la calculatrice…</div>
+
+  <!-- ================= CALCULATRICE ================= -->
+  <section id="o-calc" class="grille cache" role="tabpanel">
+    <div class="carte">
+      <h2>Calcul</h2>
+      <div class="ecran">
+        <input type="text" id="expr" autocomplete="off" spellcheck="false" inputmode="text" aria-label="Expression à calculer" placeholder="Ex. : 6,02×10^23 × 0,15">
+        <div class="res" id="res" aria-live="polite"></div>
+      </div>
+      <div class="options">
+        <span class="bascule" role="group" aria-label="Unité d'angle"><button type="button" data-ang="deg" aria-pressed="true">DEG</button><button type="button" data-ang="rad" aria-pressed="false">RAD</button></span>
+        <label>Chiffres significatifs
+          <select id="cs"><option value="0">auto</option><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label>
+        <button class="btn ghost petit" type="button" id="ajCalc">➕ Ajouter à mon travail</button>
+      </div>
+      <div class="clavier" id="clavier"></div>
+      <details class="repli" style="margin-top:10px"><summary>❓ Aide : comment écrire un calcul</summary>
+        <ul class="aide">
+          <li>Virgule ou point pour les décimales : <code>2,5</code> ou <code>2.5</code>. Séparateur dans une fonction : <code>;</code> (ex. <code>nthRoot(27;3)</code>).</li>
+          <li>Puissances de dix : <code>6,02×10^23</code> ou <code>6,02e23</code>. Puissance : <code>^</code>, racine : <code>√(…)</code>.</li>
+          <li><code>log</code> = logarithme décimal (pH = −log[H₃O⁺]) ; <code>ln</code> = logarithme népérien ; <code>exp</code> = exponentielle.</li>
+          <li>Mémoire : <code>Ans</code> = dernier résultat. Variables : écrivez <code>m = 2,5</code> puis utilisez <code>m</code>.</li>
+          <li>Conversions d'unités : <code>72 km/h to m/s</code>, <code>250 mL to L</code>, <code>1,5 kWh to J</code>, <code>25 degC to K</code>.</li>
+          <li>Touche <b>Entrée</b> = calculer ; flèches ↑ ↓ = reprendre un calcul précédent.</li>
+        </ul>
+      </details>
+    </div>
+    <div style="display:grid;gap:14px;min-width:0">
+      <div class="carte">
+        <h2>Historique</h2>
+        <p class="aide">Cliquez sur un calcul pour le reprendre. Chaque calcul est aussi noté dans « Mon travail ».</p>
+        <ul class="histo" id="histo"></ul>
+      </div>
+      <div class="carte">
+        <h2>Constantes et données utiles</h2>
+        <p class="aide">Un clic insère la valeur dans le calcul.</p>
+        <div class="consts" id="consts"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CALCULATRICE GRAPHIQUE ================= -->
+  <section id="o-graphique" class="grille-g cache" role="tabpanel">
+    <div class="tg" id="tg" tabindex="0" aria-label="Calculatrice graphique : cliquez puis utilisez le clavier">
+      <div class="tg-haut"><span>EFIR · graphique</span><span>Physique-chimie</span></div>
+      <div class="tg-ecran"><div class="tg-etat" id="tgEtat"></div><div class="tg-vue" id="tgVue"></div><canvas id="tgCv" class="cache" aria-label="Graphe"></canvas><div class="tg-pied" id="tgPied"></div></div>
+      <div class="tg-clavier" id="tgClavier"></div>
+    </div>
+    <div class="carte">
+      <h2>Calculatrice graphique de lycée</h2>
+      <p class="aide">Les mêmes fonctions qu'une calculatrice graphique du lycée. La touche rose <b>2nde</b> donne la fonction écrite en rose au-dessus de chaque touche. Vous pouvez aussi taper au clavier de l'ordinateur après avoir cliqué sur la calculatrice.</p>
+      <div class="rangee"><button class="btn petit" type="button" id="tgAj">➕ Ajouter l'écran à mon travail</button><button class="btn ghost petit" type="button" id="tgReset">⟲ Réinitialiser</button></div>
+      <details class="repli" open><summary>🔺 Trigonométrie et angles</summary><ul class="aide exemples-g">
+        <li><b>mode</b> : choisir DEGRÉ ou RADIAN (indiqué en haut de l'écran).</li>
+        <li><code>sin(30)</code> en degrés → 0,5 ; <b>2nde sin</b> donne <code>sin⁻¹</code> : <code>asin(0,5)</code> → 30.</li>
+        <li><b>2nde math</b> (angle) : forcer l'unité, ex. <code>cos((π/3)ʳ)</code> ou <code>sin(30°)</code> quel que soit le mode.</li></ul></details>
+      <details class="repli"><summary>ⅈ Nombres complexes</summary><ul class="aide exemples-g">
+        <li><b>mode</b> → Nombres : <b>a+bi</b> (forme algébrique) ou <b>r·e^(θi)</b> (forme exponentielle).</li>
+        <li><b>2nde cplx</b> donne <code>i</code> : <code>(2+3i)(1−i)</code>, <code>√(−4)</code>, <code>e^(iπ/2)</code>.</li>
+        <li>Menu <b>cplx</b> : conj, re, im, arg, abs (module), ►Rect et ►Polaire pour changer l'écriture d'un résultat.</li></ul></details>
+      <details class="repli"><summary>🎯 Listes, statistiques et incertitudes</summary><ul class="aide exemples-g">
+        <li><b>2nde stat</b> (listes) : saisir les mesures dans L1 (entrer après chaque valeur).</li>
+        <li><b>stat › CALC › Stats 1 variable</b> : x̄, Sx (écart-type n−1), σx, n, quartiles, u(x̄) = Sx/√n et le résultat écrit.</li>
+        <li><b>stat › INCERT</b> : <code>uA(L1)</code>, <code>uB(0,1)</code> (graduation/√12), <code>uTol(0,05)</code> (a/√3), <code>z(9,81;0,02;9,80)</code>, <code>ecrire(9,809;0,0083)</code>.</li>
+        <li><b>stat › CALC › Régression linéaire</b> avec L1 (x) et L2 (y) : a, b, r et r².</li></ul></details>
+      <details class="repli"><summary>📈 Graphes</summary><ul class="aide exemples-g">
+        <li><b>f(x)=</b> : écrire jusqu'à 4 fonctions de <code>X</code>, ex. <code>Y1 = 10^(−X)</code>.</li>
+        <li><b>fenêtre</b> : Xmin, Xmax, Ymin, Ymax ; <b>graphe</b> : tracer ; <b>trace</b> : lire les coordonnées avec ◄ ► (▲ ▼ change de courbe) ; <b>table</b> : tableau de valeurs.</li></ul></details>
+      <details class="repli"><summary>⌨ Autres touches</summary><ul class="aide exemples-g">
+        <li><b>annul</b> efface la ligne (une 2e fois : tout l'écran) ; <b>2nde mode</b> = quitter ; ▲ ▼ rappellent les calculs précédents.</li>
+        <li><b>2nde (−)</b> = Ans (dernier résultat) ; <b>2nde X</b> (ou la touche <code>&gt;</code> du clavier) = <code>→</code> pour stocker : <code>2,5→A</code>, <code>{1;2;3}→L2</code>.</li></ul></details>
+    </div>
+  </section>
+
+  <!-- ================= GRAPHES ================= -->
+  <section id="o-graphe" class="grille cache" role="tabpanel">
+    <div class="carte">
+      <h2>Tracé de courbes</h2>
+      <div class="zone-graphe"><canvas id="cv" aria-label="Graphique des fonctions"></canvas></div>
+      <div class="lecture" id="lecture">Glissez pour déplacer, molette ou boutons pour zoomer. Survolez une courbe pour lire ses coordonnées.</div>
+      <div class="rangee">
+        <button class="btn ghost petit" type="button" id="zPlus">🔍 +</button>
+        <button class="btn ghost petit" type="button" id="zMoins">🔍 −</button>
+        <button class="btn ghost petit" type="button" id="zAuto">↕ Ajuster y</button>
+        <button class="btn ghost petit" type="button" id="zInit">⟲ Fenêtre standard</button>
+        <button class="btn petit" type="button" id="ajGraphe">➕ Ajouter le graphe à mon travail</button>
+      </div>
+    </div>
+    <div style="display:grid;gap:14px;min-width:0">
+      <div class="carte fonctions">
+        <h2>Fonctions</h2>
+        <p class="aide">Variable <code>x</code>. Ex. : <code>0,5×9,81×x^2</code>, <code>10^(-x)</code>, <code>exp(-x/2)</code>, <code>sin(x)</code> (radians dans les graphes).</p>
+        <div id="lignesF"></div>
+        <h3>Axes</h3>
+        <div class="fenetre">
+          <label class="ch">x min<input type="text" id="xmin" value="-10"></label>
+          <label class="ch">x max<input type="text" id="xmax" value="10"></label>
+          <label class="ch">y min<input type="text" id="ymin" value="-7"></label>
+          <label class="ch">y max<input type="text" id="ymax" value="7"></label>
+        </div>
+        <div class="l2" style="margin-top:6px">
+          <label class="ch">Nom de l'axe x<input type="text" id="nomX" placeholder="ex. t (s)"></label>
+          <label class="ch">Nom de l'axe y<input type="text" id="nomY" placeholder="ex. v (m/s)"></label>
+        </div>
+        <div class="rangee"><button class="btn petit" type="button" id="tracer">Tracer</button></div>
+        <div id="errG" class="ko cache"></div>
+      </div>
+      <div class="carte">
+        <h2>Calculer une image et tableau de valeurs</h2>
+        <div class="l2">
+          <label class="ch">Fonction<select id="tvF"><option value="0">f</option><option value="1">g</option><option value="2">h</option></select></label>
+          <label class="ch">x de départ<input type="text" id="tvD" value="0"></label>
+          <label class="ch">Pas<input type="text" id="tvP" value="1"></label>
+          <label class="ch">Nombre de lignes<input type="number" id="tvN" value="11" min="2" max="200"></label>
+        </div>
+        <div class="rangee"><button class="btn ghost petit" type="button" id="tvGo">Afficher le tableau</button><button class="btn ghost petit" type="button" id="tvAj">➕ Ajouter le tableau à mon travail</button></div>
+        <div class="tab-defile" id="tvRes"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INCERTITUDES ================= -->
+  <section id="o-incert" class="cache" role="tabpanel">
+    <div class="carte">
+      <div class="sous-onglets" role="tablist" aria-label="Type de calcul d'incertitude">
+        <button role="tab" aria-selected="true" data-io="A">Type A : série de mesures</button>
+        <button role="tab" aria-selected="false" data-io="B">Type B : une seule mesure</button>
+        <button role="tab" aria-selected="false" data-io="C">Incertitude composée</button>
+        <button role="tab" aria-selected="false" data-io="Z">Écart normalisé (z)</button>
+        <button role="tab" aria-selected="false" data-io="R">Écrire un résultat</button>
+      </div>
+
+      <!-- Type A -->
+      <div id="io-A" class="grille">
+        <div>
+          <h2>Évaluation de type A (mesures répétées)</h2>
+          <p class="aide">Tapez ou collez les N valeurs mesurées, séparées par des espaces, des points-virgules ou des retours à la ligne (virgule décimale acceptée).</p>
+          <textarea id="aVals" rows="5" placeholder="Ex. : 9,78 9,82 9,80 9,85 9,79 9,81 9,83"></textarea>
+          <div class="l2" style="margin-top:6px">
+            <label class="ch">Grandeur (symbole)<input type="text" id="aNom" value="g"></label>
+            <label class="ch">Unité<input type="text" id="aUnite" placeholder="ex. m/s²"></label>
+            <label class="ch">Chiffres significatifs de u<select id="aCs"><option>1</option><option selected>2</option></select></label>
+          </div>
+          <div class="rangee"><button class="btn" type="button" id="aGo">Calculer</button><button class="btn ghost" type="button" id="aEx">Exemple</button></div>
+        </div>
+        <div>
+          <div id="aRes"></div>
+          <canvas id="histoA" class="cache"></canvas>
+          <div class="rangee"><button class="btn ghost petit cache" type="button" id="aAj">➕ Ajouter à mon travail</button></div>
+        </div>
+      </div>
+
+      <!-- Type B -->
+      <div id="io-B" class="grille cache">
+        <div>
+          <h2>Évaluation de type B (une seule mesure)</h2>
+          <label class="ch">Situation
+            <select id="bType">
+              <option value="grad">Lecture sur un instrument gradué (une lecture)</option>
+              <option value="double">Double lecture sur une règle graduée (deux extrémités)</option>
+              <option value="tol">Verrerie ou instrument avec tolérance ± a (fabricant)</option>
+              <option value="num">Appareil numérique : précision ± (p % de la lecture + n digits)</option>
+              <option value="res">Appareil numérique : résolution de l'affichage seule</option>
+            </select></label>
+          <div class="l2" style="margin-top:8px">
+            <label class="ch">Valeur mesurée<input type="text" id="bVal" placeholder="ex. 12,5"></label>
+            <label class="ch">Unité<input type="text" id="bUnite" placeholder="ex. mL"></label>
+            <label class="ch" id="bL1">Graduation<input type="text" id="bP1" placeholder="ex. 0,1"></label>
+            <label class="ch cache" id="bL2">Nombre de digits n<input type="text" id="bP2" value="2"></label>
+            <label class="ch">Chiffres significatifs de u<select id="bCs"><option>1</option><option selected>2</option></select></label>
+          </div>
+          <div class="formule" id="bFormule"></div>
+          <div class="rangee"><button class="btn" type="button" id="bGo">Calculer</button></div>
+        </div>
+        <div><div id="bRes"></div><div class="rangee"><button class="btn ghost petit cache" type="button" id="bAj">➕ Ajouter à mon travail</button></div></div>
+      </div>
+
+      <!-- Composée -->
+      <div id="io-C" class="grille cache">
+        <div>
+          <h2>Incertitude-type composée</h2>
+          <p class="aide">Écrivez la relation qui donne la grandeur calculée, puis la valeur et l'incertitude-type de chaque grandeur mesurée.</p>
+          <div class="l2">
+            <label class="ch">Grandeur calculée<input type="text" id="cNom" value="C"></label>
+            <label class="ch">Unité<input type="text" id="cUnite" placeholder="ex. mol/L"></label>
+          </div>
+          <label class="ch" style="margin-top:6px"><span>Relation (ex. <span class="mono">m/(M*V)</span>, <span class="mono">C1*V1/V2</span>, <span class="mono">2*h/t^2</span>)</span><input type="text" id="cExpr" value="m/(M*V)"></label>
+          <div class="rangee"><button class="btn ghost petit" type="button" id="cVars">Lire les grandeurs de la relation</button>
+            <label style="font-size:.85rem">u à <select id="cCs"><option>1</option><option selected>2</option></select> chiffre(s) significatif(s)</label></div>
+          <table class="t tvars"><thead><tr><th>Grandeur</th><th>Valeur</th><th>Incertitude-type u</th></tr></thead><tbody id="cTab"></tbody></table>
+          <div class="rangee"><button class="btn" type="button" id="cGo">Calculer</button><button class="btn ghost" type="button" id="cEx">Exemple</button></div>
+        </div>
+        <div><div id="cRes"></div><div class="rangee"><button class="btn ghost petit cache" type="button" id="cAj">➕ Ajouter à mon travail</button></div></div>
+      </div>
+
+      <!-- z -->
+      <div id="io-Z" class="grille cache">
+        <div>
+          <h2>Comparer à une valeur de référence : écart normalisé</h2>
+          <div class="l2">
+            <label class="ch">Valeur mesurée x<input type="text" id="zX" placeholder="ex. 9,81"></label>
+            <label class="ch">Incertitude-type u(x)<input type="text" id="zU" placeholder="ex. 0,02"></label>
+            <label class="ch">Valeur de référence x<sub>réf</sub><input type="text" id="zR" placeholder="ex. 9,80"></label>
+            <label class="ch">u(x<sub>réf</sub>) (facultatif)<input type="text" id="zUR" placeholder="0 si inconnue"></label>
+          </div>
+          <div class="formule">z = |x − x<sub>réf</sub>| / u(x) &nbsp; (ou / √(u(x)² + u(x<sub>réf</sub>)²) si la référence a une incertitude)<br>Le résultat est jugé <b>compatible</b> avec la référence si z ≤ 2.</div>
+          <div class="rangee"><button class="btn" type="button" id="zGo">Calculer z</button></div>
+        </div>
+        <div><div id="zRes"></div><div class="rangee"><button class="btn ghost petit cache" type="button" id="zAj">➕ Ajouter à mon travail</button></div></div>
+      </div>
+
+      <!-- Écriture -->
+      <div id="io-R" class="grille cache">
+        <div>
+          <h2>Écrire correctement un résultat de mesure</h2>
+          <div class="l2">
+            <label class="ch">Grandeur<input type="text" id="rNom" value="m"></label>
+            <label class="ch">Valeur calculée<input type="text" id="rV" placeholder="ex. 0,0123456"></label>
+            <label class="ch">Incertitude-type u<input type="text" id="rU" placeholder="ex. 0,000234"></label>
+            <label class="ch">Unité<input type="text" id="rUnite" placeholder="ex. kg"></label>
+            <label class="ch">Chiffres significatifs de u<select id="rCs"><option>1</option><option selected>2</option></select></label>
+          </div>
+          <div class="formule">Règle : on arrondit u <b>par excès</b> à 1 ou 2 chiffres significatifs, puis on arrondit la valeur au <b>même rang décimal</b> que u. On écrit : grandeur = (valeur ± u) unité.</div>
+          <div class="rangee"><button class="btn" type="button" id="rGo">Écrire le résultat</button></div>
+        </div>
+        <div><div id="rRes"></div><div class="rangee"><button class="btn ghost petit cache" type="button" id="rAj">➕ Ajouter à mon travail</button></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MON TRAVAIL ================= -->
+  <section id="o-travail" class="grille cache" role="tabpanel">
+    <div class="carte">
+      <h2>Mon travail</h2>
+      <p class="aide">Vos calculs, graphes et incertitudes s'ajoutent ici. Tout est enregistré dans ce navigateur. Cliquez sur « Télécharger mon bilan », puis déposez le PDF dans le devoir Google Classroom.</p>
+      <ul class="journal" id="journal"></ul>
+    </div>
+    <div class="carte">
+      <h2>Rendre mon travail</h2>
+      <div class="l2">
+        <label class="ch">Nom et prénom<input type="text" id="eleve" autocomplete="name" placeholder="ex. Dupont Léa"></label>
+        <label class="ch">Classe<input type="text" id="classe" placeholder="ex. TS2"></label>
+      </div>
+      <label class="ch" style="margin-top:8px">Exercice ou activité concerné(e)<input type="text" id="sujet" placeholder="ex. Exercice 12 p. 45, TP pH"></label>
+      <label class="ch" style="margin-top:8px">Mes remarques, ma conclusion<textarea id="remarques" rows="4" placeholder="Expliquez vos calculs et concluez."></textarea></label>
+      <div class="rangee" style="margin-top:10px">
+        <button class="btn" type="button" id="envoyer">📄 Télécharger mon bilan</button>
+        <button class="btn" type="button" id="pdf">⬇ Télécharger mon travail (PDF)</button>
+      </div>
+      <p class="aide" id="envoiMsg" role="status" aria-live="polite"></p>
+      <div id="codeZone" class="cache">
+        <p class="aide">Si le PDF ne se télécharge pas, copiez ce code et collez-le dans le devoir Google Classroom (commentaire privé).</p>
+        <textarea id="code" class="zone-code" rows="3" readonly></textarea>
+        <div class="rangee"><button class="btn ghost petit" type="button" id="copier">Copier le code</button></div>
+      </div>
+      <p class="aide">Déposez aussi le PDF dans le devoir Google Classroom : <b>Ajouter › Fichier</b>, puis <b>Rendre</b>.</p>
+      <div class="rangee"><button class="btn ghost petit" type="button" id="effacer">🗑 Effacer mon travail</button></div>
+      <div id="confEff" class="ko cache">Tout votre travail enregistré sera supprimé. <div class="rangee"><button class="btn petit" type="button" id="effOui">Oui, effacer</button><button class="btn ghost petit" type="button" id="effNon">Annuler</button></div></div>
+    </div>
+  </section>
+
+  <div class="securite"><b>Rappel :</b> une calculatrice ne remplace pas le raisonnement. Écrivez toujours la formule littérale, vérifiez l'unité et l'ordre de grandeur du résultat, et gardez le bon nombre de chiffres significatifs.</div>
+</div>
+<div class="toast cache" id="toast"></div>
+
+<script>
+(function () {
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const TITRE = "Calculatrice scientifique", ID = "outil-calculatrice", CLE = "efir-outil-calculatrice-v1";
+$("#retour").onclick = e => { e.preventDefault(); try { parent.location.hash = "outils"; } catch (x) { location.hash = ""; } };
+
+/* ---------- chargement de math.js (cdnjs, puis jsdelivr en secours) ---------- */
+function charge(urls, ok, ko) { if (!urls.length) return ko(); const s = document.createElement("script"); s.src = urls[0]; s.onload = ok; s.onerror = () => { s.remove(); charge(urls.slice(1), ok, ko); }; document.head.appendChild(s); }
+charge(["lib/math-11.11.0.js", "https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.js"], demarre,
+  () => { $("#attente").innerHTML = "La calculatrice n'a pas pu se charger : vérifiez la connexion Internet puis rechargez la page (F5)."; });
+
+/* ---------- état sauvegardé ---------- */
+let S = { t0: Date.now(), journal: [], eleve: "", classe: "", sujet: "", remarques: "", histo: [], f: ["0,5*9,81*x^2", "", ""] };
+try { const o = JSON.parse(localStorage.getItem(CLE)); if (o && Array.isArray(o.journal)) S = Object.assign(S, o); } catch (e) {}
+function sauve() { try { localStorage.setItem(CLE, JSON.stringify(S)); } catch (e) { try { const c = Object.assign({}, S, { journal: S.journal.map(j => Object.assign({}, j, { img: undefined })) }); localStorage.setItem(CLE, JSON.stringify(c)); } catch (e2) {} } }
+function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.remove("cache"); clearTimeout(toast.k); toast.k = setTimeout(() => e.classList.add("cache"), 1800); }
+function ajoute(type, titre, texte, img) { S.journal.push({ t: Date.now(), type, titre, texte, img }); if (S.journal.length > 120) S.journal.shift(); sauve(); rendJournal(); toast("Ajouté à « Mon travail »"); }
+
+/* ---------- nombres à la française ---------- */
+const SUP = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+const sup = n => String(n).split("").map(c => SUP[c] || c).join("");
+const virg = s => String(s).replace(".", ",");
+function lireNombre(s) { if (s == null) return NaN; s = String(s).trim().replace(/\s/g, "").replace(",", ".").replace(/[×x]10\^?\(?([-+−]?\d+)\)?$/i, "e$1").replace("−", "-"); if (s === "") return NaN; return Number(s); }
+function sci(x, cs) { if (!isFinite(x)) return String(x); if (x === 0) return "0"; let e = Math.floor(Math.log10(Math.abs(x))), m = x / Math.pow(10, e);
+  m = Number(m.toFixed(cs - 1)); if (Math.abs(m) >= 10) { m /= 10; e++; m = Number(m.toFixed(cs - 1)); } const ms = virg(m.toFixed(cs - 1)); return e === 0 ? ms : ms + " × 10" + sup(e); }
+function joli(x, cs) { /* cs = 0 : automatique (jusqu'à 10 chiffres) */
+  if (typeof x !== "number") return String(x); if (!isFinite(x)) return isNaN(x) ? "non défini" : (x > 0 ? "+∞" : "−∞"); if (x === 0) return "0";
+  const a = Math.abs(x); if (!cs) { if (a >= 1e6 || a < 1e-4) return sci(x, Math.min(10, sigAuto(x))); return virg(String(Number(x.toPrecision(10)))).replace("-", "−"); }
+  if (a >= 1e4 || a < 1e-3) return sci(x, cs).replace("-", "−"); return virg(x.toPrecision(cs)).replace("-", "−"); }
+function sigAuto(x) { const s = Number(x.toPrecision(10)).toExponential(); return Math.max(1, s.split("e")[0].replace(/[-.]/g, "").length); }
+function decimalesAuto(x) { return virg(String(Number(x.toPrecision(12)))).replace("-", "−"); }
+
+/* ---------- moteur de calcul ---------- */
+let M, scope = {}, angle = "deg";
+function prepare(s) { return String(s).replace(/(\d),(\d)/g, "$1.$2").replace(/;/g, ",").replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/π/g, "pi")
+  .replace(/√/g, "sqrt").replace(/²/g, "^2").replace(/³/g, "^3").replace(/·/g, "*").replace(/\bAns\b/g, "Ans").replace(/°C/g, "degC"); }
+function fonctionsAngle(mode) { const k = mode === "deg" ? Math.PI / 180 : 1, n = v => typeof v === "number" ? v : M.number(v);
+  return { sin: v => Math.sin(n(v) * k), cos: v => Math.cos(n(v) * k), tan: v => Math.tan(n(v) * k), asin: v => Math.asin(n(v)) / k, acos: v => Math.acos(n(v)) / k, atan: v => Math.atan(n(v)) / k,
+    ln: v => Math.log(n(v)), log: (v, b) => b === undefined ? Math.log10(n(v)) : Math.log(n(v)) / Math.log(n(b)) }; }
+function evalue(expr, mode, extra) { return M.evaluate(prepare(expr), Object.assign(scope, fonctionsAngle(mode || angle), extra || {})); }
+function texteRes(v, cs) {
+  if (typeof v === "number") return { p: joli(v, cs), s: v !== 0 && isFinite(v) && (Math.abs(v) >= 1000 || Math.abs(v) < 0.1) ? sci(v, cs || Math.min(6, sigAuto(v))).replace("-", "−") : "" };
+  if (v && v.isUnit) { const n = v.toNumber(), u = v.formatUnits(); return { p: joli(n, cs) + " " + u, s: "" }; }
+  if (typeof v === "boolean") return { p: v ? "vrai" : "faux", s: "" };
+  if (typeof v === "function") return { p: "fonction définie", s: "" };
+  if (v && v.isResultSet) return texteRes(v.entries[v.entries.length - 1], cs);
+  return { p: virg(M.format(v, { precision: 10 })), s: "" }; }
+
+function demarre() {
+  M = math.create(math.all, { predictable: true });
+  $("#attente").remove(); montrer("calc"); initCalc(); initGraphe(); initGraphique(); initIncert(); initTravail();
+}
+
+/* ---------- onglets ---------- */
+function montrer(o) { $$(".onglets button").forEach(b => b.setAttribute("aria-selected", b.dataset.onglet === o)); ["calc", "graphique", "graphe", "incert", "travail"].forEach(k => $("#o-" + k).classList.toggle("cache", k !== o)); if (o === "graphe") dessine(); if (o === "graphique") { rend(); $("#tg").focus({ preventScroll: true }); } if (o === "travail") rendJournal(); }
+$$(".onglets button").forEach(b => b.onclick = () => { if (M) montrer(b.dataset.onglet); });
+$("#allerTravail").onclick = e => { e.preventDefault(); if (M) montrer("travail"); };
+
+/* ================= CALCULATRICE ================= */
+const TOUCHES = [
+  ["sin(", "sin", "f"], ["cos(", "cos", "f"], ["tan(", "tan", "f"], ["ln(", "ln", "f"], ["log(", "log", "f"], ["exp(", "eˣ", "f"],
+  ["asin(", "sin⁻¹", "f"], ["acos(", "cos⁻¹", "f"], ["atan(", "tan⁻¹", "f"], ["10^(", "10ˣ", "f"], ["√(", "√", "f"], ["^", "xʸ", "f"],
+  ["^2", "x²", "f"], ["^(-1)", "x⁻¹", "f"], ["abs(", "|x|", "f"], ["!", "n!", "f"], ["π", "π", "f"], ["e", "e", "f"],
+  ["7", "7"], ["8", "8"], ["9", "9"], ["(", "("], [")", ")"], ["←", "⌫", "ef"],
+  ["4", "4"], ["5", "5"], ["6", "6"], ["×", "×", "op"], ["÷", "÷", "op"], ["C", "C", "ef"],
+  ["1", "1"], ["2", "2"], ["3", "3"], ["+", "+", "op"], ["-", "−", "op"], ["Ans", "Ans", "f"],
+  ["0", "0"], [",", ","], ["×10^", "×10ⁿ", "f"], [" to ", "→ unité", "f"], ["=", "=", "eg"]];
+let posH = -1, dernier = null;
+function initCalc() {
+  const cl = $("#clavier"), ex = $("#expr");
+  TOUCHES.forEach(([v, l, c]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = l; if (c) b.className = c; if (v === "=") b.style.gridColumn = "span 2";
+    b.onclick = () => { if (v === "=") return calcule(); if (v === "C") { ex.value = ""; $("#res").textContent = ""; ex.focus(); return; }
+      if (v === "←") { const p = ex.selectionStart; if (p > 0) { ex.value = ex.value.slice(0, p - 1) + ex.value.slice(ex.selectionEnd); ex.setSelectionRange(p - 1, p - 1); } ex.focus(); return; }
+      insere(v); }; cl.appendChild(b); });
+  $$("[data-ang]").forEach(b => b.onclick = () => { angle = b.dataset.ang; $$("[data-ang]").forEach(x => x.setAttribute("aria-pressed", x === b)); if (ex.value.trim()) calcule(true); });
+  ex.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); calcule(); }
+    else if (e.key === "ArrowUp" && S.histo.length) { e.preventDefault(); posH = Math.min(S.histo.length - 1, posH + 1); ex.value = S.histo[S.histo.length - 1 - posH].e; }
+    else if (e.key === "ArrowDown" && S.histo.length) { e.preventDefault(); posH = Math.max(-1, posH - 1); ex.value = posH < 0 ? "" : S.histo[S.histo.length - 1 - posH].e; } });
+  $("#cs").onchange = () => { if (ex.value.trim()) calcule(true); };
+  $("#ajCalc").onclick = () => { if (!dernier) return toast("Faites d'abord un calcul"); ajoute("calc", "Calcul", dernier.e + "\n= " + dernier.r + (dernier.s && dernier.s !== dernier.r ? "  (" + dernier.s + ")" : "")); };
+  const C = [["c", "vitesse de la lumière", "2,998×10^8", "m/s"], ["h", "constante de Planck", "6,626×10^(-34)", "J·s"], ["N_A", "nombre d'Avogadro", "6,022×10^23", "mol⁻¹"],
+    ["e", "charge élémentaire", "1,602×10^(-19)", "C"], ["G", "constante de gravitation", "6,674×10^(-11)", "N·m²/kg²"], ["g", "pesanteur (Terre)", "9,81", "N/kg"],
+    ["k_B", "constante de Boltzmann", "1,381×10^(-23)", "J/K"], ["R", "constante des gaz parfaits", "8,314", "J/(mol·K)"], ["F", "constante de Faraday", "96 485", "C/mol"],
+    ["m_e", "masse de l'électron", "9,109×10^(-31)", "kg"], ["m_p", "masse du proton", "1,673×10^(-27)", "kg"], ["k", "constante de Coulomb", "8,988×10^9", "N·m²/C²"],
+    ["ε₀", "permittivité du vide", "8,854×10^(-12)", "F/m"], ["K_e", "produit ionique de l'eau (25 °C)", "1,0×10^(-14)", ""], ["V_m", "volume molaire (20 °C)", "24,0", "L/mol"],
+    ["c⁰", "concentration standard", "1", "mol/L"], ["1 eV", "électron-volt", "1,602×10^(-19)", "J"], ["M_T", "masse de la Terre", "5,972×10^24", "kg"], ["R_T", "rayon de la Terre", "6,371×10^6", "m"]];
+  $("#consts").innerHTML = C.map(([s, n, v, u], i) => `<button type="button" data-i="${i}"><b>${esc(s)}</b> = ${esc(v.replace("×10^", " × 10^").replace(/\^\(?(-?\d+)\)?/, (m, p) => sup(p)))} ${esc(u)}<br><span style="color:var(--muted)">${esc(n)}</span></button>`).join("");
+  $$("#consts button").forEach(b => b.onclick = () => insere("(" + C[b.dataset.i][2].replace(/\s/g, "") + ")"));
+  rendHisto();
+}
+function insere(t) { const ex = $("#expr"), a = ex.selectionStart ?? ex.value.length, b = ex.selectionEnd ?? ex.value.length; ex.value = ex.value.slice(0, a) + t + ex.value.slice(b); const p = a + t.length; ex.focus(); ex.setSelectionRange(p, p); }
+function calcule(silence) {
+  const ex = $("#expr"), e = ex.value.trim(), out = $("#res"); if (!e) return; const cs = Number($("#cs").value);
+  try { const v = evalue(e); if (v === undefined) throw new Error("vide");
+    const t = texteRes(v, cs); out.className = "res"; out.innerHTML = esc(t.p) + (t.s && t.s !== t.p ? `<span class="sci">${esc(t.s)}</span>` : "");
+    if (typeof v === "number") scope.Ans = v; else if (v && v.isUnit) scope.Ans = v;
+    dernier = { e, r: t.p, s: t.s }; posH = -1;
+    if (!silence) { S.histo.push({ e, r: t.p }); if (S.histo.length > 60) S.histo.shift(); S.journal.push({ t: Date.now(), type: "calc", titre: "Calcul" + (angle === "deg" && /sin|cos|tan/.test(e) ? " (degrés)" : ""), texte: e + "\n= " + t.p }); if (S.journal.length > 120) S.journal.shift(); sauve(); rendHisto(); majNb(); }
+  } catch (err) { out.className = "res err"; out.textContent = "Calcul impossible : " + messageErreur(err); dernier = null; }
+}
+function messageErreur(err) { const m = String(err && err.message || err);
+  if (/Undefined symbol (\S+)/.test(m)) return "« " + m.match(/Undefined symbol (\S+)/)[1] + " » est inconnu. Vérifiez l'écriture (ex. × entre deux lettres).";
+  if (/Parenthesis|Unexpected end/.test(m)) return "une parenthèse ou un nombre manque.";
+  if (/Unexpected/.test(m)) return "l'écriture n'est pas correcte (" + m.replace(/\(char.*\)/, "").trim() + ").";
+  if (/Units do not match|incompatible/i.test(m)) return "unités incompatibles.";
+  return m; }
+function rendHisto() { const h = $("#histo"); h.innerHTML = S.histo.slice().reverse().map((x, i) => `<li data-i="${S.histo.length - 1 - i}"><div class="e">${esc(x.e)}</div><div class="r">= ${esc(x.r)}</div></li>`).join("") || '<li class="aide" style="cursor:default">Aucun calcul pour l\'instant.</li>';
+  $$("#histo li[data-i]").forEach(li => li.onclick = () => { $("#expr").value = S.histo[li.dataset.i].e; calcule(true); $("#expr").focus(); }); }
+
+/* ================= GRAPHES ================= */
+const COUL = ["#4A148C", "#c2185b", "#00897b"], NOMS = ["f", "g", "h"];
+let W = { x0: -10, x1: 10, y0: -7, y1: 7 }, compil = [null, null, null], survol = null;
+function initGraphe() {
+  $("#lignesF").innerHTML = NOMS.map((n, i) => `<div class="lf"><span class="pastille" style="background:${COUL[i]}"></span><input type="text" id="f${i}" value="${esc(S.f[i] || "")}" placeholder="${n}(x) = …" aria-label="${n}(x)"><button class="btn ghost petit" type="button" data-eff="${i}" title="Effacer">✕</button></div>`).join("");
+  NOMS.forEach((n, i) => { $("#f" + i).addEventListener("keydown", e => { if (e.key === "Enter") trace(); }); });
+  $$("[data-eff]").forEach(b => b.onclick = () => { $("#f" + b.dataset.eff).value = ""; trace(); });
+  $("#tracer").onclick = trace; ["xmin", "xmax", "ymin", "ymax"].forEach(k => $("#" + k).addEventListener("keydown", e => { if (e.key === "Enter") trace(); }));
+  $("#nomX").oninput = $("#nomY").oninput = () => dessine();
+  $("#zPlus").onclick = () => zoom(.5); $("#zMoins").onclick = () => zoom(2); $("#zAuto").onclick = ajusteY;
+  $("#zInit").onclick = () => { W = { x0: -10, x1: 10, y0: -7, y1: 7 }; majFenetre(); dessine(); };
+  $("#ajGraphe").onclick = () => { dessine(); const cv = $("#cv"), fs = NOMS.map((n, i) => compil[i] ? `${n}(x) = ${$("#f" + i).value}` : "").filter(Boolean);
+    if (!fs.length) return toast("Tracez d'abord une fonction");
+    const img = reduit(cv, 900); ajoute("graphe", "Graphe", fs.join("\n") + `\nFenêtre : x de ${virg(+W.x0.toPrecision(4))} à ${virg(+W.x1.toPrecision(4))}, y de ${virg(+W.y0.toPrecision(4))} à ${virg(+W.y1.toPrecision(4))}`, img); };
+  $("#tvGo").onclick = tableau; $("#tvAj").onclick = () => { const t = tableau(); if (t) ajoute("tableau", "Tableau de valeurs", t); };
+  const cv = $("#cv"); let drag = null;
+  cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, W: Object.assign({}, W) }; });
+  cv.addEventListener("pointermove", e => { const r = cv.getBoundingClientRect();
+    if (drag) { const dx = (e.clientX - drag.x) / r.width * (drag.W.x1 - drag.W.x0), dy = (e.clientY - drag.y) / r.height * (drag.W.y1 - drag.W.y0);
+      W = { x0: drag.W.x0 - dx, x1: drag.W.x1 - dx, y0: drag.W.y0 + dy, y1: drag.W.y1 + dy }; majFenetre(); }
+    survol = { px: e.clientX - r.left, py: e.clientY - r.top }; dessine(); });
+  cv.addEventListener("pointerup", () => drag = null); cv.addEventListener("pointerleave", () => { drag = null; survol = null; dessine(); });
+  cv.addEventListener("wheel", e => { e.preventDefault(); const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = 1 - (e.clientY - r.top) / r.height; zoom(e.deltaY > 0 ? 1.2 : 1 / 1.2, fx, fy); }, { passive: false });
+  addEventListener("resize", () => dessine());
+  trace();
+}
+function majFenetre() { const f = v => virg(+v.toPrecision(4)); $("#xmin").value = f(W.x0); $("#xmax").value = f(W.x1); $("#ymin").value = f(W.y0); $("#ymax").value = f(W.y1); }
+function zoom(k, fx = .5, fy = .5) { const cx = W.x0 + fx * (W.x1 - W.x0), cy = W.y0 + fy * (W.y1 - W.y0);
+  W = { x0: cx - (cx - W.x0) * k, x1: cx + (W.x1 - cx) * k, y0: cy - (cy - W.y0) * k, y1: cy + (W.y1 - cy) * k }; majFenetre(); dessine(); }
+function fval(i, x) { try { const v = compil[i].evaluate(Object.assign({}, scope, fonctionsAngle("rad"), { x })); const n = typeof v === "number" ? v : (v && v.isUnit ? v.toNumber() : NaN); return isFinite(n) ? n : NaN; } catch (e) { return NaN; } }
+function trace() { const err = []; S.f = NOMS.map((n, i) => $("#f" + i).value); sauve();
+  NOMS.forEach((n, i) => { const t = $("#f" + i).value.trim(); compil[i] = null; if (!t) return;
+    try { compil[i] = M.compile(prepare(t.replace(/^\s*[fgh]\s*\(\s*x\s*\)\s*=/, ""))); if (NOMS.every((_, j) => true) && isNaN(fval(i, (W.x0 + W.x1) / 2)) && isNaN(fval(i, W.x0 + .37 * (W.x1 - W.x0))) && isNaN(fval(i, 1))) err.push(`${n}(x) : aucune valeur calculable, vérifiez l'écriture.`); }
+    catch (e) { err.push(`${n}(x) : ${messageErreur(e)}`); } });
+  const L = ["xmin", "xmax", "ymin", "ymax"].map(k => lireNombre($("#" + k).value));
+  if (L.every(isFinite) && L[1] > L[0] && L[3] > L[2]) W = { x0: L[0], x1: L[1], y0: L[2], y1: L[3] }; else err.push("Fenêtre incorrecte : il faut x min < x max et y min < y max.");
+  $("#errG").classList.toggle("cache", !err.length); $("#errG").innerHTML = err.map(esc).join("<br>"); dessine(); }
+function ajusteY() { let lo = Infinity, hi = -Infinity; compil.forEach((c, i) => { if (!c) return; for (let k = 0; k <= 400; k++) { const y = fval(i, W.x0 + (W.x1 - W.x0) * k / 400); if (isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); } } });
+  if (!isFinite(lo)) return; if (hi - lo < 1e-12) { hi += 1; lo -= 1; } const m = (hi - lo) * .08; W.y0 = lo - m; W.y1 = hi + m; majFenetre(); dessine(); }
+function pas(etendue, n) { const brut = etendue / n, p = Math.pow(10, Math.floor(Math.log10(brut))), r = brut / p; return (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * p; }
+function etiq(v, p) { const d = Math.max(0, -Math.floor(Math.log10(p) + 1e-9)); const a = Math.abs(v); if (a !== 0 && (a >= 1e5 || a < 1e-3)) return sci(v, 2).replace("-", "−"); return virg(v.toFixed(d)).replace("-", "−"); }
+function dessine() { const cv = $("#cv"); if (!cv || !cv.offsetWidth) return; const dpr = Math.min(2, devicePixelRatio || 1), w = cv.offsetWidth, h = cv.offsetHeight;
+  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.fillStyle = "#fff"; c.fillRect(0, 0, w, h);
+  const X = x => (x - W.x0) / (W.x1 - W.x0) * w, Y = y => h - (y - W.y0) / (W.y1 - W.y0) * h;
+  const px = pas(W.x1 - W.x0, w / 70), py = pas(W.y1 - W.y0, h / 50);
+  c.lineWidth = 1; c.font = "11px system-ui, sans-serif";
+  c.strokeStyle = "#f0ebf6"; c.beginPath(); for (let x = Math.ceil(W.x0 / px * 5) * px / 5; x <= W.x1; x += px / 5) { c.moveTo(X(x) + .5, 0); c.lineTo(X(x) + .5, h); } for (let y = Math.ceil(W.y0 / py * 5) * py / 5; y <= W.y1; y += py / 5) { c.moveTo(0, Y(y) + .5); c.lineTo(w, Y(y) + .5); } c.stroke();
+  c.strokeStyle = "#ddd2ea"; c.beginPath(); for (let x = Math.ceil(W.x0 / px) * px; x <= W.x1; x += px) { c.moveTo(Math.round(X(x)) + .5, 0); c.lineTo(Math.round(X(x)) + .5, h); } for (let y = Math.ceil(W.y0 / py) * py; y <= W.y1; y += py) { c.moveTo(0, Math.round(Y(y)) + .5); c.lineTo(w, Math.round(Y(y)) + .5); } c.stroke();
+  const ax = Math.min(h - 16, Math.max(2, Y(0))), ay = Math.min(w - 2, Math.max(30, X(0)));
+  c.strokeStyle = "#5b4a70"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(0, ax); c.lineTo(w, ax); c.moveTo(ay, 0); c.lineTo(ay, h); c.stroke();
+  c.fillStyle = "#5b4a70"; c.beginPath(); c.moveTo(w, ax); c.lineTo(w - 8, ax - 4); c.lineTo(w - 8, ax + 4); c.fill(); c.beginPath(); c.moveTo(ay, 0); c.lineTo(ay - 4, 8); c.lineTo(ay + 4, 8); c.fill();
+  c.fillStyle = "#6b5a80"; c.textAlign = "center"; c.textBaseline = "top";
+  for (let x = Math.ceil(W.x0 / px) * px; x <= W.x1; x += px) { if (Math.abs(x) < px / 1e6) continue; c.fillText(etiq(x, px), X(x), ax + 3); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (let y = Math.ceil(W.y0 / py) * py; y <= W.y1; y += py) { if (Math.abs(y) < py / 1e6) continue; c.fillText(etiq(y, py), ay - 4, Y(y)); }
+  c.font = "bold 12px system-ui, sans-serif"; c.fillStyle = "#4A148C"; c.textAlign = "right"; c.textBaseline = "bottom"; c.fillText($("#nomX").value || "x", w - 4, ax - 4); c.textAlign = "left"; c.textBaseline = "top"; c.fillText($("#nomY").value || "y", ay + 6, 4);
+  c.save(); c.beginPath(); c.rect(0, 0, w, h); c.clip();
+  compil.forEach((f, i) => { if (!f) return; c.strokeStyle = COUL[i]; c.lineWidth = 2.2; c.beginPath(); let prec = null; const n = Math.max(300, Math.round(w * 1.5));
+    for (let k = 0; k <= n; k++) { const x = W.x0 + (W.x1 - W.x0) * k / n, y = fval(i, x);
+      if (!isFinite(y)) { prec = null; continue; } const sx = X(x), sy = Y(y);
+      if (prec === null || Math.abs(sy - prec) > h * 3) c.moveTo(sx, Math.max(-h, Math.min(2 * h, sy))); else c.lineTo(sx, Math.max(-h, Math.min(2 * h, sy))); prec = sy; } c.stroke(); });
+  /* légende */
+  let ly = 8; c.font = "bold 12px system-ui, sans-serif"; c.textAlign = "right"; c.textBaseline = "top";
+  compil.forEach((f, i) => { if (!f) return; const t = NOMS[i] + "(x) = " + $("#f" + i).value.trim(); c.fillStyle = "rgba(255,255,255,.85)"; const tw = c.measureText(t).width; c.fillRect(w - tw - 14, ly - 2, tw + 10, 17); c.fillStyle = COUL[i]; c.fillText(t, w - 8, ly); ly += 18; });
+  /* lecture au survol */
+  const lec = $("#lecture");
+  if (survol) { const x = W.x0 + survol.px / w * (W.x1 - W.x0); let best = null;
+    compil.forEach((f, i) => { if (!f) return; const y = fval(i, x); if (!isFinite(y)) return; const d = Math.abs(Y(y) - survol.py); if (!best || d < best.d) best = { i, y, d }; });
+    c.strokeStyle = "rgba(74,20,140,.35)"; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(survol.px, 0); c.lineTo(survol.px, h); c.stroke(); c.setLineDash([]);
+    if (best) { c.fillStyle = COUL[best.i]; c.beginPath(); c.arc(X(x), Y(best.y), 5, 0, 7); c.fill(); lec.innerHTML = `<b style="color:${COUL[best.i]}">${NOMS[best.i]}</b>(${esc(joli(x, 4))}) = <b>${esc(joli(best.y, 4))}</b>`; }
+    else lec.textContent = "x = " + joli(x, 4); }
+  c.restore(); }
+function tableau() { const i = Number($("#tvF").value), d = lireNombre($("#tvD").value), p = lireNombre($("#tvP").value), n = Math.min(200, Math.max(2, parseInt($("#tvN").value) || 11));
+  if (!compil[i]) { $("#tvRes").innerHTML = `<p class="ko">Écrivez d'abord ${NOMS[i]}(x) puis cliquez sur « Tracer ».</p>`; return null; }
+  if (!isFinite(d) || !isFinite(p) || p === 0) { $("#tvRes").innerHTML = '<p class="ko">Départ ou pas incorrect.</p>'; return null; }
+  const L = []; for (let k = 0; k < n; k++) { const x = +(d + k * p).toPrecision(12); L.push([x, fval(i, x)]); }
+  $("#tvRes").innerHTML = `<table class="t"><thead><tr><th>x</th><th>${NOMS[i]}(x)</th></tr></thead><tbody>${L.map(([x, y]) => `<tr><td>${esc(joli(x, 0))}</td><td>${esc(joli(y, 4))}</td></tr>`).join("")}</tbody></table>`;
+  return `${NOMS[i]}(x) = ${$("#f" + i).value}\n` + L.map(([x, y]) => `x = ${joli(x, 0)} ; ${NOMS[i]}(x) = ${joli(y, 4)}`).join("\n"); }
+function reduit(cv, lmax) { const k = Math.min(1, lmax / cv.width), t = document.createElement("canvas"); t.width = Math.round(cv.width * k); t.height = Math.round(cv.height * k); t.getContext("2d").drawImage(cv, 0, 0, t.width, t.height); return t.toDataURL("image/png"); }
+
+/* ================= INCERTITUDES ================= */
+function arrondiExces(u, n) { if (!(u > 0)) return { u: 0, p: 0 }; let e = Math.floor(Math.log10(u)), p = e - n + 1, f = Math.pow(10, p), r = Math.ceil(+(u / f).toPrecision(12)) * f;
+  if (Math.floor(Math.log10(r)) > e) { e++; p = e - n + 1; f = Math.pow(10, p); r = Math.ceil(+(r / f).toPrecision(12)) * f; } return { u: r, p }; }
+function ecrire(nom, v, u, unite, n) {
+  const a = Math.abs(v), k = (a >= 1e4 || (a < 1e-2 && a > 0)) ? Math.floor(Math.log10(a)) : (a === 0 && u > 0 && (u >= 1e4 || u < 1e-3) ? Math.floor(Math.log10(u)) : 0);
+  const f = Math.pow(10, k), R = arrondiExces(u / f, n), d = Math.max(0, -R.p), vr = Math.round(v / f / Math.pow(10, R.p)) * Math.pow(10, R.p);
+  const vs = virg(vr.toFixed(d)).replace("-", "−"), us = virg(R.u.toFixed(d)), puis = k ? " × 10" + sup(k) : "";
+  const corps = (k || unite) ? `(${vs} ± ${us})${puis}` : `${vs} ± ${us}`;
+  return { txt: `${nom ? nom + " = " : ""}${corps}${unite ? " " + unite : ""}`, ur: R.u * f, vr: vr * f, rel: v !== 0 ? u / Math.abs(v) * 100 : NaN, us, vs, k }; }
+const fr = (x, n) => joli(x, n || 4);
+function lireSerie(t) { return String(t).replace(/(\d),(\d)/g, "$1.$2").split(/[\s;]+/).filter(Boolean).map(Number); }
+let dernierIO = {};
+function initIncert() {
+  $$(".sous-onglets button").forEach(b => b.onclick = () => { $$(".sous-onglets button").forEach(x => x.setAttribute("aria-selected", x === b)); ["A", "B", "C", "Z", "R"].forEach(k => $("#io-" + k).classList.toggle("cache", k !== b.dataset.io)); });
+  /* --- Type A --- */
+  $("#aEx").onclick = () => { $("#aVals").value = "9,78 9,82 9,80 9,85 9,79 9,81 9,83 9,77 9,84 9,80"; $("#aNom").value = "g"; $("#aUnite").value = "m/s²"; typeA(); };
+  $("#aGo").onclick = typeA; $("#aAj").onclick = () => dernierIO.A && ajoute("incertA", "Incertitude de type A", dernierIO.A);
+  /* --- Type B --- */
+  const bForm = () => { const t = $("#bType").value, L1 = $("#bL1").firstChild;
+    $("#bL2").classList.toggle("cache", t !== "num");
+    L1.textContent = { grad: "Valeur d'une graduation", double: "Valeur d'une graduation", tol: "Tolérance a (le ± indiqué)", num: "Précision p (en %)", res: "Résolution (dernier chiffre affiché)" }[t];
+    $("#bFormule").innerHTML = { grad: "u(x) = graduation / √12", double: "u(x) = √2 × graduation / √12 &nbsp; (deux lectures, chacune graduation / √12)", tol: "u(x) = a / √3", num: "a = p % × |lecture| + n × résolution, &nbsp; puis u(x) = a / √3 <br><span class='aide'>La résolution est déduite de l'écriture de la valeur affichée (ex. 12,53 → 0,01).</span>", res: "u(x) = résolution / √12" }[t]; };
+  $("#bType").onchange = bForm; bForm(); $("#bGo").onclick = typeB; $("#bAj").onclick = () => dernierIO.B && ajoute("incertB", "Incertitude de type B", dernierIO.B);
+  /* --- Composée --- */
+  $("#cVars").onclick = () => lireVars(); $("#cGo").onclick = composee; $("#cAj").onclick = () => dernierIO.C && ajoute("incertC", "Incertitude composée", dernierIO.C);
+  $("#cEx").onclick = () => { $("#cNom").value = "C"; $("#cUnite").value = "mol/L"; $("#cExpr").value = "m/(M*V)"; lireVars({ m: ["0,585", "0,001"], M: ["58,44", "0,01"], V: ["0,1000", "0,0002"] }); composee(); };
+  lireVars({ m: ["0,585", "0,001"], M: ["58,44", "0,01"], V: ["0,1000", "0,0002"] });
+  /* --- z --- */
+  $("#zGo").onclick = zscore; $("#zAj").onclick = () => dernierIO.Z && ajoute("z", "Écart normalisé", dernierIO.Z);
+  $("#rGo").onclick = ecritRes; $("#rAj").onclick = () => dernierIO.R && ajoute("ecriture", "Écriture d'un résultat", dernierIO.R);
+}
+function montreAj(id, ok) { $("#" + id).classList.toggle("cache", !ok); }
+function typeA() { const v = lireSerie($("#aVals").value), nom = $("#aNom").value.trim() || "x", un = $("#aUnite").value.trim(), cs = Number($("#aCs").value), out = $("#aRes");
+  if (v.some(isNaN)) { out.innerHTML = '<p class="ko">Une des valeurs n\'est pas un nombre.</p>'; montreAj("aAj", false); return; }
+  if (v.length < 2) { out.innerHTML = '<p class="ko">Il faut au moins 2 valeurs.</p>'; montreAj("aAj", false); return; }
+  const N = v.length, m = v.reduce((a, b) => a + b, 0) / N, s = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (N - 1)), u = s / Math.sqrt(N), E = ecrire(nom, m, u, un, cs);
+  out.innerHTML = `<div class="formule">N = ${N} mesures<br>Moyenne : ${nom}̄ = Σ${nom}ᵢ / N = <b>${esc(fr(m, 6))}</b>${un ? " " + esc(un) : ""}<br>
+    Écart-type expérimental : s = √( Σ(${nom}ᵢ − ${nom}̄)² / (N − 1) ) = <b>${esc(fr(s, 4))}</b>${un ? " " + esc(un) : ""}<br>
+    Incertitude-type sur la moyenne : u(${nom}̄) = s / √N = ${esc(fr(s, 4))} / √${N} = <b>${esc(fr(u, 4))}</b>${un ? " " + esc(un) : ""}</div>
+    <div class="resultat">${esc(E.txt)}</div><p class="aide">Incertitude relative : u/${nom}̄ = ${esc(joli(E.rel, 2))} %. Valeurs min / max : ${esc(fr(Math.min(...v), 6))} / ${esc(fr(Math.max(...v), 6))}.</p>`;
+  histogramme(v, m, s); montreAj("aAj", true);
+  dernierIO.A = `Valeurs (N = ${N}) : ${v.map(x => virg(x)).join(" ; ")}${un ? " (" + un + ")" : ""}\nMoyenne = ${fr(m, 6)} ; s = ${fr(s, 4)} ; u = s/√N = ${fr(u, 4)}\nRésultat : ${E.txt} (incertitude relative ${joli(E.rel, 2)} %)`; }
+function histogramme(v, m, s) { const cv = $("#histoA"); cv.classList.remove("cache"); const dpr = Math.min(2, devicePixelRatio || 1), w = cv.offsetWidth, h = cv.offsetHeight; cv.width = w * dpr; cv.height = h * dpr;
+  const c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+  const lo = Math.min(...v), hi = Math.max(...v), nb = Math.max(3, Math.min(12, Math.round(Math.sqrt(v.length)) + 1)), larg = (hi - lo || 1) / nb, cnt = Array(nb).fill(0);
+  v.forEach(x => cnt[Math.min(nb - 1, Math.floor((x - lo) / larg))]++); const mx = Math.max(...cnt), g = 30, bw = (w - g - 10) / nb;
+  c.font = "10px system-ui"; c.fillStyle = "#6b5a80"; c.textAlign = "center";
+  cnt.forEach((n, i) => { const bh = n / mx * (h - 40); c.fillStyle = "#D1C4E9"; c.fillRect(g + i * bw + 2, h - 22 - bh, bw - 4, bh); c.fillStyle = "#4A148C"; if (n) c.fillText(n, g + i * bw + bw / 2, h - 26 - bh); });
+  c.fillStyle = "#6b5a80"; c.fillText(virg(+lo.toPrecision(4)), g + 6, h - 8); c.fillText(virg(+hi.toPrecision(4)), w - 20, h - 8);
+  const xm = g + (m - lo) / (larg * nb) * (w - g - 10); c.strokeStyle = "#c2185b"; c.lineWidth = 2; c.beginPath(); c.moveTo(xm, 8); c.lineTo(xm, h - 22); c.stroke(); c.fillStyle = "#c2185b"; c.fillText("moyenne", xm, 8);
+  c.fillStyle = "#4A148C"; c.textAlign = "left"; c.fillText("Effectif", 2, 10); }
+function typeB() { const t = $("#bType").value, vs = $("#bVal").value, v = lireNombre(vs), a1 = lireNombre($("#bP1").value), n = lireNombre($("#bP2").value), un = $("#bUnite").value.trim(), cs = Number($("#bCs").value), out = $("#bRes");
+  if (!isFinite(v)) { out.innerHTML = '<p class="ko">Indiquez la valeur mesurée.</p>'; return; }
+  if (!(a1 > 0)) { out.innerHTML = '<p class="ko">Indiquez une ' + ($("#bL1").firstChild.textContent.toLowerCase()) + ' positive.</p>'; return; }
+  let u, det;
+  if (t === "grad") { u = a1 / Math.sqrt(12); det = `u = ${fr(a1)} / √12 = ${fr(u)}`; }
+  else if (t === "double") { u = Math.SQRT2 * a1 / Math.sqrt(12); det = `u = √2 × ${fr(a1)} / √12 = ${fr(u)}`; }
+  else if (t === "tol") { u = a1 / Math.sqrt(3); det = `u = ${fr(a1)} / √3 = ${fr(u)}`; }
+  else if (t === "res") { u = a1 / Math.sqrt(12); det = `u = ${fr(a1)} / √12 = ${fr(u)}`; }
+  else { const dec = (String(vs).trim().replace(".", ",").split(",")[1] || "").replace(/\D/g, "").length, res = Math.pow(10, -dec), nn = isFinite(n) ? n : 0, a = a1 / 100 * Math.abs(v) + nn * res; u = a / Math.sqrt(3);
+    det = `résolution = ${virg(res)} ; a = ${fr(a1)} % × ${fr(Math.abs(v), 6)} + ${nn} × ${virg(res)} = ${fr(a)}<br>u = a / √3 = ${fr(u)}`; }
+  const E = ecrire("x", v, u, un, cs);
+  out.innerHTML = `<div class="formule">${det}${un ? " " + esc(un) : ""}</div><div class="resultat">${esc(E.txt)}</div><p class="aide">Incertitude relative : ${esc(joli(E.rel, 2))} %.</p>`;
+  montreAj("bAj", true); dernierIO.B = `${$("#bType").selectedOptions[0].textContent}\nValeur lue : ${vs} ${un}\n${det.replace(/<br>/g, "\n")}\nRésultat : ${E.txt}`; }
+function lireVars(pre) { const out = $("#cTab"); let noms;
+  try { const n = M.parse(prepare($("#cExpr").value)); noms = [...new Set(n.filter(x => x.isSymbolNode && !(x.name in M) && !["pi", "e"].includes(x.name)).map(x => x.name))]; }
+  catch (e) { out.innerHTML = `<tr><td colspan="3" class="ko">Relation illisible : ${esc(messageErreur(e))}</td></tr>`; return; }
+  const anc = {}; $$("#cTab tr[data-v]").forEach(tr => anc[tr.dataset.v] = [tr.querySelector(".cv").value, tr.querySelector(".cu").value]);
+  out.innerHTML = noms.map(v => { const p = (pre && pre[v]) || anc[v] || ["", ""]; return `<tr data-v="${esc(v)}"><th style="text-align:center">${esc(v)}</th><td><input class="cv" type="text" value="${esc(p[0])}" aria-label="valeur de ${esc(v)}"></td><td><input class="cu" type="text" value="${esc(p[1])}" aria-label="incertitude-type de ${esc(v)}"></td></tr>`; }).join("") || '<tr><td colspan="3" class="aide">Aucune grandeur trouvée.</td></tr>'; }
+function composee() { const out = $("#cRes"), nom = $("#cNom").value.trim() || "y", un = $("#cUnite").value.trim(), cs = Number($("#cCs").value);
+  lireVars(); const V = {}, U = {}, err = [];
+  $$("#cTab tr[data-v]").forEach(tr => { const k = tr.dataset.v, v = lireNombre(tr.querySelector(".cv").value), u = lireNombre(tr.querySelector(".cu").value || "0"); if (!isFinite(v)) err.push(`valeur de ${k}`); if (!isFinite(u) || u < 0) err.push(`incertitude de ${k}`); V[k] = v; U[k] = u; });
+  if (err.length) { out.innerHTML = `<p class="ko">À compléter : ${esc(err.join(", "))}.</p>`; montreAj("cAj", false); return; }
+  let f; try { f = M.compile(prepare($("#cExpr").value)); } catch (e) { out.innerHTML = `<p class="ko">${esc(messageErreur(e))}</p>`; return; }
+  const F = o => { const r = f.evaluate(Object.assign({}, fonctionsAngle("rad"), o)); return typeof r === "number" ? r : NaN; };
+  const y = F(V); if (!isFinite(y)) { out.innerHTML = '<p class="ko">Le calcul de la grandeur est impossible avec ces valeurs.</p>'; return; }
+  const C = Object.keys(V).map(k => { const hh = Math.abs(V[k]) * 1e-6 || 1e-9, d = (F(Object.assign({}, V, { [k]: V[k] + hh })) - F(Object.assign({}, V, { [k]: V[k] - hh }))) / (2 * hh); return { k, d, c: d * U[k] }; });
+  const uy = Math.sqrt(C.reduce((a, x) => a + x.c * x.c, 0)), E = ecrire(nom, y, uy, un, cs);
+  const prodQuot = C.every(x => V[x.k] !== 0 && Math.abs(Math.abs(x.d * V[x.k] / y) - Math.round(Math.abs(x.d * V[x.k] / y))) < 1e-4 && Math.round(Math.abs(x.d * V[x.k] / y)) >= 1);
+  let formule;
+  if (prodQuot && y !== 0) { const exps = C.map(x => Math.round(Math.abs(x.d * V[x.k] / y))); formule = `Relation de type produit / quotient :<br>u(${nom}) / ${nom} = √( ${C.map((x, i) => (exps[i] > 1 ? exps[i] + "² × " : "") + `(u(${x.k}) / ${x.k})²`).join(" + ")} )`;
+    formule += `<br>= √( ${C.map((x, i) => (exps[i] > 1 ? exps[i] + "² × " : "") + `(${fr(U[x.k], 3)} / ${fr(V[x.k], 5)})²`).join(" + ")} ) = ${fr(uy / Math.abs(y), 3)}`; }
+  else formule = `Cas général : u(${nom}) = √( ${C.map(x => `(∂${nom}/∂${x.k} × u(${x.k}))²`).join(" + ")} )`;
+  const tot = C.reduce((a, x) => a + x.c * x.c, 0) || 1;
+  out.innerHTML = `<div class="formule">${nom} = ${esc($("#cExpr").value)} = <b>${esc(fr(y, 6))}</b>${un ? " " + esc(un) : ""}<br>${formule}<br>u(${nom}) = <b>${esc(fr(uy, 4))}</b>${un ? " " + esc(un) : ""}</div>
+    <div class="resultat">${esc(E.txt)}</div><p class="aide">Incertitude relative : ${esc(joli(E.rel, 2))} %.</p>
+    <table class="t"><thead><tr><th>Grandeur</th><th>u/|valeur|</th><th>Part dans u(${esc(nom)})²</th></tr></thead><tbody>${C.map(x => `<tr><td style="text-align:center">${esc(x.k)}</td><td>${V[x.k] ? esc(joli(U[x.k] / Math.abs(V[x.k]) * 100, 2)) + " %" : "—"}</td><td>${Math.round(x.c * x.c / tot * 100)} %</td></tr>`).join("")}</tbody></table>
+    <p class="aide">La grandeur qui a la plus grande part est celle dont il faut améliorer la mesure en priorité.</p>`;
+  montreAj("cAj", true); dernierIO.C = `${nom} = ${$("#cExpr").value}\n${C.map(x => `${x.k} = ${virg(V[x.k])} ; u(${x.k}) = ${virg(U[x.k])}`).join("\n")}\n${formule.replace(/<br>/g, "\n")}\nRésultat : ${E.txt} (incertitude relative ${joli(E.rel, 2)} %)`; }
+function zscore() { const x = lireNombre($("#zX").value), u = lireNombre($("#zU").value), r = lireNombre($("#zR").value), ur = lireNombre($("#zUR").value || "0"), out = $("#zRes");
+  if (![x, u, r].every(isFinite) || !(u > 0) || !(ur >= 0)) { out.innerHTML = '<p class="ko">Indiquez x, u(x) > 0 et la valeur de référence.</p>'; montreAj("zAj", false); return; }
+  const den = Math.sqrt(u * u + ur * ur), z = Math.abs(x - r) / den, ok = z <= 2;
+  const det = ur > 0 ? `z = |${fr(x, 6)} − ${fr(r, 6)}| / √(${fr(u)}² + ${fr(ur)}²) = ${joli(z, 2)}` : `z = |${fr(x, 6)} − ${fr(r, 6)}| / ${fr(u)} = ${joli(z, 2)}`;
+  out.innerHTML = `<div class="formule">${esc(det)}</div><div class="${ok ? "ok" : "ko"}" style="font-size:1.05rem">${ok ? "✓ z ≤ 2 : la mesure est compatible avec la valeur de référence." : "✗ z > 2 : la mesure n'est pas compatible avec la valeur de référence. Cherchez une source d'erreur (protocole, lecture, erreur systématique…)."}</div>`;
+  montreAj("zAj", true); dernierIO.Z = `x = ${virg(x)} ; u(x) = ${virg(u)} ; x_réf = ${virg(r)}${ur > 0 ? " ; u(x_réf) = " + virg(ur) : ""}\n${det}\nConclusion : ${ok ? "compatible (z ≤ 2)" : "non compatible (z > 2)"}`; }
+function ecritRes() { const v = lireNombre($("#rV").value), u = lireNombre($("#rU").value), out = $("#rRes");
+  if (!isFinite(v) || !(u > 0)) { out.innerHTML = '<p class="ko">Indiquez la valeur et une incertitude-type positive.</p>'; montreAj("rAj", false); return; }
+  const E = ecrire($("#rNom").value.trim(), v, u, $("#rUnite").value.trim(), Number($("#rCs").value));
+  out.innerHTML = `<div class="formule">u = ${esc(decimalesAuto(u))} arrondie par excès → ${esc(virg(+E.ur.toPrecision(6)))}<br>valeur ${esc(decimalesAuto(v))} arrondie au même rang → ${esc(virg(+E.vr.toPrecision(12)))}</div><div class="resultat">${esc(E.txt)}</div><p class="aide">Incertitude relative : ${esc(joli(E.rel, 2))} %.</p>`;
+  montreAj("rAj", true); dernierIO.R = `Valeur ${decimalesAuto(v)}, u = ${decimalesAuto(u)}\nRésultat : ${E.txt}`; }
+
+/* ================= CALCULATRICE GRAPHIQUE (modèle lycée, design EFIR) ================= */
+let Mc, G, tg2 = false;
+const LISTES = ["L1", "L2", "L3", "L4", "L5", "L6"], YC = ["#4A148C", "#c2185b", "#00897b", "#e67e00"];
+const V = { vue: "home", prec: "home", ent: { t: "", p: 0 }, hp: -1, menu: null, ysel: 0, fsel: 0, fneuf: true, lc: 0, lr: 0, lc0: 0, buf: "", tr: null, tbl0: null, tblsel: 0 };
+function gDefaut() { return { angle: "deg", cplx: "reel", aff: "normal", cs: 0, L: { L1: [], L2: [], L3: [], L4: [], L5: [], L6: [] }, Y: ["", "", "", ""], win: { Xmin: -10, Xmax: 10, Xgrad: 1, Ymin: -10, Ymax: 10, Ygrad: 1, TblDebut: 0, PasTbl: 1 }, hist: [], vars: {} }; }
+const arr = v => v && v.toArray ? v.toArray().flat(Infinity) : Array.isArray(v) ? v.flat(Infinity) : [v];
+const nb = v => typeof v === "number" ? v : (v && v.isBigNumber || v && v.isFraction) ? Number(v) : v;
+function trigo(mode) { const k = mode === "deg" ? Math.PI / 180 : 1, Mx = () => (G.cplx === "reel" ? M : Mc);
+  const dir = f => v => { v = nb(v); if (typeof v === "number") return Math[f](v * k); if (v && v.isUnit) return Mx()[f](v); return Mx()[f](mode === "deg" ? Mx().multiply(v, k) : v); };
+  const inv = f => v => { v = nb(v); if (typeof v === "number" && Math.abs(v) <= 1 || f === "atan" && typeof v === "number") return Math[f](v) / k; const r = Mx()[f](v); return mode === "deg" ? Mx().divide(r, k) : r; };
+  return { sin: dir("sin"), cos: dir("cos"), tan: dir("tan"), asin: inv("asin"), acos: inv("acos"), atan: inv("atan"),
+    arg: v => Mx().arg(v) / k,
+    ln: v => Mx().log(v), log: (v, b) => b === undefined ? Mx().log10(v) : Mx().log(v, b) }; }
+function quartiles(t) { const s = t.slice().sort((a, b) => a - b), n = s.length, med = a => a.length % 2 ? a[(a.length - 1) / 2] : (a[a.length / 2 - 1] + a[a.length / 2]) / 2;
+  return { min: s[0], max: s[n - 1], med: med(s), q1: n > 1 ? med(s.slice(0, Math.floor(n / 2))) : s[0], q3: n > 1 ? med(s.slice(Math.ceil(n / 2))) : s[0] }; }
+const g6 = x => joli(x, G.cs || 0), g5 = x => isFinite(x) ? joli(Number(x.toPrecision(6)), 0) : "—";
+function stats1(L) { const t = arr(L).map(Number); if (t.length < 1 || t.some(isNaN)) throw new Error("liste vide ou non numérique");
+  const n = t.length, m = t.reduce((a, b) => a + b, 0) / n, sx = n > 1 ? Math.sqrt(t.reduce((a, b) => a + (b - m) ** 2, 0) / (n - 1)) : NaN, sig = Math.sqrt(t.reduce((a, b) => a + (b - m) ** 2, 0) / n), q = quartiles(t), u = sx / Math.sqrt(n);
+  const l = ["Stats 1 variable", "x̄ = " + g6(m), "Σx = " + g6(t.reduce((a, b) => a + b, 0)), "Σx² = " + g6(t.reduce((a, b) => a + b * b, 0)), "Sx = " + g6(sx) + "  (écart-type, n−1)", "σx = " + g6(sig), "n = " + n,
+    "minX = " + g6(q.min) + "   maxX = " + g6(q.max), "Q1 = " + g6(q.q1) + "   Méd = " + g6(q.med) + "   Q3 = " + g6(q.q3)];
+  if (n > 1) l.push("u(x̄) = Sx/√n = " + g6(u), "Résultat : " + ecrire("x", m, u, "", 2).txt);
+  return { __lignes: l }; }
+function stats2(LX, LY) { const x = arr(LX).map(Number), y = arr(LY).map(Number); if (x.length !== y.length || !x.length) throw new Error("les deux listes doivent avoir la même longueur");
+  const n = x.length, mx = x.reduce((a, b) => a + b, 0) / n, my = y.reduce((a, b) => a + b, 0) / n, sxy = x.reduce((a, b, i) => a + (b - mx) * (y[i] - my), 0), sxx = x.reduce((a, b) => a + (b - mx) ** 2, 0), syy = y.reduce((a, b) => a + (b - my) ** 2, 0);
+  return { n, mx, my, sxy, sxx, syy, x, y }; }
+function regLin(LX, LY) { const s = stats2(LX, LY), a = s.sxy / s.sxx, b = s.my - a * s.mx, r = s.sxy / Math.sqrt(s.sxx * s.syy);
+  V.reg = { a, b }; return { __lignes: ["Régression linéaire", "y = a·x + b", "a = " + g6(a), "b = " + g6(b), "r = " + g6(r), "r² = " + g6(r * r), "n = " + s.n] }; }
+function regProp(LX, LY) { const s = stats2(LX, LY), a = s.x.reduce((t, v, i) => t + v * s.y[i], 0) / s.x.reduce((t, v) => t + v * v, 0), sres = s.y.reduce((t, v, i) => t + (v - a * s.x[i]) ** 2, 0), r2 = 1 - sres / s.syy;
+  V.reg = { a, b: 0 }; return { __lignes: ["Modèle linéaire (proportionnalité)", "y = a·x", "a = " + g6(a), "r² = " + g6(r2), "n = " + s.n] }; }
+function stats2txt(LX, LY) { const s = stats2(LX, LY); return { __lignes: ["Stats 2 variables", "x̄ = " + g6(s.mx), "ȳ = " + g6(s.my), "n = " + s.n, "Σxy = " + g6(s.x.reduce((t, v, i) => t + v * s.y[i], 0))] }; }
+function scopeG(extra) { const o = Object.assign({}, G.vars, trigo(G.angle), {
+    stats1, stats2: stats2txt, regLin, regProp,
+    uA: L => { const t = arr(L).map(Number), n = t.length; if (n < 2) throw new Error("il faut au moins 2 valeurs"); const m = t.reduce((a, b) => a + b, 0) / n; return Math.sqrt(t.reduce((a, b) => a + (b - m) ** 2, 0) / (n - 1)) / Math.sqrt(n); },
+    uB: g => nb(g) / Math.sqrt(12), uTol: a => nb(a) / Math.sqrt(3),
+    z: (x, u, r, ur) => Math.abs(nb(x) - nb(r)) / Math.sqrt(nb(u) ** 2 + (ur === undefined ? 0 : nb(ur)) ** 2),
+    ecrire: (x, u) => ecrire("", nb(x), nb(u), "", 2).txt,
+    moyenne: L => M.mean(arr(L)), ecartType: L => M.std(arr(L)), somme: L => M.sum(arr(L)), dim: L => arr(L).length }, extra || {});
+  LISTES.forEach(k => o[k] = G.L[k].slice()); if (G.vars.Ans !== undefined) o.Ans = G.vars.Ans; return o; }
+function prepG(s) { return prepare(String(s).replace(/°C/g, "degC").replace(/°/g, " deg").replace(/ʳ/g, " rad").replace(/\{/g, "[").replace(/\}/g, "]").replace(/►Rect|►Polaire/g, "")); }
+function evalG(expr) { const eng = G.cplx === "reel" ? M : Mc; return eng.evaluate(prepG(expr), scopeG()); }
+function fmtG(v, force) {
+  if (v && v.__lignes) return v.__lignes;
+  if (typeof v === "string") return v;
+  if (typeof v === "boolean") return v ? "vrai" : "faux";
+  if (v && v.isUnit) return joliG(v.toNumber()) + " " + v.formatUnits();
+  if (v && (v.toArray || Array.isArray(v))) return "{" + arr(v).map(x => fmtG(x)).join(" ; ") + "}";
+  if (v && v.isComplex) { if (Math.abs(v.im) <= 1e-12 * Math.max(1, Math.abs(v.re))) return fmtG(v.re);
+    if (G.cplx === "reel" && !force) throw new Error("NONREEL");
+    const mode = force || (G.cplx === "polaire" ? "polaire" : "rect");
+    if (mode === "polaire") { const r = Math.hypot(v.re, v.im), t = Math.atan2(v.im, v.re) * (G.angle === "deg" ? 180 / Math.PI : 1); return joliG(r) + "·e^(" + joliG(t) + (G.angle === "deg" ? "°" : "") + "·i)"; }
+    const re = Math.abs(v.re) < 1e-12 * Math.abs(v.im) ? 0 : v.re, im = v.im; return (re ? joliG(re) + (im < 0 ? " − " : " + ") : (im < 0 ? "−" : "")) + (Math.abs(im) === 1 ? "" : joliG(Math.abs(im))) + "i"; }
+  v = nb(v); if (typeof v === "number") { if (isNaN(v)) throw new Error(G.cplx === "reel" ? "NONREEL" : "DOMAINE"); if (G.cplx !== "reel" && force === "polaire") return fmtG(Mc.complex(v, 0), "polaire"); return joliG(v); }
+  if (typeof v === "function") return "fonction définie";
+  return String(v); }
+function joliG(x) { if (G.aff === "sci" && x !== 0 && isFinite(x)) return sci(x, G.cs || 6).replace("-", "−"); return joli(x, G.cs || 0); }
+function errG(e) { const m = String(e && e.message || e);
+  if (m === "NONREEL") return "ERREUR : RÉSULTAT NON RÉEL\n(passez en mode a+bi avec la touche mode)";
+  if (m === "DOMAINE") return "ERREUR : DOMAINE (valeur interdite)";
+  return "ERREUR : " + messageErreur(e).toUpperCase(); }
+/* ---------- clavier ---------- */
+const TG = [
+  [["yeq", "f(x)="], ["fen", "fenêtre"], ["tbl", "table"], ["graph", "graphe"], ["trace", "trace"]],
+  [["sec", "2nde", "", "k2"], ["mode", "mode", "quitter"], ["del", "suppr", "ins"], ["up", "▲", "", "kf"], ["down", "▼", "", "kf"]],
+  [["math", "math", "angle"], ["cplx", "cplx", "i"], ["stat", "stat", "listes"], ["left", "◄", "", "kf"], ["right", "►", "", "kf"]],
+  [["inv", "x⁻¹", "|x|"], ["sin", "sin", "sin⁻¹"], ["cos", "cos", "cos⁻¹"], ["tan", "tan", "tan⁻¹"], ["pow", "^", "π"]],
+  [["sq", "x²", "√"], ["ee", "×10ⁿ", "e"], ["lp", "(", "{"], ["rp", ")", "}"], ["div", "÷", "°", "kop"]],
+  [["log", "log", "10ˣ"], ["7", "7", "", "kn"], ["8", "8", "", "kn"], ["9", "9", "", "kn"], ["mul", "×", "", "kop"]],
+  [["ln", "ln", "eˣ"], ["4", "4", "L4", "kn"], ["5", "5", "L5", "kn"], ["6", "6", "L6", "kn"], ["sub", "−", "", "kop"]],
+  [["X", "X", "sto→"], ["1", "1", "L1", "kn"], ["2", "2", "L2", "kn"], ["3", "3", "L3", "kn"], ["add", "+", "", "kop"]],
+  [["clear", "annul", "", "kc"], ["0", "0", "", "kn"], ["dot", ",", ";", "kn"], ["neg", "(−)", "rép", "kn"], ["enter", "entrer", "", "ke"]]];
+const INS = { inv: "^(-1)", sin: "sin(", cos: "cos(", tan: "tan(", pow: "^", sq: "^2", ee: "×10^", lp: "(", rp: ")", div: "÷", log: "log(", ln: "ln(", X: "X", mul: "×", sub: "−", add: "+", dot: ",", neg: "-" };
+const INS2 = { inv: "abs(", sin: "asin(", cos: "acos(", tan: "atan(", pow: "π", sq: "√(", ee: "e", lp: "{", rp: "}", div: "°", log: "10^(", ln: "e^(", X: "→", dot: ";", neg: "Ans", cplx: "i", "1": "L1", "2": "L2", "3": "L3", "4": "L4", "5": "L5", "6": "L6" };
+const MENUS = {
+  math: [["MATH", [["x³", "^3"], ["∛(", "cbrt("], ["ˣ√( (racine n-ième : nthRoot(x;n))", "nthRoot("], ["10^(", "10^("], ["e^(", "e^("], ["log( base b : log(x;b)", "log("], ["n!", "!"], ["arrondi : round(x;n)", "round("]]],
+    ["NUM", [["|x| : abs(", "abs("], ["partie entière : floor(", "floor("], ["min(", "min("], ["max(", "max("], ["pgcd : gcd(", "gcd("], ["ppcm : lcm(", "lcm("], ["reste : mod(", "mod("]]],
+    ["PROB", [["aléatoire : random()", "random()"], ["entier aléatoire : randomInt(a;b)", "randomInt("], ["combinaisons : combinations(n;k)", "combinations("], ["permutations(n;k)", "permutations("]]],
+    ["HYP", [["sinh(", "sinh("], ["cosh(", "cosh("], ["tanh(", "tanh("]]]],
+  angle: [["ANGLE", [["° (degré)", "°"], ["ʳ (radian)", "ʳ"], ["degrés → radians : ×π/180", "×π/180"], ["radians → degrés : ×180/π", "×180/π"]]]],
+  cplx: [["CPLX", [["conjugué : conj(", "conj("], ["partie réelle : re(", "re("], ["partie imaginaire : im(", "im("], ["argument : arg(", "arg("], ["module : abs(", "abs("], ["►Rect (afficher a+bi)", "►Rect"], ["►Polaire (afficher r·e^(θi))", "►Polaire"], ["i", "i"]]]],
+  stat: [["ÉDIT", [["Éditer les listes", "@listes"], ["Trier L1 (croissant)", "@trier"], ["Vider L1", "@vider"], ["Exemple de mesures dans L1", "@exemple"]]],
+    ["CALC", [["Stats 1 variable", "stats1(L1)"], ["Stats 2 variables", "stats2(L1;L2)"], ["Régression linéaire y = ax + b", "regLin(L1;L2)"], ["Modèle y = ax", "regProp(L1;L2)"], ["moyenne(", "moyenne("], ["écart-type (n−1) : ecartType(", "ecartType("]]],
+    ["INCERT", [["Incertitude type A : uA(L1) = Sx/√n", "uA(L1)"], ["Type B graduation : uB(grad) = grad/√12", "uB("], ["Type B tolérance : uTol(a) = a/√3", "uTol("], ["Écart normalisé : z(x;u;xréf)", "z("], ["Écrire le résultat : ecrire(x;u)", "ecrire("]]]],
+  mode: null };
+function initGraphique() {
+  G = Object.assign(gDefaut(), S.g || {}); G.L = Object.assign(gDefaut().L, G.L || {}); G.win = Object.assign(gDefaut().win, G.win || {}); S.g = G;
+  Mc = math.create(math.all, {});
+  $("#tgClavier").innerHTML = TG.map((r, i) => `<div class="tg-rang${i === 0 ? " tg-r0" : ""}">${r.map(([id, l, l2, c]) => `<div class="tg-k"><span class="tg-l2">${esc(l2 || "")}</span><button type="button" class="${c || (i === 0 ? "kt" : "kfn")}" data-k="${id}" aria-label="${esc(l)}${l2 ? " (2nde : " + esc(l2) + ")" : ""}">${esc(l)}</button></div>`).join("")}</div>`).join("");
+  $$("#tgClavier button").forEach(b => b.addEventListener("click", () => { touche(b.dataset.k); $("#tg").focus({ preventScroll: true }); }));
+  $("#tg").addEventListener("keydown", e => { if (e.ctrlKey || e.metaKey || e.altKey) return; const k = e.key, m = { Enter: "enter", Backspace: "del", Escape: "clear", ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Delete: "del" };
+    if (m[k]) { e.preventDefault(); touche(m[k]); } else if (k.length === 1) { e.preventDefault(); if (V.vue === "menu" && /[1-9]/.test(k)) { choisirMenu(Number(k) - 1); return; } tape(k === "*" ? "×" : k === "/" ? "÷" : k === "-" ? "−" : k === "x" ? "X" : k === ">" ? "→" : k); } });
+  $("#tgAj").onclick = ajEcran; $("#tgReset").onclick = () => { if (!confirm("Effacer l'historique, les listes et les fonctions de la calculatrice graphique ?")) return; S.g = G = gDefaut(); V.vue = "home"; V.ent = { t: "", p: 0 }; sauve(); rend(); };
+  rend(); }
+function sauveG() { S.g = G; sauve(); }
+function champ() { if (V.vue === "home") return V.ent; if (V.vue === "yeq") return V.yc || (V.yc = { t: G.Y[V.ysel], p: G.Y[V.ysel].length }); if (V.vue === "listes") return V.lb || (V.lb = { t: "", p: 0 }); if (V.vue === "fen") return V.fb || (V.fb = { t: "", p: 0 }); return null; }
+function tape(t) { if (["graph", "table", "menu", "mode"].includes(V.vue)) { V.vue = V.prec === "yeq" ? "yeq" : "home"; V.tr = null; }
+  const c = champ(); if (!c) return; c.t = c.t.slice(0, c.p) + t + c.t.slice(c.p); c.p += t.length; if (V.vue === "yeq") { G.Y[V.ysel] = c.t; sauveG(); } rend(); }
+function touche(k) { const s = tg2; tg2 = false;
+  if (k === "sec") { tg2 = !s; return rend(); }
+  if (s && k === "mode") { V.vue = "home"; V.tr = null; return rend(); }
+  if (k === "mode" && !s) { V.prec = V.vue === "menu" ? V.prec : V.vue; V.vue = "mode"; V.msel = 0; return rend(); }
+  if (k === "math" || k === "cplx" && !s || k === "stat") { const nom = s ? (k === "math" ? "angle" : k === "stat" ? "@listes" : k) : k; if (nom === "@listes") return ouvreListes();
+    V.prec = ["home", "yeq"].includes(V.vue) ? V.vue : "home"; V.menu = { nom, tab: 0, sel: 0 }; V.vue = "menu"; return rend(); }
+  if (k === "yeq") { V.vue = "yeq"; V.yc = null; return rend(); }
+  if (k === "fen") { V.vue = "fen"; V.fb = null; V.fneuf = true; return rend(); }
+  if (k === "graph") { V.vue = "graph"; V.tr = null; return rend(); }
+  if (k === "trace") { V.vue = "graph"; const i = G.Y.findIndex(y => y.trim()); V.tr = i < 0 ? null : { i, x: (G.win.Xmin + G.win.Xmax) / 2 }; return rend(); }
+  if (k === "tbl") { V.vue = "table"; V.tbl0 = G.win.TblDebut; return rend(); }
+  const vue = V.vue;
+  if (vue === "menu") return toucheMenu(k);
+  if (vue === "mode") return toucheMode(k);
+  if (vue === "graph") { if (V.tr) { const d = (G.win.Xmax - G.win.Xmin) / 94, act = G.Y.map((y, i) => y.trim() ? i : -1).filter(i => i >= 0);
+      if (k === "left") V.tr.x -= d; else if (k === "right") V.tr.x += d; else if (k === "up" || k === "down") { const j = act.indexOf(V.tr.i); V.tr.i = act[(j + (k === "up" ? -1 : 1) + act.length) % act.length]; } else if (k === "clear") V.tr = null; return rend(); }
+    if (k === "clear") { V.vue = "home"; return rend(); } }
+  if (vue === "table") { const p = G.win.PasTbl || 1; if (k === "up") V.tbl0 -= p; else if (k === "down") V.tbl0 += p; else if (k === "clear") V.vue = "home"; return rend(); }
+  if (s && INS2[k]) return tape(INS2[k]);
+  if (/^\d$/.test(k)) return tape(k);
+  const c = champ();
+  if (vue === "listes") return toucheListes(k, c);
+  if (vue === "fen") return toucheFen(k, c);
+  if (k === "left" && c) { c.p = Math.max(0, c.p - 1); return rend(); }
+  if (k === "right" && c) { c.p = Math.min(c.t.length, c.p + 1); return rend(); }
+  if (k === "del" && c) { if (c.p > 0) { c.t = c.t.slice(0, c.p - 1) + c.t.slice(c.p); c.p--; } if (vue === "yeq") { G.Y[V.ysel] = c.t; sauveG(); } return rend(); }
+  if (vue === "yeq") { if (k === "up" || k === "down" || k === "enter") { V.ysel = (V.ysel + (k === "up" ? 3 : 1)) % 4; V.yc = null; return rend(); } if (k === "clear") { c.t = ""; c.p = 0; G.Y[V.ysel] = ""; sauveG(); return rend(); } }
+  if (vue === "home") {
+    if (k === "clear") { if (V.ent.t) V.ent = { t: "", p: 0 }; else G.hist = []; sauveG(); return rend(); }
+    if (k === "up" || k === "down") { const H = G.hist; if (!H.length) return; V.hp = k === "up" ? Math.min(H.length - 1, V.hp + 1) : Math.max(-1, V.hp - 1); const t = V.hp < 0 ? "" : H[H.length - 1 - V.hp].e; V.ent = { t, p: t.length }; return rend(); }
+    if (k === "enter") return executer(); }
+  if (INS[k]) return tape(INS[k]); }
+function executer() { let e = V.ent.t.trim(); if (!e) { const H = G.hist; if (H.length) e = H[H.length - 1].e; else return; }
+  let force = null; if (/►Rect\s*$/.test(e)) force = "rect"; if (/►Polaire\s*$/.test(e)) force = "polaire";
+  let r, err = false; try { let cible = null; const m = /^(.*)→\s*([A-Za-z]\w*)\s*$/.exec(e); let ex = m ? m[1] : e; if (m) cible = m[2];
+    if (!ex.trim() && cible) throw new Error("rien à stocker"); const v = evalG(ex); if (v === undefined) throw new Error("vide");
+    r = fmtG(v, force);
+    if (cible) { if (/^L[1-6]$/.test(cible)) { G.L[cible] = arr(v).map(x => nb(x)).filter(x => typeof x === "number"); } else G.vars[cible] = typeof v === "number" ? v : v && v.isComplex ? v.toString() === "" ? 0 : v : v; }
+    if (typeof nb(v) === "number" || v && v.isComplex) G.vars.Ans = v && v.isComplex ? v : nb(v);
+  } catch (x) { r = errG(x); err = true; }
+  G.hist.push({ e, r, err }); if (G.hist.length > 80) G.hist.shift(); V.ent = { t: "", p: 0 }; V.hp = -1;
+  if (!err) { S.journal.push({ t: Date.now(), type: "calc", titre: "Calculatrice graphique (" + (G.angle === "deg" ? "degrés" : "radians") + (G.cplx !== "reel" ? ", complexes" : "") + ")", texte: e + "\n" + (Array.isArray(r) ? r.join("\n") : "= " + r) }); if (S.journal.length > 120) S.journal.shift(); majNb(); }
+  sauveG(); rend(); }
+function toucheMenu(k) { const M0 = MENUS[V.menu.nom], it = M0[V.menu.tab][1];
+  if (k === "left" || k === "right") { V.menu.tab = (V.menu.tab + (k === "left" ? M0.length - 1 : 1)) % M0.length; V.menu.sel = 0; }
+  else if (k === "up") V.menu.sel = (V.menu.sel + it.length - 1) % it.length; else if (k === "down") V.menu.sel = (V.menu.sel + 1) % it.length;
+  else if (k === "enter") return choisirMenu(V.menu.sel); else if (k === "clear") V.vue = V.prec; rend(); }
+function choisirMenu(i) { const it = MENUS[V.menu.nom][V.menu.tab][1][i]; if (!it) return; const a = it[1]; V.vue = V.prec;
+  if (a === "@listes") return ouvreListes(); if (a === "@trier") { G.L.L1.sort((x, y) => x - y); sauveG(); toast("L1 triée"); return ouvreListes(); }
+  if (a === "@vider") { G.L.L1 = []; sauveG(); return ouvreListes(); }
+  if (a === "@exemple") { G.L.L1 = [9.78, 9.82, 9.8, 9.85, 9.79, 9.81, 9.83, 9.77, 9.84, 9.8]; sauveG(); toast("Exemple : 10 mesures de g dans L1"); return ouvreListes(); }
+  tape(a); }
+const MODES = [["angle", "Angle", [["deg", "DEGRÉ"], ["rad", "RADIAN"]]], ["cplx", "Nombres", [["reel", "RÉEL"], ["rect", "a+bi"], ["polaire", "r·e^(θi)"]]], ["aff", "Écriture", [["normal", "NORMALE"], ["sci", "SCIENTIFIQUE"]]], ["cs", "Chiffres signif.", [[0, "AUTO"], [2, "2"], [3, "3"], [4, "4"], [5, "5"], [6, "6"]]]];
+function toucheMode(k) { const L = MODES[V.msel], o = L[2], i = o.findIndex(x => x[0] === G[L[0]]);
+  if (k === "up") V.msel = (V.msel + MODES.length - 1) % MODES.length; else if (k === "down") V.msel = (V.msel + 1) % MODES.length;
+  else if (k === "left" || k === "right") { G[L[0]] = o[(i + (k === "left" ? o.length - 1 : 1)) % o.length][0]; sauveG(); }
+  else if (k === "clear" || k === "enter") V.vue = V.prec === "mode" ? "home" : V.prec; rend(); }
+function ouvreListes() { V.vue = "listes"; V.lb = { t: "", p: 0 }; rend(); }
+function toucheListes(k, c) { const col = LISTES[V.lc], L = G.L[col];
+  if (k === "left" || k === "right") { if (c.t) { c.p = Math.max(0, Math.min(c.t.length, c.p + (k === "left" ? -1 : 1))); } else { V.lc = (V.lc + (k === "left" ? 5 : 1)) % 6; V.lr = Math.min(V.lr, G.L[LISTES[V.lc]].length); } return rend(); }
+  if (k === "up" || k === "down") { V.lr = Math.max(0, Math.min(L.length, V.lr + (k === "up" ? -1 : 1))); c.t = ""; c.p = 0; return rend(); }
+  if (k === "del") { if (c.t) { if (c.p > 0) { c.t = c.t.slice(0, c.p - 1) + c.t.slice(c.p); c.p--; } } else if (V.lr < L.length) { L.splice(V.lr, 1); sauveG(); } return rend(); }
+  if (k === "clear") { if (c.t) { c.t = ""; c.p = 0; } else { V.vue = "home"; } return rend(); }
+  if (k === "enter") { if (!c.t.trim()) { V.lr = Math.min(L.length, V.lr + 1); return rend(); }
+    try { const v = nb(evalG(c.t)); if (typeof v !== "number" || !isFinite(v)) throw new Error("nombre attendu"); if (V.lr < L.length) L[V.lr] = v; else L.push(v); V.lr++; c.t = ""; c.p = 0; sauveG(); }
+    catch (x) { toast("Valeur non valable"); } return rend(); }
+  if (INS[k]) return tape(INS[k]); }
+const FEN = [["Xmin", "Xmin"], ["Xmax", "Xmax"], ["Xgrad", "Xgrad"], ["Ymin", "Ymin"], ["Ymax", "Ymax"], ["Ygrad", "Ygrad"], ["TblDebut", "Table : début"], ["PasTbl", "Table : pas"]];
+function toucheFen(k, c) {
+  const valide = () => { if (!c.t.trim()) return true; try { const v = nb(evalG(c.t)); if (typeof v !== "number" || !isFinite(v)) throw 0; G.win[FEN[V.fsel][0]] = v; sauveG(); c.t = ""; c.p = 0; return true; } catch (x) { toast("Nombre attendu"); return false; } };
+  if (k === "up" || k === "down" || k === "enter") { if (!valide()) return rend(); V.fsel = (V.fsel + (k === "up" ? FEN.length - 1 : 1)) % FEN.length; return rend(); }
+  if (k === "del") { if (c.p > 0) { c.t = c.t.slice(0, c.p - 1) + c.t.slice(c.p); c.p--; } return rend(); }
+  if (k === "clear") { if (c.t) { c.t = ""; c.p = 0; } else V.vue = "home"; return rend(); }
+  if (k === "left" || k === "right") { c.p = Math.max(0, Math.min(c.t.length, c.p + (k === "left" ? -1 : 1))); return rend(); }
+  if (INS[k]) return tape(INS[k]); }
+/* ---------- affichage ---------- */
+const curseur = c => esc(c.t.slice(0, c.p)) + `<span class="tg-cur">${esc(c.t[c.p] || " ")}</span>` + esc(c.t.slice(c.p + 1));
+function rend() {
+  if (!G) return; const v = V.vue, el = $("#tgVue"), cv = $("#tgCv");
+  $("#tgEtat").innerHTML = `<span>${G.angle === "deg" ? "DEG" : "RAD"}</span><span>${{ reel: "RÉEL", rect: "a+bi", polaire: "r·e^θi" }[G.cplx]}</span><span>${G.aff === "sci" ? "SCI" : "NORM"}${G.cs ? " " + G.cs + "cs" : ""}</span><span class="tg-2${tg2 ? " on" : ""}">2nde</span>`;
+  $$("#tgClavier .tg-k").forEach(k => k.classList.toggle("sec-on", tg2));
+  cv.classList.toggle("cache", v !== "graph"); el.classList.toggle("cache", v === "graph"); let pied = "";
+  if (v === "home") { el.innerHTML = G.hist.slice(-30).map(h => `<div class="tg-e">${esc(h.e)}</div>` + (Array.isArray(h.r) ? `<div class="tg-r tg-multi">${h.r.map(esc).join("<br>")}</div>` : `<div class="tg-r${h.err ? " tg-err" : ""}">${esc(h.r).replace(/\n/g, "<br>")}</div>`)).join("") + `<div class="tg-in">${curseur(V.ent)}</div>`; el.scrollTop = el.scrollHeight; }
+  else if (v === "menu") { const M0 = MENUS[V.menu.nom]; el.innerHTML = `<div class="tg-tabs">${M0.map((t, i) => `<span class="${i === V.menu.tab ? "on" : ""}" data-tab="${i}">${esc(t[0])}</span>`).join("")}</div>` + M0[V.menu.tab][1].map((it, i) => `<div class="tg-it${i === V.menu.sel ? " on" : ""}" data-it="${i}">${i + 1}: ${esc(it[0])}</div>`).join("");
+    $$("#tgVue [data-tab]").forEach(s => s.onclick = () => { V.menu.tab = Number(s.dataset.tab); V.menu.sel = 0; rend(); }); $$("#tgVue [data-it]").forEach(s => s.onclick = () => choisirMenu(Number(s.dataset.it))); pied = "◄ ► onglet · ▲ ▼ choix · entrer"; }
+  else if (v === "mode") { el.innerHTML = '<div class="tg-titre">MODE</div>' + MODES.map(([k, n, o], i) => `<div class="tg-mode${i === V.msel ? " sel" : ""}"><b>${esc(n)}</b> ${o.map(([val, t]) => `<span class="${G[k] === val ? "on" : ""}" data-m="${i}" data-v="${val}">${esc(t)}</span>`).join(" ")}</div>`).join("");
+    $$("#tgVue [data-m]").forEach(s => s.onclick = () => { const L = MODES[s.dataset.m]; G[L[0]] = typeof L[2][0][0] === "number" ? Number(s.dataset.v) : s.dataset.v; V.msel = Number(s.dataset.m); sauveG(); rend(); }); pied = "▲ ▼ ligne · ◄ ► choix · entrer"; }
+  else if (v === "yeq") { const c = champ(); el.innerHTML = '<div class="tg-titre">FONCTIONS (variable X)</div>' + G.Y.map((y, i) => `<div class="tg-y${i === V.ysel ? " sel" : ""}" data-y="${i}"><span style="color:${YC[i]}">■</span> Y${i + 1} = ${i === V.ysel ? curseur(c) : esc(y)}</div>`).join("");
+    $$("#tgVue [data-y]").forEach(s => s.onclick = () => { V.ysel = Number(s.dataset.y); V.yc = null; rend(); }); pied = "graphe pour tracer · table pour les valeurs"; }
+  else if (v === "fen") { const c = champ(); el.innerHTML = '<div class="tg-titre">FENÊTRE</div>' + FEN.map(([k, n], i) => `<div class="tg-y${i === V.fsel ? " sel" : ""}" data-f="${i}">${esc(n)} = ${i === V.fsel && c.t ? curseur(c) : esc(joli(G.win[k], 0))}</div>`).join("");
+    $$("#tgVue [data-f]").forEach(s => s.onclick = () => { V.fsel = Number(s.dataset.f); V.fb = { t: "", p: 0 }; rend(); }); pied = "tapez une valeur puis entrer"; }
+  else if (v === "listes") { const c = champ(), c0 = Math.max(0, Math.min(3, V.lc - 1)), cols = LISTES.slice(c0, c0 + 3), n = Math.max(...cols.map(k => G.L[k].length)) + 1;
+    let h = `<table class="tg-tab"><tr>${cols.map(k => `<th class="${k === LISTES[V.lc] ? "on" : ""}">${k}</th>`).join("")}</tr>`;
+    const r0 = Math.max(0, V.lr - 5); for (let r = r0; r < Math.min(n, r0 + 7); r++) h += `<tr>${cols.map((k, j) => { const sel = k === LISTES[V.lc] && r === V.lr, val = G.L[k][r]; return `<td class="${sel ? "sel" : ""}" data-c="${c0 + j}" data-r="${r}">${val === undefined ? (sel ? "…" : "") : esc(joli(val, 0))}</td>`; }).join("")}</tr>`;
+    el.innerHTML = h + "</table>" + `<div class="tg-in">${LISTES[V.lc]}(${V.lr + 1}) = ${curseur(c)}</div>`;
+    $$("#tgVue [data-c]").forEach(s => s.onclick = () => { V.lc = Number(s.dataset.c); V.lr = Math.min(Number(s.dataset.r), G.L[LISTES[V.lc]].length); V.lb = { t: "", p: 0 }; rend(); }); pied = "entrer valide · suppr efface · annul sort"; }
+  else if (v === "table") { const p = G.win.PasTbl || 1, act = G.Y.map((y, i) => y.trim() ? i : -1).filter(i => i >= 0).slice(0, 2);
+    let h = `<table class="tg-tab"><tr><th>X</th>${act.map(i => `<th style="color:${YC[i]}">Y${i + 1}</th>`).join("")}</tr>`;
+    for (let r = 0; r < 7; r++) { const x = +(V.tbl0 + r * p).toPrecision(12); h += `<tr><td>${esc(joli(x, 0))}</td>${act.map(i => { const y = yVal(i, x); return `<td>${isFinite(y) ? esc(g5(y)) : "ERREUR"}</td>`; }).join("")}</tr>`; }
+    el.innerHTML = act.length ? h + "</table>" : '<div class="tg-titre">Aucune fonction : touche f(x)=</div>'; pied = "▲ ▼ défiler · début et pas dans fenêtre"; }
+  else if (v === "graph") pied = traceG();
+  $("#tgPied").textContent = pied; }
+function yVal(i, x) { try { const f = V.cmp && V.cmp[i] && V.cmp[i].src === G.Y[i] ? V.cmp[i].f : (V.cmp = V.cmp || [], V.cmp[i] = { src: G.Y[i], f: M.compile(prepG(G.Y[i])) }).f;
+  const r = nb(f.evaluate(scopeG({ X: x, x }))); return typeof r === "number" ? r : NaN; } catch (e) { return NaN; } }
+function traceG() { const cv = $("#tgCv"), dpr = Math.min(2, devicePixelRatio || 1), w = cv.offsetWidth, h = cv.offsetHeight; if (!w) return "";
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); const c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const W = G.win; c.fillStyle = "#fbfaf6"; c.fillRect(0, 0, w, h); if (!(W.Xmax > W.Xmin && W.Ymax > W.Ymin)) return "Fenêtre incorrecte (Xmin < Xmax, Ymin < Ymax)";
+  const X = x => (x - W.Xmin) / (W.Xmax - W.Xmin) * w, Y = y => h - (y - W.Ymin) / (W.Ymax - W.Ymin) * h;
+  c.strokeStyle = "#e4dcef"; c.lineWidth = 1; c.beginPath(); if (W.Xgrad > 0 && (W.Xmax - W.Xmin) / W.Xgrad < 200) for (let x = Math.ceil(W.Xmin / W.Xgrad) * W.Xgrad; x <= W.Xmax; x += W.Xgrad) { c.moveTo(Math.round(X(x)) + .5, 0); c.lineTo(Math.round(X(x)) + .5, h); }
+  if (W.Ygrad > 0 && (W.Ymax - W.Ymin) / W.Ygrad < 200) for (let y = Math.ceil(W.Ymin / W.Ygrad) * W.Ygrad; y <= W.Ymax; y += W.Ygrad) { c.moveTo(0, Math.round(Y(y)) + .5); c.lineTo(w, Math.round(Y(y)) + .5); } c.stroke();
+  c.strokeStyle = "#3b2a52"; c.lineWidth = 1.2; c.beginPath(); if (W.Ymin <= 0 && W.Ymax >= 0) { c.moveTo(0, Y(0)); c.lineTo(w, Y(0)); } if (W.Xmin <= 0 && W.Xmax >= 0) { c.moveTo(X(0), 0); c.lineTo(X(0), h); } c.stroke();
+  G.Y.forEach((y, i) => { if (!y.trim()) return; c.strokeStyle = YC[i]; c.lineWidth = 2; c.beginPath(); let prec = null;
+    for (let k = 0; k <= w * 2; k++) { const x = W.Xmin + (W.Xmax - W.Xmin) * k / (w * 2), v = yVal(i, x); if (!isFinite(v)) { prec = null; continue; } const sy = Math.max(-h, Math.min(2 * h, Y(v)));
+      if (prec === null || Math.abs(sy - prec) > h * 2) c.moveTo(X(x), sy); else c.lineTo(X(x), sy); prec = sy; } c.stroke(); });
+  if (V.tr) { const y = yVal(V.tr.i, V.tr.x); c.strokeStyle = "rgba(59,42,82,.5)"; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(X(V.tr.x), 0); c.lineTo(X(V.tr.x), h); c.stroke(); c.setLineDash([]);
+    if (isFinite(y)) { c.fillStyle = YC[V.tr.i]; c.beginPath(); c.arc(X(V.tr.x), Y(y), 4.5, 0, 7); c.fill(); }
+    return `Y${V.tr.i + 1}   X = ${g5(V.tr.x)}   Y = ${g5(y)}`; }
+  return G.Y.some(y => y.trim()) ? "trace pour lire les coordonnées" : "Aucune fonction : touche f(x)="; }
+function ajEcran() { if (V.vue === "graph") { const fs = G.Y.map((y, i) => y.trim() ? `Y${i + 1} = ${y}` : "").filter(Boolean); if (!fs.length) return toast("Aucune courbe");
+    return ajoute("graphe", "Calculatrice graphique : graphe", fs.join("\n") + `\nFenêtre : X de ${virg(G.win.Xmin)} à ${virg(G.win.Xmax)}, Y de ${virg(G.win.Ymin)} à ${virg(G.win.Ymax)}`, reduit($("#tgCv"), 700)); }
+  if (V.vue === "listes") { const t = LISTES.filter(k => G.L[k].length).map(k => `${k} = {${G.L[k].map(x => virg(x)).join(" ; ")}}`).join("\n"); return t ? ajoute("listes", "Calculatrice graphique : listes", t) : toast("Listes vides"); }
+  const H = G.hist.slice(-8); if (!H.length) return toast("Écran vide"); ajoute("ecran", "Calculatrice graphique : écran", H.map(h => h.e + "\n" + (Array.isArray(h.r) ? h.r.join("\n") : "= " + h.r)).join("\n\n")); }
+
+/* ================= MON TRAVAIL ================= */
+function majNb() { $("#nbTravail").textContent = S.journal.length; }
+function rendJournal() { majNb(); const j = $("#journal");
+  if (!S.journal.length) { j.innerHTML = '<li class="journal-vide">Rien pour l\'instant : faites un calcul, ou cliquez sur « Ajouter à mon travail » dans les graphes et les incertitudes.</li>'; return; }
+  j.innerHTML = S.journal.map((x, i) => `<li><div class="t"><span>${esc(x.titre)} · ${new Date(x.t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span><button type="button" data-sup="${i}" aria-label="Retirer">Retirer</button></div><pre>${esc(x.texte)}</pre>${x.img ? `<img src="${x.img}" alt="Graphe">` : ""}</li>`).join("");
+  $$("[data-sup]").forEach(b => b.onclick = () => { S.journal.splice(Number(b.dataset.sup), 1); sauve(); rendJournal(); }); }
+function initTravail() {
+  ["eleve", "classe", "sujet", "remarques"].forEach(k => { $("#" + k).value = S[k] || ""; $("#" + k).addEventListener("input", () => { S[k] = $("#" + k).value; sauve(); }); });
+  $("#envoyer").onclick = envoyer; $("#pdf").onclick = pdf;
+  $("#copier").onclick = () => { const t = $("#code"); t.select(); try { navigator.clipboard.writeText(t.value).then(() => toast("Code copié"), () => document.execCommand("copy")); } catch (e) { document.execCommand("copy"); toast("Code copié"); } };
+  $("#effacer").onclick = () => $("#confEff").classList.remove("cache"); $("#effNon").onclick = () => $("#confEff").classList.add("cache");
+  $("#effOui").onclick = () => { S.journal = []; S.histo = []; S.remarques = ""; S.sujet = ""; S.t0 = Date.now(); $("#remarques").value = ""; $("#sujet").value = ""; sauve(); rendJournal(); rendHisto(); $("#confEff").classList.add("cache"); toast("Travail effacé"); };
+  rendJournal(); }
+function texteTravail() { return S.journal.map((x, i) => `${i + 1}. ${x.titre}\n${x.texte}`).join("\n\n"); }
+function verifNom() { const nom = $("#eleve").value.trim(), cl = $("#classe").value.trim(); if (!nom || !cl) { $("#envoiMsg").textContent = "Indiquez votre nom et votre classe."; (nom ? $("#classe") : $("#eleve")).focus(); return null; } return { nom, cl }; }
+async function envoyer() {
+  const id = verifNom(); if (!id) return; if (!S.journal.length && !S.remarques.trim()) { $("#envoiMsg").textContent = "Votre travail est vide : faites au moins un calcul."; return; }
+  const t1 = Date.now(), min = Math.max(1, Math.round((t1 - S.t0) / 60000)), sujet = S.sujet.trim(), corps = texteTravail();
+  const conc = ((sujet ? "Sujet : " + sujet + "\n" : "") + (S.remarques.trim() ? "Remarques : " + S.remarques.trim() + "\n\n" : "") + corps).slice(0, 1500);
+  const o = { v: 1, outil: 1, tp: ID, titre: TITRE + (sujet ? " (" + sujet + ")" : ""), eleve: id.nom, classe: id.cl, t0: S.t0, t1, note: null, av: 1, parties: [], erreurs: [], conc,
+    annexes: [{ titre: "Calculs et résultats", texte: corps.slice(0, 6000) }].concat(S.remarques.trim() ? [{ titre: "Remarques", texte: S.remarques.trim().slice(0, 1500) }] : []), j: [] };
+  const code = "TPEFIR1:" + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+  $("#code").value = code; $("#codeZone").classList.remove("cache");
+  let base = ""; try { base = window.top.location.origin; } catch (e) { base = location.origin; }
+  if (false) { $("#envoiMsg").textContent = "Envoi automatique impossible hors du site en ligne : copiez le code ci-dessous pour votre professeure."; return; }
+  const champs = { eleve: id.nom, classe: id.cl, tp: o.titre, note: "—", avancement: "100 %", erreurs: "aucune", reponses_fausses: "0", temps: min + " min",
+    detail: (sujet ? "Sujet : " + sujet + "\n\n" : "") + corps, conclusion: S.remarques.trim() || "(pas de remarque)", date: new Date().toLocaleString("fr-FR"), code };
+  const b = $("#envoyer"); b.disabled = true; $("#envoiMsg").textContent = "Préparation de votre bilan PDF…";
+  try { const r = await (window.EFIR_BILAN || window.top.EFIR_BILAN)(champs);
+    if (!r.ok) throw new Error(r.status); $("#envoiMsg").textContent = "✓ Bilan PDF téléchargé : déposez-le dans le devoir Google Classroom."; toast("Bilan téléchargé"); }
+  catch (e) { $("#envoiMsg").textContent = "Le PDF n'a pas pu être créé : copiez le code ci-dessous et collez-le dans le devoir Google Classroom."; }
+  finally { b.disabled = false; } }
+function ascii(s) { return String(s).replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+/g, m => "^" + m.split("").map(c => ({ "⁰": 0, "¹": 1, "²": 2, "³": 3, "⁴": 4, "⁵": 5, "⁶": 6, "⁷": 7, "⁸": 8, "⁹": 9, "⁻": "-" })[c]).join(""))
+  .replace(/[₀-₉]/g, c => String(c.charCodeAt(0) - 8320)).replace(/→/g, "->").replace(/−/g, "-").replace(/×/g, "x").replace(/√/g, "racine").replace(/Σ/g, "somme").replace(/∂/g, "d").replace(/≤/g, "<=").replace(/≥/g, ">=").replace(/π/g, "pi").replace(/ε/g, "eps").replace(/·/g, ".").replace(/̄/g, "moy").replace(/[^\x00-\xFF]/g, "?"); }
+function pdf() { const id = verifNom(); if (!id) return; $("#envoiMsg").textContent = "Préparation du PDF…";
+  charge(["lib/jspdf-2.5.1.umd.min.js", "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"], () => { try { fairePDF(id); } catch (e) { $("#envoiMsg").textContent = "Erreur pendant la création du PDF : " + e.message; } },
+    () => { $("#envoiMsg").textContent = "Le PDF n'a pas pu être créé (connexion). La fenêtre d'impression s'ouvre : choisissez « Enregistrer en PDF »."; montrer("travail"); setTimeout(() => print(), 300); }); }
+function fairePDF(id) {
+  const { jsPDF } = window.jspdf, d = new jsPDF({ unit: "mm", format: "a4" }), L = 210, H = 297, mg = 16; let y = 0;
+  const bandeau = () => { d.setFillColor(74, 20, 140); d.rect(0, 0, L, 22, "F"); d.setTextColor(255, 255, 255); d.setFont("helvetica", "bold"); d.setFontSize(15); d.text("Calculatrice scientifique - Mon travail", mg, 11); d.setFont("helvetica", "normal"); d.setFontSize(9); d.text("EFIR - Physique-chimie - Professeure : Mme Messaoudi - 2026-2027", mg, 17); d.setTextColor(36, 19, 58); y = 30; };
+  const saut = h => { if (y + h > H - 16) { d.addPage(); bandeau(); } };
+  const para = (t, taille, gras, coul) => { d.setFont("helvetica", gras ? "bold" : "normal"); d.setFontSize(taille || 10); d.setTextColor(...(coul || [36, 19, 58])); d.splitTextToSize(ascii(t), L - 2 * mg).forEach(l => { saut(taille * .5); d.text(l, mg, y); y += (taille || 10) * .45; }); };
+  bandeau();
+  para(`Eleve : ${id.nom}    Classe : ${id.cl}    Date : ${new Date().toLocaleString("fr-FR")}`, 10, true);
+  if (S.sujet.trim()) para("Sujet : " + S.sujet.trim(), 10); y += 3;
+  S.journal.forEach((x, i) => { saut(14); d.setDrawColor(209, 196, 233); d.line(mg, y - 3, L - mg, y - 3); para(`${i + 1}. ${x.titre}`, 11, true, [74, 20, 140]); para(x.texte, 10);
+    if (x.img) { try { const p = d.getImageProperties(x.img), w = Math.min(L - 2 * mg, 150), h = w * p.height / p.width; saut(h + 4); d.addImage(x.img, "PNG", mg, y, w, h); y += h + 4; } catch (e) {} } y += 3; });
+  if (!S.journal.length) para("(aucun calcul enregistre)", 10);
+  if (S.remarques.trim()) { y += 2; para("Mes remarques, ma conclusion", 11, true, [74, 20, 140]); para(S.remarques.trim(), 10); }
+  const n = d.getNumberOfPages(); for (let p = 1; p <= n; p++) { d.setPage(p); d.setFontSize(8); d.setTextColor(120, 100, 140); d.text(`Ma science physique-chimie - EFIR    Page ${p} / ${n}`, L / 2, H - 8, { align: "center" }); }
+  const f = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  d.save(`Calculatrice_travail_${f(id.nom)}.pdf`); $("#envoiMsg").textContent = "✓ PDF téléchargé. Déposez-le dans le devoir Google Classroom (Ajouter › Fichier, puis Rendre)."; }
+})();
+</script>
+<!--fiche-methode-->
+<style>
+#fm-btn{position:fixed;right:16px;bottom:16px;z-index:2147483000;display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:10px 16px;background:#4A148C;color:#fff;font:700 15px/1.2 "Atkinson Hyperlegible",system-ui,sans-serif;box-shadow:0 6px 20px rgba(36,19,58,.35);cursor:pointer}
+#fm-btn:hover{background:#380E6B}#fm-btn:focus-visible,#fm-fermer:focus-visible{outline:3px solid #c2185b;outline-offset:2px}
+#fm-voile{position:fixed;inset:0;background:rgba(36,19,58,.35);z-index:2147483001}
+#fm-panneau{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:#F8F6FA;z-index:2147483002;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(36,19,58,.3);transform:translateX(100%);transition:transform .3s ease}
+#fm-panneau.on{transform:none}
+#fm-tete{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid #D1C4E9;background:#fff;font:700 16px "Bricolage Grotesque","Atkinson Hyperlegible",sans-serif;color:#4A148C}
+#fm-fermer{border:1px solid #D1C4E9;background:#fff;color:#4A148C;border-radius:999px;padding:6px 14px;font:700 14px "Atkinson Hyperlegible",system-ui,sans-serif;cursor:pointer}#fm-fermer:hover{background:#EDE7F6}
+#fm-cadre{flex:1;border:0;width:100%;background:#F8F6FA}
+@media (max-width:640px){#fm-btn{right:12px;bottom:12px;padding:9px 13px;font-size:14px}}
+@media print{#fm-btn,#fm-voile,#fm-panneau{display:none!important}}
+</style>
+<button id="fm-btn" type="button" aria-haspopup="dialog" hidden>📘 Fiche méthode</button>
+<div id="fm-voile" hidden></div>
+<div id="fm-panneau" role="dialog" aria-modal="true" aria-labelledby="fm-titre" hidden><div id="fm-tete"><span id="fm-titre">📘 Fiche méthode · Calculatrice</span><button id="fm-fermer" type="button">✕ Fermer</button></div><iframe id="fm-cadre" name="fiche-tiroir" title="Fiche méthode"></iframe></div>
+<script>
+(function(){
+  var ID="outil-fiche-calculatrice",src=null;
+  try{var el=parent!==window&&parent.document.getElementById(ID);if(el){var b=atob(el.textContent.trim());src=new TextDecoder().decode(Uint8Array.from(b,function(c){return c.charCodeAt(0);}));}}catch(e){}
+  if(!src)return;
+  var bt=document.getElementById("fm-btn"),pn=document.getElementById("fm-panneau"),vo=document.getElementById("fm-voile"),cd=document.getElementById("fm-cadre"),fe=document.getElementById("fm-fermer");
+  bt.hidden=false;
+  function ouvre(){if(!cd.srcdoc)cd.srcdoc=src;pn.hidden=false;vo.hidden=false;requestAnimationFrame(function(){pn.classList.add("on");});fe.focus();}
+  function ferme(){pn.classList.remove("on");vo.hidden=true;setTimeout(function(){pn.hidden=true;},300);bt.focus();}
+  bt.onclick=ouvre;fe.onclick=ferme;vo.onclick=ferme;
+  addEventListener("keydown",function(e){if(e.key==="Escape"&&!pn.hidden)ferme();});
+})();
+</script>
+</body>
+</html>

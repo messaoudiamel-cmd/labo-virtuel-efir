@@ -1,0 +1,136 @@
+<!--efir1re:AE1 · Synthèse de l'allantoïne 3D-->
+window.EFIR_RETOUR = "premiere/matiere/Synth%C3%A8se";
+
+// ====================================================================
+// Ch. 8 · AE1 · Synthèse d'un solide : l'allantoïne
+// ====================================================================
+const MMAX8 = (1.34 * 6.3 * 0.5 / 74.0) * 158.1; // ≈ 9,0 g
+let M8LAST = null;
+let RF8, bal8, buch8, ice8, ep8, S8 = null, verre8;
+const fresh8 = () => ({ uree: false, acide: false, eau: false, limpide: false, h2so4: false, tReflux: 0, heat: false, solid: false, ice: false, filtre: false, lavage: null, mexp: null });
+function mForm8(t) { return MMAX8 * .82 * (1 - Math.exp(-t / 12)); }
+const C8 = {
+  id: 'p1_ch08_ae1', code: 'AE1', short: 'Synthèse de l\'allantoïne 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 8 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Synthèse d\'un solide : l\'allantoïne',
+  problem: 'L\'allantoïne est utilisée en cosmétique pour ses propriétés cicatrisantes. Comment la synthétiser, l\'isoler, et quel est le rendement de la synthèse ?',
+  mots: `<p>Équation : <span class="eq">2 CH₄ON₂(s) + C₂H₂O₃(aq) → C₄H₆O₃N₄(s) + 2 H₂O(ℓ)</span> (urée + acide glyoxylique → allantoïne + eau).<br>
+  Données : M(urée) = 60,0 g·mol⁻¹ ; M(acide glyoxylique) = 74,0 g·mol⁻¹ ; M(allantoïne) = 158,1 g·mol⁻¹ (température de fusion 238 °C).<br>
+  Solution d'acide glyoxylique à 50 % en masse, d = 1,34. Solubilité de l'allantoïne dans l'eau : 150 g·L⁻¹ bouillante, 5 g·L⁻¹ froide.<br>
+  <b>Chauffage à reflux</b> : chauffer sans perte de matière, les vapeurs se condensent dans le réfrigérant et retombent dans le ballon.<br>
+  <b>Rendement</b> η = n<sub>P</sub> / n<sub>max</sub> = m<sub>exp</sub> / m<sub>max</sub>.</p>`,
+  aide: `<p>Suis le protocole dans l'ordre : réactifs dans le ballon, eau du réfrigérant, chauffage jusqu'à solution limpide, acide sulfurique (lentement), reflux, refroidissement, filtration sous vide, lavage, séchage, pesée.<br>
+  Tu peux choisir la durée du reflux, le bain de glace et le liquide de lavage : observe leur effet sur le rendement.</p>`,
+  views: { ensemble: [[0, 1.05, 2.1], [0, .3, 0]] },
+  viewbar: [['Zoom ballon', () => flyTo([.1, .45, .6], [0, .24, 0])], ['Zoom filtration', () => flyTo([.95, .45, .7], [.95, .18, 0])]],
+  epi: ['blouse', 'gants', 'lunettes'],
+  protocol: [
+    { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes.' },
+    { id: 'reactifs', q: 'Q1', html: 'Introduire 6,9 g d\'urée et 6,3 mL de solution d\'acide glyoxylique dans le ballon.' },
+    { id: 'eau', q: 'Q2', html: 'Ouvrir la circulation d\'eau du réfrigérant.' },
+    { id: 'limpide', q: 'Q1', html: 'Agiter et chauffer jusqu\'à obtenir une solution limpide.' },
+    { id: 'h2so4', q: 'Q1', html: 'Introduire lentement 1,5 mL d\'acide sulfurique concentré.' },
+    { id: 'reflux', q: 'Q1', html: 'Chauffer à reflux (30 minutes conseillées) et observer.' },
+    { id: 'isoler', q: 'Q5', html: 'Refroidir, filtrer sous vide, laver le solide puis le sécher.' },
+    { id: 'pesee', q: 'Q6', html: 'Peser le solide obtenu.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q3-7', html: 'Calculer m<sub>max</sub> et le rendement, proposer des améliorations.' },
+    { id: 'conclusion', q: 'Q8', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'vider', html: 'Jeter le filtrat dans le bidon de récupération.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  table: { rowTitle: 'Élément du protocole',
+    rows: [{ label: 'Réfrigérant à eau', ans: [0, 0] }, { label: 'Acide sulfurique', ans: [1, 0] }, { label: 'Bain d\'eau glacée', ans: [2, 1] }, { label: 'Lavage à l\'eau glacée', ans: [3, 1] }, { label: 'Filtration sous vide', ans: [4, 1] }],
+    cols: [{ title: 'Rôle', options: ['condenser les vapeurs qui retombent dans le ballon', 'accélérer la réaction', 'diminuer la solubilité de l\'allantoïne pour qu\'elle précipite', 'éliminer réactifs et acide sans dissoudre le produit', 'séparer rapidement le solide du liquide'] }, { title: 'Étape', options: ['transformation', 'isolement'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q3', num: true, text: 'Quantité d\'urée introduite : n =', unit: 'mol', ans: 6.9 / 60, tol: .03 },
+    { q: 'Q3', num: true, text: 'Quantité d\'acide glyoxylique introduite : n =', unit: 'mol', ans: 1.34 * 6.3 * .5 / 74, tol: .03 },
+    { q: 'Q3', text: 'Réactif limitant :', options: ['l\'urée', 'l\'acide glyoxylique', 'aucun (proportions stœchiométriques exactes)'], ans: 1 },
+    { q: 'Q3', num: true, text: 'Masse maximale d\'allantoïne : m<sub>max</sub> =', unit: 'g', ans: MMAX8, tol: .03 },
+    { q: 'Q4', text: 'Pourquoi un solide apparaît-il dans le ballon ?', options: ['Les quelques mL d\'eau du ballon ne peuvent dissoudre qu\'environ 0,7 g d\'allantoïne (150 g·L⁻¹) : au-delà, elle précipite', 'L\'urée ne se dissout plus', 'L\'acide sulfurique devient solide'], ans: 0 },
+    { q: 'Q6', num: true, text: 'Rendement de ta synthèse : η =', unit: '%', get ans() { return M8LAST ? 100 * M8LAST / MMAX8 : NaN; }, tol: .03 },
+    { q: 'Q7', text: 'Pour augmenter le rendement, on peut…', options: ['chauffer moins longtemps', 'chauffer plus longtemps et refroidir dans un bain de glace avant de filtrer', 'laver le solide à l\'eau chaude'], ans: 1 },
+  ],
+  conclusion: { q: 'Q8 · Les étapes de la synthèse d\'une espèce chimique solide :', options: ['Transformation (chauffage à reflux) → isolement (refroidissement, filtration sous vide, lavage, séchage) → caractérisation → purification si nécessaire.', 'Filtration → chauffage → pesée des réactifs.', 'Il suffit de mélanger les réactifs à froid.', 'Transformation puis distillation du solide.'], ans: 0 },
+  build() {
+    RF8 = makeReflux(); scene.add(RF8.group);
+    bal8 = makeBalance(); bal8.group.position.set(-.75, 0, .25); scene.add(bal8.group);
+    ep8 = makeVessel({ cap: 10, r: .011, hgt: .2, kind: 'eprouvette', grad: .2, label: 'Éprouvette 10 mL' }); ep8.group.position.set(-.45, .012, .3); scene.add(ep8.group);
+    const b1 = makeBottle('Urée (solide)', 0xffffff, { cap: 0x1565c0 }); b1.scale.setScalar(.7); b1.position.set(-1.0, 0, -.3); scene.add(b1);
+    const b2 = makeBottle('Acide glyoxylique\n50 % (d = 1,34)', 0xf5f5f5, { cap: 0x6a1b9a }); b2.position.set(-.65, 0, -.4); scene.add(b2);
+    const b3 = makeBottle('Acide sulfurique\nconcentré ⚠', 0xf5f5f5, { cap: 0xc62828 }); b3.scale.setScalar(.8); b3.position.set(.45, 0, -.4); scene.add(b3);
+    ice8 = new THREE.Group(); const cr = new THREE.Mesh(new THREE.CylinderGeometry(.13, .12, .07, 32, 1, true), Object.assign(GLASS(), { opacity: .3 })); cr.position.y = .035; ice8.add(cr);
+    const iw = new THREE.Mesh(new THREE.CylinderGeometry(.125, .115, .05, 32), new THREE.MeshStandardMaterial({ color: 0xbbdefb, transparent: true, opacity: .45 })); iw.position.y = .026; ice8.add(iw);
+    for (let i = 0; i < 12; i++) { const c = new THREE.Mesh(new THREE.BoxGeometry(.025, .025, .025), new THREE.MeshStandardMaterial({ color: 0xe3f2fd, transparent: true, opacity: .8 })); c.position.set(rnd(-.09, .09), .05, rnd(-.09, .09)); c.rotation.set(rnd(0, 3), rnd(0, 3), 0); ice8.add(c); }
+    const il = label('Bain d\'eau glacée', { size: 28, scale: .001 }); il.position.y = .15; ice8.add(il); ice8.position.set(.5, 0, .3); scene.add(ice8);
+    buch8 = makeBuchner(); buch8.group.position.set(.95, 0, 0); scene.add(buch8.group);
+    verre8 = new THREE.Mesh(new THREE.SphereGeometry(.06, 24, 8, 0, Math.PI * 2, Math.PI * .8, Math.PI * .2), Object.assign(GLASS(), { opacity: .4 })); verre8.visible = false; scene.add(verre8);
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene() { S8 = fresh8(); if (!RF8) return; RF8.setLevel(0); RF8.setWater(false); RF8.setHeat(false); RF8.solidMat.opacity = 0; RF8.setColor(0xf5f5f5, .4); RF8.group.position.set(0, 0, 0); buch8.cake.material.opacity = 0; buch8.filt.material.opacity = 0; verre8.visible = false; bal8.mass = 0; bal8.tare = 0; bal8.show(); if ($('#b8u')) this.refreshPanel(); },
+  buildPanel() {
+    $('#actions').append(
+      h('h3', {}, '1. Transformation'),
+      h('div', { class: 'row' }, h('button', { id: 'b8u', onclick: () => act({ t: 'uree' }) }, 'Peser 6,9 g d\'urée → ballon'), h('button', { id: 'b8a', onclick: () => act({ t: 'acide' }) }, '6,3 mL d\'acide glyoxylique → ballon')),
+      h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { id: 'b8e', onclick: () => act({ t: 'eau' }) }, '💧 Ouvrir l\'eau du réfrigérant'), h('button', { id: 'b8l', onclick: () => act({ t: 'limpide' }) }, '🔥 Chauffer jusqu\'à solution limpide')),
+      h('button', { id: 'b8s', style: 'margin-top:6px', onclick: () => act({ t: 'h2so4' }) }, 'Ajouter lentement 1,5 mL d\'acide sulfurique'),
+      h('div', { class: 'row', style: 'margin-top:6px' }, h('span', {}, 'Reflux :'), ...[10, 20, 30, 45].map(m => h('button', { 'data-r': m, onclick: () => act({ t: 'reflux', min: m }) }, m + ' min'))),
+      h('h3', {}, '2. Isolement'),
+      h('div', { class: 'row' }, h('button', { id: 'b8g', onclick: () => act({ t: 'glace' }) }, '🧊 Refroidir dans le bain de glace'), h('button', { id: 'b8f', onclick: () => act({ t: 'filtrer' }) }, 'Filtrer sous vide (sans refroidir davantage)')),
+      h('div', { class: 'row', style: 'margin-top:6px' }, h('span', {}, 'Laver le solide :'), h('button', { 'data-w': 'froid', onclick: () => act({ t: 'laver', w: 'froid' }) }, 'à l\'eau glacée'), h('button', { 'data-w': 'tiede', onclick: () => act({ t: 'laver', w: 'tiede' }) }, 'à l\'eau tiède')),
+      h('button', { id: 'b8p', style: 'margin-top:6px', onclick: () => act({ t: 'pesee' }) }, 'Sécher à l\'étuve puis peser'),
+      h('div', { id: 'r8', class: 'note', style: 'margin-top:6px' }),
+      h('h3', {}, 'Ranger'), h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Filtrat dans le bidon (recommencer)'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 Filtrat à l\'évier')));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const en = (s, ok) => $$(s).forEach(b => b.disabled = BUSY || !ok);
+    en('#b8u', !S8.uree); en('#b8a', !S8.acide); en('#b8e', !S8.eau); en('#b8l', S8.uree && S8.acide && !S8.limpide); en('#b8s', S8.limpide && !S8.h2so4);
+    en('[data-r]', S8.h2so4 && !S8.tReflux); en('#b8g', S8.tReflux && !S8.ice && !S8.filtre); en('#b8f', S8.tReflux && !S8.filtre); en('[data-w]', S8.filtre && !S8.lavage); en('#b8p', S8.lavage && S8.mexp == null);
+    $('#r8').innerHTML = S8.mexp != null ? `Masse d'allantoïne sèche obtenue : <b>${S8.mexp.toFixed(2).replace('.', ',')} g</b>` : '';
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    if (a.t === 'uree') { await tween(1, p => { bal8.mass = 6.9 * p; bal8.show(); }); await wait(300); RF8.solidMat.color.set(0xffffff); await tween(.8, p => RF8.solidMat.opacity = .9 * p); bal8.mass = 0; bal8.show(); S8.uree = true; say('6,9 g d\'urée (solide blanc) introduits dans le ballon.'); if (S8.acide) step('reactifs'); return; }
+    if (a.t === 'acide') { ep8.setColor(0xf5f5f5, .4); await tween(.6, p => ep8.setVolume(6.3 * p)); await tween(.8, p => { ep8.setVolume(6.3 * (1 - p)); RF8.setLevel(.42 * p); }); S8.acide = true; say('6,3 mL de solution d\'acide glyoxylique introduits dans le ballon.'); if (S8.uree) step('reactifs'); return; }
+    if (a.t === 'eau') { RF8.setWater(true); S8.eau = true; say('L\'eau circule dans le réfrigérant, de bas en haut.'); step('eau'); return; }
+    if (a.t === 'limpide') {
+      if (!S8.eau) { say('<b>Attention :</b> ouvre d\'abord l\'eau du réfrigérant, sinon des vapeurs s\'échappent !'); observe('Chauffage demandé sans circulation d\'eau dans le réfrigérant (erreur évitée).'); return false; }
+      RF8.setHeat(true); if (!INSTANT) flyTo([.1, .45, .6], [0, .24, 0]);
+      await tween(3, p => { RF8.solidMat.opacity = .9 * (1 - p); RF8.setLevel(.42 + .03 * p); }); S8.limpide = true; RF8.setHeat(false);
+      observe('En chauffant et en agitant, l\'urée se dissout : la solution devient limpide.'); say('Solution limpide obtenue.'); step('limpide'); return;
+    }
+    if (a.t === 'h2so4') { await dropInto({ group: RF8.group, top: () => .55, R: 0, level: .2 }, 0xf5f5f5, 5, [.45, .75, .1]); RF8.setLevel(.5); S8.h2so4 = true; say('1,5 mL d\'acide sulfurique concentré ajoutés lentement (il accélère la réaction).'); step('h2so4'); return; }
+    if (a.t === 'reflux') {
+      S8.tReflux = a.min; RF8.setHeat(true); say(`Chauffage à reflux pendant ${a.min} min (simulation accélérée)…`);
+      const tAppear = 2.5; let shown = false;
+      await tween(a.min * .18, p => { const t = a.min * p; const m = mForm8(t); if (t > tAppear && !shown) { shown = true; if (!INSTANT) say('Un solide blanc apparaît dans le ballon !'); } RF8.solidMat.opacity = Math.min(.95, Math.max(0, (m - .68) / 6)); RF8.liqMat.color.set(0xffffff); RF8.liqMat.opacity = .4 + .45 * Math.min(1, Math.max(0, (m - .68) / 5)); });
+      RF8.setHeat(false); S8.solid = true;
+      observe(`Reflux de ${a.min} min : au bout de quelques minutes, un solide blanc apparaît dans le ballon et devient de plus en plus abondant.`); step('reflux'); return;
+    }
+    if (a.t === 'glace') { const p0 = RF8.group.position.clone(); S8.ice = true; say('Le ballon refroidit dans le bain d\'eau glacée : encore plus de solide se forme.'); await tween(1, p => { RF8.solidMat.opacity = Math.min(1, RF8.solidMat.opacity + .002); }); observe('Refroidissement dans un bain d\'eau glacée : le solide devient plus abondant.'); return; }
+    if (a.t === 'filtrer') { S8.filtre = true; if (!INSTANT) flyTo([.95, .45, .7], [.95, .18, 0]); await tween(1.5, p => { RF8.solidMat.opacity *= (1 - p * .2); RF8.setLevel(.5 * (1 - p)); buch8.cake.material.opacity = p; buch8.filt.material.opacity = .5 * p; }); RF8.solidMat.opacity = 0; say('Le solide est récupéré sur le filtre ; le filtrat est dans la fiole à vide.'); return; }
+    if (a.t === 'laver') { S8.lavage = a.w; await tween(1, p => buch8.filt.material.opacity = .5 + .2 * p); say(a.w === 'froid' ? 'Solide lavé à l\'eau glacée : les impuretés sont éliminées sans dissoudre l\'allantoïne.' : 'Solide lavé à l\'eau tiède : une partie de l\'allantoïne se redissout !'); step('isoler'); return; }
+    if (a.t === 'pesee') {
+      let m = mForm8(S8.tReflux); m -= S8.ice ? .06 : .35; m -= S8.lavage === 'froid' ? .05 : .55; m = Math.max(0, +m.toFixed(2)); S8.mexp = m; M8LAST = m;
+      verre8.visible = true; verre8.position.set(-.75, .085, .23); buch8.cake.material.opacity = 0;
+      await tween(1, p => { bal8.mass = m * p; bal8.show(); });
+      const msg = `Allantoïne sèche : m = ${m.toFixed(2).replace('.', ',')} g (reflux ${S8.tReflux} min, ${S8.ice ? 'bain de glace' : 'sans bain de glace'}, lavage ${S8.lavage === 'froid' ? 'à l\'eau glacée' : 'à l\'eau tiède'}).`;
+      observe(msg); say(msg + ' Calcule le rendement.'); step('pesee'); return;
+    }
+    if (a.t === 'vider') {
+      if (!S8.filtre) { say('Il n\'y a pas encore de filtrat.'); return false; }
+      if (a.where === 'evier') { ST.evier++; observe('Filtrat jeté à l\'évier (interdit).'); say('<b>Interdit !</b> Le filtrat est acide : il va dans le bidon de récupération.'); } else { ST.bidon++; step('vider'); say('Filtrat versé dans le bidon de récupération.'); }
+      const keep = S8.mexp; this.resetScene(); return;
+    }
+  },
+  async demo() {
+    say('Démonstration : mise en place des réactifs et du montage à reflux.');
+    for (const t of ['uree', 'acide', 'eau', 'limpide', 'h2so4']) await act({ t }, { record: false });
+    await act({ t: 'reflux', min: 10 }, { record: false }); await wait(1000);
+  },
+};
+startTP(C8);
+
+</script></body></html>

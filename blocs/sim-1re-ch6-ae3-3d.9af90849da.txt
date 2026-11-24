@@ -1,0 +1,154 @@
+<!--efir1re:AE1 · Propriétés des savons 3D-->
+window.EFIR_RETOUR = "premiere/matiere/Coh%C3%A9sion%20de%20la%20mati%C3%A8re";
+
+// ====================================================================
+// Ch. 6 · AE1 · Les propriétés des savons
+// ====================================================================
+const SOL6 = {
+  eau: { nom: 'eau distillée', short: 'Eau distillée', col: 0xeef6fb, op: .2, foam: 1, trouble: 0 },
+  na: { nom: 'solution concentrée de chlorure de sodium', short: 'Na⁺ + Cl⁻ (concentrée)', col: 0xf3f6f8, op: .25, foam: .25, trouble: 0 },
+  ca: { nom: 'solution concentrée de chlorure de calcium', short: 'Ca²⁺ + 2 Cl⁻ (concentrée)', col: 0xf3f6f8, op: .25, foam: .12, trouble: 1 },
+};
+let rack6, tubes6 = [], sel6 = -1, ch6 = null;
+const C6 = {
+  id: 'p1_ch06_ae3', code: 'AE1', short: 'Propriétés des savons 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 6 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Les propriétés des savons',
+  problem: 'Pourquoi un savon lave-t-il, et pourquoi lave-t-il moins bien dans une eau salée ou une eau calcaire ?',
+  mots: `<p><b>Savon</b> : solide ionique formé d'ions carboxylate R–CO₂⁻ (R : longue chaîne carbonée) et d'ions sodium Na⁺ ou potassium K⁺.<br>
+  <b>Hydrophile</b> : qui a de l'affinité pour l'eau. <b>Lipophile</b> (hydrophobe) : qui a de l'affinité pour les graisses.<br>
+  <b>Amphiphile</b> : entité qui possède une partie hydrophile et une partie lipophile. <b>Micelle</b> : agrégat d'ions carboxylate autour d'une goutte de graisse.<br>
+  Complément : <span class="eq">R–CO₂Na(s) ⇄ R–CO₂⁻(aq) + Na⁺(aq)</span> ; un excès d'ions Na⁺ ou Ca²⁺ déplace l'équilibre vers la gauche.</p>`,
+  aide: `<p>Prépare trois tubes avec le même volume d'eau distillée (tube témoin), de solution de chlorure de sodium et de solution de chlorure de calcium.<br>
+  Verse le même nombre de gouttes de liqueur de savon dans chaque tube, bouche, agite, et compare la hauteur de mousse.<br>Ouvre la vue microscopique pour comprendre l'action du savon.</p>`,
+  views: { ensemble: [[0, 1.1, 2.4], [0, .3, 0]] },
+  micro() { openMicelle(tubes6[sel6] ? tubes6[sel6].s : 'eau'); step('micro'); },
+  protocol: [
+    { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes.' },
+    { id: 'tubes', q: 'Q1', html: 'Préparer trois tubes : eau distillée, chlorure de sodium, chlorure de calcium (même volume).' },
+    { id: 'savon', q: 'Q1', html: 'Verser le même nombre de gouttes de liqueur de savon dans chaque tube.' },
+    { id: 'agiter', q: 'Q1', html: 'Boucher, agiter chaque tube et comparer la mousse formée.' },
+    { id: 'micro', q: 'Q4', html: 'Observer en vue microscopique l\'action du savon (micelle).' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q2-4', html: 'Répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'vider', html: 'Vider les tubes dans le bidon de récupération.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  table: { rowTitle: 'Tube', rows: [{ label: 'Tube 1 : eau distillée (témoin)', ans: [0, 0] }, { label: 'Tube 2 : chlorure de sodium', ans: [1, 0] }, { label: 'Tube 3 : chlorure de calcium', ans: [1, 1] }],
+    cols: [{ title: 'Mousse après agitation', options: ['abondante', 'faible'] }, { title: 'Aspect de la solution', options: ['limpide', 'trouble (précipité)'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q2', text: 'Dans l\'ion carboxylate R–CO₂⁻, la partie chargée est…', options: ['la chaîne carbonée R', 'le groupe carboxylate –CO₂⁻', 'aucune partie'], ans: 1 },
+    { q: 'Q2', text: 'La partie hydrophile de l\'ion carboxylate est…', options: ['le groupe –CO₂⁻ (chargé, il interagit avec l\'eau)', 'la chaîne carbonée', 'l\'ion Na⁺'], ans: 0 },
+    { q: 'Q3', text: 'Pourquoi y a-t-il peu de mousse dans les tubes 2 et 3 ?', options: ['Les ions Na⁺ ou Ca²⁺ ajoutés s\'associent aux ions carboxylate : il y a moins d\'ions carboxylate dissous', 'Le sel détruit les molécules d\'eau', 'Les tubes ont été moins agités'], ans: 0 },
+    { q: 'Q4', text: 'La chaîne carbonée interagit avec la graisse par…', options: ['des interactions électrostatiques', 'des interactions de van der Waals (elle est lipophile)', 'des liaisons covalentes'], ans: 1 },
+    { q: 'Q4', text: 'Une entité amphiphile possède…', options: ['deux parties hydrophiles', 'une partie hydrophile et une partie lipophile', 'deux charges'], ans: 1 },
+  ],
+  conclusion: { q: 'Comment agit un savon ?', options: [
+    'Les ions carboxylate sont amphiphiles : leur chaîne lipophile s\'entoure de graisse (van der Waals), leur tête –CO₂⁻ reste dans l\'eau (interactions électrostatiques) ; les micelles formées emportent la graisse. Les ions Na⁺ ou Ca²⁺ en excès (eau salée, eau calcaire) s\'associent aux ions carboxylate et diminuent l\'efficacité du savon.',
+    'Le savon dissout la graisse comme l\'eau dissout le sel.', 'Le savon lave mieux dans l\'eau calcaire.', 'Le savon réagit avec la graisse pour former un gaz.'], ans: 0 },
+  build() {
+    rack6 = makeRack(3, .3); scene.add(rack6);
+    const b1 = makeBottle('Eau distillée', 0xeef6fb, { cap: 0x1565c0 }); b1.position.set(-1.0, 0, -.35);
+    const b2 = makeBottle('Chlorure de sodium\n(concentrée)', 0xf3f6f8, { cap: 0x546e7a }); b2.position.set(-.65, 0, -.45);
+    const b3 = makeBottle('Chlorure de calcium\n(concentrée)', 0xf3f6f8, { cap: 0x2e7d32 }); b3.position.set(.65, 0, -.45);
+    const b4 = makeBottle('Liqueur de savon', 0xfff3d6, { cap: 0xf9a825 }); b4.position.set(1.0, 0, -.3);
+    const sv = new THREE.Mesh(new THREE.BoxGeometry(.16, .06, .1), new THREE.MeshStandardMaterial({ color: 0xf6e7b4, roughness: .9 })); sv.position.set(1.05, .03, .3); scene.add(sv);
+    const sl = label('Savon', { size: 30, scale: .0011 }); sl.position.set(1.05, .15, .3); scene.add(sl);
+    [b1, b2, b3, b4].forEach(b => scene.add(b));
+    const bid = new THREE.Mesh(new THREE.BoxGeometry(.28, .34, .2), new THREE.MeshStandardMaterial({ color: 0xffb74d })); bid.position.set(-1.1, .17, .3); scene.add(bid);
+    const bl = label('Bidon de\nrécupération', { size: 30, scale: .0011 }); bl.position.set(-1.1, .46, .3); scene.add(bl);
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene() { tubes6.forEach(T => { if (T) { scene.remove(T.group); LAB.pick.splice(LAB.pick.indexOf(T.group), 1); } }); tubes6 = [null, null, null]; sel6 = -1; if ($('#ts6')) this.refreshPanel(); },
+  selected() { return tubes6[sel6] || null; },
+  buildPanel() {
+    $('#actions').append(
+      h('h3', {}, '1. Préparer un tube'), h('div', { class: 'chips', id: 'ch6' }, ...Object.entries(SOL6).map(([k, s]) => h('button', { 'data-s': k, onclick: () => { ch6 = k; this.refreshPanel(); } }, s.short))),
+      h('button', { class: 'go', id: 'bP6', onclick: () => { if (!ch6) return say('Choisis une solution.'); if (tubes6.some(t => t && t.s === ch6)) return say('Ce tube est déjà préparé.'); const k = tubes6.findIndex(t => !t); act({ t: 'prep', slot: k, s: ch6 }); } }, 'Verser 5 mL dans le tube suivant'),
+      h('h3', {}, '2. Tester un tube'), h('div', { class: 'tubesel', id: 'ts6' }),
+      h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { id: 'bS6', onclick: () => act({ t: 'savon', slot: sel6 }) }, 'Ajouter 10 gouttes de liqueur de savon'), h('button', { id: 'bA6', onclick: () => act({ t: 'agiter', slot: sel6 }) }, 'Boucher et agiter')),
+      h('h3', {}, 'Ranger'), h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Vider les tubes dans le bidon'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 Vider à l\'évier')));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    $$('#ch6 button').forEach(b => b.classList.toggle('on', b.dataset.s === ch6));
+    const ts = $('#ts6'); ts.innerHTML = ''; tubes6.forEach((T, k) => { if (T) ts.append(h('button', { class: k === sel6 ? 'on' : '', onclick: () => sel6f(k) }, `Tube ${k + 1} : ${SOL6[T.s].short}`)); });
+    if (!tubes6.some(Boolean)) ts.append(h('span', { class: 'note' }, 'Aucun tube préparé.'));
+    const T = this.selected(); $('#bS6').disabled = BUSY || !T || T.savon; $('#bA6').disabled = BUSY || !T || !T.savon; $('#bP6').disabled = BUSY;
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    if (a.t === 'prep') {
+      const T = makeTube(); T.s = a.s; T.group.position.set(rack6.userData.slotX(a.slot), .028, 0); scene.add(T.group); tubes6[a.slot] = T;
+      const lb = label(String(a.slot + 1), { size: 40, scale: .0011 }); lb.position.y = .82; T.group.add(lb);
+      T.group.userData.onPick = () => sel6f(a.slot); LAB.pick.push(T.group); sel6f(a.slot, true);
+      await pourInto(T, SOL6[a.s].col, .2, SOL6[a.s].op); say(`Tube ${a.slot + 1} : 5 mL de ${SOL6[a.s].nom}.`);
+      if (tubes6.every(Boolean)) step('tubes'); return;
+    }
+    const T = tubes6[a.slot]; if (!T) return false;
+    if (a.t === 'savon') {
+      sel6f(a.slot, true); await dropInto(T, 0xfff3d6, 6); T.savon = true;
+      if (SOL6[T.s].trouble) await tween(1.5, p => { T.liquidMat.color.lerpColors(new THREE.Color(SOL6[T.s].col), new THREE.Color(0xfafafa), p); T.liquidMat.opacity = lerp(.25, .75, p); });
+      else if (T.s === 'na') { await tween(1, p => T.liquidMat.opacity = lerp(.25, .4, p)); }
+      say(`10 gouttes de liqueur de savon dans le tube ${a.slot + 1}${SOL6[T.s].trouble ? ' : la solution se trouble (précipité).' : '.'}`);
+      if (SOL6[T.s].trouble) observe('Tube 3 (chlorure de calcium) + liqueur de savon : la solution devient trouble, un précipité se forme.');
+      if (tubes6.every(t => t && t.savon)) step('savon'); return;
+    }
+    if (a.t === 'agiter') {
+      sel6f(a.slot, true); T.stopper.visible = true; if (!INSTANT) { const x = T.group.position.x; flyTo([x + .2, .8, 1.1], [x, .45, 0], .8); }
+      await shake(T, 1.6);
+      if (!T.foam) { T.foam = new THREE.Group(); const fm = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .6, transparent: true, opacity: .92 });
+        for (let i = 0; i < 70; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(rnd(.006, .014), 8, 6), fm); b.position.set(rnd(-.045, .045), rnd(0, 1), rnd(-.045, .045)); T.foam.add(b); }
+        T.foam.position.y = T.R + T.level; T.group.add(T.foam); }
+      const hgt = .3 * SOL6[T.s].foam; await tween(1.2, p => T.foam.scale.set(1, Math.max(.001, hgt * p), 1));
+      T.foam.children.forEach(b => b.scale.set(1, 1 / Math.max(.02, hgt), 1));
+      T.stopper.visible = false;
+      const msg = `Tube ${a.slot + 1} (${SOL6[T.s].nom}) après agitation : ${SOL6[T.s].foam > .5 ? 'mousse abondante (environ ' + Math.round(hgt * 100) + ' mm)' : 'très peu de mousse (environ ' + Math.round(hgt * 100) + ' mm)'}.`;
+      observe(msg); say(msg); T.shaken = true; if (tubes6.every(t => t && t.shaken)) step('agiter'); return;
+    }
+    if (a.t === 'vider') {
+      if (!tubes6.some(Boolean)) { say('Rien à vider.'); return false; }
+      if (a.where === 'evier') { ST.evier++; observe('Vidage des tubes à l\'évier (interdit).'); say('<b>Interdit !</b> Les solutions concentrées vont dans le bidon de récupération.'); } else { ST.bidon++; step('vider'); say('Tubes vidés dans le bidon de récupération.'); }
+      this.resetScene(); return;
+    }
+  },
+  async demo() {
+    say('Démonstration : tube témoin à l\'eau distillée.'); ch6 = 'eau';
+    await act({ t: 'prep', slot: 0, s: 'eau' }, { record: false }); await act({ t: 'savon', slot: 0 }, { record: false }); await act({ t: 'agiter', slot: 0 }, { record: false });
+    await wait(800); this.micro(); await wait(7000); closeMicro();
+  },
+};
+function sel6f(k, silent) { sel6 = k; tubes6.forEach((T, j) => T && highlight(T, j === k)); C6.refreshPanel(); if (!silent && tubes6[k]) say(`Tube ${k + 1} sélectionné.`); }
+// ---- vue microscopique : ions carboxylate, micelle autour d'une goutte de graisse, ions Ca²⁺
+function openMicelle(mode) {
+  openMicro({
+    title: 'Vue microscopique · ions carboxylate et goutte de graisse',
+    caption: mode === 'ca' ? `En présence d'ions calcium Ca²⁺ (verts), les têtes –CO₂⁻ s'associent deux par deux aux ions Ca²⁺ : il se forme un solide (le trouble) et il reste moins d'ions carboxylate pour former des micelles.`
+      : `Chaque ion carboxylate a une <b>tête hydrophile</b> –CO₂⁻ (rouge), tournée vers l'eau, et une <b>chaîne lipophile</b> (gris), plongée dans la goutte de graisse (jaune). Les ions s'organisent en <b>micelle</b> : la graisse est emportée par l'eau de rinçage.`,
+    sim: sc => {
+      const grease = new THREE.Mesh(new THREE.SphereGeometry(1.1, 32, 24), new THREE.MeshStandardMaterial({ color: 0xffd54f, transparent: true, opacity: .55, roughness: .3 })); grease.position.y = 2; sc.add(grease);
+      const lab = label('goutte de graisse', { size: 36, scale: .006 }); lab.position.set(0, 3.5, 0); sc.add(lab);
+      const mol = () => { const g = new THREE.Group(); const cm = new THREE.MeshStandardMaterial({ color: 0x9e9e9e }); for (let i = 0; i < 7; i++) { const s = new THREE.Mesh(new THREE.SphereGeometry(.09, 10, 8), cm); s.position.y = -i * .15; g.add(s); }
+        const hd = new THREE.Mesh(new THREE.SphereGeometry(.16, 14, 10), new THREE.MeshStandardMaterial({ color: 0xe53935, emissive: 0x501010 })); hd.position.y = .15; g.add(hd); return g; };
+      const items = [], N = mode === 'ca' ? 14 : 34;
+      for (let i = 0; i < N; i++) { const m = mol(); const dir = new THREE.Vector3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).normalize(); m.userData = { dir, t: rnd(0, 6) }; sc.add(m); items.push(m); }
+      // ions libres et ions calcium
+      const free = []; for (let i = 0; i < (mode === 'ca' ? 10 : 6); i++) { const m = mol(); m.position.set(rnd(-3.5, 3.5), rnd(.5, 4), rnd(-1.5, 1.5)); m.rotation.set(rnd(0, 6), rnd(0, 6), 0); sc.add(m); free.push(m); }
+      const cas = []; if (mode === 'ca') for (let i = 0; i < 5; i++) { const c = new THREE.Mesh(new THREE.SphereGeometry(.2, 14, 10), new THREE.MeshStandardMaterial({ color: 0x43a047, emissive: 0x103010 })); c.add(Object.assign(ionLabel('Ca²⁺'), {})); c.position.copy(free[2 * i].position).add(new THREE.Vector3(.25, .2, 0)); sc.add(c); cas.push(c); }
+      if (mode === 'ca') { const pl = label('association Ca²⁺ / carboxylate → solide', { size: 32, scale: .006, color: '#fff', bg: 'rgba(11,20,48,.7)' }); pl.position.set(0, -.6, 1.5); sc.add(pl); }
+      let T = 0;
+      return dt => {
+        T += dt; grease.rotation.y += dt * .2;
+        items.forEach((m, i) => { const d = m.userData.dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), T * .2); m.position.copy(grease.position).addScaledVector(d, 1.25); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); });
+        free.forEach((m, i) => { m.position.y += Math.sin(T + i) * dt * .1; m.rotation.z += dt * .3; if (mode === 'ca') m.position.y -= dt * .05; });
+        cas.forEach((c, i) => { c.position.y -= dt * .05; });
+        if (mode === 'ca' && T > 20) { T = 0; free.forEach(m => m.position.y += 1); cas.forEach(c => c.position.y += 1); }
+      };
+    },
+  });
+}
+startTP(C6);
+
+</script></body></html>

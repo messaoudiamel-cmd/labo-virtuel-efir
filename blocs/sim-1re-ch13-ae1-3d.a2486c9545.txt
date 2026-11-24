@@ -1,0 +1,146 @@
+<!--efir1re:AE1 · Source réelle de tension 3D-->
+window.EFIR_RETOUR = "premiere/energie/%C3%89nergie%20des%20syst%C3%A8mes%20%C3%A9lectriques";
+
+// ====================================================================
+// Ch. 13 · AE1 · Une source de tension pas si idéale !
+// ====================================================================
+// ====================================================================
+// Module commun : appareils électriques (multimètres, fils, rhéostat)
+// ====================================================================
+function eWire(pts, col = 0xc62828, r = .0018) { return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 40, r, 6), new THREE.MeshStandardMaterial({ color: col, roughness: .5 })); }
+function makeMeter(name, o = {}) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(.09, .03, .14), new THREE.MeshStandardMaterial({ color: o.color || 0xffca28, roughness: .6 })); body.position.y = .015; g.add(body);
+  const sc = makeScreen(.07, .03, { px: 280, text: o.text || '----', bg: '#0f2a1a', fg: '#7CFC9A' }); const bez = new THREE.Mesh(new THREE.BoxGeometry(.085, .045, .012), new THREE.MeshStandardMaterial({ color: 0x37474f })); bez.rotation.x = -.9; bez.position.set(0, .045, -.045); g.add(bez); sc.mesh.rotation.x = -.9; sc.mesh.position.set(0, .0495, -.04); g.add(sc.mesh);
+  const dial = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .006, 24), new THREE.MeshStandardMaterial({ color: 0x37474f })); dial.position.set(0, .033, .025); g.add(dial);
+  for (const [x, c] of [[-.025, 0x212121], [.025, 0xc62828]]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, .008, 12), new THREE.MeshStandardMaterial({ color: c })); t.position.set(x, .034, .058); g.add(t); }
+  const l = label(name, { size: 22, scale: .0007 }); l.position.set(0, .1, -.05); g.add(l);
+  return { group: g, screen: sc, set: t => sc.set(t) };
+}
+function makeRheostat(name = 'Conducteur ohmique\nde résistance réglable') {
+  const g = new THREE.Group();
+  const coil = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .2, 32), new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: .6, roughness: .45 })); coil.rotation.z = Math.PI / 2; coil.position.y = .04; g.add(coil);
+  for (const x of [-.11, .11]) { const e = new THREE.Mesh(new THREE.BoxGeometry(.015, .07, .06), new THREE.MeshStandardMaterial({ color: 0x37474f })); e.position.set(x, .035, 0); g.add(e); }
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(.22, .006, .006), new THREE.MeshStandardMaterial({ color: 0x90a4ae, metalness: .8 })); bar.position.set(0, .075, 0); g.add(bar);
+  const cur = new THREE.Mesh(new THREE.BoxGeometry(.02, .02, .03), new THREE.MeshStandardMaterial({ color: 0x212121 })); cur.position.set(0, .07, 0); g.add(cur);
+  const l = label(name, { size: 22, scale: .0007 }); l.position.set(0, .13, 0); g.add(l);
+  return { group: g, setPos(f) { cur.position.x = -.09 + .18 * f; } };
+}
+
+const PILES = { p45: { nom: 'pile de 4,5 V', E: 4.45, r: 2.6, col: 0x1565c0, hex: '#1565c0' }, p9: { nom: 'pile de 9 V', E: 9.2, r: 9.8, col: 0xe65100, hex: '#e65100' }, gen: { nom: 'générateur de laboratoire (6 V)', E: 6.0, r: .02, col: 0x2e7d32, hex: '#2e7d32' } };
+const RLIST = [Infinity, 100, 47, 33, 22, 15, 10];
+let amp16, volt16, rh16, pileG16, S16 = null;
+const fresh16 = () => ({ pile: 'p45', built: false, K: false, R: Infinity, pts: [] });
+const f16 = (v, n = 2) => v.toFixed(n).replace('.', ',');
+function meas16() { const s = S16, p = PILES[s.pile]; if (!s.built) return null; const I = s.K && isFinite(s.R) ? p.E / (s.R + p.r + .3) : 0; const nz = Math.sin(s.R * 1.7 + p.E) * .006; return { I: +I.toFixed(3), U: +(p.E - p.r * I + (I ? nz : 0)).toFixed(2) }; }
+function linreg(pts) { const n = pts.length, sx = pts.reduce((a, p) => a + p[0], 0), sy = pts.reduce((a, p) => a + p[1], 0), sxx = pts.reduce((a, p) => a + p[0] * p[0], 0), sxy = pts.reduce((a, p) => a + p[0] * p[1], 0); const a = (n * sxy - sx * sy) / (n * sxx - sx * sx); return { a, b: (sy - a * sx) / n }; }
+const C16 = {
+  id: 'p1_ch13_ae1', code: 'AE1', short: 'Source réelle de tension 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 13 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Une source de tension pas si idéale !',
+  problem: 'Une pile est-elle une source idéale de tension ? Comment modéliser une source réelle de tension continue ?',
+  mots: `<p><b>Source idéale de tension continue</b> : la tension U à ses bornes reste constante quelle que soit l'intensité I du courant qu'elle débite : U = E, où E est la <b>force électromotrice</b> (f.é.m.).<br>
+  <b>Caractéristique tension-intensité</b> : graphique U = f(I).<br>
+  <b>Source réelle</b> : U = E − r × I, où r est la <b>résistance interne</b> de la source (en Ω).<br>
+  Le conducteur ohmique de résistance réglable permet de modifier l'intensité du courant dans le circuit.</p>`,
+  aide: `<p>1. Réalise le montage : pile, interrupteur, ampèremètre (en série), conducteur ohmique réglable ; voltmètre en dérivation aux bornes de la pile.<br>
+  2. Interrupteur ouvert : I = 0 ; note U. Ferme l'interrupteur et diminue la résistance pas à pas en notant à chaque fois I et U.<br>
+  3. Trace U = f(I) : est-ce une droite horizontale ? Détermine E (ordonnée à l'origine) et r (opposé du coefficient directeur).<br>
+  4. Recommence avec la pile de 9 V et compare.</p>`,
+  views: { ensemble: [[0, .6, .85], [0, .03, .02]] },
+  viewbar: [['Vue de dessus', () => flyTo([0, .8, .15], [0, 0, .02])], ['Zoom appareils', () => flyTo([0, .32, .45], [0, .02, .08])]],
+  protocol: [
+    { id: 'montage', q: 'Q1', html: 'Réaliser le montage permettant de tracer la caractéristique U = f(I) de la pile.' },
+    { id: 'mesures', q: 'Q1', html: 'Relever au moins 6 couples (I ; U) pour la pile de 4,5 V, dont I = 0.' },
+    { id: 'deux', q: 'Q2', html: 'Faire de même avec la pile de 9 V.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q2-3', html: 'Déterminer E et r, puis proposer un modèle.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'ne jamais court-circuiter la pile ; ouvrir l\'interrupteur entre deux mesures',
+  table: { rowTitle: 'Source', rows: [{ label: 'Pile de 4,5 V', ans: [1, 0] }, { label: 'Pile de 9 V', ans: [2, 2] }, { label: 'Source idéale', ans: [3, 3] }],
+    cols: [{ title: 'Force électromotrice E', options: ['≈ 2,6 V', '≈ 4,4 V', '≈ 9,2 V', 'U = E constante'] }, { title: 'Résistance interne r', options: ['≈ 2,6 Ω', '≈ 4,4 Ω', '≈ 10 Ω', 'nulle'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'La caractéristique U = f(I) de la pile est…', options: ['une droite décroissante : U diminue quand I augmente', 'une droite horizontale', 'une droite passant par l\'origine'], ans: 0 },
+    { q: 'Q1', text: 'La pile est-elle une source idéale de tension ?', options: ['non', 'oui'], ans: 0 },
+    { q: 'Q2', num: true, text: 'Force électromotrice de la pile de 4,5 V (lecture graphique) : E =', unit: 'V', get ans() { return C16.fit && C16.fit.p45 ? C16.fit.p45.b : NaN; }, tol: .02 },
+    { q: 'Q2', num: true, text: 'Résistance interne de la pile de 4,5 V : r =', unit: 'Ω', get ans() { return C16.fit && C16.fit.p45 ? -C16.fit.p45.a : NaN; }, tol: .08 },
+    { q: 'Q2', text: 'Par rapport à la pile de 4,5 V, la pile de 9 V a…', options: ['une f.é.m. et une résistance interne plus grandes', 'une f.é.m. plus grande mais une résistance interne plus petite', 'la même résistance interne'], ans: 0 },
+    { q: 'Q3', text: 'On modélise une source réelle de tension par…', options: ['une source idéale de f.é.m. E en série avec un conducteur ohmique de résistance r', 'une source idéale seule', 'un conducteur ohmique seul'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['La tension aux bornes d\'une pile diminue quand l\'intensité augmente : U = E − r × I. Une pile n\'est pas une source idéale ; on la modélise par une source idéale de f.é.m. E en série avec sa résistance interne r.', 'La tension aux bornes d\'une pile est constante : c\'est une source idéale.', 'U = E + r × I : la tension augmente avec l\'intensité.', 'La résistance interne d\'une pile est toujours nulle.'], ans: 0 },
+  build() {
+    pileG16 = new THREE.Group(); pileG16.position.set(-.3, 0, -.05); scene.add(pileG16);
+    amp16 = makeMeter('Ampèremètre (A)'); amp16.group.position.set(0, 0, -.18); scene.add(amp16.group);
+    volt16 = makeMeter('Voltmètre (V)'); volt16.group.position.set(-.3, 0, .2); scene.add(volt16.group);
+    rh16 = makeRheostat(); rh16.group.position.set(.28, 0, .02); scene.add(rh16.group);
+    const sw = new THREE.Group(); const sb = new THREE.Mesh(new THREE.BoxGeometry(.06, .012, .03), new THREE.MeshStandardMaterial({ color: 0x455a64 })); sb.position.y = .006; sw.add(sb); this.lever = new THREE.Mesh(new THREE.BoxGeometry(.05, .004, .006), new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: .8 })); this.lever.position.set(0, .016, 0); sw.add(this.lever); const swl = label('Interrupteur K', { size: 22, scale: .0007 }); swl.position.set(0, .05, 0); sw.add(swl); sw.position.set(-.13, 0, -.2); scene.add(sw); this.sw = sw;
+    this.wires = new THREE.Group(); scene.add(this.wires);
+    const Y = .01;
+    this.wires.add(eWire([[-.26, Y, -.08], [-.2, Y, -.2], [-.16, Y, -.2]]), eWire([[-.1, Y, -.2], [-.06, Y, -.15], [-.025, .034, -.12]]), eWire([[.025, .034, -.12], [.12, Y, -.12], [.2, .03, -.0]]), eWire([[.36, .03, .0], [.4, Y, .2], [-.1, Y, .3], [-.3, Y, .02]], 0x212121));
+    this.wires.add(eWire([[-.325, .034, .26], [-.38, .03, .1], [-.34, .02, -.05]], 0x212121), eWire([[-.275, .034, .26], [-.22, .03, .1], [-.26, .02, -.05]]));
+    sideCard(chartCard('Caractéristique U = f(I)', 'chU16'));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'mTab16' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  drawPile() {
+    pileG16.clear(); const p = PILES[S16.pile];
+    if (S16.pile === 'gen') { const b = new THREE.Mesh(new THREE.BoxGeometry(.14, .08, .1), new THREE.MeshStandardMaterial({ color: 0x37474f })); b.position.y = .04; pileG16.add(b); const sc = makeScreen(.06, .02, { px: 200, text: '6,0 V', bg: '#102030', fg: '#7CFC9A' }); sc.mesh.position.set(0, .055, .051); pileG16.add(sc.mesh); }
+    else if (S16.pile === 'p45') { const b = new THREE.Mesh(new THREE.BoxGeometry(.065, .065, .022), new THREE.MeshStandardMaterial({ color: p.col })); b.position.y = .0325; pileG16.add(b); }
+    else { const b = new THREE.Mesh(new THREE.BoxGeometry(.026, .048, .017), new THREE.MeshStandardMaterial({ color: p.col })); b.position.y = .024; pileG16.add(b); }
+    const l = label(p.nom[0].toUpperCase() + p.nom.slice(1), { size: 22, scale: .0007 }); l.position.y = .13; pileG16.add(l);
+  },
+  show() { const m = meas16(); this.wires.visible = S16.built; this.lever.rotation.z = S16.K ? 0 : .5; this.lever.position.y = S16.K ? .016 : .025; rh16.setPos(isFinite(S16.R) ? (S16.R - 10) / 90 : 1); amp16.set(m ? f16(m.I, 3) + ' A' : '----'); volt16.set(m ? f16(m.U) + ' V' : '----'); },
+  resetScene() { S16 = fresh16(); C16.fit = {}; if (!amp16) return; this.drawPile(); this.show(); this.drawData(); if ($('#q16')) this.refreshPanel(); },
+  drawData() {
+    const s = S16, t = $('#mTab16'); if (!t) return;
+    t.innerHTML = '<thead><tr><th>Source</th><th>R (Ω)</th><th>I (A)</th><th>U (V)</th></tr></thead><tbody>' + (s.pts.map(p => `<tr><td style="color:${PILES[p.pile].hex}">${PILES[p.pile].nom}</td><td>${isFinite(p.R) ? p.R : 'circuit ouvert'}</td><td>${f16(p.I, 3)}</td><td>${f16(p.U)}</td></tr>`).join('') || '<tr><td colspan="4">Aucune mesure.</td></tr>') + '</tbody>';
+    const curves = [], info = []; C16.fit = {};
+    for (const k of Object.keys(PILES)) { const pts = s.pts.filter(p => p.pile === k).map(p => [p.I, p.U]); if (pts.length >= 3) { const f = linreg(pts); C16.fit[k] = f; curves.push({ pts: [[0, f.b], [.5, f.b + f.a * .5]], color: PILES[k].hex }); info.push(`<span style="color:${PILES[k].hex}">${PILES[k].nom} : U = ${f16(f.b)} − ${f16(-f.a)} × I</span>`); } }
+    drawChart($('#chU16'), { xmax: .5, ymax: 10, xlabel: 'I (A)', ylabel: 'U (V)', pts: s.pts.map(p => [p.I, p.U]), curves });
+    $('#chU16Info').innerHTML = info.length ? 'Droites de tendance :<br>' + info.join('<br>') : 'Au moins 3 mesures par source pour tracer la droite de tendance.';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, h('span', {}, 'Source étudiée :'), B('s1', 'Pile 4,5 V', { t: 'pile', k: 'p45' }), B('s2', 'Pile 9 V', { t: 'pile', k: 'p9' }), B('s3', 'Générateur de labo (comparaison)', { t: 'pile', k: 'gen' })),
+      h('h3', {}, '1. Montage'),
+      h('div', { class: 'row' }, B('k0', '🔌 Réaliser le montage', { t: 'build' }), B('k1', 'Fermer l\'interrupteur', { t: 'K', on: true }), B('k2', 'Ouvrir l\'interrupteur', { t: 'K', on: false })),
+      h('h3', {}, '2. Régler la résistance'),
+      h('div', { class: 'row' }, ...RLIST.map((R, i) => B('r' + i, isFinite(R) ? R + ' Ω' : 'max (circuit ouvert)', { t: 'R', R: isFinite(R) ? R : 'inf' }))),
+      h('div', { class: 'row' }, B('n1', '✍ Noter (I ; U)', { t: 'note' }), B('n2', 'Effacer mes mesures', { t: 'clear' })),
+      h('div', { id: 'q16', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S16, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok), m = meas16();
+    en('#s1,#s2,#s3', !s.K); ['p45', 'p9', 'gen'].forEach((k, i) => $('#s' + (i + 1)).classList.toggle('on', s.pile === k));
+    en('#k0', !s.built); en('#k1', s.built && !s.K); en('#k2', s.K); RLIST.forEach((R, i) => { en('#r' + i, s.built && (isFinite(R) ? true : true)); $('#r' + i).classList.toggle('on', s.R === R); });
+    en('#n1', !!m && !s.pts.some(p => p.pile === s.pile && Math.abs(p.I - m.I) < 1e-6)); en('#n2', s.pts.length > 0);
+    $('#q16').innerHTML = `Source : <b>${PILES[s.pile].nom}</b> · interrupteur ${s.K ? '<b>fermé</b>' : 'ouvert'} · R = ${isFinite(s.R) ? s.R + ' Ω' : 'max'}` + (m ? ` → I = <b>${f16(m.I, 3)} A</b> ; U = <b>${f16(m.U)} V</b>` : '');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S16;
+    if (a.t === 'pile') { s.pile = a.k; this.drawPile(); this.show(); say(`Source placée dans le circuit : ${PILES[a.k].nom}.`); return; }
+    if (a.t === 'build') { s.built = true; this.show(); step('montage'); say('Montage réalisé : ampèremètre en série, voltmètre en dérivation aux bornes de la source.'); return; }
+    if (a.t === 'K') { s.K = a.on; this.show(); say(a.on ? 'Interrupteur fermé : le courant circule.' : 'Interrupteur ouvert : I = 0.'); return; }
+    if (a.t === 'R') { s.R = a.R === 'inf' ? Infinity : a.R; if (!INSTANT) await tween(.4, () => {}); this.show(); const m = meas16(); say(`R = ${isFinite(s.R) ? s.R + ' Ω' : 'max'}` + (m ? ` : I = ${f16(m.I, 3)} A ; U = ${f16(m.U)} V.` : '.')); return; }
+    if (a.t === 'note') {
+      const m = meas16(); s.pts.push({ pile: s.pile, R: s.K ? s.R : Infinity, ...m }); s.pts.sort((x, y) => x.pile < y.pile ? -1 : x.pile > y.pile ? 1 : x.I - y.I); this.drawData();
+      const n = k => s.pts.filter(p => p.pile === k); if (n('p45').length >= 6 && n('p45').some(p => p.I === 0)) step('mesures'); if (n('p9').length >= 4) step('deux');
+      say(`Mesure notée (${PILES[s.pile].nom}) : I = ${f16(m.I, 3)} A ; U = ${f16(m.U)} V.`); return;
+    }
+    if (a.t === 'clear') { s.pts = []; this.drawData(); say('Mesures effacées.'); return; }
+  },
+  async demo() {
+    say('Démonstration : montage puis deux mesures.');
+    await act({ t: 'build' }, { record: false }); await wait(500); await act({ t: 'K', on: true }, { record: false }); await act({ t: 'R', R: 100 }, { record: false }); await wait(900); await act({ t: 'R', R: 33 }, { record: false }); await wait(900);
+    say('À toi : note I et U pour plusieurs valeurs de R, interrupteur ouvert compris.'); await wait(1200);
+  },
+};
+startTP(C16);
+
+</script></body></html>

@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carnet d'exploration · Aspects énergétiques des phénomènes mécaniques · EFIR</title>
+<!-- © EFIR · Mme Messaoudi — Tous droits réservés. Carnet d'exploration de 1re spécialité, chapitre 14. -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--prune:#4A148C;--prune2:#7B1FA2;--rose:#C2185B;--fond:#F7F5FB;--carte:#fff;--trait:#E6DFF0;--texte:#1d1a2b;--doux:#5f5873;--or:#F9A825;--vert:#2e7d32;--rouge:#c62828;--pale:#F3EEFA}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.5 Inter,system-ui,Arial,sans-serif}
+.wrap{max-width:1150px;margin:0 auto;padding:22px 16px 30px}
+a.back{display:inline-flex;gap:6px;align-items:center;color:var(--prune2);font-weight:600;text-decoration:none;cursor:pointer}
+.kick{margin:14px 0 2px;font-size:12.5px;font-weight:700;letter-spacing:.08em;color:var(--doux);text-transform:uppercase}
+h1{margin:0 0 16px;font-size:clamp(22px,3vw,30px);line-height:1.2}
+.card{background:var(--carte);border:1px solid var(--trait);border-radius:16px;padding:16px}
+.jauge{display:flex;gap:14px;align-items:center}
+.jauge .ic{width:40px;height:40px;border-radius:10px;background:var(--pale);display:grid;place-items:center;color:var(--prune2);font-size:20px;flex:none}
+.jauge .bar{flex:1}.jauge .bar b{font-size:14px}.jauge .pc{font-weight:800;color:var(--prune2)}
+.barre{height:9px;border-radius:9px;background:#ECE8F2;margin-top:6px;overflow:hidden}.barre i{display:block;height:100%;background:linear-gradient(90deg,var(--prune2),var(--rose));width:0;transition:width .4s}
+.theme{display:flex;align-items:center;gap:12px;margin:18px 0 6px}.theme .ic{width:40px;height:40px;border-radius:10px;background:var(--pale);display:grid;place-items:center;font-size:20px}
+.theme h2{margin:0;font-size:20px}.theme p{margin:0;color:var(--doux);font-size:14px}.theme .pg{margin-left:auto;border:1px solid var(--trait);border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700;background:#fff}
+.stepper{display:grid;grid-template-columns:repeat(4,1fr);margin:14px 0 18px;position:relative}
+.stepper:before{content:"";position:absolute;left:12%;right:12%;top:24px;height:2px;background:var(--trait)}
+.st{position:relative;text-align:center;background:none;border:0;font:inherit;cursor:pointer;color:var(--doux);padding:0}
+.st .rd{width:48px;height:48px;margin:0 auto 6px;border-radius:50%;border:2px dashed #CFC5DE;background:#fff;display:grid;place-items:center;font-size:20px}
+.st b{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase}.st small{font-size:11.5px;color:#a99cc0}
+.st.on .rd{border:2.5px solid var(--prune2);color:var(--prune2)}.st.on b{color:var(--prune2)}
+.st.fait .rd{border:2.5px solid var(--vert);background:#E8F5E9}.st[disabled]{cursor:not-allowed;opacity:.7}
+.grille{display:grid;grid-template-columns:1fr 1.08fr;gap:22px;align-items:start}
+.gauche .k{font-size:12.5px;font-weight:700;letter-spacing:.08em;color:var(--prune2);text-transform:uppercase}
+.gauche h3.big{font-size:clamp(26px,3.2vw,38px);line-height:1.12;margin:10px 0 12px}.gauche h3.big span{display:block}.gauche h3.big .hl{color:var(--prune2)}
+.gauche .qq{color:var(--doux);margin:0 0 16px}
+.notion{margin:0 0 16px}.notion h4{margin:0 0 4px;font-size:16px}.notion h4 em{font-style:normal;color:var(--prune2);margin-right:8px}
+.notion p{margin:0 0 6px;color:#3c3650;font-size:15px}
+.f{padding:9px 14px;border-left:4px solid var(--prune2);background:var(--pale);border-radius:0 10px 10px 0;font-family:inherit;font-weight:600;font-size:15px}
+.nivdesc{border:1px solid #E9DDF7;background:#FBF8FF;border-radius:12px;padding:10px 14px;margin:14px 0}.nivdesc b{display:block;font-size:12px;letter-spacing:.06em;color:var(--prune2);text-transform:uppercase}
+.piege{border:1px solid #F3D27A;background:#FFF9E6;border-radius:12px;padding:10px 14px;margin:14px 0;color:#6a4b00;font-size:14.5px}.piege b{color:#8a4b00}
+.badge{border:1.5px dashed #CDBFE3;border-radius:12px;padding:10px 14px;color:var(--doux);font-size:14.5px;background:#FAF8FD}.badge.gagne{border:1.5px solid var(--vert);background:#E8F5E9;color:#1b5e20;font-weight:600}
+.nivs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.niv{border:1px solid var(--trait);background:#fff;border-radius:12px;padding:8px 10px;text-align:left;font:inherit;cursor:pointer}
+.niv small{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--doux)}.niv>span{display:block;font-weight:700;font-size:14px;color:var(--prune)}.niv .et span{display:inline}
+.niv .et{font-size:13px;color:#cfc5de;letter-spacing:2px}.niv .et .o{color:var(--or)}
+.niv.on{border:1.5px solid var(--prune2);background:#FAF5FF}.niv[disabled]{opacity:.5;cursor:not-allowed}
+.mission{display:flex;gap:12px;border:1px solid #E9DDF7;background:#FBF8FF;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.mission .pl{width:34px;height:34px;flex:none;border-radius:9px;background:var(--prune2);color:#fff;display:grid;place-items:center}
+.mission b{display:block;font-size:12px;letter-spacing:.06em;color:var(--prune2)}.mission p{margin:2px 0 0;font-size:15px}
+.scene{position:relative;height:300px;border:1px solid var(--trait);border-radius:14px;overflow:hidden;background:linear-gradient(#EEF1F7,#E7E3EE)}
+.scene canvas{display:block;width:100%;height:100%}
+.sbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--trait);background:#fff;border-radius:999px;padding:4px 12px;font:600 13px Inter,sans-serif;cursor:pointer;color:#3c3650}
+.chip.on{border-color:var(--prune2);color:var(--prune2);background:#FAF5FF}
+.mesures{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:10px}
+.mes{border:1px solid var(--trait);border-radius:10px;padding:6px 10px;background:#fff}.mes small{display:block;color:var(--doux);font-size:12px}.mes b{font-variant-numeric:tabular-nums}
+.ebars{margin-top:10px;display:grid;gap:5px}.eb{display:grid;grid-template-columns:96px 1fr 76px;align-items:center;gap:8px;font-size:13px}
+.eb i{display:block;height:12px;border-radius:6px;background:#ECE8F2;overflow:hidden}.eb i u{display:block;height:100%;text-decoration:none}
+.curseur{margin-top:12px}.curseur label{display:flex;justify-content:space-between;font-weight:600;font-size:14.5px}.curseur label b{background:var(--pale);color:var(--prune2);border-radius:8px;padding:1px 8px}
+input[type=range]{width:100%;accent-color:var(--prune2);margin-top:6px}
+.rep{margin-top:12px}.rep .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rep input[type=text]{width:140px;padding:8px 10px;border:1.5px solid #CDBFE3;border-radius:10px;font:inherit}
+.btn{min-height:42px;border-radius:12px;border:0;background:var(--prune);color:#fff;font:700 15px Inter,sans-serif;padding:8px 16px;cursor:pointer}.btn:hover{background:#380E6B}
+.btn.sec{background:#fff;color:#3c3650;border:1px solid var(--trait)}.btn.sec:hover{background:#FAF8FD}
+.btn[disabled]{background:#D9C6EE;cursor:not-allowed}
+.msg{margin-top:8px;padding:8px 12px;border-radius:10px;font-weight:600;font-size:14.5px}.msg.ok{background:#E8F5E9;color:#1b5e20}.msg.ko{background:#FFEBEE;color:#b71c1c}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--trait)}
+.journal{margin-top:22px}.journal h3{margin:0 0 8px;font-size:17px}.journal textarea{width:100%;min-height:90px;border:1px solid var(--trait);border-radius:12px;padding:10px;font:inherit;resize:vertical}
+.journal .row{display:flex;justify-content:flex-end;margin-top:8px}.journal p{color:var(--doux);font-size:13.5px;margin:8px 0 0}
+.bilan h3{margin:0 0 10px}.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.qcm .q{border:1px solid var(--trait);border-radius:12px;padding:10px 12px;margin:10px 0;background:#fff}.qcm label{display:block;margin:4px 0;cursor:pointer}
+footer{text-align:center;color:var(--doux);font-size:13px;margin-top:22px}
+.hid{display:none!important}
+@media (max-width:860px){.grille{grid-template-columns:1fr}.scene{height:260px}.stepper .st small{display:none}.bgrid{grid-template-columns:1fr}}
+@media (max-width:520px){.nivs{grid-template-columns:1fr 1fr 1fr}.niv span{font-size:12.5px}.st b{font-size:10px}.st .rd{width:40px;height:40px}.stepper:before{top:20px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <a class="back" id="retour">← Carnets d'exploration</a>
+  <p class="kick">🗺 EFIR · 1re spécialité · Chapitre 14 · Carnet d'exploration</p>
+  <h1>Aspects énergétiques des phénomènes mécaniques</h1>
+  <div class="card jauge"><div class="ic">⚡</div><div class="bar"><b id="jtxt">Jauge de compréhension · 0 / 27 étoiles</b><div class="barre"><i id="jbar"></i></div></div><div class="pc" id="jpc">0 %</div></div>
+  <div class="theme"><div class="ic" id="thIc">🏀</div><div><h2 id="thNom">Le lancer franc</h2><p id="thSous">1re spécialité · Chapitre 14</p></div><span class="pg" id="thPg">Page 1 / 3</span></div>
+  <div class="stepper" id="stepper"></div>
+  <div id="vuePage">
+    <div class="grille">
+      <div class="card gauche" id="gauche"></div>
+      <div class="droite">
+        <div class="nivs" id="nivs"></div>
+        <div class="mission"><div class="pl">▶</div><div><b>MISSION</b><p id="mission"></p></div></div>
+        <div class="scene" id="scene"><canvas id="c2d"></canvas></div>
+        <div class="sbar"><span class="chip" id="aide3d">✋ Glissez pour tourner</span><button class="chip" id="b2d" type="button">☐ Vue 2D</button></div>
+        <div class="mesures" id="mesures"></div>
+        <div class="ebars" id="ebars"></div>
+        <div class="card curseur"><label for="cur"><span id="curNom"></span><b id="curVal"></b></label><input type="range" id="cur"></div>
+        <div class="card rep"><p id="repQ" style="margin:0 0 8px;font-weight:600"></p><div class="row"><input type="text" id="repIn" inputmode="decimal" placeholder="valeur" aria-label="ma réponse"><span id="repU"></span><button class="btn" id="repOk" type="button">Vérifier</button></div><div class="msg hid" id="repMsg"></div></div>
+        <div style="margin-top:10px"><button class="btn sec" id="raz" type="button" style="width:100%">↺ Recommencer le niveau</button></div>
+        <div class="nav"><button class="btn sec" id="prec" type="button">‹ Précédent</button><button class="btn" id="suiv" type="button">Page suivante ›</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="vueBilan" class="card bilan hid"></div>
+  <div class="card journal"><h3>✎ Journal de bord · <span id="jnNom">Le lancer franc</span></h3><textarea id="journal" placeholder="Notez vos réponses, vos calculs, ce qui vous surprend…"></textarea><div class="row"><button class="btn sec" id="jnSave" type="button">💾 Sauvegarder</button></div><p>Vos étoiles et vos notes restent sur cet appareil. À la fin, « Télécharger mon carnet » les rassemble dans un fichier.</p></div>
+  <footer>© 2026-2027 · Ma science physique-chimie · Conçu par Mme Messaoudi · © EFIR · Mme Messaoudi — Tous droits réservés</footer>
+</div>
+<script type="module">
+/* ---------- Données du carnet (programme de 1re spé, chapitre 14 ; valeurs inspirées des activités du manuel) ---------- */
+const g = 9.81;
+const fr = (x, d = 2) => (Math.abs(x) < 1e-12 ? 0 : x).toFixed(d).replace('.', ',').replace('-', '−');
+const PAGES = [
+  { cle: 'p1', nom: 'Le lancer franc', ic: '🏀', court: 'Page 1 · Énergie cinétique et travail', badge: 'Maître du lancer franc', scene: 'basket',
+    lignes: ['Un ballon.', 'Un travail.', 'Un théorème.'], hl: 1, question: 'Comment relier la variation de vitesse d\'un ballon aux forces qui travaillent ?',
+    notions: [
+      { t: 'L\'énergie cinétique', p: 'Un système de masse m (en kg) animé d\'une vitesse v (en m·s⁻¹) possède une énergie cinétique (en J).', f: 'ℰ<sub>c</sub> = ½ × m × v²' },
+      { t: 'Le travail d\'une force', p: 'Une force constante F⃗ qui se déplace de A à B effectue un travail. Pour le poids, seule compte la variation d\'altitude.', f: 'W(F⃗) = F⃗ · AB⃗ ; W(P⃗) = m × g × (z<sub>A</sub> − z<sub>B</sub>)' },
+      { t: 'Le théorème de l\'énergie cinétique', p: 'La variation d\'énergie cinétique entre A et B est égale à la somme des travaux des forces appliquées entre A et B.', f: 'Δℰ<sub>c A→B</sub> = Σ W<sub>A→B</sub>(F⃗)' }],
+    niveaux: [
+      { nom: 'L\'énergie cinétique', desc: 'Un ballon de basket (m = 0,624 kg) est lancé : sa vitesse dépend de l\'énergie qu\'on lui communique.', piege: 'v est au carré : doubler la vitesse multiplie l\'énergie cinétique par 4. La masse doit être en kg.',
+        mission: 'Réglez la vitesse de lancer sur 6,0 m·s⁻¹ et calculez l\'énergie cinétique du ballon de 0,624 kg.', cur: { nom: 'Vitesse de lancer v', u: 'm·s⁻¹', min: 2, max: 9, pas: .1, def: 4 }, q: 'ℰ<sub>c</sub> du ballon à 6,0 m·s⁻¹ =', u: 'J', rep: .5 * .624 * 36, tol: .03,
+        corr: 'ℰ<sub>c</sub> = ½ × 0,624 × 6,0² ≈ 11 J.' },
+      { nom: 'Le travail du poids', desc: 'Le ballon monte de A (z = 2,3 m) à B, sommet de la trajectoire.', piege: 'W(P⃗) = m g (z départ − z arrivée) : quand le ballon monte, le travail du poids est négatif (résistant).',
+        mission: 'Placez le sommet B à z = 3,0 m, puis calculez le travail du poids entre A (2,3 m) et B.', cur: { nom: 'Altitude du sommet z<sub>B</sub>', u: 'm', min: 2.4, max: 3.6, pas: .05, def: 2.6 }, q: 'W<sub>A→B</sub>(P⃗) =', u: 'J', rep: .624 * g * (2.3 - 3.0), tol: .03,
+        corr: 'W = 0,624 × 9,81 × (2,3 − 3,0) ≈ −4,3 J : le poids s\'oppose à la montée.' },
+      { nom: 'Le théorème', desc: 'Lancer franc : départ en D (z = 2,53 m ; v = 6,90 m·s⁻¹), cercle à 3,05 m.', piege: 'On compare l\'altitude calculée à la hauteur du cercle (3,05 m). Le résultat ne dépend pas de la masse du ballon.',
+        mission: 'Avec v<sub>D</sub> = 6,90 m·s⁻¹ et v<sub>E</sub> = 6,25 m·s⁻¹ à la verticale du panier, calculez z<sub>E</sub>. Le panier est-il marqué ? Testez ensuite d\'autres vitesses de départ.', cur: { nom: 'Vitesse de départ v<sub>D</sub>', u: 'm·s⁻¹', min: 6.5, max: 7.5, pas: .01, def: 6.9 }, q: 'z<sub>E</sub> =', u: 'm', rep: 2.53 - (6.25 ** 2 - 6.9 ** 2) / (2 * g), tol: .012,
+        corr: 'z<sub>E</sub> = 2,53 − (6,25² − 6,90²) / (2 × 9,81) ≈ 2,96 m < 3,05 m : le ballon passe sous le cercle, le panier n\'est pas marqué.' }] },
+  { cle: 'p2', nom: 'Le pendule', ic: '🕰', court: 'Page 2 · Énergie mécanique', badge: 'Gardien de l\'énergie', scene: 'pendule',
+    lignes: ['Une masse.', 'Une hauteur.', 'Une énergie qui se conserve.'], hl: 2, question: 'Que devient l\'énergie d\'un pendule qui oscille ?',
+    notions: [
+      { t: 'L\'énergie potentielle de pesanteur', p: 'Au voisinage de la Terre, elle dépend de l\'altitude z, repérée sur un axe vertical orienté vers le haut.', f: 'ℰ<sub>p</sub> = m × g × z' },
+      { t: 'L\'énergie mécanique', p: 'C\'est la somme de l\'énergie cinétique et de l\'énergie potentielle.', f: 'ℰ<sub>m</sub> = ℰ<sub>c</sub> + ℰ<sub>p</sub>' },
+      { t: 'La conservation', p: 'Sans frottements (forces non conservatives qui ne travaillent pas), l\'énergie mécanique se conserve : ℰ<sub>c</sub> et ℰ<sub>p</sub> s\'échangent.', f: 'ℰ<sub>m</sub>(S) = ℰ<sub>m</sub>(O) ⇒ ½ m v<sub>O</sub>² = m g z<sub>S</sub>' }],
+    niveaux: [
+      { nom: 'L\'énergie potentielle', desc: 'Une masse de 200 g est accrochée à un fil de 65 cm. L\'origine des altitudes est la position d\'équilibre.', piege: 'z se mesure depuis l\'origine choisie (ici la position d\'équilibre), pas depuis le sol ni le long du fil.',
+        mission: 'Écartez le pendule jusqu\'à z = 15 cm au-dessus de l\'équilibre et calculez son énergie potentielle de pesanteur.', cur: { nom: 'Altitude de lâcher z', u: 'cm', min: 0, max: 30, pas: .5, def: 8 }, q: 'ℰ<sub>p</sub> à z = 15 cm =', u: 'J', rep: .2 * g * .15, tol: .03,
+        corr: 'ℰ<sub>p</sub> = 0,200 × 9,81 × 0,15 ≈ 0,29 J.' },
+      { nom: 'La conservation', desc: 'Le pendule est lâché sans vitesse 10 cm au-dessus de sa position d\'équilibre.', piege: 'Au point le plus bas, ℰ<sub>p</sub> = 0 et toute l\'énergie est cinétique. La masse se simplifie.',
+        mission: 'Lâchez le pendule à z = 10 cm et prévoyez sa vitesse au point le plus bas.', cur: { nom: 'Altitude de lâcher z', u: 'cm', min: 2, max: 30, pas: .5, def: 20 }, q: 'v au point le plus bas =', u: 'm·s⁻¹', rep: Math.sqrt(2 * g * .10), tol: .03,
+        corr: 'v = √(2 × 9,81 × 0,10) ≈ 1,4 m·s⁻¹.' },
+      { nom: 'Le pendule de Foucault', desc: 'Au Panthéon : sphère de 28 kg lâchée sans vitesse, son centre 6,7 cm au-dessus de l\'équilibre.', piege: 'La longueur du fil (67 m) ne sert pas : seule compte la hauteur de lâcher.',
+        mission: 'Calculez l\'énergie mécanique du pendule de Foucault, puis vérifiez avec le curseur que la vitesse au passage en O vaut environ 1,1 m·s⁻¹.', cur: { nom: 'Altitude de lâcher z', u: 'cm', min: 1, max: 15, pas: .1, def: 6.7 }, q: 'ℰ<sub>m</sub> du pendule de Foucault =', u: 'J', rep: 28 * g * .067, tol: .03,
+        corr: 'ℰ<sub>m</sub> = ℰ<sub>p</sub>(S) = 28 × 9,81 × 0,067 ≈ 18 J ; ½ m v<sub>O</sub>² = 18 J donne v<sub>O</sub> ≈ 1,1 m·s⁻¹.' }] },
+  { cle: 'p3', nom: 'La luge', ic: '🛷', court: 'Page 3 · Frottements', badge: 'Chasseur de frottements', scene: 'luge',
+    lignes: ['Une piste.', 'Des frottements.', 'Une énergie qui se perd.'], hl: 1, question: 'Pourquoi l\'énergie mécanique d\'un système peut-elle diminuer ?',
+    notions: [
+      { t: 'Les forces de frottement', p: 'Une force de frottement d\'intensité constante f, opposée au déplacement sur une trajectoire rectiligne AB, effectue un travail négatif.', f: 'W(f⃗) = − f × AB' },
+      { t: 'La non-conservation', p: 'Quand des frottements travaillent, l\'énergie mécanique diminue : une partie est transférée au milieu extérieur (échauffement).', f: 'Δℰ<sub>m A→B</sub> = W<sub>A→B</sub>(f⃗) < 0' },
+      { t: 'La chute libre', p: 'Un système soumis à son seul poids est en chute libre : son énergie mécanique se conserve.', f: 'chute libre ⇒ ℰ<sub>m</sub> = constante' }],
+    niveaux: [
+      { nom: 'Le travail des frottements', desc: 'Une luge glisse sur une piste rectiligne. La force de frottement a une intensité constante f = 20 N.', piege: 'Le travail des frottements est toujours négatif : la force est opposée au déplacement (angle de 180°).',
+        mission: 'Réglez la longueur de la piste AB sur 15 m et calculez le travail de la force de frottement.', cur: { nom: 'Longueur de piste AB', u: 'm', min: 5, max: 40, pas: 1, def: 30 }, q: 'W(f⃗) sur 15 m =', u: 'J', rep: -20 * 15, tol: .02,
+        corr: 'W(f⃗) = − f × AB = − 20 × 15 = − 300 J.' },
+      { nom: 'L\'énergie perdue', desc: 'Une luge de 60 kg (avec l\'enfant) part sans vitesse d\'une hauteur de 10 m et arrive en bas à 12 m·s⁻¹.', piege: 'ΔEm = ℰ<sub>m</sub>(arrivée) − ℰ<sub>m</sub>(départ) : on prend ℰ<sub>p</sub> = 0 en bas de la piste.',
+        mission: 'Calculez la variation d\'énergie mécanique de la luge entre le haut et le bas de la piste.', cur: { nom: 'Coefficient de frottement de la neige', u: '', min: 0, max: .15, pas: .005, def: .02 }, q: 'Δℰ<sub>m</sub> =', u: 'J', rep: .5 * 60 * 144 - 60 * g * 10, tol: .03,
+        corr: 'Δℰ<sub>m</sub> = ½ × 60 × 12² − 60 × 9,81 × 10 = 4 320 − 5 886 ≈ − 1,6 × 10³ J.' },
+      { nom: 'L\'intensité des frottements', desc: 'Même descente : la piste mesure 40 m. Le travail des frottements est égal à Δℰ<sub>m</sub>.', piege: 'On utilise W(f⃗) = Δℰ<sub>m</sub> puis W(f⃗) = − f × AB : attention au signe, f est une intensité positive.',
+        mission: 'Déduisez l\'intensité f de la force de frottement (supposée constante) sur la piste de 40 m. Explorez ensuite l\'effet des frottements avec le curseur.', cur: { nom: 'Coefficient de frottement de la neige', u: '', min: 0, max: .15, pas: .005, def: .06 }, q: 'f =', u: 'N', rep: -(.5 * 60 * 144 - 60 * g * 10) / 40, tol: .03,
+        corr: 'f = − Δℰ<sub>m</sub> / AB = 1 566 / 40 ≈ 39 N.' }] }];
+const QCM = [
+  { q: 'L\'énergie cinétique d\'un cycliste de 60 kg qui roule à 10 m·s⁻¹ vaut :', c: ['3,0 × 10³ J', '6,0 × 10² J', '6,0 × 10³ J'], b: 0 },
+  { q: 'Quand un ballon monte, le travail de son poids est :', c: ['positif', 'négatif', 'nul'], b: 1 },
+  { q: 'Le théorème de l\'énergie cinétique s\'écrit :', c: ['Δℰ<sub>c A→B</sub> = Σ W<sub>A→B</sub>(F⃗)', 'ℰ<sub>c</sub> = m g z', 'Δℰ<sub>c A→B</sub> = 0 toujours'], b: 0 },
+  { q: 'Au point le plus haut de sa trajectoire, un pendule qui oscille sans frottements a :', c: ['ℰ<sub>c</sub> maximale', 'ℰ<sub>p</sub> maximale et ℰ<sub>c</sub> nulle', 'ℰ<sub>m</sub> nulle'], b: 1 },
+  { q: 'Un système est en chute libre lorsqu\'il est soumis :', c: ['à son seul poids', 'à son poids et à l\'action de l\'air', 'à aucune force'], b: 0 },
+  { q: 'Si des frottements travaillent, l\'énergie mécanique d\'un système :', c: ['augmente', 'se conserve', 'diminue'], b: 2 }];
+
+/* ---------- État sauvegardé ---------- */
+const CLE = 'efir-carnet-1re-ch14';
+const lit = () => { try { return JSON.parse(localStorage.getItem(CLE)) || {}; } catch (e) { return {}; } };
+let S = Object.assign({ page: 0, niv: [0, 0, 0], etoiles: {}, essais: {}, journal: {}, qcm: {}, bilan: false }, lit());
+const sauve = () => { try { localStorage.setItem(CLE, JSON.stringify(S)); } catch (e) {} };
+const $ = s => document.querySelector(s);
+const etoilesTot = () => Object.values(S.etoiles).reduce((a, b) => a + b, 0);
+const pageFaite = p => [0, 1, 2].every(n => (S.etoiles[p + '-' + n] || 0) > 0);
+const nivOuvert = (p, n) => n === 0 || (S.etoiles[p + '-' + (n - 1)] || 0) > 0;
+const pageOuverte = p => p === 0 || pageFaite(p - 1);
+
+$('#retour').onclick = () => { try { parent.location.hash = 'cours'; } catch (e) { location.hash = ''; } };
+
+/* ---------- Mise en page ---------- */
+function jauge() { const e = etoilesTot(); $('#jtxt').textContent = `Jauge de compréhension · ${e} / 27 étoiles`; $('#jpc').textContent = Math.round(e / 27 * 100) + ' %'; $('#jbar').style.width = (e / 27 * 100) + '%'; }
+function stepper() {
+  const el = $('#stepper'); el.innerHTML = '';
+  PAGES.forEach((P, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'st' + (!S.bilan && S.page === i ? ' on' : '') + (pageFaite(i) ? ' fait' : '');
+    b.disabled = !pageOuverte(i); b.innerHTML = `<div class="rd">${pageOuverte(i) ? P.ic : '🔒'}</div><b>${P.court}</b><small>Badge : ${P.badge}</small>`; b.onclick = () => { S.bilan = false; S.page = i; sauve(); rendu(); }; el.appendChild(b); });
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'st' + (S.bilan ? ' on' : ''); b.disabled = !pageFaite(2);
+  b.innerHTML = `<div class="rd">${pageFaite(2) ? '🏅' : '🔒'}</div><b>Bilan</b><small>Badges et QCM</small>`; b.onclick = () => { S.bilan = true; sauve(); rendu(); }; el.appendChild(b);
+}
+function gauche() {
+  const P = PAGES[S.page], n = S.niv[S.page], N = P.niveaux[n];
+  $('#gauche').innerHTML = `<div class="k">📖 ${P.court}</div><h3 class="big">${P.lignes.map((l, i) => `<span class="${i === P.hl ? 'hl' : ''}">${l}</span>`).join('')}</h3><p class="qq">${P.question}</p>` +
+    P.notions.map((x, i) => `<div class="notion"><h4><em>0${i + 1}</em>${x.t}</h4><p>${x.p}</p><div class="f">${x.f}</div></div>`).join('') +
+    `<div class="nivdesc"><b>Niveau ${n + 1} · ${N.nom}</b>${N.desc}</div><div class="piege">⚠️ <b>Piège du bac :</b> ${N.piege}</div>` +
+    `<div class="badge ${pageFaite(S.page) ? 'gagne' : ''}">${pageFaite(S.page) ? '🏅 Badge gagné : « ' + P.badge + ' »' : '🔒 Réussissez les 3 niveaux pour gagner le badge « ' + P.badge + ' ».'}</div>`;
+}
+function nivs() {
+  const P = PAGES[S.page], el = $('#nivs'); el.innerHTML = '';
+  P.niveaux.forEach((N, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'niv' + (S.niv[S.page] === i ? ' on' : ''); b.disabled = !nivOuvert(S.page, i);
+    const e = S.etoiles[S.page + '-' + i] || 0; b.innerHTML = `<small>${nivOuvert(S.page, i) ? '' : '🔒 '}NIVEAU ${i + 1}</small><span>${N.nom}</span><span class="et">${[0, 1, 2].map(k => `<span class="${k < e ? 'o' : ''}">★</span>`).join('')}</span>`;
+    b.onclick = () => { S.niv[S.page] = i; sauve(); rendu(); }; el.appendChild(b); });
+}
+let VAL = 0;
+function niveau() {
+  const P = PAGES[S.page], n = S.niv[S.page], N = P.niveaux[n], k = S.page + '-' + n;
+  $('#mission').innerHTML = N.mission; $('#curNom').innerHTML = N.cur.nom;
+  const c = $('#cur'); c.min = N.cur.min; c.max = N.cur.max; c.step = N.cur.pas; VAL = N.cur.def; c.value = VAL;
+  $('#repQ').innerHTML = N.q; $('#repU').textContent = N.u; $('#repIn').value = (S.essais[k] || {}).v || '';
+  const m = $('#repMsg'); if (S.etoiles[k]) { m.className = 'msg ok'; m.innerHTML = '✓ Niveau réussi (' + '★'.repeat(S.etoiles[k]) + '). ' + N.corr; } else { m.className = 'msg hid'; }
+  $('#thNom').textContent = P.nom; $('#thIc').textContent = P.ic; $('#thSous').textContent = '1re spécialité · Chapitre 14 · ' + P.court.replace(/^Page \d · /, ''); $('#thPg').textContent = `Page ${S.page + 1} / 3`;
+  $('#jnNom').textContent = P.nom; $('#journal').value = S.journal[P.cle] || '';
+  $('#prec').disabled = S.page === 0; $('#suiv').textContent = S.page === 2 ? 'Bilan ›' : 'Page suivante ›'; $('#suiv').disabled = !pageFaite(S.page);
+  majCur(); SC.choisir(P.scene);
+}
+function majCur() { const N = PAGES[S.page].niveaux[S.niv[S.page]]; $('#curVal').textContent = fr(VAL, N.cur.pas < .01 ? 3 : N.cur.pas < .1 ? 2 : N.cur.pas < 1 ? 1 : 0) + (N.cur.u ? ' ' + N.cur.u : ''); physique(); }
+$('#cur').oninput = e => { VAL = +e.target.value; majCur(); };
+$('#raz').onclick = () => { const k = S.page + '-' + S.niv[S.page]; delete S.etoiles[k]; delete S.essais[k]; sauve(); rendu(); };
+$('#prec').onclick = () => { if (S.page > 0) { S.page--; sauve(); rendu(); } };
+$('#suiv').onclick = () => { if (S.page < 2) S.page++; else S.bilan = true; sauve(); rendu(); };
+$('#jnSave').onclick = () => { S.journal[S.bilan ? 'bilan' : PAGES[S.page].cle] = $('#journal').value; sauve(); $('#jnSave').textContent = '✓ Sauvegardé'; setTimeout(() => $('#jnSave').textContent = '💾 Sauvegarder', 1400); };
+$('#journal').oninput = () => { S.journal[S.bilan ? 'bilan' : PAGES[S.page].cle] = $('#journal').value; sauve(); };
+const num = t => { const x = parseFloat(String(t).replace(/\s/g, '').replace(',', '.').replace('−', '-').replace(/[x×]10\^?(-?\d+)/i, 'e$1')); return isFinite(x) ? x : NaN; };
+$('#repOk').onclick = () => {
+  const P = PAGES[S.page], n = S.niv[S.page], N = P.niveaux[n], k = S.page + '-' + n, v = num($('#repIn').value), m = $('#repMsg');
+  const E = S.essais[k] = S.essais[k] || { n: 0 }; E.v = $('#repIn').value;
+  if (!isFinite(v)) { m.className = 'msg ko'; m.textContent = 'Écrivez une valeur numérique (ex. 11,2).'; return; }
+  if (S.etoiles[k]) { m.className = 'msg ok'; m.innerHTML = '✓ Déjà réussi. ' + N.corr; return; }
+  E.n++;
+  if (Math.abs(v - N.rep) <= Math.abs(N.rep) * N.tol) { S.etoiles[k] = E.n === 1 ? 3 : E.n === 2 ? 2 : 1; m.className = 'msg ok'; m.innerHTML = `✓ Juste : ${'★'.repeat(S.etoiles[k])} ! ${N.corr}`; }
+  else { m.className = 'msg ko'; m.innerHTML = E.n >= 2 ? `✗ Pas encore. Indice : ${N.piege}` : '✗ Pas encore : relisez la mission et vérifiez les unités.'; }
+  sauve(); jauge(); nivs(); stepper(); gauche(); $('#suiv').disabled = !pageFaite(S.page);
+};
+
+/* ---------- Physique de chaque niveau : mesures, barres d'énergie et état de la scène ---------- */
+const ST = {};
+function barres(l, max) { $('#ebars').innerHTML = l.map(([t, v, c]) => `<div class="eb"><span>${t}</span><i><u style="width:${Math.max(0, Math.min(100, v / max * 100))}%;background:${c}"></u></i><b>${fr(v, v >= 100 ? 0 : 2)} J</b></div>`).join(''); }
+function mesures(l) { $('#mesures').innerHTML = l.map(([t, v]) => `<div class="mes"><small>${t}</small><b>${v}</b></div>`).join(''); }
+function physique() {
+  const p = S.page, n = S.niv[p];
+  if (p === 0) {
+    const m = .624;
+    if (n === 0) { const v = VAL, ang = 52 * Math.PI / 180; Object.assign(ST, { mode: 'tir', v0: v, z0: 2.3, ang, cible: false }); const ec = .5 * m * v * v; mesures([['masse', '0,624 kg'], ['vitesse', fr(v, 1) + ' m·s⁻¹'], ['ℰ<sub>c</sub>', fr(ec, 1) + ' J']]); barres([['ℰ<sub>c</sub>', ec, '#E65100']], 25); }
+    if (n === 1) { const zB = VAL, vz = Math.sqrt(2 * g * (zB - 2.3)), vx = 4.6; Object.assign(ST, { mode: 'tir', v0: Math.hypot(vx, vz), z0: 2.3, ang: Math.atan2(vz, vx), cible: false, marques: true });
+      const W = m * g * (2.3 - zB); mesures([['z<sub>A</sub>', '2,3 m'], ['z<sub>B</sub>', fr(zB, 2) + ' m'], ['W(P⃗) A→B', fr(W, 2) + ' J']]); barres([['ℰ<sub>c</sub> en A', .5 * m * (vx * vx + vz * vz), '#E65100'], ['ℰ<sub>c</sub> en B', .5 * m * vx * vx, '#F9A825'], ['|W(P⃗)|', Math.abs(W), '#4A148C']], 15); }
+    if (n === 2) { const vD = VAL, ang = 52 * Math.PI / 180; Object.assign(ST, { mode: 'franc', v0: vD, z0: 2.53, ang, cible: true });
+      const vx = vD * Math.cos(ang), vz = vD * Math.sin(ang), xE = 4.34, t = xE / vx, zE = 2.53 + vz * t - g * t * t / 2, vE = Math.hypot(vx, vz - g * t);
+      ST.zE = zE; mesures([['v<sub>D</sub>', fr(vD, 2) + ' m·s⁻¹'], ['v<sub>E</sub> (verticale du panier)', fr(vE, 2) + ' m·s⁻¹'], ['z<sub>E</sub>', fr(zE, 2) + ' m'], ['Résultat', Math.abs(zE - 3.05) < .12 ? '🏀 Panier !' : zE < 3.05 ? 'Trop court' : 'Trop long']]);
+      barres([['ℰ<sub>c</sub> en D', .5 * m * vD * vD, '#E65100'], ['ℰ<sub>c</sub> en E', .5 * m * vE * vE, '#F9A825'], ['W(P⃗) D→E', Math.abs(m * g * (2.53 - zE)), '#4A148C']], 20); }
+  }
+  if (p === 1) {
+    const L = .65, mm = n === 2 ? 28 : .2, z = n === 0 ? VAL / 100 : VAL / 100;
+    Object.assign(ST, { mode: 'pendule', L: n === 2 ? 1.2 : L, z, foucault: n === 2 });
+    const ep = mm * g * z, v = Math.sqrt(2 * g * z);
+    mesures([['masse', n === 2 ? '28 kg' : '200 g'], ['z de lâcher', fr(z * 100, 1) + ' cm'], ['v en O', fr(v, 2) + ' m·s⁻¹'], ['ℰ<sub>m</sub>', fr(ep, n === 2 ? 1 : 3) + ' J']]);
+    ST.ep = ep; ST.majE = th => { const zz = (n === 2 ? 1.2 : L) * (1 - Math.cos(th)) * z / ((n === 2 ? 1.2 : L) * (1 - Math.cos(ST.th0 || 1e-6))), e1 = mm * g * zz; barres([['ℰ<sub>p</sub>', e1, '#c2185b'], ['ℰ<sub>c</sub>', ep - e1, '#E65100'], ['ℰ<sub>m</sub>', ep, '#2e7d32']], Math.max(ep * 1.1, 1e-6)); };
+    ST.th0 = Math.acos(1 - Math.min(.9, z / ST.L)); ST.majE(0);
+  }
+  if (p === 2) {
+    const m = 60, H = 10;
+    const AB = n === 0 ? VAL : 40, mu = n === 0 ? .034 : VAL, ang = Math.asin(H / 40), f = n === 0 ? 20 : mu * m * g * Math.cos(ang);
+    const Ef = Math.max(0, m * g * H - f * 40), v = Math.sqrt(2 * Ef / m);
+    Object.assign(ST, { mode: 'luge', AB, n, v });
+    if (n === 0) { mesures([['f', '20 N'], ['AB', fr(AB, 0) + ' m'], ['W(f⃗)', fr(-20 * AB, 0) + ' J']]); barres([['|W(f⃗)|', 20 * AB, '#4A148C']], 800); }
+    else { mesures([['f', fr(f, 0) + ' N'], ['v en bas', fr(v, 1) + ' m·s⁻¹'], ['Δℰ<sub>m</sub>', fr(Ef - m * g * H, 0) + ' J']]); barres([['ℰ<sub>m</sub> en haut', m * g * H, '#2e7d32'], ['ℰ<sub>m</sub> en bas', Ef, '#E65100'], ['énergie perdue', m * g * H - Ef, '#4A148C']], 6200); }
+  }
+  SC.maj();
+}
+
+/* ---------- Scènes : 3D (Three.js) avec vue 2D de secours ---------- */
+const SC = { type: '', vue2d: false, three: null, t0: performance.now(),
+  choisir(t) { this.type = t; if (this.three) this.three.construire(t); },
+  maj() { if (this.three) this.three.maj(); }
+};
+const cv = $('#c2d'), ctx = cv.getContext('2d');
+function taille() { const r = $('#scene').getBoundingClientRect(); cv.width = r.width * 2; cv.height = r.height * 2; if (SC.three) SC.three.taille(r.width, r.height); }
+addEventListener('resize', taille);
+function dessin2d(t) {
+  const W = cv.width, H = cv.height; ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#F4F2F8'; ctx.fillRect(0, 0, W, H); ctx.lineWidth = 3; ctx.font = '600 24px Inter';
+  if (ST.mode === 'tir' || ST.mode === 'franc') {
+    const sx = W / 6.5, X = x => 60 + x * sx, Y = z => H - 40 - z * (H - 80) / 4.2; ctx.fillStyle = '#c8925a'; ctx.fillRect(0, Y(0), W, H - Y(0));
+    if (ST.cible) { ctx.strokeStyle = '#e65100'; ctx.beginPath(); ctx.moveTo(X(4.34) - 22, Y(3.05)); ctx.lineTo(X(4.34) + 22, Y(3.05)); ctx.stroke(); ctx.fillStyle = '#546e7a'; ctx.fillRect(X(4.6), Y(3.6), 8, Y(0) - Y(3.6)); ctx.fillStyle = '#e65100'; ctx.fillText('cercle 3,05 m', X(4.34) - 70, Y(3.05) - 16); }
+    const vx = ST.v0 * Math.cos(ST.ang), vz = ST.v0 * Math.sin(ST.ang), T = (vz + Math.sqrt(vz * vz + 2 * g * ST.z0)) / g; ctx.strokeStyle = '#7B1FA2'; ctx.setLineDash([8, 8]); ctx.beginPath();
+    for (let k = 0; k <= 60; k++) { const tt = T * k / 60, x = vx * tt, z = ST.z0 + vz * tt - g * tt * tt / 2; if (x > 6) break; k ? ctx.lineTo(X(x), Y(z)) : ctx.moveTo(X(x), Y(z)); } ctx.stroke(); ctx.setLineDash([]);
+    const tc = (t % 2) / 2 * Math.min(T, 6 / vx), bx = vx * tc, bz = ST.z0 + vz * tc - g * tc * tc / 2; ctx.fillStyle = '#ef6c00'; ctx.beginPath(); ctx.arc(X(bx), Y(Math.max(.12, bz)), 14, 0, 7); ctx.fill();
+    if (ST.marques) { const tb = vz / g; ctx.fillStyle = '#4A148C'; ctx.fillText('A', X(0) - 26, Y(2.3)); ctx.fillText('B', X(vx * tb) - 8, Y(ST.z0 + vz * tb - g * tb * tb / 2) - 18); }
+    ctx.fillStyle = '#1d1a2b'; ctx.fillText('z (m)', 10, 30); for (let z = 0; z <= 4; z++) { ctx.fillRect(40, Y(z) - 1, 14, 2); ctx.fillText(z, 14, Y(z) + 8); }
+  } else if (ST.mode === 'pendule') {
+    const ox = W / 2, oy = 40, L = H - 120, th0 = ST.th0, th = th0 * Math.cos(t * 2.2), bx = ox + L * Math.sin(th), by = oy + L * Math.cos(th);
+    ctx.strokeStyle = '#546e7a'; ctx.beginPath(); ctx.moveTo(ox - 120, oy); ctx.lineTo(ox + 120, oy); ctx.stroke(); ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.fillStyle = ST.foucault ? '#c9a24a' : '#c62828'; ctx.beginPath(); ctx.arc(bx, by, ST.foucault ? 26 : 18, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#B39DDB'; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(ox - 200, oy + L); ctx.lineTo(ox + 200, oy + L); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = '#4A148C'; ctx.fillText('O (z = 0)', ox + 210, oy + L + 8);
+    if (ST.majE) ST.majE(th);
+  } else if (ST.mode === 'luge') {
+    const x0 = 60, y0 = 50, x1 = W - 60, y1 = H - 50; ctx.fillStyle = '#e3eef8'; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x0, y1); ctx.fill(); ctx.strokeStyle = '#90a4ae'; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    const fx = ST.n === 0 ? ST.AB / 40 : 1, p = (t % 3) / 3 * fx, lx = x0 + (x1 - x0) * p, ly = y0 + (y1 - y0) * p; ctx.fillStyle = '#c62828'; ctx.save(); ctx.translate(lx, ly); ctx.rotate(Math.atan2(y1 - y0, x1 - x0)); ctx.fillRect(-26, -22, 52, 18); ctx.restore();
+    ctx.fillStyle = '#4A148C'; ctx.fillText('A', x0 - 30, y0); ctx.fillText(ST.n === 0 ? 'B (' + fr(ST.AB, 0) + ' m)' : 'B', x0 + (x1 - x0) * fx - 20, y0 + (y1 - y0) * fx + 34);
+  }
+}
+function boucle(t) { if (SC.vue2d || !SC.three) dessin2d(t / 1000); else SC.three.anime(t / 1000); requestAnimationFrame(boucle); }
+$('#b2d').onclick = () => { SC.vue2d = !SC.vue2d; $('#b2d').classList.toggle('on', SC.vue2d); $('#b2d').textContent = (SC.vue2d ? '☑' : '☐') + ' Vue 2D'; if (SC.three) SC.three.r.domElement.style.display = SC.vue2d ? 'none' : 'block'; cv.style.display = SC.vue2d || !SC.three ? 'block' : 'none'; };
+
+async function init3d() {
+  try {
+    const THREE = window.THREE || await new Promise((ok, ko) => { const u = ['/lib/three-r128.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js']; const essai = i => { if (i >= u.length) return ko(new Error('three')); const sc = document.createElement('script'); sc.src = u[i]; sc.onload = () => window.THREE ? ok(window.THREE) : essai(i + 1); sc.onerror = () => essai(i + 1); document.head.appendChild(sc); }; essai(0); });
+    const r = new THREE.WebGLRenderer({ antialias: true }); r.setPixelRatio(Math.min(2, devicePixelRatio)); $('#scene').appendChild(r.domElement); r.domElement.style.position = 'absolute'; r.domElement.style.inset = '0';
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0xEEF1F7); const cam = new THREE.PerspectiveCamera(40, 1, .05, 100);
+    const kL = THREE.CapsuleGeometry ? 1 : .5; scene.add(new THREE.HemisphereLight(0xffffff, 0xd8d0e8, 1.1 * kL)); const dl = new THREE.DirectionalLight(0xffffff, 1.2 * kL); dl.position.set(3, 6, 4); scene.add(dl);
+    let G = new THREE.Group(); scene.add(G); let rot = 0, drag = null;
+    r.domElement.addEventListener('pointerdown', e => drag = e.clientX); addEventListener('pointerup', () => drag = null);
+    r.domElement.addEventListener('pointermove', e => { if (drag != null) { rot += (e.clientX - drag) * .006; rot = Math.max(-.9, Math.min(.9, rot)); drag = e.clientX; } });
+    const M = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: .6 }, o));
+    let O = {};
+    const T3 = { r,
+      taille(w, h) { r.setSize(w, h, false); r.domElement.style.width = '100%'; r.domElement.style.height = '100%'; cam.aspect = w / h; cam.updateProjectionMatrix(); },
+      construire(type) {
+        scene.remove(G); G = new THREE.Group(); scene.add(G); O = { type };
+        if (type === 'basket') {
+          const sol = new THREE.Mesh(new THREE.BoxGeometry(9, .05, 3), M(0xc8925a)); sol.position.set(2.2, -.025, 0); G.add(sol);
+          const po = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 3.5, 12), M(0x546e7a, { metalness: .5 })); po.position.set(4.95, 1.75, -.3); G.add(po);
+          const pl = new THREE.Mesh(new THREE.BoxGeometry(.04, 1.05, 1.8), M(0xffffff, { transparent: true, opacity: .6 })); pl.position.set(4.6, 3.4, 0); G.add(pl);
+          O.cercle = new THREE.Mesh(new THREE.TorusGeometry(.225, .028, 10, 40), M(0xe65100)); O.cercle.rotation.x = Math.PI / 2 - .3; O.cercle.position.set(4.34, 3.05, 0); G.add(O.cercle);
+          O.ball = new THREE.Mesh(new THREE.SphereGeometry(.12, 20, 14), M(0xef6c00)); G.add(O.ball);
+          O.traj = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: 0x7B1FA2, dashSize: .08, gapSize: .06 })); G.add(O.traj);
+          cam.position.set(2.2, 2.2, 7.5); cam.lookAt(2.2, 1.9, 0);
+        } else if (type === 'pendule') {
+          const pot = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 2.0, 12), M(0x90a4ae, { metalness: .7 })); pot.position.set(-.8, 1.0, 0); G.add(pot);
+          const br = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .85, 12), M(0x90a4ae, { metalness: .7 })); br.rotation.z = Math.PI / 2; br.position.set(-.4, 1.95, 0); G.add(br);
+          const so = new THREE.Mesh(new THREE.BoxGeometry(.8, .04, .5), M(0x455a64)); so.position.set(-.8, .02, 0); G.add(so);
+          O.piv = new THREE.Group(); O.piv.position.set(0, 1.95, 0); G.add(O.piv);
+          O.fil = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, 1, 6), M(0x222222)); O.piv.add(O.fil);
+          O.boule = new THREE.Mesh(new THREE.SphereGeometry(.07, 24, 16), M(0xc62828, { metalness: .3 })); O.piv.add(O.boule);
+          O.ref = new THREE.Mesh(new THREE.BoxGeometry(1.8, .006, .006), M(0xB39DDB)); G.add(O.ref);
+          cam.position.set(0, 1.2, 3.6); cam.lookAt(0, 1.0, 0);
+        } else {
+          const H = 2.0, Lp = 4.0, a = Math.asin(H / Lp); O.a = a; O.H = H; O.Lp = Lp;
+          const piste = new THREE.Mesh(new THREE.BoxGeometry(Lp, .06, 1.0), M(0xf5f9ff)); piste.position.set(Lp * Math.cos(a) / 2, H / 2, 0); piste.rotation.z = -a; G.add(piste);
+          const sol = new THREE.Mesh(new THREE.BoxGeometry(6, .05, 2), M(0xdfe9f2)); sol.position.set(2.2, -.03, 0); G.add(sol);
+          O.luge = new THREE.Group(); const lg = new THREE.Mesh(new THREE.BoxGeometry(.35, .08, .25), M(0xc62828)); lg.position.y = .08; const en = new THREE.Mesh((THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(.07, .16, 4, 8) : new THREE.CylinderGeometry(.07, .07, .3, 10)), M(0x4A148C)); en.position.set(-.02, .26, 0); O.luge.add(lg, en); G.add(O.luge);
+          cam.position.set(1.7, 1.6, 5.2); cam.lookAt(1.7, .9, 0);
+        }
+        this.maj();
+      },
+      maj() {
+        if (O.type === 'basket' && O.traj && ST.v0) { const vx = ST.v0 * Math.cos(ST.ang), vz = ST.v0 * Math.sin(ST.ang), pts = []; for (let k = 0; k <= 80; k++) { const t = k * .02, x = vx * t, z = ST.z0 + vz * t - g * t * t / 2; if (z < .1 || x > 6) break; pts.push(new THREE.Vector3(x, z, 0)); } O.traj.geometry.dispose(); O.traj.geometry = new THREE.BufferGeometry().setFromPoints(pts); O.traj.computeLineDistances(); O.cercle.visible = !!ST.cible; O.pts = pts; }
+        if (O.type === 'pendule') { const L = ST.L || .65, s = 1.6 / Math.max(1, L); O.fil.scale.y = L * s; O.fil.position.y = -L * s / 2; O.boule.position.y = -L * s; O.boule.scale.setScalar(ST.foucault ? 1.6 : 1); O.ref.position.set(0, 1.95 - L * s, -.05); O.Ls = L * s; }
+      },
+      anime(t) {
+        G.rotation.y = rot;
+        if (O.type === 'basket' && O.pts && O.pts.length) { const i = Math.floor((t * 40) % (O.pts.length + 25)); const p = O.pts[Math.min(i, O.pts.length - 1)]; O.ball.position.copy(p); }
+        if (O.type === 'pendule' && ST.th0 != null) { const th = ST.th0 * Math.cos(t * 2.2); O.piv.rotation.z = th; if (ST.majE) ST.majE(th); }
+        if (O.type === 'luge') { const fx = ST.n === 0 ? ST.AB / 40 : 1, p = (t % 3) / 3 * fx, d = O.Lp * p; O.luge.position.set(d * Math.cos(O.a), O.H - d * Math.sin(O.a) + .03, 0); O.luge.rotation.z = -O.a; }
+        r.render(scene, cam);
+      } };
+    SC.three = T3; cv.style.display = 'none'; taille(); T3.construire(SC.type);
+  } catch (e) { console.warn('3D indisponible', e); SC.three = null; $('#aide3d').textContent = 'Vue 2D (la 3D n\'est pas disponible sur cet appareil)'; cv.style.display = 'block'; }
+}
+
+/* ---------- Bilan : badges, étoiles, QCM, téléchargement ---------- */
+function bilan() {
+  const el = $('#vueBilan'), e = etoilesTot();
+  el.innerHTML = `<h3>🏅 Bilan du carnet · ${e} / 27 étoiles</h3><div class="bgrid">${PAGES.map((P, i) => `<div class="badge ${pageFaite(i) ? 'gagne' : ''}">${P.ic} <b>${P.badge}</b><br>${[0, 1, 2].map(n => P.niveaux[n].nom + ' : ' + ('★'.repeat(S.etoiles[i + '-' + n] || 0) || '—')).join('<br>')}</div>`).join('')}</div>` +
+    `<div class="qcm"><h3>📝 QCM final</h3>${QCM.map((x, i) => `<div class="q"><p><b>${i + 1}.</b> ${x.q}</p>${x.c.map((c, j) => `<label><input type="radio" name="q${i}" value="${j}" ${S.qcm[i] === j ? 'checked' : ''}> ${c}</label>`).join('')}<div class="msg hid" id="qm${i}"></div></div>`).join('')}
+    <button class="btn" id="qcmOk" type="button">Vérifier le QCM</button> <button class="btn sec" id="pdf" type="button">⬇ Télécharger mon carnet (PDF)</button><p class="msg hid" id="pdfMsg"></p></div>`;
+  el.querySelectorAll('input[type=radio]').forEach(i => i.onchange = () => { S.qcm[+i.name.slice(1)] = +i.value; sauve(); });
+  $('#qcmOk').onclick = () => { let ok = 0; QCM.forEach((x, i) => { const m = $('#qm' + i), b = S.qcm[i] === x.b; if (b) ok++; m.className = 'msg ' + (b ? 'ok' : 'ko'); m.textContent = b ? '✓ Juste' : '✗ Réponse attendue : ' + x.c[x.b]; }); S.qcmScore = ok; sauve(); };
+  $('#pdf').onclick = telecharger;
+  $('#journal').value = S.journal.bilan || ''; $('#jnNom').textContent = 'Bilan';
+}
+const plat = s => String(s).replace(/<[^>]+>/g, '').replace(/ℰ/g, 'E').replace(/[⃗]/g, '').replace(/→/g, '->').replace(/⁻¹/g, '-1').replace(/²/g, '2').replace(/³/g, '3').replace(/−/g, '-').replace(/★/g, '*').replace(/·/g, '.').replace(/[^\x20-\xFF]/g, '');
+function chargeJsPDF() { return new Promise((ok, ko) => { if (window.jspdf) return ok(); const essai = (u, suite) => { const s = document.createElement('script'); s.src = u; s.onload = () => ok(); s.onerror = suite; document.head.appendChild(s); };
+  essai('/lib/jspdf-2.5.1.umd.min.js', () => essai('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', ko)); }); }
+async function telecharger() {
+  const nom = prompt ? null : null; void nom;
+  try { await chargeJsPDF(); } catch (e) { $('#pdfMsg').className = 'msg ko'; $('#pdfMsg').textContent = 'Le PDF ne peut pas être créé hors connexion : la page va s\'imprimer.'; window.print(); return; }
+  const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' }); let y = 18; const L = (t, s = 11, b = false) => { doc.setFont('helvetica', b ? 'bold' : 'normal'); doc.setFontSize(s); doc.splitTextToSize(plat(t), 180).forEach(l => { if (y > 280) { doc.addPage(); y = 18; } doc.text(l, 15, y); y += s * .45; }); y += 1.5; };
+  doc.setFillColor(74, 20, 140); doc.rect(0, 0, 210, 10, 'F'); L('EFIR - 1re specialite - Chapitre 14 - Carnet d\'exploration', 9); L('Aspects energetiques des phenomenes mecaniques', 15, true);
+  L('Jauge de comprehension : ' + etoilesTot() + ' / 27 etoiles', 11, true);
+  PAGES.forEach((P, i) => { L(P.court + ' - ' + P.nom + (pageFaite(i) ? ' - badge gagne : ' + P.badge : ''), 12, true); P.niveaux.forEach((N, n) => { const k = i + '-' + n; L('Niveau ' + (n + 1) + ' (' + N.nom + ') : ' + ('*'.repeat(S.etoiles[k] || 0) || 'non reussi') + ' - ma reponse : ' + ((S.essais[k] || {}).v || '-') + ' ' + N.u); }); if (S.journal[P.cle]) L('Journal : ' + S.journal[P.cle]); });
+  L('QCM final : ' + (S.qcmScore != null ? S.qcmScore + ' / ' + QCM.length : 'non verifie'), 12, true); if (S.journal.bilan) L('Journal du bilan : ' + S.journal.bilan);
+  const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.text('(c) EFIR - Mme Messaoudi - Tous droits reserves - page ' + i + '/' + n, 15, 292); }
+  doc.save('Carnet_1re_ch14_energie_mecanique.pdf'); $('#pdfMsg').className = 'msg ok'; $('#pdfMsg').textContent = '✓ Carnet téléchargé : déposez-le dans le devoir Google Classroom (Ajouter › Fichier, puis Rendre).';
+}
+
+function rendu() {
+  jauge(); stepper();
+  $('#vuePage').classList.toggle('hid', !!S.bilan); $('#vueBilan').classList.toggle('hid', !S.bilan);
+  if (S.bilan) { bilan(); return; }
+  if (!pageOuverte(S.page)) S.page = 0;
+  if (!nivOuvert(S.page, S.niv[S.page])) S.niv[S.page] = 0;
+  gauche(); nivs(); niveau(); taille();
+}
+rendu(); taille(); requestAnimationFrame(boucle); init3d();
+/* protection : pas de copie hors des champs de réponse */
+document.addEventListener('contextmenu', e => { if (!e.target.closest('input,textarea')) e.preventDefault(); });
+document.addEventListener('copy', e => { if (!e.target.closest || !e.target.closest('input,textarea')) e.preventDefault(); });
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && ['s', 'u', 'p'].includes(e.key.toLowerCase())) e.preventDefault(); });
+</script>
+<script>
+  /* vecteurs : lettre + flèche combinante (U+20D7) → flèche dessinée en CSS (la flèche combinante s'affiche mal dans certaines polices) */
+  (function () {
+    var RX = /((?:Δ|Σ)?[A-Za-zΑ-ω0-9])⃗/;
+    if (!document.getElementById("efir-vec-css")) { var sv = document.createElement("style"); sv.id = "efir-vec-css"; sv.textContent = '.vec{display:inline-block;position:relative;padding-top:.18em;line-height:1}.vec::before{content:"";position:absolute;left:4%;right:6%;top:.06em;border-top:1.4px solid currentColor}.vec::after{content:"";position:absolute;right:2%;top:-.1em;width:.26em;height:.26em;border:solid currentColor;border-width:1.4px 1.4px 0 0;transform:rotate(45deg)}'; (document.head || document.documentElement).appendChild(sv); }
+    function vecDom(root) {
+      if (!root || !document.createTreeWalker) return;
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), l = [], n;
+      while ((n = w.nextNode())) if (n.nodeValue.indexOf("⃗") >= 0 && n.parentNode && !/^(SCRIPT|STYLE|TEXTAREA|OPTION|TITLE)$/.test(n.parentNode.nodeName) && !(n.parentNode.closest && n.parentNode.closest("svg"))) l.push(n);
+      l.forEach(function (t) {
+        var s = t.nodeValue, f = document.createDocumentFragment(), m;
+        while ((m = RX.exec(s))) { if (m.index) f.appendChild(document.createTextNode(s.slice(0, m.index))); var sp = document.createElement("span"); sp.className = "vec"; sp.textContent = m[1]; f.appendChild(sp); s = s.slice(m.index + m[0].length); }
+        if (s) f.appendChild(document.createTextNode(s.replace(/⃗/g, "")));
+        t.parentNode.replaceChild(f, t);
+      });
+    }
+    var en = false, mo = new MutationObserver(function () { if (en) return; en = true; try { vecDom(document.body); } finally { en = false; } });
+    function go() { vecDom(document.body); mo.observe(document.body, { childList: true, subtree: true, characterData: true }); }
+    if (document.body) go(); else document.addEventListener("DOMContentLoaded", go);
+  })();
+</script>
+</body>
+</html>

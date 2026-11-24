@@ -1,0 +1,168 @@
+<!--efir1re:AE3 · Célérité de la houle 3D-->
+window.EFIR_RETOUR = "premiere/ondes/Ondes%20m%C3%A9caniques";
+
+// ====================================================================
+// Ch. 15 · AE3 · Célérité de la houle (cuve à ondes + pointage vidéo)
+// ====================================================================
+const LX23 = .3, LZ23 = .2, TAU23 = .04, X0_23 = .02, EXAG23 = 2; // cuve (m), durée entre images (s), position initiale de l'onde (m)
+const v23 = (hmm, k = 1) => Math.sqrt(9.81 * hmm / 1000) * k; // modèle « eau peu profonde » v = √(g·h)
+let water23, wbase23, wgeo23, wlab23, S23 = null, frame23 = 0;
+const fresh23 = () => ({ h: 8, vid: null, res: [] });
+const f23 = (x, k) => x.toFixed(k).replace('.', ',');
+const xw23 = (vid, t) => X0_23 + vid.v * t; // position du front à la date t
+const C23 = {
+  id: 'p1_ch15_ae3', code: 'AE3', short: 'Célérité de la houle 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 15 · Activité expérimentale AE3 · Simulation 3D',
+  title: 'Célérité de la houle',
+  problem: 'Près des côtes, les vagues de la houle se déforment puis déferlent. La célérité d\'une onde à la surface de l\'eau dépend-elle du milieu, c\'est-à-dire de la profondeur de l\'eau ?',
+  mots: `<p><b>Houle</b> : succession de vagues créées par le vent, qui se propagent en dehors de la zone ventée.<br>
+  <b>Cuve à ondes</b> : cuve transparente contenant une faible épaisseur d'eau, éclairée par-dessus ; on y crée des perturbations à la surface.<br>
+  <b>Pointage vidéo</b> : sur chaque image de la vidéo, on clique sur la position de l'onde. La caméra prend une image toutes les τ = ${f23(TAU23, 2)} s (25 images par seconde).<br>
+  <b>Célérité</b> : v = d / (n × τ), avec d la distance parcourue par l'onde pendant n intervalles entre images.</p>`,
+  aide: `<p>1. Règle la profondeur d'eau dans la cuve.<br>
+  2. Crée une perturbation rectiligne avec la règle et filme sa propagation.<br>
+  3. Dans la vidéo, avance image par image et clique sur la crête de l'onde (au moins 4 pointages, sur des images bien espacées).<br>
+  4. Calcule la célérité : c'est le coefficient directeur de la droite x = f(t).<br>
+  5. Recommence pour au moins trois profondeurs et compare.</p>`,
+  views: { ensemble: [[0, .45, .55], [0, .02, 0]] },
+  viewbar: [['Vue de dessus (caméra)', () => flyTo([0, .55, .01], [0, 0, 0])], ['Vue de côté (profondeur)', () => flyTo([0, .06, .32], [0, .01, 0])]],
+  protocol: [
+    { id: 'regler', q: 'Q2', html: 'Régler la profondeur d\'eau dans la cuve.' },
+    { id: 'film', q: 'Q2', html: 'Créer une perturbation et filmer sa propagation.' },
+    { id: 'pointage', q: 'Q2', html: 'Pointer la position de l\'onde sur au moins 4 images de la vidéo.' },
+    { id: 'calcul', q: 'Q2', html: 'Calculer la célérité v de l\'onde.' },
+    { id: 'profondeurs', q: 'Q2', html: 'Recommencer pour au moins 3 profondeurs différentes.' },
+    { id: 'tableau', q: 'Q3', html: 'Compléter le tableau des sources d\'erreurs puis le vérifier.' },
+    { id: 'extra', q: 'Q1-5', html: 'Répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'aucun produit chimique ; éloigner les appareils électriques de l\'eau ; essuyer l\'eau renversée',
+  table: { rowTitle: 'Source d\'erreur', rows: [{ label: 'Durée τ entre deux images', ans: [0, 0] }, { label: 'Précision du pointage', ans: [1, 1] }, { label: 'Étalonnage de la distance', ans: [1, 2] }, { label: 'Position de la caméra', ans: [1, 3] }],
+    cols: [{ title: 'Grandeur affectée', options: ['la durée Δt = n × τ', 'la distance d'] }, { title: 'Pour limiter cette erreur', options: ['connaître la cadence de la caméra et compter un grand nombre d\'intervalles', 'pointer toujours la même partie de l\'onde (la crête), en zoomant', 'utiliser un étalon long, placé dans le plan de la surface de l\'eau', 'placer la caméra à la verticale, centrée au-dessus de la cuve (pas de parallaxe)'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'Quelle est l\'origine de la houle ?', options: ['le vent, qui génère des vagues se propageant en dehors de la zone ventée', 'l\'attraction de la Lune', 'les séismes sous-marins'], ans: 0 },
+    { q: 'Q1', text: 'Quand les vagues se brisent sur la côte, leur énergie…', options: ['est en partie transmise aux courants et aux sédiments qu\'elles déplacent', 'disparaît', 'est transformée en lumière'], ans: 0 },
+    { q: 'Q2', num: true, text: 'Sur une vidéo, l\'onde parcourt 9,6 cm pendant 12 intervalles entre images (τ = 0,04 s). Calcule v :', unit: 'm·s⁻¹', ans: .096 / (12 * .04), tol: .02 },
+    { q: 'Q4', text: 'Près de la côte, une vague se déforme puis déferle car…', options: ['au sommet de la vague, la profondeur est plus grande qu\'au pied : le sommet va plus vite que le pied, la vague bascule vers l\'avant', 'le vent souffle plus fort près de la côte', 'l\'eau est plus salée près de la côte'], ans: 0 },
+    { q: 'Q5', text: 'La célérité d\'une onde à la surface de l\'eau…', options: ['dépend du milieu de propagation : elle augmente avec la profondeur de l\'eau', 'est la même quelle que soit la profondeur', 'diminue quand la profondeur augmente'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['La célérité d\'une onde dépend du milieu dans lequel elle se propage : à la surface de l\'eau, elle augmente avec la profondeur. C\'est pourquoi la houle ralentit et se déforme à l\'approche des côtes, jusqu\'à déferler.', 'La célérité d\'une onde ne dépend pas du milieu.', 'L\'onde va plus vite en eau peu profonde.', 'La célérité dépend seulement de la force avec laquelle on crée la perturbation.'], ans: 0 },
+  build() {
+    const M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, ...o });
+    const gm = GLASS(); gm.opacity = .25;
+    const tank = new THREE.Group(); scene.add(tank);
+    const bot = new THREE.Mesh(new THREE.BoxGeometry(LX23 + .02, .004, LZ23 + .02), gm); bot.position.y = .002; tank.add(bot);
+    for (const [w, d, x, z] of [[LX23 + .02, .004, 0, LZ23 / 2 + .01], [LX23 + .02, .004, 0, -LZ23 / 2 - .01], [.004, LZ23 + .02, LX23 / 2 + .01, 0], [.004, LZ23 + .02, -LX23 / 2 - .01, 0]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, .045, d), gm); m.position.set(x, .0245, z); tank.add(m); }
+    for (const [x, z] of [[-.15, -.1], [.15, -.1], [-.15, .1], [.15, .1]]) { const l = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, .06, 8), M(0x546e7a)); l.position.set(x * 1.05, -.03, z * 1.05); tank.add(l); }
+    tank.position.y = .06; this.tank = tank;
+    wgeo23 = new THREE.PlaneGeometry(LX23, LZ23, 150, 4); wgeo23.rotateX(-Math.PI / 2); wbase23 = wgeo23.attributes.position.array.slice();
+    water23 = new THREE.Mesh(wgeo23, M(0x4fc3f7, { roughness: .1, metalness: .1, transparent: true, opacity: .8 })); tank.add(water23);
+    this.wbody = new THREE.Mesh(new THREE.BoxGeometry(LX23, 1, LZ23), M(0x81d4fa, { transparent: true, opacity: .35, depthWrite: false })); tank.add(this.wbody);
+    // règle (perturbateur) et étalon
+    this.paddle = new THREE.Mesh(new THREE.BoxGeometry(.006, .03, LZ23 * .9), M(0x8d6e63)); this.paddle.position.set(-LX23 / 2 + .008, .03, 0); tank.add(this.paddle);
+    const et = new THREE.Mesh(new THREE.BoxGeometry(.1, .002, .008), M(0xfdd835)); et.position.set(0, .047, LZ23 / 2 + .01); tank.add(et);
+    const el = label('Étalon 10 cm', { size: 20, scale: .0006 }); el.position.set(0, .065, LZ23 / 2 + .02); tank.add(el);
+    // caméra sur potence
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, .5, 10), M(0xb0bec5, { metalness: .8 })); pole.position.set(-.22, .25, -.15); scene.add(pole);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(.22, .008, .008), M(0x78909c)); arm.position.set(-.11, .45, -.15); scene.add(arm);
+    const cam = new THREE.Mesh(new THREE.BoxGeometry(.05, .03, .04), M(0x212121)); cam.position.set(0, .43, -.15); scene.add(cam);
+    const lens = new THREE.Mesh(new THREE.CylinderGeometry(.01, .012, .015, 16), M(0x37474f)); lens.position.set(0, .41, -.15); scene.add(lens);
+    const cl = label('Caméra (25 images/s)', { size: 20, scale: .0006 }); cl.position.set(.06, .47, -.15); scene.add(cl);
+    wlab23 = null;
+    // carte vidéo
+    const cv = h('canvas', { id: 'vid23', width: 600, height: 420, style: 'width:100%;border-radius:8px;cursor:crosshair;background:#0b1a2a' });
+    cv.addEventListener('click', e => { const s = S23; if (!s.vid || BUSY) return; const r = cv.getBoundingClientRect(), px = (e.clientX - r.left) * cv.width / r.width; const x = (px - 20) / 560 * LX23; if (x < 0 || x > LX23) return; act({ t: 'pt', f: frame23, x: Math.round(x * 1000) / 1000 }); });
+    const nav = (id, d, t) => h('button', { id, onclick: () => { this.setFrame(frame23 + d); } }, t);
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Vidéo vue de dessus : pointage'), cv,
+      h('div', { class: 'row', style: 'margin-top:6px' }, nav('f1', -5, '◀◀ −5'), nav('f2', -1, '◀ image'), nav('f3', 1, 'image ▶'), nav('f4', 5, '+5 ▶▶')),
+      h('div', { class: 'note', id: 'vinfo23' })));
+    sideCard(chartCard('Position x de l\'onde en fonction du temps', 'chX'));
+    sideCard(chartCard('Célérité v en fonction de la profondeur h', 'chV'));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes résultats'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'rTab23' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  nf() { const s = S23; return s.vid ? Math.floor((LX23 - .015 - X0_23) / s.vid.v / TAU23) : 0; },
+  setFrame(f) { const s = S23; if (!s.vid) return; frame23 = Math.max(0, Math.min(this.nf(), f)); this.surf(frame23 * TAU23); this.drawVideo(); },
+  surf(t) { // t < 0 : surface au repos
+    const s = S23, a = wgeo23.attributes.position.array, v = s.vid ? s.vid.v : v23(s.h);
+    for (let i = 0; i < a.length; i += 3) { const x = wbase23[i] + LX23 / 2; a[i + 1] = t < 0 ? 0 : .006 * Math.exp(-(((x - X0_23 - v * t) / .012) ** 2)); }
+    wgeo23.attributes.position.needsUpdate = true; wgeo23.computeVertexNormals();
+  },
+  place() {
+    const s = S23, y = .004 + s.h / 1000 * EXAG23; water23.position.y = y; this.wbody.scale.y = y - .004; this.wbody.position.y = .004 + (y - .004) / 2;
+    if (wlab23) this.tank.remove(wlab23); wlab23 = label(`h = ${s.h} mm`, { size: 24, scale: .0007, color: '#0d47a1' }); wlab23.position.set(LX23 / 2 + .05, .03, 0); this.tank.add(wlab23);
+  },
+  drawVideo() {
+    const s = S23, cv = $('#vid23'); if (!cv) return; const cx = cv.getContext('2d'), W = cv.width, H = cv.height, X = x => 20 + x / LX23 * 560;
+    cx.fillStyle = '#0b1a2a'; cx.fillRect(0, 0, W, H); cx.fillStyle = '#1e4b6e'; cx.fillRect(20, 40, 560, 340);
+    if (s.vid) { const xf = xw23(s.vid, frame23 * TAU23); const g = cx.createLinearGradient(X(xf - .015), 0, X(xf + .015), 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(230,245,255,.95)'); g.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = g; cx.fillRect(X(xf - .015), 40, X(xf + .015) - X(xf - .015), 340);
+      cx.strokeStyle = '#ff5252'; cx.lineWidth = 3; for (const p of s.vid.pts) { const px = X(p.x), py = 60 + (p.f % 8) * 40; cx.beginPath(); cx.moveTo(px - 8, py - 8); cx.lineTo(px + 8, py + 8); cx.moveTo(px + 8, py - 8); cx.lineTo(px - 8, py + 8); cx.stroke(); } }
+    cx.fillStyle = '#8d6e63'; cx.fillRect(20, 50, 8, 320);
+    cx.fillStyle = '#fdd835'; cx.fillRect(X(.1), 392, X(.2) - X(.1), 8); cx.fillStyle = '#fff'; cx.font = '600 15px Inter, Arial'; cx.textAlign = 'center'; cx.fillText('étalon : 10 cm', X(.15), 416);
+    cx.textAlign = 'left'; cx.fillText(s.vid ? `Vidéo h = ${s.vid.h} mm · image n° ${frame23} · t = ${f23(frame23 * TAU23, 2)} s` : 'Aucune vidéo : filme d\'abord une perturbation.', 20, 26);
+    const vi = $('#vinfo23'); if (vi) vi.innerHTML = s.vid ? `Clique sur la crête de l'onde (bande claire) pour la pointer. Pointages : <b>${s.vid.pts.length}</b>. Images 0 à ${this.nf()}.` : '';
+    $$('#f1,#f2,#f3,#f4').forEach(b => b.disabled = !s.vid);
+  },
+  drawData() {
+    const s = S23; if (!$('#chX')) return;
+    const pts = s.vid ? s.vid.pts.map(p => [p.f * TAU23, p.x]) : [];
+    let curves = []; if (pts.length >= 2) { const n = pts.length, mt = pts.reduce((u, p) => u + p[0], 0) / n, mx = pts.reduce((u, p) => u + p[1], 0) / n, sxx = pts.reduce((u, p) => u + (p[0] - mt) ** 2, 0); if (sxx > 0) { const k = pts.reduce((u, p) => u + (p[0] - mt) * (p[1] - mx), 0) / sxx, b0 = mx - k * mt, te = Math.min(1.4, (.3 - b0) / k); curves = [{ pts: [[0, b0], [te, b0 + k * te]], color: '#C62828' }]; } }
+    drawChart($('#chX'), { xmax: 1.4, ymax: .3, xlabel: 't (s)', ylabel: 'x (m)', pts, curves, xfmt: x => x.toFixed(1).replace('.', ','), yfmt: y => y.toFixed(2).replace('.', ',') });
+    $('#chXInfo').innerHTML = pts.length >= 2 ? 'Les points sont alignés : l\'onde avance à vitesse constante. Le coefficient directeur de la droite est la célérité v.' : 'Pointe l\'onde sur plusieurs images.';
+    drawChart($('#chV'), { xmax: 20, ymax: .5, xlabel: 'h (mm)', ylabel: 'v (m·s⁻¹)', pts: s.res.map(r => [r.h, r.v]), xfmt: x => x.toFixed(0), yfmt: y => y.toFixed(2).replace('.', ',') });
+    $('#chVInfo').innerHTML = s.res.length >= 2 ? 'La célérité augmente avec la profondeur de l\'eau.' : 'Mesure la célérité pour plusieurs profondeurs.';
+    $('#rTab23').innerHTML = '<thead><tr><th>Profondeur h (mm)</th><th>Pointages</th><th>Célérité v (m·s⁻¹)</th></tr></thead><tbody>' + (s.res.map(r => `<tr><td>${r.h}</td><td>${r.n}</td><td>${f23(r.v, 2)}</td></tr>`).join('') || '<tr><td colspan="3">Aucun résultat.</td></tr>') + '</tbody>';
+  },
+  resetScene() { S23 = fresh23(); frame23 = 0; if (!water23) return; this.surf(-1); this.place(); this.drawVideo(); this.drawData(); if ($('#q23')) this.refreshPanel(); },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('h3', {}, '1. Régler la profondeur d\'eau'),
+      h('div', { class: 'row' }, ...[5, 8, 11, 15].map(hh => B('h' + hh, `h = ${hh} mm`, { t: 'depth', h: hh }))),
+      h('h3', {}, '2. Filmer'),
+      h('div', { class: 'row' }, h('button', { id: 'go23', onclick: () => act({ t: 'film', k: 1 + Math.round((Math.random() - .5) * 40) / 1000 }) }, '🎥 Créer une perturbation et filmer')),
+      h('h3', {}, '3. Exploiter la vidéo'),
+      h('div', { class: 'row' }, B('c23', '🧮 Calculer v (droite x = f(t))', { t: 'calc' }), B('e23', 'Effacer les pointages', { t: 'erase' })),
+      h('div', { id: 'q23', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S23, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    [5, 8, 11, 15].forEach(hh => en('#h' + hh, s.h !== hh)); en('#go23', true);
+    const fs = s.vid ? new Set(s.vid.pts.map(p => p.f)) : new Set();
+    en('#c23', s.vid && fs.size >= 4 && !s.vid.done); en('#e23', s.vid && s.vid.pts.length > 0);
+    $('#q23').innerHTML = `Profondeur : <b>${s.h} mm</b> · ${s.vid ? `vidéo filmée pour h = ${s.vid.h} mm, ${fs.size} image(s) pointée(s)${s.vid.done ? ' · v = <b>' + f23(s.vid.vRes, 2) + ' m·s⁻¹</b>' : ''}` : 'pas encore de vidéo'}`;
+    this.drawVideo();
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S23;
+    if (a.t === 'depth') { const h0 = s.h; if (!INSTANT) { flyTo([0, .06, .32], [0, .01, 0]); await tween(.8, p => { s.h = Math.round(h0 + (a.h - h0) * p); this.place(); }); } s.h = a.h; s.vid = null; frame23 = 0; this.surf(-1); this.place(); this.drawData(); step('regler'); say(`Profondeur d'eau réglée à ${a.h} mm (vue de côté exagérée ×${EXAG23}).`); return; }
+    if (a.t === 'film') {
+      s.vid = { h: s.h, v: v23(s.h, a.k), pts: [], done: false }; frame23 = 0;
+      if (!INSTANT) { flyTo([0, .45, .4], [0, .02, 0]); const T = this.nf() * TAU23; this.paddle.position.x = -LX23 / 2 + .008; await tween(.3, p => { this.paddle.position.y = .03 - .006 * Math.sin(p * Math.PI); }); await tween(T * 2, p => this.surf(p * T)); }
+      this.surf(0); this.drawVideo(); this.drawData(); step('film'); say(`Vidéo enregistrée (h = ${s.h} mm, ${this.nf() + 1} images). Avance image par image et clique sur la crête de l'onde.`); return;
+    }
+    if (a.t === 'pt') { if (!s.vid) return; frame23 = a.f; s.vid.pts = s.vid.pts.filter(p => p.f !== a.f); s.vid.pts.push({ f: a.f, x: a.x }); s.vid.pts.sort((p, q) => p.f - q.f); this.surf(a.f * TAU23); this.drawData(); if (new Set(s.vid.pts.map(p => p.f)).size >= 4) step('pointage'); say(`Image n° ${a.f} (t = ${f23(a.f * TAU23, 2)} s) : x = ${f23(a.x * 100, 1)} cm.`); return; }
+    if (a.t === 'erase') { if (s.vid) { s.vid.pts = []; s.vid.done = false; } this.drawData(); say('Pointages effacés.'); return; }
+    if (a.t === 'calc') {
+      const P = s.vid.pts, n = P.length, mt = P.reduce((u, p) => u + p.f * TAU23, 0) / n, mx = P.reduce((u, p) => u + p.x, 0) / n;
+      const v = P.reduce((u, p) => u + (p.f * TAU23 - mt) * (p.x - mx), 0) / P.reduce((u, p) => u + (p.f * TAU23 - mt) ** 2, 0);
+      s.vid.done = true; s.vid.vRes = v; s.res = s.res.filter(r => r.h !== s.vid.h); s.res.push({ h: s.vid.h, v, n }); s.res.sort((p, q) => p.h - q.h); this.drawData(); step('calcul');
+      if (s.res.length >= 3) step('profondeurs');
+      const first = P[0], last = P[n - 1], msg = `h = ${s.vid.h} mm : l'onde parcourt d = ${f23((last.x - first.x) * 100, 1)} cm en ${last.f - first.f} intervalles (Δt = ${f23((last.f - first.f) * TAU23, 2)} s) ; droite x = f(t) → v = ${f23(v, 2)} m·s⁻¹.`;
+      observe(msg); say(msg); return;
+    }
+  },
+  async demo() {
+    say('Démonstration : on filme une perturbation pour h = 8 mm puis on pointe quelques images.');
+    await act({ t: 'film', k: 1 }, { record: false });
+    for (const f of [0, 8, 16]) { const x = Math.round(xw23(S23.vid, f * TAU23) * 1000) / 1000; await act({ t: 'pt', f, x }, { record: false }); await wait(600); }
+    say('À toi : filme, pointe au moins 4 images, puis calcule v pour plusieurs profondeurs.'); await wait(1500);
+  },
+};
+startTP(C23);
+
+</script></body></html>

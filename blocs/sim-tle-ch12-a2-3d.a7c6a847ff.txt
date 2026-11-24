@@ -1,0 +1,1183 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel 3D · Énergies d'une boule de pétanque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Paillasse : en-tête de fiche, puis deux colonnes (tubes à gauche, flacons et carnet à droite), une seule colonne sur téléphone */
+:root {
+  --bg: #eef2f5;          /* carrelage de paillasse, gris bleuté */
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #15212d;
+  --muted: #576776;
+  --line: #d3dce4;
+  --navy: #003366;        /* bleu marine EFIR */
+  --navy-soft: #e3ecf6;
+  --red: #b42318;         /* sécurité, interdit */
+  --red-soft: #fdecea;
+  --green: #2f6f45;       /* vérifié */
+  --green-soft: #e7f3eb;
+  --amber: #8c6d1f;
+  --amber-soft: #fbf3df;
+  --glass: rgba(120, 150, 175, .55);
+  --glass-fill: rgba(255, 255, 255, .55);
+  --water: rgba(170, 205, 230, .38);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+    --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+    --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+    --water: rgba(150, 190, 225, .28); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+  --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+  --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+  --water: rgba(150, 190, 225, .28); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; color: var(--navy); }
+h1 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); line-height: 1.15; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+sub, sup { font-size: .7em; line-height: 0; }
+.kicker { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+header.fiche { display: grid; gap: 10px; }
+.pb { border: 1.5px solid var(--red); background: var(--surface); border-radius: var(--radius); padding: 10px 14px; font-weight: 700; }
+.pb span { color: var(--red); }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .92rem; padding: 0; margin: 0; list-style: none; }
+.steps li b { color: var(--ink); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: .88rem; }
+
+/* sécurité */
+.epi { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .92rem; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--green); background: var(--green-soft); color: var(--green); font-weight: 700; }
+.chip:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+
+/* porte-tubes */
+.rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px 6px; }
+.tube { font: inherit; background: none; border: 2px solid transparent; border-radius: 10px; padding: 4px 2px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; color: var(--ink); }
+.tube[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); }
+.tube svg { width: 52px; height: 178px; overflow: visible; }
+.tube .lab { font-size: .72rem; line-height: 1.15; text-align: center; min-height: 2.3em; color: var(--muted); }
+.tube .num { font-weight: 700; font-size: .8rem; }
+.glass { fill: var(--glass-fill); stroke: var(--glass); stroke-width: 2; }
+.drop { animation: fall .55s ease-in forwards; }
+@keyframes fall { from { transform: translateY(-34px); opacity: 1; } to { transform: translateY(var(--dy, 120px)); opacity: .2; } }
+.ppt circle { transition: fill 9s linear, opacity .9s ease, transform 2.2s ease-in; }
+@media (prefers-reduced-motion: reduce) { .drop { animation: none; opacity: 0; } .ppt circle { transition: none; } }
+.bench-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sel-info { flex: 1 1 220px; min-width: 0; font-size: .92rem; }
+
+/* flacons */
+.bottles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bottle { font: inherit; text-align: left; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 8px 10px; cursor: pointer; display: grid; gap: 4px; }
+.bottle:hover { border-color: var(--navy); }
+.bottle .nm { font-weight: 700; line-height: 1.2; }
+.bottle .io { font-size: .85rem; color: var(--muted); }
+.bottle .act { font-size: .78rem; color: var(--navy); font-weight: 700; }
+.bottle.reagent { background: var(--navy-soft); }
+.bottle[disabled] { opacity: .45; cursor: not-allowed; }
+.pic { display: flex; gap: 4px; }
+.pic img { width: 30px; height: 30px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--glass); vertical-align: -1px; margin-right: 4px; }
+
+button.btn { font: inherit; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1.5px solid var(--navy); background: var(--navy); color: var(--surface); }
+button.btn.ghost { background: transparent; color: var(--navy); }
+button.btn.warn { border-color: var(--red); color: var(--red); background: transparent; }
+button.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* messages */
+.toast { border-radius: 8px; padding: 9px 12px; font-size: .95rem; border: 1px solid var(--line); background: var(--surface-2); }
+.toast.err { border-color: var(--red); background: var(--red-soft); }
+.toast.ok { border-color: var(--green); background: var(--green-soft); }
+.toast.info { border-color: var(--amber); background: var(--amber-soft); }
+
+/* carnet */
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.log li { font-size: .92rem; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.log li.pos { border-left-color: var(--navy); }
+.log li:empty { display: none; }
+.log .t { color: var(--muted); font-size: .8rem; }
+
+/* tableaux */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 640px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; vertical-align: middle; }
+thead th, tbody th { background: var(--navy-soft); color: var(--navy); font-weight: 700; }
+tbody th { text-align: left; }
+td select { font: inherit; font-size: .88rem; width: 100%; min-width: 0; padding: 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+td.good select { border-color: var(--green); background: var(--green-soft); }
+td.bad select { border-color: var(--red); background: var(--red-soft); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.foot { color: var(--muted); font-size: .82rem; text-align: center; }
+details summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+
+/* animation et guide (version 3e) */
+.guide { display: flex; gap: 12px; align-items: center; background: var(--navy); color: var(--surface); border-radius: var(--radius); padding: 12px 14px; font-size: 1.05rem; }
+.guide b { color: inherit; }
+.guide .gn { flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--surface); color: var(--navy); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; }
+.next { box-shadow: 0 0 0 3px var(--amber); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--amber) 35%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .next { animation: none; } }
+.bench { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 520px) { .bench { grid-template-columns: minmax(0, 1fr); } .stage svg { max-height: 260px; } }
+.stage { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; display: grid; gap: 6px; justify-items: center; }
+.stage svg { width: 100%; max-width: 200px; height: auto; overflow: hidden; }
+.stage .caption { font-size: .95rem; text-align: center; min-height: 4.5em; }
+.stlbl { font: 700 15px var(--font-body); fill: var(--ink); }
+.mots summary { font-size: 1rem; }
+.mots dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 0; }
+.mots dt { font-weight: 700; color: var(--navy); }
+.mots dd { margin: 0; }
+@media (max-width: 520px) { .mots dl { grid-template-columns: 1fr; } .mots dd { margin-bottom: 6px; } }
+.tube .lab { font-size: .78rem; }
+.bottle .act { font-size: .88rem; }
+
+/* version 2 : actions rapides et compte rendu */
+.quick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.quick:empty { display: none; }
+.qbtn { font-size: .9rem; padding: 6px 10px; }
+.crform { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.crform label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+.crform input { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; width: 100%; }
+.crform label:first-child { flex: 1 1 220px; } .crform label:nth-child(2) { flex: 0 1 120px; }
+.cr { border: 1.5px solid var(--navy); border-radius: var(--radius); padding: 14px; background: var(--surface); display: grid; gap: 8px; }
+.cr h3, .cr h4 { margin: 4px 0 0; color: var(--navy); font-family: var(--font-display); }
+.cr ol, .cr ul { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.cr table { min-width: 0; font-size: .88rem; } .cr td, .cr th { text-align: left; }
+.cr .t { display: none; } .cr[hidden] { display: none; }
+.codebox { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.codebox input { font: inherit; width: 9em; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-transform: uppercase; }
+
+/* version 3 : question ion utile, mode économe */
+.ask { display: grid; gap: 8px; max-width: 260px; font-size: .92rem; text-align: center; }
+.ask .toast { text-align: left; }
+body.eco *, body.eco *::before, body.eco *::after { animation: none !important; transition: none !important; }
+#effacer { font-size: .85rem; padding: 4px 10px; margin-left: 6px; }
+
+/* version 4 : manipulations pilotées par l'élève */
+.vol { font-size: .92rem; align-self: center; }
+#verser { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.askbox:empty { display: none; }
+.askbox .ask { max-width: 280px; }
+.stage svg { overflow: visible; }
+
+.qtitle { width: 100%; text-align: center; font-size: .92rem; margin: 2px 0 0; }
+.quick .qbtn.next { font-size: .95rem; }
+.prof { margin: -4px 0 0; color: var(--navy); font-size: 1rem; }
+
+/* protocole de la fiche */
+.proto { border: 1.5px solid var(--navy); border-radius: var(--radius); background: var(--surface); padding: 10px 12px; }
+.proto summary { font-weight: 700; color: var(--navy); cursor: pointer; }
+.proto ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.proto li { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 1.4em; gap: 8px; align-items: start; font-size: .92rem; padding: 6px 8px; border-radius: 8px; }
+.proto li.partie { display: block; grid-template-columns: none; font-family: var(--font-display); font-weight: 700; color: var(--navy); padding: 6px 0 0; font-size: .95rem; }
+.proto .q { font-weight: 700; color: var(--muted); font-size: .8rem; padding-top: 2px; }
+.proto .st { font-weight: 700; color: var(--green); text-align: center; }
+.proto li.cur { background: var(--amber-soft); outline: 1.5px solid var(--amber); }
+.proto li.cur .st { color: var(--amber); }
+.proto li.fait .tx { color: var(--muted); }
+.proto li.fait { background: var(--green-soft); }
+.proto ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.proto ul li { display: block; padding: 0; font-size: .88rem; background: none; outline: none; }
+.proto ul li.fait { color: var(--green); background: none; }
+
+#prototout { margin-top: 8px; }
+.proto:not(.tout) #proto > li:not(.cur) { display: none; }
+.proto li { grid-template-columns: 4.2em minmax(0, 1fr) 1.4em; }
+.extract{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center}.extract svg{width:120px;height:120px}
+
+/* ===== Compléments communs aux simulations 3D (Terminale) ===== */
+.scene3d { margin: 0; position: relative; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.scene3d canvas.c3d { width: 100%; aspect-ratio: 16 / 10; display: block; touch-action: none; cursor: grab; }
+.scene3d canvas.c3d:active { cursor: grabbing; }
+.scene3d .vues { position: absolute; top: 8px; left: 8px; display: flex; flex-wrap: wrap; gap: 4px; max-width: calc(100% - 16px); }
+.scene3d .vues button, .scene3d .zoom button { font: inherit; font-size: .78rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--navy); cursor: pointer; }
+.scene3d .vues button[aria-pressed="true"] { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.scene3d .zoom { position: absolute; right: 8px; bottom: 8px; display: grid; gap: 4px; }
+.scene3d .zoom button { width: 2rem; height: 2rem; padding: 0; font-size: 1.1rem; }
+.scene3d .hud { position: absolute; left: 8px; bottom: 8px; font-size: .8rem; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-variant-numeric: tabular-nums; max-width: calc(100% - 64px); }
+.scene3d .hud:empty { display: none; }
+.scene3d .astuce { position: absolute; right: 8px; top: 8px; font-size: .72rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 80%, transparent); border-radius: 6px; padding: 2px 6px; }
+@media (max-width: 520px) { .scene3d canvas.c3d { aspect-ratio: 4 / 3.6; } .scene3d .astuce { display: none; } }
+.nogl { padding: 30px 16px; text-align: center; color: var(--red); font-weight: 700; }
+.reglages { display: grid; gap: 10px; }
+.reglage { display: grid; grid-template-columns: 9em minmax(0, 1fr) 7.6em; gap: 10px; align-items: center; font-size: .95rem; }
+.reglage label { font-weight: 700; }
+.reglage output { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); text-align: right; }
+.reglage input[type=range] { width: 100%; accent-color: var(--navy); }
+@media (max-width: 520px) { .reglage { grid-template-columns: minmax(0, 1fr) auto; } .reglage input[type=range] { grid-column: 1 / -1; grid-row: 2; } }
+.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
+.calc div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .88rem; }
+.calc b { display: block; font-variant-numeric: tabular-nums; color: var(--navy); font-size: 1rem; }
+.question { border: 1.5px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--surface); min-width: 0; }
+.question h3 { font-size: 1rem; }
+.question .tag { font-size: .72rem; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: 2px; }
+.question select, .question input[type=text] { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.question select { width: 100%; }
+.question label { display: block; }
+.question label select { display: block; margin-top: 4px; }
+.question select.ok, .question input.ok { border-color: var(--green); background: var(--green-soft); }
+.question select.ko, .question input.ko { border-color: var(--red); background: var(--red-soft); }
+.question .pouce summary { font-size: .9rem; color: var(--amber); }
+.question .pouce { font-size: .88rem; }
+.question.verrou { opacity: .55; pointer-events: none; }
+.onglets { display: flex; flex-wrap: wrap; gap: 6px; }
+.onglets button { font: inherit; font-size: .88rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+.onglets button[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); color: var(--navy); }
+.graphe { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
+.graphe canvas { width: 100%; height: auto; aspect-ratio: 16 / 10; display: block; }
+.code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .84rem; background: #fffbe8; color: #2b2b2b; border: 1px solid #e8d9a0; border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre; line-height: 1.45; margin: 0; }
+.code .n { color: #9a8b55; user-select: none; }
+.code .c { color: #2f7d4a; }
+.code .k { color: #b22a7a; }
+.code .trou { background: #fff; border: 1.5px dashed #c77700; border-radius: 4px; padding: 0 6px; }
+.tablewrap.pointage { max-height: 230px; overflow: auto; }
+.tablewrap.pointage table { min-width: 420px; font-size: .84rem; }
+.tablewrap.pointage td { font-variant-numeric: tabular-nums; padding: 3px 6px; }
+.tablewrap.pointage tr.vu td { background: var(--amber-soft); }
+.badge3d { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--surface); background: var(--navy); border-radius: 4px; padding: 1px 6px; vertical-align: 3px; }
+#maconc { width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cr[hidden] { display: none; }
+/* gabarit pédagogique : situation et modèle, prédiction, énergie, python, piège du bac */
+.parcours { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; counter-reset: et; font-size: .9rem; }
+.parcours li { counter-increment: et; color: var(--muted); }
+.parcours li::before { content: counter(et, decimal-leading-zero) " "; font-weight: 700; color: var(--navy); }
+.parcours li b { color: var(--ink); }
+.modele { border: 1.5px solid var(--amber); background: var(--amber-soft); border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 4px; font-size: .95rem; }
+.modele h3 { font-size: .95rem; color: var(--amber); }
+.modele ul { margin: 0; padding-left: 1.2em; }
+.predire { border: 2px solid var(--navy); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--navy-soft); }
+.predire h3 { font-size: 1rem; }
+.predire .chip { text-align: left; }
+.energies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; height: 150px; padding: 6px 10px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.energies .barre { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.energies .barre .j { position: relative; }
+.energies .barre .j i { position: absolute; bottom: 0; left: 15%; right: 15%; border-radius: 4px 4px 0 0; height: 0; background: var(--c); }
+.energies .barre b { color: var(--navy); }
+.piege { border: 1.5px solid #c77700; background: #fff4e0; color: #4a3200; border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 6px; }
+.piege h3 { color: #a05a00; font-size: 1rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .piege { background: #33291a; color: #f3e2c0; } }
+.legende3d { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .84rem; color: var(--muted); }
+.legende3d span::before { content: ""; display: inline-block; width: 16px; height: 4px; border-radius: 2px; background: var(--c); vertical-align: middle; margin-right: 5px; }
+
+#gcv { cursor: crosshair; touch-action: none; }
+.lecture { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); min-height: 1.4em; margin: 6px 0 0; }
+</style>
+<script src="lib/three-r128.min.js"></script>
+<style id="efir-colonnes">.wrap{grid-template-columns:minmax(0,1fr)}.wrap>*{min-width:0}canvas{max-width:100%}table{min-width:0;max-width:100%}th,td{overflow-wrap:anywhere}</style></head>
+<body>
+<div class="wrap">
+  <header class="fiche">
+    <a class="retour" href="#" onclick="parent.location.hash='terminale/mouvement/Mouvement%20dans%20un%20champ%20uniforme';return false" style="display:inline-block;margin:0 0 8px;font-weight:700;color:#1f6fd1;text-decoration:none">← Retour au chapitre</a>
+    <p class="kicker">EFIR · Terminale spécialité · Chapitre 12 · Activité 2 p. 240 (numérique) · Simulation 3D <span class="badge3d">3D</span></p>
+    <h1>Évolution des énergies d'une boule de pétanque</h1>
+    <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+    <p class="pb"><span>Problématique :</span> quelles conversions d'énergie ont lieu lors d'un mouvement de chute libre d'un système dans un champ de pesanteur ?</p>
+    <ol class="parcours"><li><b>Prédire</b> avant de lancer</li><li><b>Expérimenter</b> en 3D</li><li><b>Programmer</b> les énergies en Python</li><li><b>Exploiter</b> les courbes</li><li><b>Garder une trace</b> (compte rendu)</li></ol>
+    <div class="modele"><h3>Le modèle utilisé par la simulation</h3><ul>
+      <li>Référentiel terrestre supposé galiléen. Système : la boule (m = 0,60 kg), modélisée par son centre de masse.</li>
+      <li>Axe (Oy) vertical vers le haut, <b>O au sol</b> : y est l'altitude de la boule et E<sub>p</sub> = 0 J au sol (y = 0 m).</li>
+      <li>Par défaut, seule force : le poids (chute libre), g = 9,81 N·kg<sup>−1</sup>. L'option « Frottements de l'air » ajoute une force de frottement <b>volontairement exagérée</b> pour voir son effet.</li>
+      <li>Le lancer filmé est celui de l'activité 1 (pointage toutes les 0,040 s, avec de petites erreurs de pointage). L'animation est ralentie, les valeurs affichées sont physiques.</li></ul></div>
+    <details class="panel mots"><summary>📖 Mots utiles et données</summary><dl>
+      <dt>Énergie cinétique</dt><dd>E<sub>c</sub> = ½ m v<sup>2</sup> (E<sub>c</sub> en J, m en kg, v en m·s<sup>−1</sup>), avec v = √(v<sub>x</sub><sup>2</sup> + v<sub>y</sub><sup>2</sup>).</dd>
+      <dt>Énergie potentielle de pesanteur</dt><dd>E<sub>p</sub> = m g y, avec y l'altitude (axe vers le haut) et E<sub>p</sub> = 0 J en y = 0 m.</dd>
+      <dt>Énergie mécanique</dt><dd>E<sub>m</sub> = E<sub>c</sub> + E<sub>p</sub>. Elle se conserve si le travail des forces non conservatives (frottements) est nul.</dd>
+      <dt>Travail du poids</dt><dd>W(P⃗) = m g (y<sub>départ</sub> − y<sub>arrivée</sub>) : négatif à la montée (force résistante), positif à la descente (force motrice).</dd>
+      <dt>Données</dt><dd>m = 0,60 kg ; g = 9,81 N·kg<sup>−1</sup> ; boule adverse posée au sol à 7,0 m du lanceur.</dd>
+    </dl></details>
+    <details class="panel mots" id="aide"><summary>❓ Aide</summary><dl>
+      <dt>Vidéo</dt><dd>« ▶ Lancer de la vidéo » rejoue le lancer filmé : le tableau de pointage (t, x, y, v<sub>x</sub>, v<sub>y</sub>) se remplit. Le programme Python utilise ces valeurs.</dd>
+      <dt>Lire une valeur sur une courbe</dt><dd>Survolez (ou touchez) le graphique : la ligne orange et les valeurs lues s'affichent sous le graphique.</dd>
+      <dt>Tourner la scène</dt><dd>Glisser sur la scène ; boutons + et − pour zoomer. « De face » montre le plan du mouvement.</dd>
+      <dt>Écrire un nombre</dt><dd>Avec une virgule ou un point : 2,1 ou 2.1.</dd>
+    </dl></details>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-sc">
+      <header><h2 id="h-sc">Le terrain de pétanque</h2><span class="row-actions"><button class="btn" id="demo" type="button">▶ Voir une démonstration</button><button class="btn ghost" id="reset" type="button">Tout remettre à zéro</button><button class="btn ghost" id="aidebtn" type="button">❓ Aide</button><button class="btn ghost" id="ecobtn" type="button" aria-pressed="false">🐢 Mode économe</button></span></header>
+      <details class="proto" open><summary>📋 Étapes à suivre (activité 2) <span class="hint" id="protocount"></span></summary><ol id="proto"></ol><button class="btn ghost qbtn" id="prototout" type="button">Voir toutes les étapes</button></details>
+      <figure class="scene3d" id="fig3d">
+        <canvas class="c3d" role="img" aria-label="Terrain de pétanque en 3D : le joueur, la boule, la boule adverse à 7 mètres, l'axe vertical des altitudes et la trajectoire de la boule avec ses vecteurs"></canvas>
+        <div class="vues" role="group" aria-label="Point de vue"><button type="button" data-vue="d3" aria-pressed="true">Vue 3D</button><button type="button" data-vue="face">De face (vidéo)</button><button type="button" data-vue="joueur">Derrière le joueur</button></div>
+        <div class="zoom"><button type="button" data-z="+" aria-label="Zoomer">+</button><button type="button" data-z="-" aria-label="Dézoomer">−</button></div>
+        <div class="hud" id="hud" aria-live="off"></div>
+        <span class="astuce">Glisser pour tourner</span>
+      </figure>
+      <div class="row-actions">
+        <button class="btn" id="video" type="button">▶ Lancer de la vidéo (pointage)</button>
+        <label class="hint"><input type="checkbox" id="vect" data-save checked> Vecteurs v⃗ et forces</label>
+      </div>
+      <div class="legende3d" id="leg3d"></div>
+      <h3>Énergies de la boule pendant le vol <span class="hint">(m = 0,60 kg ; E<sub>p</sub> = 0 au sol ; barres à l'échelle de E<sub>m</sub> au départ)</span></h3>
+      <div class="energies" aria-live="off">
+        <div class="barre" style="--c:#2f8f4e"><span>E<sub>c</sub></span><span class="j"><i id="bEc"></i></span><b id="vEc">–</b></div>
+        <div class="barre" style="--c:#c0392b"><span>E<sub>p</sub></span><span class="j"><i id="bEp"></i></span><b id="vEp">–</b></div>
+        <div class="barre" style="--c:#1f3b5c"><span>E<sub>m</sub> = E<sub>c</sub> + E<sub>p</sub></span><span class="j"><i id="bEm"></i></span><b id="vEm">–</b></div>
+      </div>
+      <div class="predire" aria-labelledby="h-pred"><h3 id="h-pred">🔮 Je prédis avant de lancer</h3><div id="predict"></div></div>
+      <h3>Mon lancer</h3>
+      <div class="reglages">
+        <div class="reglage"><label for="rv">Vitesse v<sub>0</sub></label><input type="range" id="rv" min="3" max="10" step="0.1" value="6.4" data-save><output id="ov"></output></div>
+        <div class="reglage"><label for="ra">Angle α</label><input type="range" id="ra" min="0" max="80" step="1" value="44" data-save><output id="oa"></output></div>
+        <div class="reglage"><label for="rh">Hauteur de départ</label><input type="range" id="rh" min="0.5" max="1.5" step="0.05" value="1.1" data-save><output id="oh"></output></div>
+      </div>
+      <div class="row-actions">
+        <button class="btn" id="lancer" type="button">▶ Lancer ma boule</button>
+        <button class="btn ghost" id="effacertr" type="button">Effacer les trajectoires</button>
+        <label class="hint"><input type="checkbox" id="frott" data-save> Frottements de l'air (exagérés)</label>
+      </div>
+      <p class="toast info" id="msg" role="status" aria-live="polite">Faites votre première prédiction, puis lancez la vidéo : la boule est pointée toutes les 0,040 s.</p>
+    </section>
+
+    <div class="wrap" style="gap:18px">
+      <section class="panel" aria-labelledby="h-g">
+        <header><h2 id="h-g">Graphiques</h2><span class="hint" id="nbpts"></span></header>
+        <div class="onglets" role="group" aria-label="Graphique"><button type="button" data-g="evid" aria-pressed="true">Énergies (vidéo + Python)</button><button type="button" data-g="elan" aria-pressed="false">Énergies de mon dernier lancer</button><button type="button" data-g="yx" aria-pressed="false">Trajectoire y = f(x)</button><button type="button" data-g="tab" aria-pressed="false">Tableau</button></div>
+        <figure class="graphe" id="gfig"><canvas id="gcv" width="900" height="560" role="img" aria-label="Graphique des énergies en fonction du temps ou de la trajectoire"></canvas></figure>
+        <p class="lecture" id="lecture" aria-live="polite"></p>
+        <div class="tablewrap pointage" id="tabwrap" hidden><table><thead><tr><th>t (s)</th><th>x (m)</th><th>y (m)</th><th>v<sub>x</sub> (m·s⁻¹)</th><th>v<sub>y</sub> (m·s⁻¹)</th></tr></thead><tbody id="tab"></tbody></table></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-q">
+        <header><h2 id="h-q">Questions de l'activité 2</h2><span class="hint">répondre dans l'ordre</span></header>
+
+        <div class="question">
+          <h3>1. Compléter le programme <span class="tag">RÉA</span></h3>
+          <p>Le programme (extrait, lignes 30 à 47) calcule les énergies à partir du pointage : les listes <code>vx</code>, <code>vy</code> et <code>y</code> contiennent les valeurs du tableau. Complétez la ligne 43, qui calcule l'énergie cinétique.</p>
+<pre class="code"><span class="n">30 </span>v=[]
+<span class="n">31 </span><span class="k">for</span> i <span class="k">in</span> range(len(vx)) :
+<span class="n">32 </span>    v=v+[(vx[i]**2+vy[i]**2)**0.5]
+<span class="n">33 </span><span class="c">#masse du système en kg</span>
+<span class="n">34 </span>m=0.60
+<span class="n">35 </span><span class="c">#intensité de la pesanteur</span>
+<span class="n">36 </span>g=9.81
+<span class="n">37 </span><span class="c">#Calcul des énergies</span>
+<span class="n">38 </span>Ep=[]
+<span class="n">39 </span><span class="k">for</span> i <span class="k">in</span> range(len(vx)) :
+<span class="n">40 </span>    Ep=Ep+[m*g*y[i]]
+<span class="n">41 </span>Ec=[]
+<span class="n">42 </span><span class="k">for</span> i <span class="k">in</span> range(len(vx)) :
+<span class="n">43 </span>    Ec=<span class="trou">  ?  </span>
+<span class="n">44 </span>Em=[]
+<span class="n">45 </span><span class="k">for</span> i <span class="k">in</span> range(len(vx)) :
+<span class="n">46 </span>    Em=Em+[Ep[i]+Ec[i]]
+<span class="n">47 </span>plt.show()</pre>
+          <label>Ligne 43 : Ec =<select id="qpy" data-save data-lib="Q1 ligne 43 du programme (Ec)" data-bonne="Ec+[0.5*m*v[i]**2]"><option value="">…</option><option>Ec+[0.5*m*v[i]]</option><option>Ec+[0.5*m*v[i]**2]</option><option>Ec+[m*v[i]**2]</option><option>Ec+[0.5*m*vx[i]**2]</option></select></label>
+          <div class="row-actions"><button class="btn" type="button" id="runpy">▶ Exécuter le programme (question 2.a)</button></div>
+          <p class="toast" id="outpy" hidden></p>
+        </div>
+
+        <div class="question">
+          <h3>2.b Allure des courbes <span class="tag">VAL</span></h3>
+          <p>Onglet « Énergies (vidéo + Python) ». Justifiez l'allure des courbes E<sub>p</sub> et E<sub>c</sub> en fonction du temps.</p>
+          <label>E<sub>p</sub> :<select id="q2p" data-save data-lib="Q2.b allure de Ep" data-bonne="augmente (la boule monte), passe par un maximum au sommet, puis diminue jusqu'à 0 J au sol"><option value="">…</option><option>reste constante pendant tout le vol</option><option>augmente (la boule monte), passe par un maximum au sommet, puis diminue jusqu'à 0 J au sol</option><option>diminue pendant tout le vol</option></select></label>
+          <label>E<sub>c</sub> :<select id="q2c" data-save data-lib="Q2.b allure de Ec" data-bonne="diminue à la montée (le poids est résistant), passe par un minimum non nul au sommet, puis augmente (le poids est moteur)"><option value="">…</option><option>diminue à la montée (le poids est résistant), passe par un minimum non nul au sommet, puis augmente (le poids est moteur)</option><option>s'annule au sommet car la boule s'arrête</option><option>augmente à la montée puis diminue à la descente</option></select></label>
+          <div class="row-actions"><button class="btn" type="button" data-check="q2p,q2c" data-pre="py" data-ok="E<sub>p</sub> suit l'altitude : maximum au sommet, 0 J au sol. E<sub>c</sub> évolue en sens inverse : le poids freine la boule à la montée et l'accélère à la descente ; au sommet, v = v<sub>x</sub> ≠ 0, donc E<sub>c</sub> n'est pas nulle.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+
+        <div class="question">
+          <h3>3. Exploiter les courbes <span class="tag">VAL</span></h3>
+          <p>Lisez sur le graphique la valeur maximale de E<sub>p</sub>, puis la valeur de E<sub>c</sub> quand la boule touche le sol. Déduisez-en :</p>
+          <label>a. l'altitude maximale : y<sub>max</sub> ≈ <input type="text" id="q3a" data-save data-lib="Q3.a altitude maximale (m)" data-val="ymax" data-tol="0.12" inputmode="decimal" size="6"> m</label>
+          <label>b. la vitesse au sol : v<sub>sol</sub> ≈ <input type="text" id="q3b" data-save data-lib="Q3.b vitesse au sol (m/s)" data-val="vsol" data-tol="0.35" inputmode="decimal" size="6"> m·s<sup>−1</sup></label>
+          <details class="pouce"><summary>Coup de pouce</summary>y<sub>max</sub> = E<sub>p max</sub> / (m g) et v<sub>sol</sub> = √(2 E<sub>c sol</sub> / m). Au sol, E<sub>p</sub> = 0 J : E<sub>c sol</sub> est donc égale à E<sub>m</sub>.</details>
+          <div class="row-actions"><button class="btn" type="button" data-check="q3a,q3b" data-pre="py" data-ok="E<sub>p max</sub> ≈ 12,4 J donc y<sub>max</sub> = 12,4 / (0,60 × 9,81) ≈ 2,1 m. E<sub>c sol</sub> ≈ 18,8 J donc v<sub>sol</sub> = √(2 × 18,8 / 0,60) ≈ 7,9 m·s<sup>−1</sup>.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+
+        <div class="question">
+          <h3>4. Discuter l'hypothèse d'une chute libre <span class="tag">VAL</span></h3>
+          <p>Observez la courbe E<sub>m</sub> = f(t) du lancer filmé. Comparez avec un lancer « Frottements de l'air (exagérés) ».</p>
+          <select id="q4" data-save data-lib="Q4 hypothèse de chute libre" data-bonne="Oui : Em reste constante aux erreurs de pointage près, donc le travail des forces non conservatives est négligeable"><option value="">…</option><option>Non : Em varie car Ec et Ep varient</option><option>Oui : Em reste constante aux erreurs de pointage près, donc le travail des forces non conservatives est négligeable</option><option>Oui : car Ep revient à 0 J au sol</option></select>
+          <div class="row-actions"><button class="btn" type="button" data-check="q4" data-pre="py" data-ok="Le poids est une force conservative : en chute libre, E<sub>m</sub> se conserve. C'est ce qu'on observe (à quelques dixièmes de joule près, dus au pointage). Avec des frottements, E<sub>m</sub> diminue.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+
+        <span class="codebox" style="display:none"><label for="code">☎ Appel : faites vérifier vos réponses 1 à 4 par le professeur. Il vous donne un code pour débloquer la question 5.</label><input id="code" type="text" autocomplete="off" aria-label="Code du professeur"></span>
+
+        <div class="question verrou-appel">
+          <h3>5. Peut-il percuter la boule adverse ? <span class="tag">VAL</span></h3>
+          <p>Le joueur souhaite que sa boule percute <b>directement</b> une boule adverse posée au sol à <b>7,0 m</b> de lui. Avec la date à laquelle E<sub>p</sub> s'annule, puis l'onglet « Trajectoire y = f(x) », trouvez où la boule filmée touche le sol.</p>
+          <label>Abscisse du point de chute : x ≈ <input type="text" id="q5x" data-save data-lib="Q5 abscisse du point de chute (m)" data-val="xsol" data-tol="0.15" inputmode="decimal" size="6"> m</label>
+          <label>Conclusion :<select id="q5r" data-save data-lib="Q5 peut-il réussir ?" data-bonne="Non : la boule touche le sol avant la boule adverse"><option value="">…</option><option>Oui : la boule percute directement la boule adverse</option><option>Non : la boule touche le sol avant la boule adverse</option><option>Non : la boule passe au-dessus de la boule adverse</option></select></label>
+          <div class="row-actions"><button class="btn" type="button" data-check="q5x,q5r" data-pre="py" data-ok="E<sub>p</sub> = 0 J à t ≈ 1,11 s ; la boule touche le sol vers x ≈ 5,1 m &lt; 7,0 m : elle ne peut pas percuter directement la boule adverse.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+
+        <div class="question verrou-appel piege">
+          <h3>⚠ Piège du bac : « au sommet, l'énergie cinétique est nulle »</h3>
+          <p>C'est faux dès que le lancer n'est pas vertical. Calculez l'énergie cinétique de la boule filmée au sommet de sa trajectoire (v<sub>0</sub> = 6,4 m·s<sup>−1</sup>, α = 44°), puis vérifiez sur le graphique.</p>
+          <label>E<sub>c</sub> au sommet ≈ <input type="text" id="q6" data-save data-lib="Piège : Ec au sommet (J)" data-val="ecs" data-tol="0.35" inputmode="decimal" size="6"> J</label>
+          <details class="pouce"><summary>Coup de pouce</summary>Au sommet, v<sub>y</sub> = 0 mais v<sub>x</sub> = v<sub>0</sub> cos α ne change pas.</details>
+          <div class="row-actions"><button class="btn" type="button" data-check="q6" data-ok="E<sub>c sommet</sub> = ½ × 0,60 × (6,4 × cos 44°)<sup>2</sup> ≈ 6,4 J : c'est le minimum de E<sub>c</sub>, pas zéro.">Vérifier</button><button class="btn ghost" type="button" onclick="parent.location.hash='tle-qcm-ch12'">Réviser avec le QCM du chapitre 12 →</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+      </section>
+
+      <section class="panel essais" aria-labelledby="h-ess">
+        <header><h2 id="h-ess">Mes lancers</h2><span class="hint" id="nbess"></span></header>
+        <div class="tablewrap"><table style="min-width:480px"><thead><tr><th>n°</th><th>v<sub>0</sub> (m·s⁻¹)</th><th>α</th><th>h (m)</th><th>Air</th><th>v<sub>sol</sub> (m·s⁻¹)</th><th>E<sub>m</sub> départ → sol</th></tr></thead><tbody id="ess"></tbody></table></div>
+        <p class="hint" id="essvide">Aucun lancer pour l'instant.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="h-conc">
+    <header><h2 id="h-conc">Un pas vers le cours · Réponse à la problématique</h2></header>
+    <p><b>6.</b> Quelles conversions d'énergie ont lieu lors d'un mouvement de chute libre d'un système dans un champ de pesanteur ?</p>
+    <div class="checks">
+      <button class="chip" type="button" data-concl="a" aria-pressed="false" data-juste>L'énergie cinétique se convertit en énergie potentielle de pesanteur à la montée, et inversement à la descente ; l'énergie mécanique E<sub>m</sub> = E<sub>c</sub> + E<sub>p</sub> reste constante.</button>
+      <button class="chip" type="button" data-concl="b" aria-pressed="false" data-pourquoi="Non : au sommet, la vitesse horizontale vₓ reste ; Ec est minimale mais pas nulle (sauf lancer vertical).">Toute l'énergie cinétique est convertie en énergie potentielle : E<sub>c</sub> est nulle au sommet.</button>
+      <button class="chip" type="button" data-concl="c" aria-pressed="false" data-pourquoi="Non : le poids est une force conservative ; Em ne diminue que s'il y a des frottements.">L'énergie mécanique diminue pendant le vol, car le poids freine la boule.</button>
+    </div>
+    <label for="maconc" style="display:block;margin:14px 0 6px"><b>Ma conclusion rédigée</b> : répondez à la problématique en deux ou trois phrases (montée, descente, énergie mécanique).</label>
+    <textarea id="maconc" data-save rows="4"></textarea>
+    <div class="row-actions"><button class="btn" id="checkconcl" type="button" data-ok="En chute libre, il y a transfert d'énergie cinétique en énergie potentielle de pesanteur à la montée, et l'inverse à la descente ; l'énergie mécanique se conserve.">Vérifier ma conclusion</button></div>
+    <p class="toast" id="outconcl" role="status" aria-live="polite" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-cr">
+    <header><h2 id="h-cr">Mon compte rendu</h2></header>
+    <div class="crform">
+      <label>Nom et prénom<input id="crnom" data-save type="text" autocomplete="name"></label>
+      <label>Classe<input id="crclasse" data-save type="text" placeholder="Tle…"></label>
+      <button class="btn ghost" id="crbtn" type="button">Afficher mon compte rendu</button><button class="btn" id="crpdf" type="button">⬇ Télécharger mon compte rendu (PDF)</button>
+    </div>
+    <div class="cr" id="cr" hidden></div>
+    <div class="row-actions"><span class="hint" id="crnote" role="status" aria-live="polite"></span></div>
+    <p class="hint">Déposez le PDF dans le devoir Google Classroom (Ajouter &gt; Fichier, puis Rendre). Votre travail est enregistré automatiquement dans ce navigateur. <button class="btn warn" id="effacer" type="button">Effacer mon travail</button></p>
+  </section>
+  <p class="foot">Simulation 3D d'après l'activité 2 p. 240 du manuel Hachette Terminale spécialité · Mme Messaoudi · EFIR 2026-2027. Chute libre : g = 9,81 N·kg<sup>−1</sup> ; frottements optionnels exagérés (force opposée à v⃗, proportionnelle à v<sup>2</sup>). La boule est grossie pour être visible.</p>
+</div>
+
+<script>
+/* =====================================================================
+   Moteur commun des simulations 3D du labo virtuel EFIR (Terminale)
+   three.js r128 (cdnjs), caméra orbitale maison, graphiques 2D,
+   protocole, questions, appel professeur, sauvegarde, compte rendu PDF.
+   Mme Messaoudi · EFIR · 2026-2027
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+let REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+try { if (localStorage.getItem("efir-eco") === "1") REDUCED = true; } catch (e) {}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+/* nombre à la française : n chiffres significatifs, virgule décimale */
+function fr(x, n = 2) {
+  if (!isFinite(x)) return "–";
+  if (x === 0) return "0";
+  const ex = Math.floor(Math.log10(Math.abs(x)));
+  if (ex >= -2 && ex <= 3) { const d = Math.max(0, n - 1 - ex); return x.toFixed(d).replace(".", ","); }
+  let m = x / 10 ** ex, ms = m.toFixed(n - 1);
+  if (Math.abs(+ms) >= 10) return fr(x * 1.0000001, n);
+  return `${ms.replace(".", ",")} × 10<sup>${ex < 0 ? "−" + -ex : ex}</sup>`;
+}
+const fx = (x, d = 2) => (Math.round(x * 10 ** d) / 10 ** d).toFixed(d).replace(".", ",").replace("-", "−");
+const lireNombre = s => { const t = String(s).replace(/\s/g, "").replace(",", ".").replace("−", "-"); return t === "" ? NaN : +t; };
+const wait = ms => new Promise(r => setTimeout(r, REDUCED ? 60 : ms));
+const enc = s => btoa(unescape(encodeURIComponent(s)));
+const dec = s => { try { return decodeURIComponent(escape(atob(s))); } catch (e) { return ""; } };
+function say(html, kind = "info") { const m = $("#msg"); if (!m) return; m.className = "toast " + kind; m.innerHTML = html; }
+
+/* ---------------------------------------------------------------------
+   SCÈNE 3D
+   --------------------------------------------------------------------- */
+function Scene3D(fig, opt = {}) {
+  const canvas = fig.querySelector("canvas.c3d");
+  if (!window.THREE) { fig.innerHTML = '<p class="nogl">La 3D n\'a pas pu se charger (connexion internet ?). Rechargez la page.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: !REDUCED, alpha: false }); }
+  catch (e) { fig.innerHTML = '<p class="nogl">Votre navigateur ne permet pas l\'affichage 3D (WebGL). Essayez un autre navigateur.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  renderer.setPixelRatio(REDUCED ? 1 : Math.min(devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = !REDUCED;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(opt.fov || 40, 1.6, 0.05, 400);
+  const fond = () => { const dark = matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light"; scene.background = new THREE.Color(dark ? (opt.fondSombre || 0x101a26) : (opt.fond || 0xdfeaf3)); };
+  fond(); matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { fond(); demande(); });
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9a7a, 0.75));
+  const soleil = new THREE.DirectionalLight(0xffffff, 0.75); soleil.position.set(-6, 14, 9); soleil.castShadow = true;
+  soleil.shadow.mapSize.set(1024, 1024); Object.assign(soleil.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(soleil);
+  /* caméra orbitale */
+  const O = { cible: new THREE.Vector3(...(opt.cible || [0, 0, 0])), r: opt.r || 10, az: opt.az ?? -0.6, el: opt.el ?? 0.35, rmin: opt.rmin || 1, rmax: opt.rmax || 60 };
+  let anim = null;
+  function placer() {
+    O.el = Math.max(-0.2, Math.min(1.55, O.el)); O.r = Math.max(O.rmin, Math.min(O.rmax, O.r));
+    camera.position.set(O.cible.x + O.r * Math.cos(O.el) * Math.sin(O.az), O.cible.y + O.r * Math.sin(O.el), O.cible.z + O.r * Math.cos(O.el) * Math.cos(O.az));
+    camera.lookAt(O.cible); demande();
+  }
+  const pts = new Map(); let pinch0 = 0, actif = 0;
+  canvas.addEventListener("pointerdown", e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); actif = Date.now(); anim = null; api.onUser && api.onUser(); });
+  canvas.addEventListener("pointermove", e => {
+    if (!pts.has(e.pointerId)) return; const [x0, y0] = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 1) { O.az -= (e.clientX - x0) * 0.008; O.el += (e.clientY - y0) * 0.006; placer(); }
+    else if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch0) { O.r *= pinch0 / d; placer(); } pinch0 = d; }
+  });
+  const fin = e => { pts.delete(e.pointerId); pinch0 = 0; };
+  canvas.addEventListener("pointerup", fin); canvas.addEventListener("pointercancel", fin);
+  canvas.addEventListener("wheel", e => { if (!(e.ctrlKey || e.metaKey || Date.now() - actif < 4000)) return; e.preventDefault(); O.r *= Math.exp(e.deltaY * 0.0012); placer(); }, { passive: false });
+  const zb = fig.querySelector(".zoom"); if (zb) { zb.querySelector("[data-z='+']").onclick = () => { O.r /= 1.25; placer(); }; zb.querySelector("[data-z='-']").onclick = () => { O.r *= 1.25; placer(); }; }
+  /* vues prédéfinies, transition douce */
+  function vue(v, nom) {
+    const but = { r: v.r ?? O.r, az: v.az ?? O.az, el: v.el ?? O.el, c: v.cible ? new THREE.Vector3(...v.cible) : O.cible.clone() };
+    $$(".vues button", fig).forEach(b => b.setAttribute("aria-pressed", b.dataset.vue === nom));
+    if (REDUCED) { O.r = but.r; O.az = but.az; O.el = but.el; O.cible.copy(but.c); placer(); return; }
+    const d = { r: O.r, az: O.az, el: O.el, c: O.cible.clone() }; let t0 = performance.now();
+    anim = now => { let k = Math.min(1, (now - t0) / 700); k = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      O.r = d.r + (but.r - d.r) * k; O.az = d.az + (but.az - d.az) * k; O.el = d.el + (but.el - d.el) * k; O.cible.lerpVectors(d.c, but.c, k); placer(); if (k >= 1) anim = null; };
+    demande();
+  }
+  /* rendu à la demande + boucle d'animation */
+  let enAttente = false; const cbs = new Set(); let tPrec = performance.now();
+  function demande() { if (!enAttente) { enAttente = true; requestAnimationFrame(boucle); } }
+  function boucle(now) {
+    enAttente = false; const dt = Math.min(0.05, (now - tPrec) / 1000); tPrec = now;
+    if (anim) anim(now);
+    let encore = !!anim; cbs.forEach(f => { if (f(dt, now)) encore = true; });
+    renderer.render(scene, camera); if (encore) demande();
+  }
+  function taille() { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); demande(); }
+  new ResizeObserver(taille).observe(canvas); taille(); placer();
+  /* aides de dessin */
+  function etiquette(texte, o = {}) {
+    const c = document.createElement("canvas"), g = c.getContext("2d"), fs = 64, font = `${o.italic ? "italic " : ""}700 ${fs}px Atkinson Hyperlegible, Segoe UI, sans-serif`;
+    /* la flèche de vecteur (U+20D7) n'existe pas dans les polices : on la dessine au-dessus de la lettre */
+    const morceaux = []; [...texte].forEach(ch => { if (ch === "⃗" && morceaux.length) morceaux[morceaux.length - 1].vec = true; else morceaux.push({ ch }); });
+    g.font = font; const larg = morceaux.map(m => g.measureText(m.ch).width), w = Math.ceil(larg.reduce((a, b) => a + b, 0)) + 28;
+    const vec = morceaux.some(m => m.vec); c.width = w; c.height = fs + 26 + (vec ? 14 : 0);
+    g.font = font; g.textBaseline = "middle";
+    if (o.fond !== false) { g.fillStyle = o.fond || "rgba(255,255,255,.88)"; const rr = 18; g.beginPath(); g.moveTo(rr, 0); g.arcTo(w, 0, w, c.height, rr); g.arcTo(w, c.height, 0, c.height, rr); g.arcTo(0, c.height, 0, 0, rr); g.arcTo(0, 0, w, 0, rr); g.fill(); }
+    const coul = o.couleur || "#15212d"; g.fillStyle = g.strokeStyle = coul; let xx = 14; const ym = c.height / 2 + 2 + (vec ? 7 : 0);
+    morceaux.forEach((m, i) => {
+      g.fillText(m.ch, xx, ym);
+      if (m.vec) { const x0 = xx + larg[i] * (o.italic ? .25 : .1), x1 = xx + larg[i] * (o.italic ? 1.05 : .9), yv = ym - fs * .52; g.lineWidth = 5; g.beginPath(); g.moveTo(x0, yv); g.lineTo(x1, yv); g.stroke(); g.beginPath(); g.moveTo(x1 + 4, yv); g.lineTo(x1 - 10, yv - 8); g.lineTo(x1 - 10, yv + 8); g.closePath(); g.fill(); }
+      xx += larg[i];
+    });
+    const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: o.depthTest ?? false, transparent: true }));
+    const h = o.taille || 0.4; sp.scale.set(h * c.width / c.height, h, 1); sp.renderOrder = 10; return sp;
+  }
+  function fleche(couleur, epaisseur = 0.03) {
+    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: couleur, roughness: .5 });
+    const tige = new THREE.Mesh(new THREE.CylinderGeometry(epaisseur, epaisseur, 1, 12), mat);
+    const tete = new THREE.Mesh(new THREE.ConeGeometry(epaisseur * 3, epaisseur * 8, 16), mat); g.add(tige, tete);
+    g.regler = (orig, vec) => {
+      const L = vec.length(); g.visible = L > 1e-6; if (!g.visible) return; const lt = Math.max(0, L - epaisseur * 8);
+      g.position.copy(orig); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vec.clone().normalize());
+      tige.scale.set(1, Math.max(lt, 1e-4), 1); tige.position.set(0, lt / 2, 0); tete.position.set(0, lt + epaisseur * 4, 0);
+    };
+    return g;
+  }
+  const api = { THREE, scene, camera, renderer, O, vue, demande, placer, etiquette, fleche, anime: f => { cbs.add(f); demande(); return () => cbs.delete(f); }, onUser: null };
+  $$(".vues button", fig).forEach(b => b.addEventListener("click", () => { const x = opt.vues && opt.vues[b.dataset.vue]; if (x) vue(typeof x === "function" ? x() : x, b.dataset.vue); }));
+  return api;
+}
+
+/* ---------------------------------------------------------------------
+   GRAPHIQUE 2D (canvas) : axes gradués, séries de points et courbes
+   --------------------------------------------------------------------- */
+function Graphe(canvas) {
+  const ctx = canvas.getContext("2d");
+  function pas(etendue) { const b = 10 ** Math.floor(Math.log10(etendue / 5)), m = etendue / 5 / b; return b * (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10); }
+  function trace(cfg) {
+    const W = canvas.width, H = canvas.height, ink = css("--ink"), mut = css("--muted"), line = css("--line");
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = css("--surface"); ctx.fillRect(0, 0, W, H);
+    const m = { g: 74, d: 18, h: 34, b: 52 }, pw = W - m.g - m.d, ph = H - m.h - m.b;
+    let { xmin, xmax, ymin, ymax } = cfg;
+    const tous = cfg.series.flatMap(s => s.pts || []);
+    if (xmin == null) xmin = Math.min(0, ...tous.map(p => p[0])); if (xmax == null) xmax = Math.max(...tous.map(p => p[0]), xmin + 1e-9);
+    if (ymin == null) ymin = Math.min(0, ...tous.map(p => p[1])); if (ymax == null) ymax = Math.max(...tous.map(p => p[1]), ymin + 1e-9);
+    const py0 = (ymax - ymin) * 0.06; ymax += py0; if (ymin < 0) ymin -= py0;
+    const X = x => m.g + (x - xmin) / (xmax - xmin) * pw, Y = y => m.h + ph - (y - ymin) / (ymax - ymin) * ph;
+    ctx.font = "20px " + css("--font-body"); ctx.textBaseline = "middle";
+    const sx = pas(xmax - xmin), sy = pas(ymax - ymin);
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.fillStyle = mut;
+    for (let v = Math.ceil(xmin / sx) * sx; v <= xmax + 1e-9; v += sx) { ctx.beginPath(); ctx.moveTo(X(v), m.h); ctx.lineTo(X(v), m.h + ph); ctx.stroke(); ctx.textAlign = "center"; ctx.fillText(fx(v, sx < 1 ? (sx < .1 ? 2 : 1) : 0), X(v), m.h + ph + 18); }
+    for (let v = Math.ceil(ymin / sy) * sy; v <= ymax + 1e-9; v += sy) { ctx.beginPath(); ctx.moveTo(m.g, Y(v)); ctx.lineTo(m.g + pw, Y(v)); ctx.stroke(); ctx.textAlign = "right"; ctx.fillText(fx(v, sy < 1 ? (sy < .1 ? 2 : 1) : 0), m.g - 8, Y(v)); }
+    ctx.strokeStyle = ink; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(m.g, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.lineTo(m.g + pw, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.moveTo(X(Math.max(xmin, 0)), m.h); ctx.lineTo(X(Math.max(xmin, 0)), m.h + ph); ctx.stroke();
+    ctx.fillStyle = ink; ctx.font = "700 20px " + css("--font-body"); ctx.textAlign = "right"; ctx.fillText(cfg.xlab || "", m.g + pw, m.h + ph + 40); ctx.textAlign = "left"; ctx.fillText(cfg.ylab || "", 8, 16);
+    ctx.save(); ctx.beginPath(); ctx.rect(m.g, m.h - 4, pw, ph + 8); ctx.clip();
+    cfg.series.forEach(s => {
+      ctx.strokeStyle = ctx.fillStyle = s.c || ink; ctx.lineWidth = s.w || 2.5; ctx.setLineDash(s.dash || []);
+      if (s.f) { ctx.beginPath(); for (let i = 0; i <= 300; i++) { const x = xmin + (xmax - xmin) * i / 300, y = s.f(x); i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); } ctx.stroke(); }
+      else if (s.points) s.pts.forEach(([x, y]) => { ctx.beginPath(); if (s.croix) { ctx.lineWidth = 2; ctx.moveTo(X(x) - 5, Y(y) - 5); ctx.lineTo(X(x) + 5, Y(y) + 5); ctx.moveTo(X(x) - 5, Y(y) + 5); ctx.lineTo(X(x) + 5, Y(y) - 5); ctx.stroke(); } else { ctx.arc(X(x), Y(y), s.r || 4, 0, 7); ctx.fill(); } });
+      else { ctx.beginPath(); s.pts.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))); ctx.stroke(); }
+      ctx.setLineDash([]);
+    });
+    if (cfg.curseur != null) { ctx.strokeStyle = css("--amber"); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(X(cfg.curseur), m.h); ctx.lineTo(X(cfg.curseur), m.h + ph); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.restore();
+    /* légende */
+    ctx.font = "18px " + css("--font-body"); ctx.textAlign = "left";
+    const noms = cfg.series.filter(s => s.nom); let lx = W - m.d - noms.reduce((a, s) => a + ctx.measureText(s.nom).width + 44, 0) + 20;
+    ctx.font = "700 20px " + css("--font-body"); lx = Math.max(lx, 16 + ctx.measureText(cfg.ylab || "").width + 24); ctx.font = "18px " + css("--font-body");
+    noms.forEach(s => { ctx.fillStyle = s.c || ink; ctx.fillRect(lx, 14, 16, 4); ctx.fillStyle = ink; ctx.fillText(s.nom, lx + 22, 16); lx += ctx.measureText(s.nom).width + 44; });
+  }
+  return { trace };
+}
+/* régression polynomiale (moindres carrés), degré 1 ou 2, avec ou sans constante */
+function ajuste(pts, deg, constante = true) {
+  const base = x => { const b = []; if (constante) b.push(1); b.push(x); if (deg === 2) b.push(x * x); return b; };
+  const n = base(0).length, A = Array.from({ length: n }, () => Array(n + 1).fill(0));
+  pts.forEach(([x, y]) => { const b = base(x); for (let i = 0; i < n; i++) { for (let j = 0; j < n; j++) A[i][j] += b[i] * b[j]; A[i][n] += b[i] * y; } });
+  for (let i = 0; i < n; i++) { let p = i; for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > Math.abs(A[p][i])) p = k; [A[i], A[p]] = [A[p], A[i]];
+    for (let k = 0; k < n; k++) if (k !== i) { const f = A[k][i] / A[i][i]; for (let j = i; j <= n; j++) A[k][j] -= f * A[i][j]; } }
+  const c = A.map((r, i) => r[n] / r[i]); const res = { c0: constante ? c[0] : 0, c1: c[constante ? 1 : 0], c2: deg === 2 ? c[constante ? 2 : 1] : 0 };
+  res.f = x => res.c0 + res.c1 * x + res.c2 * x * x; return res;
+}
+
+/* ---------------------------------------------------------------------
+   QUESTIONS : <select data-b="(bonne réponse codée)"> ou
+   <input data-val="nom de la fonction LAB.val" data-tol="0.1" data-rel>
+   --------------------------------------------------------------------- */
+const LAB = { S: {}, val: {}, key: "", demarche: () => [], mesures: () => [], cr: {}, appel: true, choix: "" };
+function juste(id) {
+  const el = document.getElementById(id); if (!el || !el.value) return false;
+  if (el.dataset.b) return el.value === dec(el.dataset.b);
+  if (el.dataset.val) { const v = lireNombre(el.value), ref = LAB.val[el.dataset.val](), tol = +el.dataset.tol; if (!isFinite(v)) return false; return el.hasAttribute("data-rel") ? Math.abs(v - ref) <= tol * Math.abs(ref) : Math.abs(v - ref) <= tol; }
+  return false;
+}
+function brancherQuestions() {
+  /* coder les bonnes réponses écrites en clair dans data-bonne */
+  $$("select[data-bonne]").forEach(s => { s.dataset.b = enc(s.dataset.bonne); s.removeAttribute("data-bonne"); });
+  $$("[data-check]").forEach(btn => btn.addEventListener("click", () => {
+    const ids = btn.dataset.check.split(","), out = btn.closest(".question").querySelector(".toast[data-out]");
+    let nb = 0, vides = 0;
+    ids.forEach(id => { const el = document.getElementById(id); el.classList.remove("ok", "ko"); if (!el.value) { vides++; return; } const j = juste(id); el.classList.add(j ? "ok" : "ko"); if (j) nb++; });
+    const pre = btn.dataset.pre && LAB.pre && LAB.pre[btn.dataset.pre] ? LAB.pre[btn.dataset.pre]() : "";
+    out.hidden = false;
+    if (pre) { out.className = "toast info"; out.innerHTML = pre; return; }
+    if (vides) { out.className = "toast info"; out.innerHTML = "Répondez à toutes les parties de la question avant de vérifier."; return; }
+    if (nb === ids.length) { out.className = "toast ok"; out.innerHTML = "✓ " + (btn.dataset.ok || "Bonne réponse."); }
+    else { out.className = "toast err"; out.innerHTML = `✗ ${ids.length > 1 ? `${nb} réponse${nb > 1 ? "s" : ""} juste${nb > 1 ? "s" : ""} sur ${ids.length}. ` : ""}${btn.dataset.ko || "Revoyez la simulation et réessayez."}`; }
+  }));
+  /* appel professeur */
+  const code = $("#code");
+  if (code) code.addEventListener("input", () => { if (code.value.trim().toUpperCase() === "EFIR") { LAB.appel = true; majAppel(); say("✓ Code accepté : la suite est débloquée.", "ok"); } });
+  /* conclusion à choix */
+  $$("[data-concl]").forEach(b => b.addEventListener("click", () => { LAB.choix = b.dataset.concl; $$("[data-concl]").forEach(x => x.setAttribute("aria-pressed", x === b)); }));
+  const c2 = $("#checkconcl");
+  if (c2) c2.addEventListener("click", () => {
+    const o = $("#outconcl"); o.hidden = false; const mc = $("#maconc").value.trim();
+    if (!LAB.choix) { o.className = "toast info"; o.innerHTML = "Choisissez d'abord une réponse."; return; }
+    const b = $(`[data-concl="${LAB.choix}"]`);
+    if (b.hasAttribute("data-juste")) { o.className = "toast ok"; o.innerHTML = "✓ " + (c2.dataset.ok || "Bonne conclusion.") + (mc.length > 20 ? "" : "<br>Rédigez maintenant votre conclusion dans la case ci-dessus."); }
+    else { o.className = "toast err"; o.innerHTML = "✗ " + (b.dataset.pourquoi || "Ce n'est pas la bonne conclusion : relisez vos réponses."); }
+  });
+}
+function majAppel() {
+  $$(".question.verrou-appel").forEach(q => q.classList.toggle("verrou", !LAB.appel));
+  const c = $("#code"); if (c && LAB.appel) { c.value = "EFIR"; c.disabled = true; }
+}
+const conclJuste = () => { const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`); return !!(b && b.hasAttribute("data-juste")); };
+
+/* ---------------------------------------------------------------------
+   PROTOCOLE (étapes de la fiche, cochées automatiquement)
+   --------------------------------------------------------------------- */
+function Protocole(etapes) {
+  const ol = $("#proto");
+  function rendu() {
+    const etats = etapes.map(e => { const sous = (e.sous || []).map(x => !!x.ok()); return { ok: e.sous ? sous.every(Boolean) : !!e.ok(), sous }; });
+    const courant = etats.findIndex(x => !x.ok);
+    ol.innerHTML = etapes.map((e, k) => {
+      const st = etats[k], cls = st.ok ? "fait" : k === courant ? "cur" : "";
+      const sous = e.sous ? `<ul>${e.sous.map((x, j) => `<li class="${st.sous[j] ? "fait" : ""}">${st.sous[j] ? "✓" : "○"} ${x.html}</li>`).join("")}</ul>` : "";
+      const part = e.partie ? `<li class="partie">${e.partie}</li>` : "";
+      return `${part}<li class="${cls}"><span class="q">${e.q}</span><span class="tx">${e.html}${sous}</span><span class="st" aria-label="${st.ok ? "fait" : "à faire"}">${st.ok ? "✓" : k === courant ? "➜" : ""}</span></li>`;
+    }).join("");
+    const c = $("#protocount"); if (c) c.textContent = `${etats.filter(x => x.ok).length}/${etapes.length} étapes`;
+  }
+  const bx = ol.closest(".proto"), bt = $("#prototout");
+  if (bt) bt.addEventListener("click", () => { bx.classList.toggle("tout"); bt.textContent = bx.classList.contains("tout") ? "Voir seulement l'étape en cours" : "Voir toutes les étapes"; });
+  let t = 0; const plusTard = () => { clearTimeout(t); t = setTimeout(rendu, 250); };
+  ["click", "change", "pointerup", "input"].forEach(ev => document.addEventListener(ev, plusTard));
+  setInterval(rendu, 1500); rendu();
+  LAB.protoRendu = rendu;
+}
+
+/* ---------------------------------------------------------------------
+   COMPTE RENDU (affichage + PDF jsPDF)
+   --------------------------------------------------------------------- */
+function construireCR() {
+  const nom = $("#crnom").value.trim() || "(nom non renseigné)", cl = $("#crclasse").value.trim() || "…";
+  const d = new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
+  const rows = $$("[data-lib]").map(el => [el.dataset.lib, el.value, !el.value ? "–" : juste(el.id) ? "✓" : "✗"]);
+  const ok = rows.filter(r => r[2] === "✓").length;
+  const tab = rows.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1] ? esc(r[1]) : "<i>vide</i>"}</td><td>${r[2]}</td></tr>`).join("");
+  const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`), mc = $("#maconc").value.trim();
+  const mes = LAB.mesures(); const dem = LAB.demarche();
+  return { nom, html: `<h3>${LAB.cr.titre}</h3>
+<p><b>Élève :</b> ${esc(nom)} · <b>Classe :</b> ${esc(cl)} · <b>Date :</b> ${d}</p>
+<h4>Mes mesures et essais</h4><ol>${mes.length ? mes.map(m => `<li>${m}</li>`).join("") : "<li>Aucun essai.</li>"}</ol>
+${LAB.PRED ? LAB.PRED.cr() : ""}<h4>Démarche</h4><ul>${dem.map(([t, v]) => `<li>${t} : ${v ? "oui" : "non"}</li>`).join("")}</ul>
+<h4>Réponses : ${ok} juste${ok > 1 ? "s" : ""} sur ${rows.length}</h4>
+<table><thead><tr><th>Question</th><th>Réponse</th><th></th></tr></thead><tbody>${tab}</tbody></table>
+<h4>Conclusion</h4><p>${b ? b.textContent.trim() + (b.hasAttribute("data-juste") ? " → ✓" : " → ✗ à revoir.") : "Aucune réponse choisie."}</p>
+<h4>Ma conclusion rédigée</h4><p>${mc ? esc(mc).replace(/\n/g, "<br>") : "<i>non rédigée</i>"}</p>` };
+}
+const W1252 = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
+const SUPS = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁺": "+", "⁻": "-", "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9", "−": "-", "→": "->", "✓": "(juste)", "✗": "(faux)", "≤": "<=", "≥": ">=", "≈": "~", "α": "alpha", "Δ": "Delta", "√": "racine ", "×": "x", "⃗": "", "ℰ": "E", "σ": "sigma", "ρ": "rho", "λ": "lambda", " ": " ", " ": " " };
+const txtPDF = s => [...String(s).replace(/\s+/g, " ").trim()].map(c => SUPS[c] != null ? SUPS[c] : c).join("").split("").filter(c => c.charCodeAt(0) < 256 || W1252.includes(c)).join("").replace(/ {2,}/g, " ").trim();
+const plat = node => { const c = node.cloneNode(true); c.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); c.querySelectorAll("sub").forEach(s => s.replaceWith(s.textContent)); return c.textContent; };
+function chargerJsPDF() {
+  if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = () => window.jspdf ? ok(window.jspdf) : ko(); s.onerror = ko; document.head.appendChild(s); });
+}
+function faitPDF(r) {
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" });
+  const X = 18, Lg = 174, BAS = 282; let y = 18;
+  const place = h => { if (y + h > BAS) { doc.addPage(); y = 18; } };
+  const ligne = (t, o = {}) => { doc.setFont("helvetica", o.b ? "bold" : "normal"); doc.setFontSize(o.s || 10.5); doc.setTextColor(...(o.c || [21, 33, 45]));
+    const lh = (o.s || 10.5) * .45, ls = doc.splitTextToSize(txtPDF(t), Lg - (o.ind || 0)); ls.forEach(l => { place(lh); doc.text(l, X + (o.ind || 0), y); y += lh; }); y += o.ap || 1.2; };
+  doc.setFillColor(0, 51, 102); doc.rect(0, 0, 210, 8, "F");
+  const tmp = document.createElement("div"); tmp.innerHTML = r.html;
+  [...tmp.children].forEach(e => {
+    const tag = e.tagName;
+    if (tag === "H3") ligne(plat(e), { b: 1, s: 15, c: [0, 51, 102], ap: 2 });
+    else if (tag === "H4") { y += 2.5; ligne(plat(e), { b: 1, s: 12, c: [0, 51, 102], ap: 1.5 }); }
+    else if (tag === "P") ligne(plat(e));
+    else if (tag === "OL" || tag === "UL") [...e.children].forEach((li, k) => ligne((tag === "OL" ? (k + 1) + ". " : "- ") + plat(li), { ind: 2, ap: 1.6 }));
+    else if (tag === "TABLE") [...e.querySelectorAll("tbody tr")].forEach(tr => { const c = [...tr.children].map(td => plat(td).trim()); ligne(`${c[0]} : ${c[1]} ${c[2] === "–" ? "" : c[2]}`, { ind: 2, s: 10, ap: .8 }); });
+  });
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) { doc.setPage(p); doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(87, 103, 118); doc.text(txtPDF(`${LAB.cr.pied} · ${r.nom} · page ${p}/${n}`), X, 290); }
+  const nomF = (r.nom === "(nom non renseigné)" ? "eleve" : r.nom).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  doc.save(`${LAB.cr.fichier}_compte_rendu_${nomF || "eleve"}.pdf`);
+}
+function brancherCR() {
+  const box = $("#cr"), crnote = $("#crnote");
+  $("#crbtn").addEventListener("click", () => { const r = construireCR(); box.innerHTML = r.html; box.hidden = false; box.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); crnote.textContent = "Cliquez sur « Télécharger mon compte rendu (PDF) », puis déposez le fichier dans votre devoir Google Classroom."; });
+  $("#crpdf").addEventListener("click", () => {
+    if (!$("#crnom").value.trim()) { crnote.textContent = "Écrivez d'abord votre nom et prénom."; $("#crnom").focus(); return; }
+    const r = construireCR(); box.innerHTML = r.html; box.hidden = false; crnote.textContent = "Préparation du PDF…"; $("#crpdf").disabled = true;
+    chargerJsPDF().then(() => { faitPDF(r); crnote.textContent = "✓ PDF téléchargé : déposez-le dans votre devoir Google Classroom (Ajouter > Fichier, puis Rendre)."; })
+      .catch(() => { crnote.textContent = "Le PDF n'a pas pu être préparé (connexion ?). Utilisez Imprimer > Enregistrer au format PDF."; window.print(); })
+      .finally(() => { $("#crpdf").disabled = false; });
+  });
+}
+
+/* ---------------------------------------------------------------------
+   AIDE, MODE ÉCONOME, SAUVEGARDE
+   --------------------------------------------------------------------- */
+function brancherOutils() {
+  const aide = $("#aidebtn"), bx = $("#aide"), eco = $("#ecobtn");
+  aide.addEventListener("click", () => { bx.open = true; bx.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); bx.querySelector("summary").focus(); });
+  const show = () => { eco.setAttribute("aria-pressed", REDUCED); document.body.classList.toggle("eco", REDUCED); eco.textContent = REDUCED ? "🐢 Mode économe : activé" : "🐢 Mode économe"; };
+  eco.addEventListener("click", () => { REDUCED = !REDUCED; try { localStorage.setItem("efir-eco", REDUCED ? "1" : "0"); } catch (e) {} show(); say(REDUCED ? "Mode économe activé : animations raccourcies. Rechargez la page pour alléger aussi l'affichage 3D." : "Mode économe désactivé.", "info"); });
+  show();
+}
+function sauvegarde(apresChargement) {
+  function save() {
+    try { localStorage.setItem(LAB.key, JSON.stringify({ v: 1, S: LAB.S, appel: LAB.appel, choix: LAB.choix, champs: Object.fromEntries($$("[data-save]").map(e => [e.id, e.type === "checkbox" ? e.checked : e.value])) })); } catch (e) {}
+  }
+  let t = 0; const later = () => { clearTimeout(t); t = setTimeout(save, 400); };
+  ["change", "click", "input"].forEach(ev => document.addEventListener(ev, later)); setInterval(save, 5000);
+  let retrouve = false;
+  try {
+    const d = JSON.parse(localStorage.getItem(LAB.key) || "null");
+    if (d && d.v === 1) {
+      Object.assign(LAB.S, d.S || {}); LAB.appel = true;
+      for (const id in d.champs || {}) { const e = document.getElementById(id); if (e) { if (e.type === "checkbox") e.checked = !!d.champs[id]; else e.value = d.champs[id]; } }
+      if (d.choix) { const b = $(`[data-concl="${d.choix}"]`); if (b) b.click(); }
+      retrouve = true;
+    }
+  } catch (e) {}
+  majAppel(); apresChargement && apresChargement(retrouve);
+  $("#effacer").addEventListener("click", () => {
+    const eff = $("#effacer");
+    if (!eff.dataset.sure) { eff.dataset.sure = "1"; eff.textContent = "Cliquez encore pour tout effacer"; setTimeout(() => { delete eff.dataset.sure; eff.textContent = "Effacer mon travail"; }, 4000); return; }
+    try { localStorage.removeItem(LAB.key); } catch (e) {} location.reload();
+  });
+}
+function demarrerLAB() { brancherQuestions(); brancherCR(); brancherOutils(); }
+
+/* ---------------------------------------------------------------------
+   PRÉDICTIONS : l'élève prévoit AVANT de lancer, puis confronte.
+   liste : [{ id, consigne, q, opts: [...], bonne, expl, cond: essai => bool }]
+   --------------------------------------------------------------------- */
+function Predictions(el, liste) {
+  const S = LAB.S; S.pred = S.pred || {};
+  const idx = () => liste.findIndex(p => !(S.pred[p.id] && S.pred[p.id].vu));
+  let attente = false; /* prédiction confrontée, en attente du clic « suivante » */
+  function rendu() {
+    const k = attente !== false ? attente : idx();
+    if (k < 0) { el.innerHTML = `<p class="toast ok">✓ Toutes les prédictions ont été confrontées à l'expérience (${liste.filter(p => S.pred[p.id].juste).length}/${liste.length} justes du premier coup).</p>`; return; }
+    const p = liste[k], st = S.pred[p.id] || {};
+    el.innerHTML = `<p class="hint">Prédiction ${k + 1} sur ${liste.length}</p><p><b>${p.consigne}</b></p><p>${p.q}</p>
+      <div class="checks">${p.opts.map((o, i) => `<button class="chip" type="button" data-pi="${i}" aria-pressed="${st.choix === o}" ${st.vu ? "disabled" : ""}>${o}</button>`).join("")}</div>
+      ${st.vu ? `<p class="toast ${st.juste ? "ok" : "err"}">${st.juste ? "✓ Votre prédiction était juste." : "✗ L'expérience contredit votre prédiction : c'est en se trompant qu'on apprend !"} ${p.expl}</p><div class="row-actions"><button class="btn" type="button" data-suiv>Prédiction suivante →</button></div>`
+        : st.choix ? `<p class="hint">Prédiction enregistrée. Faites maintenant le lancer demandé pour la vérifier.</p>` : `<p class="hint">Choisissez votre prédiction : le lancer est bloqué tant que vous n'avez pas prévu le résultat.</p>`}`;
+    $$("[data-pi]", el).forEach(b => b.addEventListener("click", () => { S.pred[p.id] = { choix: p.opts[+b.dataset.pi] }; rendu(); }));
+    const sv = $("[data-suiv]", el); if (sv) sv.addEventListener("click", () => { attente = false; rendu(); });
+  }
+  const api = {
+    peutLancer() {
+      if (LAB.demo) return true; const k = idx(); if (attente !== false || k < 0) return true;
+      if (S.pred[liste[k].id] && S.pred[liste[k].id].choix) return true;
+      say("✋ Faites d'abord votre <b>prédiction</b> (cadre « Je prédis ») avant de lancer.", "err"); el.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" }); return false;
+    },
+    apres(essai) {
+      if (LAB.demo || attente !== false) return; const k = idx(); if (k < 0) return;
+      const p = liste[k], st = S.pred[p.id]; if (!st || !st.choix || !p.cond(essai)) return;
+      st.vu = true; st.juste = st.choix === p.bonne; attente = k; rendu();
+    },
+    fait: () => idx() < 0,
+    nb: () => liste.filter(p => S.pred[p.id] && S.pred[p.id].vu).length,
+    cr() { return `<h4>Mes prédictions</h4><ol>${liste.map(p => { const st = S.pred[p.id] || {}; return `<li>${p.q} Prédit : ${st.choix || "–"}${st.vu ? (st.juste ? " → confirmé ✓" : " → contredit par l'expérience ✗ (bonne réponse : " + p.bonne + ")") : " (non vérifiée)"}</li>`; }).join("")}</ol>`; },
+    rendu
+  };
+  LAB.PRED = api; rendu(); return api;
+}
+
+</script>
+<script>
+/* =================== Activité 2 : énergies d'une boule de pétanque =================== */
+const g = 9.81, TAU = 0.04, CIBLE = 7.0, MASSE = 0.60, KAIR = 0.06;
+const REF = { v0: 6.4, a: 44, h: 1.1, fr: false };   /* lancer filmé (même lancer qu'à l'activité 1) */
+LAB.key = "efir-tle-ch12-a2-3d-v1";
+LAB.cr = { titre: "Tle · Ch. 12 · Activité 2 p. 240 · Énergies d'un système en chute libre (simulation 3D)", pied: "Tle Ch. 12 Activité 2 · Énergies en 3D", fichier: "Tle_Ch12_A2" };
+Object.assign(LAB.S, { pointe: false, essais: [], graphe: "evid", py: "", pyJuste: false, frVu: false, pred: {} });
+const COUL = [0xe67e22, 0x1f6fd1, 0x2f8f4e, 0x8e44ad, 0xc0392b];
+const S = LAB.S;
+const rad = d => d * Math.PI / 180;
+/* mouvement : y = altitude (O au sol). Sans frottements : formules exactes ; avec : intégration pas à pas */
+function mouvement(p) {
+  const vx0 = p.v0 * Math.cos(rad(p.a)), vy0 = p.v0 * Math.sin(rad(p.a));
+  if (!p.fr) {
+    const tsol = (vy0 + Math.sqrt(vy0 * vy0 + 2 * g * p.h)) / g;
+    const pos = t => [vx0 * t, p.h + vy0 * t - .5 * g * t * t], vit = t => [vx0, vy0 - g * t];
+    return { tsol, xsol: vx0 * tsol, pos, vit, vx0, vy0 };
+  }
+  const dt = 5e-4, T = [0], X = [0], Y = [p.h], VX = [vx0], VY = [vy0];
+  let x = 0, y = p.h, vx = vx0, vy = vy0, t = 0;
+  while (y > 0 && t < 5) { const v = Math.hypot(vx, vy); vx += -KAIR * v * vx * dt; vy += (-g - KAIR * v * vy) * dt; x += vx * dt; y += vy * dt; t += dt; T.push(t); X.push(x); Y.push(y); VX.push(vx); VY.push(vy); }
+  const n = T.length - 1, f = Y[n - 1] / (Y[n - 1] - Y[n]), tsol = T[n - 1] + f * dt;
+  const interp = (A, t) => { const u = Math.min(n, Math.max(0, t / dt)), i = Math.min(n - 1, Math.floor(u)), r = u - i; return A[i] + (A[i + 1] - A[i]) * r; };
+  return { tsol, xsol: interp(X, tsol), pos: t => [interp(X, t), interp(Y, t)], vit: t => [interp(VX, t), interp(VY, t)], vx0, vy0 };
+}
+const NRJ = (p, m, t) => { const [, y] = m.pos(t), [vx, vy] = m.vit(t), Ec = .5 * MASSE * (vx * vx + vy * vy), Ep = MASSE * g * Math.max(0, y); return { Ec, Ep, Em: Ec + Ep }; };
+const MREF = mouvement(REF);
+LAB.val.ymax = () => REF.h + MREF.vy0 ** 2 / (2 * g);
+LAB.val.vsol = () => Math.hypot(...MREF.vit(MREF.tsol));
+LAB.val.xsol = () => MREF.xsol;
+LAB.val.ecs = () => .5 * MASSE * MREF.vx0 ** 2;
+const meme = (p, v0, a, h = 1.1) => Math.abs(p.v0 - v0) < .05 && Math.abs(p.a - a) < .5 && Math.abs(p.h - h) < .03;
+const dejaLance = (v0, a, fr) => S.essais.slice(0, -1).some(e => !e.video && !!e.fr === fr && meme(e, v0, a));
+LAB.pre = { py: () => S.pyJuste ? "" : "Exécutez d'abord le programme avec la bonne ligne 43 (questions 1 et 2.a) : les courbes des énergies sont nécessaires." };
+/* pointage « vidéo » : petites erreurs de pointage (± 5 mm), toujours les mêmes */
+function rng(s) { return () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const POINTS = (() => {
+  const r = rng(2027), out = [];
+  for (let k = 0; k * TAU <= MREF.tsol + 1e-9; k++) { const t = k * TAU, [x, y] = MREF.pos(t); out.push({ t, x: x + (r() - .5) * 0.01, y: Math.max(0, y + (r() - .5) * 0.01) }); }
+  out.forEach((p, i) => { const a = out[Math.max(0, i - 1)], b = out[Math.min(out.length - 1, i + 1)]; p.vx = (b.x - a.x) / (b.t - a.t); p.vy = (b.y - a.y) / (b.t - a.t); });
+  /* extrémités : le logiciel dérive le modèle ajusté sur les points voisins */
+  const n = out.length, d = (sl, k, t) => { const f = ajuste(sl.map(p => [p.t, p[k]]), 2); return f.c1 + 2 * f.c2 * t; };
+  out[0].vx = d(out.slice(0, 8), "x", 0); out[0].vy = d(out.slice(0, 8), "y", 0);
+  out[n - 1].vx = d(out.slice(n - 8), "x", out[n - 1].t); out[n - 1].vy = d(out.slice(n - 8), "y", out[n - 1].t);
+  return out;
+})();
+/* les différentes lignes 43 possibles */
+const PYEC = {
+  "Ec+[0.5*m*v[i]**2]": p => .5 * MASSE * (p.vx ** 2 + p.vy ** 2),
+  "Ec+[0.5*m*v[i]]": p => .5 * MASSE * Math.hypot(p.vx, p.vy),
+  "Ec+[m*v[i]**2]": p => MASSE * (p.vx ** 2 + p.vy ** 2),
+  "Ec+[0.5*m*vx[i]**2]": p => .5 * MASSE * p.vx ** 2
+};
+
+/* ---------- scène 3D ---------- */
+const fig = $("#fig3d");
+const VUE3D = { az: -0.75, el: 0.3, r: 12, cible: [3.8, 1, 0] }, VUEFACE = { az: 0, el: 0.04, r: 11, cible: [3.6, 1.2, 0] };
+const V = Scene3D(fig, { cible: VUE3D.cible, r: VUE3D.r, az: VUE3D.az, el: VUE3D.el,
+  vues: { d3: VUE3D, face: VUEFACE, joueur: { az: -Math.PI / 2 + 0.12, el: 0.18, r: 4.2, cible: [3, 1, 0] } } });
+let boule, ombre, trait, vV, vP, vF, alt;
+if (V) {
+  const T = THREE;
+  const c = document.createElement("canvas"); c.width = c.height = 256; const gx = c.getContext("2d");
+  gx.fillStyle = "#cdb688"; gx.fillRect(0, 0, 256, 256); const rr = rng(7);
+  for (let i = 0; i < 2600; i++) { gx.fillStyle = `rgba(${90 + rr() * 80},${70 + rr() * 60},${40 + rr() * 40},${.25 + rr() * .3})`; gx.fillRect(rr() * 256, rr() * 256, 1 + rr() * 2, 1 + rr() * 2); }
+  const tex = new T.CanvasTexture(c); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.repeat.set(8, 3);
+  const sol = new T.Mesh(new T.PlaneGeometry(16, 6), new T.MeshStandardMaterial({ map: tex, roughness: 1 })); sol.rotation.x = -Math.PI / 2; sol.position.set(5, 0, 0); sol.receiveShadow = true; V.scene.add(sol);
+  const bois = new T.MeshStandardMaterial({ color: 0x8a5a33, roughness: .8 });
+  [-3.05, 3.05].forEach(z => { const m = new T.Mesh(new T.BoxGeometry(16.2, .12, .1), bois); m.position.set(5, .06, z); m.castShadow = true; V.scene.add(m); });
+  [-3.05, 13.05].forEach(x => { const m = new T.Mesh(new T.BoxGeometry(.1, .12, 6.2), bois); m.position.set(x, .06, 0); V.scene.add(m); });
+  for (let k = 0; k <= 12; k++) {
+    const tr = new T.Mesh(new T.BoxGeometry(k % 5 === 0 ? .05 : .025, .005, .35), new T.MeshBasicMaterial({ color: 0x3a2a14 })); tr.position.set(k, .004, 1.3); V.scene.add(tr);
+    const e = V.etiquette(k + " m", { taille: .26, fond: "rgba(255,255,255,.75)" }); e.position.set(k, .2, 1.75); V.scene.add(e);
+  }
+  const regle = new T.Mesh(new T.BoxGeometry(12, .004, .03), new T.MeshBasicMaterial({ color: 0x3a2a14 })); regle.position.set(6, .003, 1.3); V.scene.add(regle);
+  const cercle = new T.Mesh(new T.RingGeometry(.22, .25, 48), new T.MeshBasicMaterial({ color: 0xffffff })); cercle.rotation.x = -Math.PI / 2; cercle.position.set(-.35, .006, 0); V.scene.add(cercle);
+  const peau = new T.MeshStandardMaterial({ color: 0xe0b08a, roughness: .7 }), haut = new T.MeshStandardMaterial({ color: 0x1f6fd1, roughness: .7 }), bas = new T.MeshStandardMaterial({ color: 0x2b3440, roughness: .8 });
+  const joueur = new T.Group();
+  const jambe = z => { const m = new T.Mesh(new T.CylinderGeometry(.07, .06, .85, 12), bas); m.position.set(0, .43, z); return m; };
+  const tronc = new T.Mesh(new T.CylinderGeometry(.17, .14, .62, 16), haut); tronc.position.set(0, 1.18, 0);
+  const tete = new T.Mesh(new T.SphereGeometry(.12, 20, 16), peau); tete.position.set(0, 1.62, 0);
+  joueur.add(jambe(-.1), jambe(.1), tronc, tete); [...joueur.children].forEach(m => { m.castShadow = true; }); joueur.position.set(-.35, 0, 0); V.scene.add(joueur);
+  const bras = new T.Mesh(new T.CylinderGeometry(.05, .045, .62, 12), peau); bras.castShadow = true; V.scene.add(bras);
+  V.majJoueur = h => { const ep = new T.Vector3(-.35, 1.4, 0), main = new T.Vector3(0, h, 0), d = main.clone().sub(ep); bras.scale.y = d.length() / .62; bras.position.copy(ep.clone().add(main).multiplyScalar(.5)); bras.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), d.normalize()); };
+  /* boule adverse à 7,0 m */
+  const adv = new T.Mesh(new T.SphereGeometry(.06, 32, 24), new T.MeshStandardMaterial({ color: 0x6b7480, metalness: .85, roughness: .3 })); adv.position.set(CIBLE, .06, 0); adv.castShadow = true; V.scene.add(adv);
+  const ea = V.etiquette("boule adverse · 7,0 m", { taille: .24 }); ea.position.set(CIBLE + .2, .45, -.6); V.scene.add(ea);
+  boule = new T.Mesh(new T.SphereGeometry(.06, 32, 24), new T.MeshStandardMaterial({ color: 0xaab3bd, metalness: .85, roughness: .28 })); boule.castShadow = true; V.scene.add(boule);
+  ombre = new T.Mesh(new T.CircleGeometry(.06, 24), new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .25 })); ombre.rotation.x = -Math.PI / 2; V.scene.add(ombre); ombre.visible = REDUCED;
+  /* axes : x au sol, y vertical (altitude), O au sol sous la main */
+  const ax = (col, dir, lab) => { const f = V.fleche(col, .012); f.regler(new T.Vector3(), dir); V.scene.add(f); const e = V.etiquette(lab, { taille: .22, couleur: "#" + col.toString(16).padStart(6, "0"), italic: true }); e.position.copy(dir.clone().multiplyScalar(1.08)); V.scene.add(e); };
+  ax(0xc0392b, new T.Vector3(1.1, 0, 0), "x"); ax(0x2f8f4e, new T.Vector3(0, 2.7, 0), "y (altitude)");
+  for (let k = 1; k <= 2; k++) { const e = V.etiquette(k + " m", { taille: .18, fond: false }); e.position.set(-.22, k, 0); V.scene.add(e); const tr = new T.Mesh(new T.BoxGeometry(.08, .01, .01), new T.MeshBasicMaterial({ color: 0x2f8f4e })); tr.position.set(0, k, 0); V.scene.add(tr); }
+  const eo = V.etiquette("O · Ep = 0", { taille: .2 }); eo.position.set(.15, -.2, .5); V.scene.add(eo);
+  /* vecteurs : vitesse, poids, frottement */
+  vV = V.fleche(0x2f8f4e, .018); vP = V.fleche(0xe67e22, .018); vF = V.fleche(0x8e44ad, .018); V.scene.add(vV, vP, vF);
+  V.eV = V.etiquette("v⃗", { taille: .22, couleur: "#2f8f4e", italic: true, fond: false }); V.eP = V.etiquette("P⃗", { taille: .22, couleur: "#c26a12", italic: true, fond: false }); V.eF = V.etiquette("f⃗", { taille: .22, couleur: "#8e44ad", italic: true, fond: false }); V.scene.add(V.eV, V.eP, V.eF);
+  /* altitude : pointillés de la boule au sol */
+  alt = new T.Line(new T.BufferGeometry(), new T.LineDashedMaterial({ color: 0x2f8f4e, dashSize: .06, gapSize: .05 })); V.scene.add(alt);
+  trait = new T.Line(new T.BufferGeometry(), new T.LineBasicMaterial({ color: 0xe67e22 })); V.scene.add(trait);
+  V.ghostGeo = new T.SphereGeometry(.035, 12, 10); V.ghostMat = new T.MeshBasicMaterial({ color: 0xe67e22, transparent: true, opacity: .75 });
+  V.anneau = new T.Mesh(new T.RingGeometry(.09, .12, 32), new T.MeshBasicMaterial({ color: 0xc0392b })); V.anneau.rotation.x = -Math.PI / 2; V.anneau.visible = false; V.scene.add(V.anneau);
+  V.chute = null; V.sommet = null;
+  V.tracesG = new T.Group(); V.scene.add(V.tracesG);
+  V.onUser = () => $$(".vues button", fig).forEach(b => b.setAttribute("aria-pressed", "false"));
+}
+
+/* ---------- état du lancer ---------- */
+let courant = null, tAnim = 0, stopAnim = null, fantomes = [];
+const nbParam = () => ({ v0: +$("#rv").value, a: +$("#ra").value, h: +$("#rh").value, fr: $("#frott").checked });
+function majSorties() {
+  const p = nbParam(); $("#ov").innerHTML = fx(p.v0, 1) + " m·s<sup>−1</sup>"; $("#oa").textContent = p.a + " °"; $("#oh").textContent = fx(p.h, 2) + " m";
+  if (!courant || !courant.joue) poserRepos(p);
+}
+["rv", "ra", "rh"].forEach(id => $("#" + id).addEventListener("input", majSorties));
+$("#frott").addEventListener("change", majSorties);
+function poserRepos(p) {
+  if (!V) { energies(p, mouvement(p), 0); return; }
+  boule.position.set(0, p.h, 0); ombre.position.set(0, .003, 0); V.majJoueur(p.h);
+  const m = mouvement(p); placer(p, m, 0); energies(p, m, 0); V.demande();
+}
+function placer(p, m, t) {
+  if (!V) return; const [vx, vy] = m.vit(t), on = $("#vect").checked, o = boule.position.clone();
+  alt.geometry.dispose(); alt.geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(o.x, 0, 0), o.clone()]); alt.computeLineDistances();
+  vV.visible = vP.visible = V.eV.visible = V.eP.visible = on; vF.visible = V.eF.visible = on && p.fr;
+  if (!on) return;
+  const kv = .14, dv = new THREE.Vector3(vx * kv, vy * kv, 0), dp = new THREE.Vector3(0, -.6, 0);
+  vV.regler(o, dv); vP.regler(o, dp); V.eV.position.copy(o.clone().add(dv).add(new THREE.Vector3(.1, .12, 0))); V.eP.position.copy(o.clone().add(dp).add(new THREE.Vector3(.14, -.05, 0)));
+  if (p.fr) { const v = Math.hypot(vx, vy), k = .6 * KAIR * v / g, df = new THREE.Vector3(-vx * k, -vy * k, 0); vF.regler(o, df); V.eF.position.copy(o.clone().add(df).add(new THREE.Vector3(-.1, .12, 0))); }
+}
+/* barres d'énergie : échelle fixée par Em au départ (on voit Em baisser avec frottements) */
+function energies(p, m, t) {
+  const e = NRJ(p, m, t), ref = Math.max(NRJ(p, m, 0).Em, 1e-9);
+  [["Ec", e.Ec], ["Ep", e.Ep], ["Em", e.Em]].forEach(([k, v]) => { v = Math.max(0, v); $("#b" + k).style.height = Math.min(100, v / ref * 100).toFixed(2) + "%"; $("#v" + k).textContent = fx(v, 1) + " J"; });
+}
+function viderChrono() { if (!V) return; fantomes.forEach(f => V.scene.remove(f)); fantomes = []; }
+function lancer(p, video) {
+  if (!V) return false;
+  if (!LAB.PRED.peutLancer()) return false;
+  if (stopAnim) stopAnim();
+  viderChrono(); const m = mouvement(p); courant = { p, m, video, joue: true, n: 0 }; tAnim = 0;
+  trait.material.color.setHex(COUL[V.tracesG.children.length % COUL.length]);
+  V.majJoueur(p.h); V.anneau.visible = false; if (V.chute) { V.scene.remove(V.chute); V.chute = null; }
+  const pts = []; for (let i = 0; i <= 120; i++) { const [x, y] = m.pos(m.tsol * i / 120); pts.push(new THREE.Vector3(x, Math.max(0, y), 0)); }
+  trait.geometry.dispose(); trait.geometry = new THREE.BufferGeometry();
+  const RAL = video ? 0.45 : 0.6;
+  stopAnim = V.anime(dt => {
+    if (!courant || !courant.joue) return false;
+    tAnim = Math.min(m.tsol, tAnim + (REDUCED ? m.tsol : dt * RAL));
+    const [x, y] = m.pos(tAnim); boule.position.set(x, Math.max(.0, y), 0); ombre.position.set(x, .003, 0);
+    if (video) while (courant.n * TAU <= tAnim + 1e-9) { const [gx, gy] = m.pos(courant.n * TAU); const f = new THREE.Mesh(V.ghostGeo, V.ghostMat); f.position.set(gx, gy, 0); V.scene.add(f); fantomes.push(f); courant.n++; }
+    trait.geometry.dispose(); trait.geometry = new THREE.BufferGeometry().setFromPoints(pts.slice(0, Math.round(tAnim / m.tsol * 120) + 1));
+    placer(p, m, tAnim); energies(p, m, tAnim);
+    const e = NRJ(p, m, tAnim);
+    $("#hud").innerHTML = `t = ${fx(tAnim, 2)} s · y = ${fx(Math.max(0, y), 2)} m · E<sub>c</sub> = ${fx(e.Ec, 1)} J · E<sub>p</sub> = ${fx(e.Ep, 1)} J`;
+    if (tAnim >= m.tsol) { courant.joue = false; finLancer(p, m, video, pts); return false; }
+    return true;
+  });
+  return true;
+}
+function finLancer(p, m, video, pts) {
+  V.anneau.position.set(m.xsol, .006, 0); V.anneau.visible = true;
+  V.chute = V.etiquette(`sol : x = ${fx(m.xsol, 2)} m`, { taille: .24, couleur: "#b42318" }); V.chute.position.set(m.xsol, .55, .3); V.scene.add(V.chute);
+  const n = V.tracesG.children.length, col = COUL[n % COUL.length]; if (n >= 5) V.tracesG.remove(V.tracesG.children[0]);
+  const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: col }));
+  ln.userData = { col, pts: pts.map(q => [q.x, q.y]), txt: `${video ? "vidéo : " : ""}v₀ = ${fx(p.v0, 1)} m·s⁻¹, α = ${p.a}°, h = ${fx(p.h, 2)} m${p.fr ? ", frottements" : ""} → ${fx(m.xsol, 2)} m` };
+  V.tracesG.add(ln); legende();
+  if (V.sommet) { V.scene.remove(V.sommet); V.sommet = null; }
+  if (m.vy0 > 0) { let ts = 0; for (let k = 1; k <= 400; k++) { const t = m.tsol * k / 400; if (m.vit(t)[1] <= 0) { ts = t; break; } }
+    const [xs, ys] = m.pos(ts), es = NRJ(p, m, ts); V.sommet = V.etiquette(`sommet : Ec = ${fx(es.Ec, 1)} J (non nulle)`, { taille: .2, couleur: "#1f3b5c" }); V.sommet.position.set(xs, ys + .35, 0); V.scene.add(V.sommet); }
+  V.demande();
+  const e0 = NRJ(p, m, 0), e1 = NRJ(p, m, m.tsol), vsol = Math.hypot(...m.vit(m.tsol));
+  S.essais.push({ v0: p.v0, a: p.a, h: p.h, fr: p.fr, video: !!video, x: +m.xsol.toFixed(2), vsol: +vsol.toFixed(2), em0: +e0.Em.toFixed(1), em1: +e1.Em.toFixed(1) });
+  if (p.fr) S.frVu = true;
+  S.dernier = { v0: p.v0, a: p.a, h: p.h, fr: p.fr };
+  LAB.PRED.apres({ p, video });
+  if (video) { S.pointe = true; remplirTableau(); say(`Lancer pointé : ${POINTS.length} positions, une toutes les 0,040 s. Le programme Python va utiliser ce tableau : complétez la ligne 43 (question 1).`, "ok"); }
+  else say(`La boule touche le sol à x = ${fx(m.xsol, 2)} m, avec v<sub>sol</sub> = ${fx(vsol, 2)} m·s<sup>−1</sup>. E<sub>m</sub> : ${fx(e0.Em, 1)} J au départ, ${fx(e1.Em, 1)} J au sol${p.fr ? " (perte due aux frottements)" : ""}.`, "ok");
+  tableEssais(); dessinerGraphe();
+}
+$("#video").addEventListener("click", () => { if (!lancer(REF, true)) return; V && V.vue(VUEFACE, "face"); say("Lecture de la vidéo au ralenti… la boule est pointée toutes les 0,040 s."); });
+$("#lancer").addEventListener("click", () => { const p = nbParam(); if (!lancer(p, false)) return; say(`Lancer : v<sub>0</sub> = ${fx(p.v0, 1)} m·s<sup>−1</sup>, α = ${p.a}°, depuis ${fx(p.h, 2)} m${p.fr ? ", avec frottements" : ""}…`); });
+$("#vect").addEventListener("change", () => { if (!V) return; const p = courant ? courant.p : nbParam(), m = courant ? courant.m : mouvement(p); placer(p, m, courant ? tAnim : 0); V.demande(); });
+function legende() { $("#leg3d").innerHTML = V ? V.tracesG.children.map(l => `<span style="--c:#${l.userData.col.toString(16).padStart(6, "0")}">${l.userData.txt}</span>`).join("") : ""; }
+function effacerTraces() { if (!V) return; viderChrono(); trait.geometry = new THREE.BufferGeometry(); V.tracesG.clear(); if (V.sommet) { V.scene.remove(V.sommet); V.sommet = null; } if (V.chute) { V.scene.remove(V.chute); V.chute = null; } V.anneau.visible = false; legende(); dessinerGraphe(); V.demande(); }
+$("#effacertr").addEventListener("click", effacerTraces);
+
+/* ---------- prédictions ---------- */
+Predictions($("#predict"), [
+  { id: "ec", consigne: "Avant de lancer la vidéo, regardez les barres d'énergie.", q: "Pendant la montée de la boule, son énergie cinétique E<sub>c</sub> :", opts: ["augmente", "diminue", "reste constante"], bonne: "diminue", cond: () => true,
+    expl: "À la montée, la boule ralentit : le poids est une force résistante (travail négatif). L'énergie cinétique se convertit en énergie potentielle." },
+  { id: "sommet", consigne: "Avant votre prochain lancer (vidéo ou « Mon lancer »).", q: "Au sommet de la trajectoire, l'énergie cinétique de la boule est :", opts: ["nulle, car la boule s'arrête", "minimale, mais pas nulle", "maximale"], bonne: "minimale, mais pas nulle", cond: e => e.p.a > 0,
+    expl: "Au sommet, seule v<sub>y</sub> s'annule : v<sub>x</sub> = v<sub>0</sub> cos α reste, donc E<sub>c</sub> = ½ m v<sub>x</sub><sup>2</sup> ≠ 0 (regardez l'étiquette « sommet » dans la scène)." },
+  { id: "angle", consigne: "Mon lancer, sans frottements : v₀ = 6,4 m·s⁻¹, h = 1,1 m. Lancez à α = 44°, puis à α = 70°.", q: "À 70°, la vitesse de la boule en touchant le sol sera :", opts: ["plus grande qu'à 44°", "plus petite qu'à 44°", "la même qu'à 44°"], bonne: "la même qu'à 44°", cond: e => !e.video && !e.p.fr && meme(e.p, 6.4, 70) && dejaLance(6.4, 44, false),
+    expl: "E<sub>m</sub> se conserve : ½ m v<sub>sol</sub><sup>2</sup> = ½ m v<sub>0</sub><sup>2</sup> + m g h, quel que soit l'angle. Dans les deux cas, v<sub>sol</sub> ≈ 7,9 m·s<sup>−1</sup> (voir « Mes lancers »)." },
+  { id: "frott", consigne: "Cochez « Frottements de l'air (exagérés) », puis lancez votre boule.", q: "Avec des frottements, l'énergie mécanique E<sub>m</sub> pendant le vol :", opts: ["reste constante", "diminue", "augmente"], bonne: "diminue", cond: e => !e.video && e.p.fr,
+    expl: "Les frottements sont des forces non conservatives dont le travail est négatif : ΔE<sub>m</sub> = W(f⃗) &lt; 0. L'énergie « perdue » est transférée à l'air. Comparez la barre E<sub>m</sub> au départ et à l'arrivée." }
+]);
+
+/* ---------- Python ---------- */
+$("#runpy").addEventListener("click", () => {
+  const o = $("#outpy"), c = $("#qpy").value; o.hidden = false;
+  if (!S.pointe) { o.className = "toast info"; o.innerHTML = "Lancez d'abord la vidéo : le programme a besoin des listes vx, vy et y du pointage."; return; }
+  if (!c) { o.className = "toast info"; o.innerHTML = "Complétez d'abord la ligne 43."; return; }
+  S.py = c; S.pyJuste = juste("qpy"); S.graphe = "evid"; ongletsAria(); dessinerGraphe();
+  const em = POINTS.map(p => PYEC[c](p) + MASSE * g * p.y), ec = Math.max(...em) - Math.min(...em);
+  o.className = "toast " + (S.pyJuste ? "ok" : "err");
+  o.innerHTML = S.pyJuste ? `✓ Les trois courbes s'affichent. E<sub>m</sub> varie de moins de ${fx(Math.ceil(ec * 10) / 10, 1)} J : elle est constante aux erreurs de pointage près. Passez à la question 2.b.`
+    : `✗ Avec cette ligne, E<sub>m</sub> varie de ${fx(ec, 1)} J pendant le vol, et les valeurs n'ont pas le bon ordre de grandeur : relisez la formule E<sub>c</sub> = ½ m v<sup>2</sup> (doc. A).`;
+  $("#gfig").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" });
+});
+
+/* ---------- graphiques et tableau ---------- */
+const G = Graphe($("#gcv"));
+let curT = null, courbes = [];
+function remplirTableau() {
+  $("#tab").innerHTML = POINTS.map(p => `<tr><td>${fx(p.t, 2)}</td><td>${fx(p.x, 3)}</td><td>${fx(p.y, 3)}</td><td>${fx(p.vx, 2)}</td><td>${fx(p.vy, 2)}</td></tr>`).join("");
+  $("#nbpts").textContent = POINTS.length + " points pointés";
+}
+const ongletsAria = () => $$(".onglets button").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === S.graphe));
+function courbesLancer() {
+  const d = S.dernier; if (!d) return null;
+  const m = mouvement(d), pts = { Ec: [], Ep: [], Em: [] };
+  for (let i = 0; i <= 160; i++) { const t = m.tsol * i / 160, e = NRJ(d, m, t); ["Ec", "Ep", "Em"].forEach(k => pts[k].push([t, e[k]])); }
+  return { d, pts, tsol: m.tsol };
+}
+function dessinerGraphe() {
+  const tab = S.graphe === "tab"; $("#gfig").hidden = tab; $("#tabwrap").hidden = !tab; $("#lecture").hidden = tab;
+  if (tab) return;
+  courbes = [];
+  if (S.graphe === "evid") {
+    if (!S.pointe || !S.py) { G.trace({ series: [], xmin: 0, xmax: 1.2, ymin: 0, ymax: 25, xlab: "t (s)", ylab: !S.pointe ? "Lancez la vidéo, puis exécutez le programme" : "Exécutez le programme (question 1)" }); $("#lecture").textContent = ""; return; }
+    const f = PYEC[S.py], ec = POINTS.map(p => [p.t, f(p)]), ep = POINTS.map(p => [p.t, MASSE * g * p.y]), em = POINTS.map((p, i) => [p.t, ec[i][1] + ep[i][1]]);
+    courbes = [["Ec", ec, "#2f8f4e"], ["Ep", ep, "#c0392b"], ["Em", em, "#1f3b5c"]];
+    G.trace({ series: courbes.map(([nom, pts, c]) => ({ pts, points: true, r: 4, c, nom })), xmin: 0, xmax: 1.2, ymin: 0, xlab: "t (s)", ylab: "E (J)", curseur: curT });
+  } else if (S.graphe === "elan") {
+    const r = courbesLancer();
+    if (!r) { G.trace({ series: [], xmin: 0, xmax: 1.2, ymin: 0, ymax: 25, xlab: "t (s)", ylab: "Faites un lancer (vidéo ou « Mon lancer »)" }); $("#lecture").textContent = ""; return; }
+    courbes = [["Ec", r.pts.Ec, "#2f8f4e"], ["Ep", r.pts.Ep, "#c0392b"], ["Em", r.pts.Em, "#1f3b5c"]];
+    G.trace({ series: courbes.map(([nom, pts, c]) => ({ pts, c, w: 3, nom })), xmin: 0, xmax: Math.max(1.2, r.tsol * 1.05), ymin: 0, xlab: "t (s)", ylab: "E (J)" + (r.d.fr ? " · avec frottements" : ""), curseur: curT });
+  } else {
+    const series = V ? V.tracesG.children.map(l => ({ pts: l.userData.pts, c: "#" + l.userData.col.toString(16).padStart(6, "0"), w: 2.5 })) : [];
+    if (S.pointe) series.push({ pts: POINTS.map(p => [p.x, p.y]), points: true, croix: true, c: css("--navy"), nom: "points pointés" });
+    series.push({ pts: [[CIBLE, 0]], points: true, r: 7, c: "#6b7480", nom: "boule adverse" });
+    courbes = S.pointe ? [["y", POINTS.map(p => [p.x, p.y]), ""]] : [];
+    G.trace({ series, xmin: 0, xmax: 8, ymin: 0, ymax: 3, xlab: "x (m)", ylab: "y (m)", curseur: curT });
+  }
+  lecture();
+}
+function lecture() {
+  if (curT == null || !courbes.length) { $("#lecture").textContent = courbes.length ? "Survolez ou touchez le graphique pour lire des valeurs." : ""; return; }
+  const proche = pts => pts.reduce((a, b) => Math.abs(b[0] - curT) < Math.abs(a[0] - curT) ? b : a);
+  if (S.graphe === "yx") { const q = proche(courbes[0][1]); $("#lecture").innerHTML = `Point pointé le plus proche : x = ${fx(q[0], 2)} m ; y = ${fx(q[1], 2)} m`; return; }
+  const q = courbes.map(([n, pts]) => [n, proche(pts)]);
+  $("#lecture").innerHTML = `t = ${fx(q[0][1][0], 2)} s : ` + q.map(([n, p]) => `E<sub>${n.slice(1)}</sub> = ${fx(p[1], 1)} J`).join(" ; ");
+}
+function pointeur(ev) {
+  const cv = $("#gcv"), r = cv.getBoundingClientRect(), px = (ev.clientX - r.left) * cv.width / r.width, pw = cv.width - 74 - 18;
+  const xmax = S.graphe === "yx" ? 8 : S.graphe === "elan" && courbesLancer() ? Math.max(1.2, courbesLancer().tsol * 1.05) : 1.2;
+  curT = Math.max(0, Math.min(xmax, (px - 74) / pw * xmax)); dessinerGraphe();
+}
+$("#gcv").addEventListener("pointermove", pointeur); $("#gcv").addEventListener("pointerdown", pointeur);
+$("#gcv").addEventListener("pointerleave", ev => { if (ev.pointerType === "mouse") { curT = null; dessinerGraphe(); } });
+$$(".onglets button").forEach(b => b.addEventListener("click", () => { S.graphe = b.dataset.g; curT = null; ongletsAria(); dessinerGraphe(); }));
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", dessinerGraphe);
+function tableEssais() {
+  $("#ess").innerHTML = S.essais.map((e, i) => `<tr><td>${i + 1}${e.video ? " (vidéo)" : ""}</td><td>${fx(e.v0, 1)}</td><td>${e.a}°</td><td>${fx(e.h, 2)}</td><td>${e.fr ? "frottements" : "chute libre"}</td><td>${fx(e.vsol, 2)}</td><td>${fx(e.em0, 1)} J → ${fx(e.em1, 1)} J</td></tr>`).join("");
+  $("#essvide").hidden = S.essais.length > 0; $("#nbess").textContent = S.essais.length ? S.essais.length + " lancer" + (S.essais.length > 1 ? "s" : "") : "";
+}
+
+/* ---------- démonstration et remise à zéro ---------- */
+const regle = (id, v) => { const el = $("#" + id); el.value = v; el.dispatchEvent(new Event("input")); };
+$("#demo").addEventListener("click", async () => {
+  const b = $("#demo"); b.disabled = true; LAB.demo = true;
+  try {
+    say("Démonstration : on rejoue la vidéo. Regardez les barres d'énergie pendant le vol. (En temps normal, vous faites d'abord votre prédiction.)"); $("#video").click(); await wait(4400);
+    say("Les énergies du lancer s'affichent dans l'onglet « Énergies de mon dernier lancer ». Pour les courbes du pointage, il faudra compléter le programme Python."); S.graphe = "elan"; ongletsAria(); dessinerGraphe(); await wait(2800);
+    V && V.vue(VUE3D, "d3");
+    say("Démonstration terminée : à vous de faire vos prédictions, puis de compléter le programme (question 1) !", "ok");
+  } finally { b.disabled = false; LAB.demo = false; }
+});
+$("#reset").addEventListener("click", () => { regle("rv", 6.4); regle("ra", 44); regle("rh", 1.1); $("#frott").checked = false; $("#vect").checked = true; if (V) { effacerTraces(); courant = null; poserRepos(nbParam()); V.vue(VUE3D, "d3"); } say("Réglages remis à zéro. Vos lancers et vos réponses sont conservés."); });
+
+/* ---------- compte rendu et protocole ---------- */
+LAB.mesures = () => S.essais.map(e => `${e.video ? "Vidéo : " : ""}v0 = ${fx(e.v0, 1)} m·s⁻¹, α = ${e.a}°, h = ${fx(e.h, 2)} m, ${e.fr ? "avec frottements" : "chute libre"} : sol à x = ${fx(e.x, 2)} m, vsol = ${fx(e.vsol, 2)} m·s⁻¹, Em ${fx(e.em0, 1)} J → ${fx(e.em1, 1)} J`);
+LAB.demarche = () => [["Lancer de la vidéo pointé", S.pointe], ["Programme Python complété et exécuté", S.pyJuste], ["Lancer avec frottements comparé", S.frVu], [`Prédictions confrontées à l'expérience (${LAB.PRED.nb()} sur 4)`, LAB.PRED.fait()]];
+Protocole([
+  { partie: "Prédire et expérimenter", q: "Prédire", html: "Faire les <b>4 prédictions</b> du cadre « Je prédis » (vidéo, sommet, angle, frottements).", ok: () => LAB.PRED.fait() },
+  { q: "Vidéo", html: "Lancer la <b>vidéo</b> : le tableau de pointage se remplit.", ok: () => S.pointe },
+  { partie: "Simulation numérique", q: "Q1-Q2.a", html: "Compléter la ligne 43 et exécuter le programme.", ok: () => S.pyJuste },
+  { q: "Q2.b", html: "Justifier l'allure des courbes E<sub>p</sub> et E<sub>c</sub>.", ok: () => juste("q2p") && juste("q2c") },
+  { q: "Q3", html: "Lire E<sub>p max</sub> et E<sub>c sol</sub> sur le graphique ; calculer y<sub>max</sub> et v<sub>sol</sub>.", ok: () => juste("q3a") && juste("q3b") },
+  { q: "Q4", html: "Discuter l'hypothèse de chute libre (comparer avec un lancer à frottements).", sous: [{ html: "lancer avec frottements fait", ok: () => S.frVu }, { html: "question 4 juste", ok: () => juste("q4") }] },
+  { q: "✔ Vérification", html: "Relire ses réponses avant de continuer.", ok: () => true },
+  { q: "Q5", html: "La boule peut-elle percuter directement la boule adverse à 7,0 m ?", ok: () => juste("q5x") && juste("q5r") },
+  { q: "Piège", html: "Calculer E<sub>c</sub> au sommet.", ok: () => juste("q6") },
+  { partie: "Un pas vers le cours", q: "Q6", html: "Répondre à la problématique, rédiger sa conclusion, télécharger le compte rendu.", ok: () => conclJuste() && $("#maconc").value.trim().length > 20 }
+]);
+demarrerLAB();
+sauvegarde(retrouve => {
+  majSorties(); tableEssais(); if (S.pointe) remplirTableau(); ongletsAria(); dessinerGraphe(); LAB.PRED.rendu();
+  if (retrouve && S.essais.length) say("Votre travail précédent a été retrouvé (lancers et réponses).", "ok");
+});
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style id="charte-efir-2026">
+/* Code couleur « prune » du labo virtuel (accueil retenu le 06/11/2026), version claire pour les pages de TP */
+:root:root:root {
+  --bg: #FAF7FC; --surface: #ffffff; --surface-2: #F6F0F9; --ink: #1F1630; --muted: #6B5B78; --line: #E7DDEE;
+  --navy: #4A2C5A; --navy-soft: #F3E8F7; --blue: #4A2C5A; --line-2: #D9CBE3; --soft: #5B4A68;
+  --call-bg: #F6F0F9; --call-line: #E7DDEE; --call-ink: #4A2C5A;
+  --font-display: "Inter", "Segoe UI", system-ui, sans-serif; --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:root:root:not([data-theme="light"]) {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; } }
+:root:root:root[data-theme="dark"] {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; }
+body, button, input, select, textarea { font-family: var(--font-body); }
+body { font-family: var(--font-body); }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -.01em; }
+a.retour { color: var(--navy) !important; }
+</style>
+</body>
+</html>

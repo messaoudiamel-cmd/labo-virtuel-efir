@@ -1,0 +1,121 @@
+<!--efir1re:AE1 · Pouvoir calorifique 3D-->
+window.EFIR_RETOUR = "premiere/matiere/R%C3%A9actions%20de%20combustion";
+
+// ====================================================================
+// Ch. 9 · AE1 · Le pouvoir calorifique d'un combustible
+// ====================================================================
+const FUEL = { eth: { nom: 'éthanol gélifié', pc: 29.7 / 1.2, rate: .018, col: 0x90caf9 }, pro: { nom: 'propan-2-ol', pc: 33.4, rate: .016, col: 0xffcc80 } };
+const M_AL = 15.32, C_EAU = 4.18, C_AL = .897, EFF = .42;
+let can9, therm9, lamp9, flame9, bal9, S9 = null, RUNS9 = {};
+const fresh9 = () => ({ fuel: 'eth', can: false, eau: null, m0: null, ti: null, burning: false, tBurn: 0, T: 19.8, Tmax: 19.8, tf: null, m1: null });
+function cap9() { return (S9.eau || 0) * C_EAU + M_AL * C_AL; }
+const C9 = {
+  id: 'p1_ch09_ae1', code: 'AE1', short: 'Pouvoir calorifique 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 9 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Le pouvoir calorifique d\'un combustible',
+  problem: 'Pour une lampe d\'intérieur, vaut-il mieux utiliser de l\'éthanol ou du propan-2-ol ? Comment estimer expérimentalement le pouvoir calorifique d\'un combustible ?',
+  mots: `<p><b>Pouvoir calorifique PC</b> (kJ·g⁻¹) : énergie libérée par la combustion complète d'un gramme de combustible : Q = m₀ × PC.<br>
+  Énergie reçue par l'eau et la canette : Q = (m<sub>eau</sub> × c<sub>eau</sub> + m<sub>Al</sub> × c<sub>Al</sub>) × (θ<sub>f</sub> − θ<sub>i</sub>).<br>
+  Données : c<sub>eau</sub> = 4,18 J·g⁻¹·°C⁻¹ ; c<sub>Al</sub> = 0,897 J·g⁻¹·°C⁻¹ ; PC(éthanol) = 1,20 × PC(éthanol gélifié).</p>`,
+  aide: `<p>1. Pèse la canette calorifugée (m<sub>Al</sub>), puis environ 150 g d'eau dans la canette (m<sub>eau</sub>).<br>2. Pèse la lampe avec le combustible (m avant), mesure θ<sub>i</sub>.<br>
+  3. Allume, agite, et éteins quand l'eau a gagné 15 à 20 °C. Note θ<sub>f</sub> (valeur maximale).<br>4. Laisse refroidir la lampe et pèse-la à nouveau (m après) : m₀ = m avant − m après.<br>5. Recommence avec l'autre combustible.</p>`,
+  views: { ensemble: [[0, .95, 1.9], [0, .25, 0]] },
+  viewbar: [['Zoom thermomètre', () => flyTo([.15, .38, .55], [.12, .28, 0])], ['Zoom balance', () => flyTo([-.6, .45, .75], [-.6, .08, .2])]],
+  protocol: [
+    { id: 'epi', html: 'Mettre la blouse et les lunettes ; attacher les cheveux (flamme).' },
+    { id: 'pesees', q: 'Q2-3', html: 'Peser la canette calorifugée, puis l\'eau dans la canette, puis la lampe.' },
+    { id: 'chauffe', q: 'Q3', html: 'Mesurer θ<sub>i</sub>, allumer la lampe, agiter, éteindre et relever θ<sub>f</sub>.' },
+    { id: 'pesee2', q: 'Q3', html: 'Repeser la lampe refroidie pour obtenir m₀.' },
+    { id: 'deux', q: 'Q4b', html: 'Recommencer avec l\'autre combustible (éthanol gélifié et propan-2-ol).' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q1-5', html: 'Écrire l\'équation et calculer les pouvoirs calorifiques.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: ['blouse', 'lunettes'], secu: '',
+  table: { rowTitle: 'Grandeur mesurée', rows: [{ label: 'm<sub>Al</sub> (canette)'.replace(/<[^>]+>/g, ''), ans: [0, 0] }, { label: 'm eau', ans: [0, 0] }, { label: 'm₀ (combustible brûlé)', ans: [0, 0] }, { label: 'θi et θf', ans: [1, 1] }],
+    cols: [{ title: 'Instrument', options: ['balance', 'thermomètre'] }, { title: 'Unité', options: ['g', '°C'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'Équation de la combustion complète de l\'éthanol :', options: ['C₂H₆O + 3 O₂ → 2 CO₂ + 3 H₂O', 'C₂H₆O + O₂ → CO₂ + H₂O', 'C₂H₆O + 2 O₂ → 2 CO + 3 H₂O'], ans: 0 },
+    { q: 'Q4a', num: true, text: 'Pouvoir calorifique mesuré de l\'éthanol gélifié : PC =', unit: 'kJ·g⁻¹', get ans() { const r = RUNS9.eth; return r ? r.C * (r.tf - r.ti) / r.m0 / 1000 : NaN; }, tol: .04 },
+    { q: 'Q4a', num: true, text: 'Pouvoir calorifique mesuré du propan-2-ol : PC =', unit: 'kJ·g⁻¹', get ans() { const r = RUNS9.pro; return r ? r.C * (r.tf - r.ti) / r.m0 / 1000 : NaN; }, tol: .04 },
+    { q: 'Q4b', text: 'Quel combustible libère le plus d\'énergie par gramme ?', options: ['l\'éthanol', 'le propan-2-ol', 'ils sont identiques'], ans: 1 },
+    { q: 'Q5', text: 'Les valeurs mesurées sont plus faibles que les valeurs tabulées (29,7 et 33,4 kJ·g⁻¹ pour les combustibles purs) car…', options: ['une partie de l\'énergie chauffe l\'air environnant (pertes), et la combustion peut être incomplète', 'l\'eau est trop lourde', 'le thermomètre absorbe l\'énergie'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Q = m₀ × PC = (m<sub>eau</sub>c<sub>eau</sub> + m<sub>Al</sub>c<sub>Al</sub>)(θf − θi) permet d\'estimer PC ; le propan-2-ol a un pouvoir calorifique plus élevé que l\'éthanol, il est préférable pour la lampe (en tenant compte des pertes, la mesure sous-estime PC).'.replace(/<[^>]+>/g, ''), 'L\'éthanol a le plus grand pouvoir calorifique.', 'On ne peut pas mesurer un pouvoir calorifique au lycée.', 'Toute l\'énergie libérée chauffe l\'eau, la mesure est exacte.'], ans: 0 },
+  build() {
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .8, 10), new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: .8 })); rod.position.set(-.15, .4, 0); scene.add(rod);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(.22, .015, .18), new THREE.MeshStandardMaterial({ color: 0x455a64 })); base.position.set(-.1, .0075, 0); scene.add(base);
+    const clamp = new THREE.Mesh(new THREE.BoxGeometry(.12, .012, .012), new THREE.MeshStandardMaterial({ color: 0x546e7a })); clamp.position.set(-.09, .22, 0); scene.add(clamp);
+    can9 = new THREE.Group(); const cb = new THREE.Mesh(new THREE.CylinderGeometry(.033, .033, .12, 32), new THREE.MeshStandardMaterial({ color: 0xcfd8dc, metalness: .9, roughness: .25 })); cb.position.y = .06; can9.add(cb);
+    const foil = new THREE.Mesh(new THREE.CylinderGeometry(.036, .036, .08, 32, 1, true), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: .7, roughness: .6, side: THREE.DoubleSide })); foil.position.y = .07; can9.add(foil);
+    const cl = label('Canette calorifugée', { size: 26, scale: .001 }); cl.position.set(-.1, .17, 0); can9.add(cl);
+    can9.home = new THREE.Vector3(0, .15, 0); can9.position.copy(can9.home); scene.add(can9);
+    therm9 = makeScreen(.09, .035, { px: 280, text: '--,- °C', bg: '#263238', fg: '#ffeb3b' }); const tb = new THREE.Mesh(new THREE.BoxGeometry(.1, .05, .02), new THREE.MeshStandardMaterial({ color: 0x37474f })); tb.position.set(.17, .32, 0); therm9.mesh.position.set(.17, .32, .011); scene.add(tb, therm9.mesh);
+    const probe = new THREE.Mesh(new THREE.CylinderGeometry(.002, .002, .2, 6), new THREE.MeshStandardMaterial({ color: 0x90a4ae, metalness: .8 })); probe.position.set(.01, .25, 0); probe.rotation.z = -.15; scene.add(probe);
+    const wire = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(.025, .35, 0), new THREE.Vector3(.09, .38, 0), new THREE.Vector3(.13, .33, 0)]), 12, .002, 5), new THREE.MeshStandardMaterial({ color: 0x212121 })); scene.add(wire);
+    lamp9 = new THREE.Group(); const lb = new THREE.Mesh(new THREE.CylinderGeometry(.03, .032, .045, 24), new THREE.MeshStandardMaterial({ color: 0x8d99ae, metalness: .6 })); lb.position.y = .0225; lamp9.add(lb);
+    flame9 = new THREE.Group(); const f1 = new THREE.Mesh(new THREE.ConeGeometry(.018, .09, 16), new THREE.MeshBasicMaterial({ color: 0x64b5f6, transparent: true, opacity: .55 })); f1.position.y = .09; const f2 = new THREE.Mesh(new THREE.ConeGeometry(.01, .05, 12), new THREE.MeshBasicMaterial({ color: 0xffb74d, transparent: true, opacity: .8 })); f2.position.y = .085; flame9.add(f1, f2, new THREE.PointLight(0xffa040, .8, .6)); flame9.visible = false; lamp9.add(flame9);
+    const ll = label('Lampe à combustible', { size: 26, scale: .001 }); ll.position.set(.15, .02, .04); lamp9.add(ll); lamp9.home = new THREE.Vector3(.0, 0, .02); lamp9.position.copy(lamp9.home); scene.add(lamp9);
+    LAB.tick.push((dt, t) => { if (flame9.visible) flame9.scale.set(1, 1 + Math.sin(t * 25) * .12, 1); });
+    bal9 = makeBalance(); bal9.group.position.set(-.6, 0, .2); scene.add(bal9.group);
+    const be = makeVessel({ cap: 250, r: .06, hgt: .13, grad: 50, label: 'Eau' }); be.setVolume(200); be.setColor(0xbbdefb, .35); be.group.position.set(-.55, 0, -.25); scene.add(be.group);
+    const b1 = makeBottle('Éthanol gélifié', 0x90caf9, { cap: 0x1565c0 }); b1.scale.setScalar(.7); b1.position.set(.5, 0, -.3); scene.add(b1);
+    const b2 = makeBottle('Propan-2-ol', 0xffcc80, { cap: 0xe65100 }); b2.scale.setScalar(.7); b2.position.set(.75, 0, -.25); scene.add(b2);
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene(keep) { const f = keep && S9 ? (S9.fuel === 'eth' ? 'pro' : 'eth') : 'eth'; if (!keep) RUNS9 = {}; S9 = fresh9(); S9.fuel = f; if (!can9) return; can9.position.copy(can9.home); lamp9.position.copy(lamp9.home); flame9.visible = false; therm9.set('--,- °C'); bal9.mass = 0; bal9.tare = 0; bal9.show(); if ($('#f9')) this.refreshPanel(); },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, h('span', {}, 'Combustible :'), h('b', { id: 'f9' })),
+      h('h3', {}, '1. Pesées'), h('div', { class: 'row' }, B('g1', 'Peser la canette calorifugée', { t: 'can' }), B('g2', 'Ajouter ≈ 150 g d\'eau et peser', { t: 'eau' }), B('g3', 'Peser la lampe (m avant)', { t: 'lampe' })),
+      h('h3', {}, '2. Chauffage'), h('div', { class: 'row' }, B('g4', 'Mesurer θi', { t: 'ti' }), B('g5', '🔥 Allumer la lampe sous la canette', { t: 'on' }), B('g6', 'Éteindre la lampe', { t: 'off' }), B('g7', 'Relever θf (maximum)', { t: 'tf' })),
+      h('h3', {}, '3. Après refroidissement'), B('g8', 'Repeser la lampe (m après)', { t: 'lampe2' }),
+      h('div', { id: 'r9', class: 'note', style: 'margin-top:8px' }),
+      h('button', { id: 'g9', style: 'margin-top:6px', onclick: () => act({ t: 'next' }) }, 'Nouvelle mesure avec l\'autre combustible'));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S9, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    $('#f9').textContent = FUEL[s.fuel].nom;
+    en('#g1', !s.can); en('#g2', s.can && s.eau == null); en('#g3', s.eau != null && s.m0 == null); en('#g4', s.m0 != null && s.ti == null); en('#g5', s.ti != null && !s.burning && !s.tBurn); en('#g6', s.burning); en('#g7', s.tBurn && !s.burning && s.tf == null); en('#g8', s.tf != null && s.m1 == null); en('#g9', s.m1 != null && Object.keys(RUNS9).length < 2);
+    const f = v => v == null ? '…' : v.toFixed(2).replace('.', ',');
+    $('#r9').innerHTML = `m<sub>Al</sub> = ${s.can ? f(M_AL) : '…'} g · m<sub>eau</sub> = ${f(s.eau)} g · m avant = ${f(s.m0)} g · θi = ${s.ti == null ? '…' : s.ti.toFixed(1).replace('.', ',')} °C · θf = ${s.tf == null ? '…' : s.tf.toFixed(1).replace('.', ',')} °C · m après = ${f(s.m1)} g`
+      + Object.entries(RUNS9).map(([k, r]) => `<br><b>${FUEL[k].nom}</b> : m₀ = ${r.m0.toFixed(2).replace('.', ',')} g ; θi = ${r.ti.toFixed(1).replace('.', ',')} °C ; θf = ${r.tf.toFixed(1).replace('.', ',')} °C ; m<sub>eau</sub> = ${r.eau.toFixed(2).replace('.', ',')} g`).join('');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S9;
+    if (a.t === 'can') { const p0 = can9.position.clone(), p1 = new THREE.Vector3(-.6, .08, .17); await tween(.8, p => can9.position.lerpVectors(p0, p1, ease(p))); await tween(.5, p => { bal9.mass = M_AL * p; bal9.show(); }); s.can = true; say(`Canette calorifugée : m<sub>Al</sub> = ${M_AL.toFixed(2).replace('.', ',')} g. On tare la balance.`); await wait(400); bal9.tare = M_AL; bal9.show(); return; }
+    if (a.t === 'eau') { const m = a.m ?? (a.m = +(148 + Math.random() * 4).toFixed(2)); await tween(1.2, p => { bal9.mass = M_AL + m * p; bal9.show(); }); s.eau = m; say(`Masse d'eau : m<sub>eau</sub> = ${m.toFixed(2).replace('.', ',')} g.`); const p0 = can9.position.clone(); await tween(.8, p => can9.position.lerpVectors(p0, can9.home, ease(p))); bal9.mass = 0; bal9.tare = 0; bal9.show(); return; }
+    if (a.t === 'lampe') { const m = a.m ?? (a.m = +(120 + Math.random() * 5).toFixed(2)); const p0 = lamp9.position.clone(); await tween(.8, p => lamp9.position.lerpVectors(p0, new THREE.Vector3(-.6, .08, .2), ease(p))); await tween(.5, p => { bal9.mass = m * p; bal9.show(); }); s.m0 = m; say(`Lampe avec ${FUEL[s.fuel].nom} : m avant = ${m.toFixed(2).replace('.', ',')} g.`); await tween(.8, p => lamp9.position.lerpVectors(new THREE.Vector3(-.6, .08, .2), lamp9.home, ease(p))); bal9.mass = 0; bal9.show(); step('pesees'); return; }
+    if (a.t === 'ti') { s.ti = 19.8; s.T = 19.8; therm9.set('19,8 °C'); say('θi = 19,8 °C.'); return; }
+    if (a.t === 'on') {
+      s.burning = true; flame9.visible = true; if (!INSTANT) flyTo([.12, .38, .7], [.06, .18, 0]); say('La lampe brûle sous la canette ; on agite l\'eau doucement. Éteins quand l\'eau a gagné 15 à 20 °C.');
+      if (INSTANT) { s.tBurn = 1; return; }
+      const t0 = performance.now(); BUSY = false; this.refreshPanel();
+      const loop = () => { if (!s.burning) return; const t = (performance.now() - t0) / 1000 * 3; s.tBurn = t; const dm = FUEL[s.fuel].rate * t; s.T = s.ti + EFF * dm * FUEL[s.fuel].pc * 1000 / cap9(); therm9.set(s.T.toFixed(1).replace('.', ',') + ' °C'); requestAnimationFrame(loop); };
+      loop(); return;
+    }
+    if (a.t === 'off') {
+      s.burning = false; flame9.visible = false; const dur = a.dur ?? (a.dur = +s.tBurn.toFixed(2)); s.tBurn = dur;
+      const dm = FUEL[s.fuel].rate * dur; s.dm = +dm.toFixed(2); s.T = s.ti + EFF * s.dm * FUEL[s.fuel].pc * 1000 / cap9(); s.Tmax = s.T + .4;
+      therm9.set(s.T.toFixed(1).replace('.', ',') + ' °C'); say('Lampe éteinte (on la coiffe). La température de l\'eau monte encore un peu : attends le maximum.');
+      return;
+    }
+    if (a.t === 'tf') { await tween(1.2, p => therm9.set((s.T + .4 * p).toFixed(1).replace('.', ',') + ' °C')); s.tf = +s.Tmax.toFixed(1); say(`θf = ${s.tf.toFixed(1).replace('.', ',')} °C (valeur maximale).`); step('chauffe'); return; }
+    if (a.t === 'lampe2') {
+      const m1 = +(s.m0 - s.dm).toFixed(2); const p0 = lamp9.position.clone(); await tween(.8, p => lamp9.position.lerpVectors(p0, new THREE.Vector3(-.6, .08, .2), ease(p))); await tween(.5, p => { bal9.mass = m1 * p; bal9.show(); }); s.m1 = m1;
+      RUNS9[s.fuel] = { m0: s.dm, ti: s.ti, tf: s.tf, eau: s.eau, C: cap9() };
+      const msg = `${FUEL[s.fuel].nom} : m₀ = ${s.dm.toFixed(2).replace('.', ',')} g brûlés ; l'eau (${s.eau.toFixed(2).replace('.', ',')} g) passe de ${s.ti.toFixed(1).replace('.', ',')} °C à ${s.tf.toFixed(1).replace('.', ',')} °C.`;
+      observe(msg); say(msg); await tween(.8, p => lamp9.position.lerpVectors(new THREE.Vector3(-.6, .08, .2), lamp9.home, ease(p))); bal9.mass = 0; bal9.show(); step('pesee2'); if (Object.keys(RUNS9).length === 2) step('deux'); return;
+    }
+    if (a.t === 'next') { this.resetScene(true); say(`Nouvelle canette d'eau froide ; combustible : ${FUEL[S9.fuel].nom}.`); return; }
+  },
+  async demo() { say('Démonstration : les pesées.'); for (const t of ['can', 'eau', 'lampe', 'ti']) await act({ t }, { record: false }); await wait(800); },
+};
+startTP(C9);
+
+</script></body></html>

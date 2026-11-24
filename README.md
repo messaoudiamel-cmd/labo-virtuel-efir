@@ -4,5 +4,5 @@ Simulations de TP de physique-chimie (3e, 1re spécialité, Terminale spécialit
 
 Site en ligne : https://labo-virtuel-efir.netlify.app
 
-Tout le labo tient dans un seul fichier : `index.html` (page d'accueil + toutes les activités).
+Le site est découpé : `index.html` (page d'accueil légère), `blocs/` (une activité par fichier, chargée à la demande), `lib/` (bibliothèques locales) et `sw.js` (mode hors ligne).
 Chaque modification déposée ici est publiée automatiquement par Netlify.

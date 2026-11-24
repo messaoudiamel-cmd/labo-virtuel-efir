@@ -1,0 +1,159 @@
+<!--efir1re:AE2 · Variation de vitesse et masse 3D-->
+window.EFIR_RETOUR = "premiere/mouvement/Mouvements%20d%27un%20syst%C3%A8me";
+
+// ====================================================================
+// Ch. 12 · AE2 · Lien entre le vecteur variation de vitesse et la masse
+// ====================================================================
+// ====================================================================
+// Module commun : chronophotographie et construction de vecteurs (mécanique)
+// ====================================================================
+function makeChrono(parent, y = .002) {
+  const g = new THREE.Group(); parent.add(g);
+  const vec = new THREE.Group(); parent.add(vec);
+  const C = {
+    g, vec, pts: [],
+    clear() { g.clear(); vec.clear(); this.pts = []; },
+    add(p, i, showLabel = true) {
+      const d = new THREE.Mesh(new THREE.SphereGeometry(.0045, 12, 8), new THREE.MeshBasicMaterial({ color: 0x1A237E })); d.position.set(p.x, y + .003, p.z); g.add(d);
+      if (showLabel) { const l = label('M' + i, { size: 22, scale: .00045, bg: 'rgba(255,255,255,.8)' }); l.position.set(p.x, y + .02, p.z - .012); g.add(l); }
+      this.pts.push(p.clone());
+    },
+    clearVec() { vec.clear(); },
+    arrow(from, v, color, txt, dashed) {
+      const L = v.length(); if (L < 1e-5) { const d = new THREE.Mesh(new THREE.RingGeometry(.006, .009, 20), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide })); d.rotation.x = -Math.PI / 2; d.position.set(from.x, y + .004, from.z); vec.add(d); if (txt) { const l = label(txt + ' = 0', { size: 22, scale: .0005, color: '#' + color.toString(16).padStart(6, '0') }); l.position.set(from.x + .03, y + .03, from.z); vec.add(l); } return; }
+      const dir = v.clone().normalize(), o = new THREE.Vector3(from.x, y + .004, from.z);
+      if (dashed) { const n = Math.max(2, Math.round(L / .012)); for (let k = 0; k < n; k += 2) { const a = o.clone().addScaledVector(dir, L * k / n), b = o.clone().addScaledVector(dir, Math.min(L * (k + 1) / n, L - .008)); vec.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color }))); } const head = new THREE.ArrowHelper(dir, o.clone().addScaledVector(dir, L - .009), .009, color, .009, .006); vec.add(head); }
+      else vec.add(new THREE.ArrowHelper(dir, o, L, color, Math.min(.014, L * .35), Math.min(.009, L * .25)));
+      if (txt) { const l = label(txt, { size: 24, scale: .00038, color: '#' + color.toString(16).padStart(6, '0'), bg: 'rgba(255,255,255,.6)' }); const m = o.clone().addScaledVector(dir, L * .55), sd = dashed ? -1 : 1; l.position.set(m.x - sd * dir.z * .016, y + .012, m.z + sd * dir.x * .016); vec.add(l); }
+    },
+  };
+  return C;
+}
+
+const TAU3 = .1, VS3 = .2, X0 = -.45, XMAX = -.45 + .37, YR = .45, ZD = .05, GV = 9.81;
+const MCHOICE = [50, 75, 79, 83, 100, 150];
+let chr13, cart13, hang13, str13, S15 = null;
+const fresh15 = () => ({ m: .25, M: 100, run: null, meas: null, res: [], dv: false });
+const fF = (m, M) => M / 1000 * m / (m + M / 1000) * GV;
+const accel = (m, M) => M / 1000 * GV / (m + M / 1000);
+const f3 = (v, n = 2) => v.toFixed(n).replace('.', ',');
+const C15 = {
+  id: 'p1_ch12_ae3', code: 'AE2', short: 'Variation de vitesse et masse 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 12 · Activité expérimentale AE2 · Simulation 3D',
+  title: 'Lien entre le vecteur variation de vitesse d\'un système et sa masse',
+  problem: 'Soumis à une même force, un objet lourd et un objet léger voient-ils leur vitesse varier de la même façon ? Quel est le rôle de la masse ?',
+  mots: `<p><b>Dispositif</b> : un chariot de masse m roule sans frottement sur un rail horizontal ; un fil inextensible passant par une poulie le relie à une masse marquée M qui tombe.<br>
+  <b>Force exercée par le fil sur le chariot</b> : F = (M × m) / (m + M) × g (avec g = 9,81 N·kg⁻¹). Elle est constante pendant le mouvement ; P⃗ et R⃗ se compensent, donc ΣF⃗ = F⃗.<br>
+  <b>Vitesse</b> : v<sub>i</sub> = M<sub>i</sub>M<sub>i+1</sub> / τ ; <b>variation de vitesse</b> : Δv⃗<sub>2→3</sub> = v⃗<sub>3</sub> − v⃗<sub>2</sub>.<br>
+  Chronophotographie : τ = 0,100 s. Échelle des vecteurs : 1 cm ↔ 0,05 m·s⁻¹.</p>`,
+  aide: `<p>1. Pour chaque masse m du chariot (0,250 kg ; 0,500 kg ; 0,750 kg), choisis la masse marquée M qui donne F ≈ 0,70 N (la force est affichée).<br>
+  2. Lance : la chronophotographie des positions M<sub>0</sub>, M<sub>1</sub>… s'affiche.<br>
+  3. Mesure M<sub>2</sub>M<sub>3</sub> et M<sub>3</sub>M<sub>4</sub>, calcule v<sub>2</sub>, v<sub>3</sub> et Δv = v<sub>3</sub> − v<sub>2</sub>, puis construis les vecteurs.<br>
+  4. Note le résultat et compare les trois Δv⃗ : que vaut m × Δv ?</p>`,
+  views: { ensemble: [[0, .75, 1.1], [0, .32, 0]] },
+  viewbar: [['Vue de dessus (rail)', () => flyTo([-.2, 1.05, .2], [-.2, YR, 0])], ['Zoom vecteurs', () => { const p = chr13 && chr13.pts[3] ? chr13.pts[3] : new THREE.Vector3(); flyTo([p.x, YR + .25, .25], [p.x, YR, .03]); }]],
+  protocol: [
+    { id: 'force', q: 'Q1', html: 'Choisir la masse marquée M pour que le fil exerce F ≈ 0,70 N sur le chariot.' },
+    { id: 'deltav', q: 'Q1', html: 'Obtenir la chronophotographie, calculer v<sub>2</sub>, v<sub>3</sub> et construire Δv⃗<sub>2→3</sub>.' },
+    { id: 'trois', q: 'Q2', html: 'Recommencer pour les trois masses du chariot (même force) et noter les résultats.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q2-3', html: 'Comparer les Δv⃗ et tester la relation m × Δv⃗ ≈ ΣF⃗ × Δt.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'arrêter le chariot avant la poulie ; ne pas laisser tomber la masse marquée sur les pieds',
+  table: { rowTitle: 'Masse du chariot', rows: [{ label: 'm = 0,250 kg', ans: [3, 0] }, { label: 'm = 0,500 kg', ans: [2, 1] }, { label: 'm = 0,750 kg', ans: [1, 2] }],
+    cols: [{ title: 'M pour F ≈ 0,70 N', options: ['75 g', '79 g', '83 g', '100 g'] }, { title: 'Δv (2→3)', options: ['≈ 0,28 m·s⁻¹', '≈ 0,14 m·s⁻¹', '≈ 0,093 m·s⁻¹'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q2', text: 'Pour une même force, quand la masse du chariot double, Δv…', options: ['est divisée par 2', 'double', 'ne change pas'], ans: 0 },
+    { q: 'Q2', text: 'Les trois vecteurs Δv⃗ ont…', options: ['la même direction et le même sens que la force F⃗ exercée par le fil', 'le sens opposé à la force', 'une direction perpendiculaire au rail'], ans: 0 },
+    { q: 'Q3', num: true, text: 'Valeur de m × Δv pour tes mesures :', unit: 'kg·m·s⁻¹', ans: .07, tol: .06 },
+    { q: 'Q3', num: true, text: 'Valeur de ΣF × Δt (F = 0,70 N ; Δt = τ = 0,100 s) :', unit: 'N·s', ans: .07, tol: .02 },
+    { q: 'Q3', text: 'La relation approchée entre Δv⃗ et les forces est…', options: ['m × Δv⃗ ≈ ΣF⃗ × Δt', 'Δv⃗ ≈ m × ΣF⃗ × Δt', 'Δv⃗ ne dépend pas de la masse'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Pour une même somme des forces, plus la masse du système est grande, plus la variation de son vecteur vitesse est faible : m × Δv⃗ ≈ ΣF⃗ × Δt, Δv⃗ est colinéaire et de même sens que ΣF⃗.', 'La masse n\'a aucune influence sur la variation de vitesse.', 'Plus la masse est grande, plus la vitesse varie.', 'Δv⃗ est de sens opposé à la somme des forces.'], ans: 0 },
+  build() {
+    const met = new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: .7, roughness: .3 });
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(1.06, .015, .1), new THREE.MeshStandardMaterial({ color: 0xcfd8dc, metalness: .5 })); rail.position.set(0, YR - .0075, 0); scene.add(rail);
+    for (const x of [-.48, .48]) { const l = new THREE.Mesh(new THREE.BoxGeometry(.03, YR - .015, .06), met); l.position.set(x, (YR - .015) / 2, 0); scene.add(l); }
+    const cv = document.createElement('canvas'); cv.width = 2048; cv.height = 64; const c = cv.getContext('2d'); c.fillStyle = '#fffde7'; c.fillRect(0, 0, 2048, 64); c.fillStyle = '#1d2433'; c.font = '600 22px Inter, Arial';
+    for (let cm = 0; cm <= 100; cm++) { const x = 20 + cm * 20; c.fillRect(x, 0, 2, cm % 10 ? (cm % 5 ? 14 : 22) : 32); if (cm % 10 === 0) c.fillText(cm, x + 4, 56); }
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; const ruler = new THREE.Mesh(new THREE.PlaneGeometry(1.024, .032), new THREE.MeshStandardMaterial({ map: tx })); ruler.rotation.x = -Math.PI / 2; ruler.position.set(X0 + .5 - .01 + .002, YR + .001, .066); scene.add(ruler);
+    const rb = new THREE.Mesh(new THREE.BoxGeometry(1.06, .004, .035), new THREE.MeshStandardMaterial({ color: 0xcfd8dc })); rb.position.set(0, YR - .002, .066); scene.add(rb);
+    const pul = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .012, 24), new THREE.MeshStandardMaterial({ color: 0x37474f })); pul.rotation.x = Math.PI / 2; pul.position.set(.545, YR + .02, 0); scene.add(pul);
+    const pl = label('Poulie', { size: 22, scale: .0007 }); pl.position.set(.56, YR + .08, 0); scene.add(pl);
+    cart13 = new THREE.Group(); const body = new THREE.Mesh(new THREE.BoxGeometry(.1, .03, .07), new THREE.MeshStandardMaterial({ color: 0x1565c0 })); body.position.y = .022; cart13.add(body);
+    for (const [x, z] of [[-.035, -.037], [.035, -.037], [-.035, .037], [.035, .037]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .006, 16), new THREE.MeshStandardMaterial({ color: 0x212121 })); w.rotation.x = Math.PI / 2; w.position.set(x, .008, z); cart13.add(w); }
+    cart13.load = new THREE.Group(); cart13.add(cart13.load); const cl = label('Chariot', { size: 22, scale: .0007 }); cl.position.set(0, .09, 0); cart13.add(cl); cart13.position.y = YR; scene.add(cart13);
+    hang13 = new THREE.Group(); scene.add(hang13);
+    str13 = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x212121 })); scene.add(str13);
+    const root = new THREE.Group(); root.position.y = YR; scene.add(root); chr13 = makeChrono(root, .0025);
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes résultats'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'rTab15' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  drawLoad() { const s = S15, L = cart13.load; L.clear(); const n = Math.round((s.m - .25) / .25); for (let k = 0; k < n; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(.06, .016, .05), new THREE.MeshStandardMaterial({ color: 0x9e9e9e, metalness: .8 })); b.position.y = .045 + k * .017; L.add(b); }
+    hang13.clear(); const hm = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .02 + s.M / 3000, 20), new THREE.MeshStandardMaterial({ color: 0xbfa25a, metalness: .85 })); hang13.add(hm); const ll = label(`M = ${s.M} g`, { size: 22, scale: .0006 }); ll.position.set(.045, 0, 0); hang13.add(ll); },
+  place(x) { cart13.position.x = x; const d = x - X0; hang13.position.set(.57, YR - .05 - d, 0); str13.geometry.dispose(); str13.geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x + .05, YR + .03, 0), new THREE.Vector3(.545, YR + .045, 0), new THREE.Vector3(.57, YR + .02, 0), new THREE.Vector3(.57, hang13.position.y + .02, 0)]); },
+  resetScene() { S15 = fresh15(); if (!cart13) return; chr13.clear(); this.drawLoad(); this.place(X0); this.drawRes(); if ($('#q15')) this.refreshPanel(); },
+  drawRes() {
+    const t = $('#rTab15'); if (!t) return;
+    t.innerHTML = '<thead><tr><th>m (kg)</th><th>M (g)</th><th>F (N)</th><th>v₂ (m·s⁻¹)</th><th>v₃ (m·s⁻¹)</th><th>Δv (m·s⁻¹)</th><th>m × Δv</th></tr></thead><tbody>' + (S15.res.map(r => `<tr><td>${f3(r.m, 3)}</td><td>${r.M}</td><td>${f3(r.F)}</td><td>${f3(r.v2)}</td><td>${f3(r.v3)}</td><td>${f3(r.dv, 3)}</td><td>${f3(r.m * r.dv, 3)}</td></tr>`).join('') || '<tr><td colspan="7">Aucun résultat noté.</td></tr>') + '</tbody>';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act(typeof a === 'function' ? a() : { ...a }) }, t);
+    $('#actions').append(
+      h('h3', {}, '1. Préparer'),
+      h('div', { class: 'row' }, h('span', {}, 'Masse du chariot :'), ...[.25, .5, .75].map((m, k) => B('m' + k, f3(m, 3) + ' kg', { t: 'm', m }))),
+      h('div', { class: 'row' }, h('span', {}, 'Masse marquée M :'), ...MCHOICE.map(M => B('M' + M, M + ' g', { t: 'M', M }))),
+      h('h3', {}, '2. Chronophotographie et vecteurs'),
+      h('div', { class: 'row' }, B('g1', '▶ Lâcher le chariot', { t: 'run' }), B('g2', '📏 Mesurer M2M3 et M3M4', { t: 'meas' }), B('g3', 'Tracer v⃗2, v⃗3 et Δv⃗2→3', { t: 'dv' }), B('g4', '✍ Noter le résultat', { t: 'note' }), B('g5', '↺ Ramener le chariot', { t: 'back' })),
+      h('div', { id: 'q15', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S15, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    [.25, .5, .75].forEach((m, k) => { en('#m' + k, !s.run); $('#m' + k).classList.toggle('on', s.m === m); }); MCHOICE.forEach(M => { en('#M' + M, !s.run); $('#M' + M).classList.toggle('on', s.M === M); });
+    en('#g1', !s.run); en('#g2', !!s.run); en('#g3', !!s.run); en('#g4', !!s.run && s.dv && !s.res.some(r => r.m === s.m && r.M === s.M)); en('#g5', !!s.run);
+    const F = fF(s.m, s.M);
+    $('#q15').innerHTML = `m = <b>${f3(s.m, 3)} kg</b> ; M = <b>${s.M} g</b> → force du fil sur le chariot F = (M·m)/(m + M) × g = <b>${f3(F)} N</b>` + (Math.abs(F - .7) <= .01 ? ' ✅' : '') + (s.meas ? `<br>M2M3 = ${f3(s.meas[0] * 100, 1)} cm ; M3M4 = ${f3(s.meas[1] * 100, 1)} cm (τ = 0,100 s)` : '');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S15;
+    if (a.t === 'm') { s.m = a.m; this.drawLoad(); say(`Chariot de masse m = ${f3(a.m, 3)} kg (surcharges ajoutées).`); return; }
+    if (a.t === 'M') { s.M = a.M; this.drawLoad(); this.place(X0); const F = fF(s.m, a.M); say(`Masse marquée M = ${a.M} g : F = ${f3(F)} N.` + (Math.abs(F - .7) <= .01 ? ' C\'est bien la force voulue.' : ' Ce n\'est pas 0,70 N.')); if (Math.abs(F - .7) <= .01) step('force'); return; }
+    if (a.t === 'run') {
+      const acc = accel(s.m, s.M); s.run = { acc }; s.meas = null; s.dv = false; chr13.clear();
+      const pos = k => X0 + .5 * acc * (k * TAU3) ** 2; let K = 0; while (pos(K + 1) <= XMAX) K++;
+      const T = K * TAU3;
+      if (!INSTANT) { let k = 0; await tween(T * 3, p => { const t = p * T; this.place(X0 + .5 * acc * t * t); while (k * TAU3 <= t + 1e-9 && k <= K) { chr13.add(new THREE.Vector3(pos(k), 0, ZD), k); k++; } }); }
+      chr13.clear(); for (let k = 0; k <= K; k++) chr13.add(new THREE.Vector3(pos(k), 0, ZD), k); this.place(pos(K));
+      say(`Chronophotographie obtenue (jusqu'à ce que la masse marquée touche la paillasse) : les positions sont de plus en plus espacées, le mouvement est rectiligne accéléré.`); return;
+    }
+    if (!s.run) return false;
+    const P = k => chr13.pts[k];
+    if (a.t === 'meas') { s.meas = [P(2).distanceTo(P(3)), P(3).distanceTo(P(4))]; say(`M2M3 = ${f3(s.meas[0] * 100, 1)} cm et M3M4 = ${f3(s.meas[1] * 100, 1)} cm : calcule v2 et v3.`); return; }
+    if (a.t === 'dv') {
+      const v2 = P(2).distanceTo(P(3)) / TAU3, v3 = P(3).distanceTo(P(4)) / TAU3, dv = v3 - v2, ex = new THREE.Vector3(1, 0, 0);
+      chr13.clearVec(); chr13.arrow(P(2), ex.clone().multiplyScalar(v2 * VS3), 0x1565c0, 'v2'); chr13.arrow(P(3), ex.clone().multiplyScalar(v3 * VS3), 0x1565c0, 'v3');
+      const P3b = P(3).clone().add(new THREE.Vector3(0, 0, .03)); chr13.arrow(P3b.clone().addScaledVector(ex, v3 * VS3), ex.clone().multiplyScalar(-v2 * VS3), 0xef6c00, '−v2', true); chr13.arrow(P3b.clone().add(new THREE.Vector3(0, 0, .02)), ex.clone().multiplyScalar(dv * VS3), 0xc62828, 'Δv');
+      s.dv = { v2, v3, dv }; step('deltav'); if (!INSTANT) flyTo([P(3).x, YR + .25, .3], [P(3).x, YR, .05]);
+      say(`v2 = ${f3(v2)} m·s⁻¹ ; v3 = ${f3(v3)} m·s⁻¹ ; Δv = ${f3(dv, 3)} m·s⁻¹, dans le sens du mouvement (même sens que F⃗).`); return;
+    }
+    if (a.t === 'note') {
+      const F = fF(s.m, s.M); s.res.push({ m: s.m, M: s.M, F, ...s.dv }); this.drawRes();
+      const msg = `m = ${f3(s.m, 3)} kg, M = ${s.M} g (F = ${f3(F)} N) : Δv(2→3) = ${f3(s.dv.dv, 3)} m·s⁻¹ ; m × Δv = ${f3(s.m * s.dv.dv, 3)} kg·m·s⁻¹.`; observe(msg); say(msg);
+      const ok = new Set(s.res.filter(r => Math.abs(r.F - .7) <= .01).map(r => r.m)); if (ok.size === 3) step('trois'); return;
+    }
+    if (a.t === 'back') { s.run = null; s.meas = null; s.dv = false; chr13.clear(); if (INSTANT) this.place(X0); else { const x0 = cart13.position.x; await tween(.7, p => this.place(x0 + (X0 - x0) * ease(p))); } say('Chariot ramené au départ.'); return; }
+  },
+  async demo() {
+    say('Démonstration : chariot de 0,250 kg, M = 100 g.');
+    await act({ t: 'm', m: .25 }, { record: false }); await act({ t: 'M', M: 100 }, { record: false }); await act({ t: 'run' }, { record: false }); await wait(600); await act({ t: 'dv' }, { record: false }); await wait(1500);
+    say('À toi : recommence avec les autres masses du chariot, à force égale.'); await wait(1200);
+  },
+};
+startTP(C15);
+
+</script></body></html>

@@ -1,0 +1,1558 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Titrage conductimétrique · Labo virtuel EFIR</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<script src="lib/three-r128.min.js"></script>
+<script>window.CFG={mode:"cond"};</script>
+<style>:root{--fond:#F8F6FA;--fond2:#E9E4F0;--prune:#4A148C;--prune2:#380E6B;--p100:#F3E5F5;--p200:#E1BEE7;--rose:#C2185B;--lav:#7E57C2;--encre:#1F1630;--gris:#5b5368;--vert:#2E7D32;--vert-f:#E8F5E9;--ambre:#FFF8E1}
+*{box-sizing:border-box}
+html,body{margin:0;background:linear-gradient(180deg,var(--fond),var(--fond2)) fixed;color:var(--encre);font:15px/1.5 "Atkinson Hyperlegible",Arial,sans-serif}
+button{font:inherit;cursor:pointer}
+.page{max-width:1280px;margin:0 auto;padding:16px}
+.carte{background:#fff;border:1px solid var(--p200);border-radius:18px;box-shadow:0 4px 18px rgba(74,20,140,.07)}
+.tete{padding:16px 20px;display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.tete .fil{font-size:13px;font-weight:700;color:var(--gris)}
+.tete h1{margin:4px 0 2px;font-size:25px;color:var(--prune);line-height:1.2}
+.tete .notion{font-size:14px;color:var(--gris)}
+.pastille{background:var(--p100);border:1px solid var(--p200);color:var(--prune);font-weight:700;border-radius:999px;padding:6px 14px;font-size:14px;white-space:nowrap}
+.frise{display:flex;gap:6px;margin:12px 0;overflow-x:auto;padding-bottom:2px}
+.frise span{flex:1 0 auto;font-size:13px;padding:7px 10px;border-radius:10px;background:#fff;border:1px solid var(--p200);color:var(--gris);white-space:nowrap}
+.frise span.fait{background:var(--vert-f);border-color:#A5D6A7;color:var(--vert)}
+.frise span.ici{background:var(--prune);border-color:var(--prune);color:#fff;font-weight:700}
+.grille{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:0;overflow:hidden}
+.scene{position:relative;min-height:560px;background:linear-gradient(180deg,#F8F6FA,#E9E4F0);border-right:1px solid var(--p100)}
+.scene canvas.gl{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+.scene canvas.gl:active{cursor:grabbing}
+.badge{position:absolute;left:12px;top:12px;z-index:3;background:var(--prune);color:#fff;font-weight:700;font-size:13px;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(74,20,140,.25)}
+.outils3d{position:absolute;right:10px;top:10px;z-index:3;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:70%}
+.outils3d button{background:rgba(255,255,255,.92);border:1px solid var(--p200);color:var(--prune);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700}
+.outils3d button.on{background:var(--prune);color:#fff;border-color:var(--prune)}
+.vues{position:absolute;left:10px;bottom:10px;z-index:3;display:flex;gap:6px;flex-wrap:wrap}
+.vues button{background:rgba(255,255,255,.92);border:1px solid var(--p200);color:var(--prune);border-radius:10px;padding:5px 10px;font-size:13px}
+.schema{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:14px;background:#fff}
+.schema svg{width:100%;height:100%;max-height:640px}
+.secours{position:absolute;left:12px;right:12px;top:48px;z-index:4;display:none;background:var(--ambre);border:1px solid #FFE082;border-radius:12px;padding:8px 12px;font-size:13px}
+.assistant{padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.etape-titre{display:flex;gap:12px;align-items:center}
+.etape-titre .num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--prune);color:#fff;font-weight:700;display:grid;place-items:center}
+.etape-titre h2{margin:0;font-size:19px;color:var(--encre)}
+.desc{font-size:15px}
+.desc .note{display:block;margin-top:8px;background:var(--p100);border-radius:10px;padding:8px 10px;font-size:14px}
+.reglages{display:grid;gap:10px;background:#FBF9FD;border:1px solid var(--p100);border-radius:12px;padding:10px 12px}
+.reglages label{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14px;font-weight:700}
+.reglages label output{color:var(--prune);font-variant-numeric:tabular-nums}
+.reglages label input,.reglages label select{grid-column:1/-1;width:100%;accent-color:var(--prune)}
+.reglages select{padding:6px;border-radius:8px;border:1px solid var(--p200);font:inherit}
+.reglages small{grid-column:1/-1;font-weight:400;color:var(--gris);font-size:12.5px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--prune);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:700;transition:background .15s}
+.btn:hover{background:var(--prune2)}
+.btn:disabled{background:#B9A6D3;cursor:not-allowed}
+.btn.sec{background:#fff;color:var(--prune);border:1px solid var(--p200)}
+.btn.sec:hover{background:var(--p100)}
+.btn.petit{padding:7px 11px;font-size:14px}
+.pas{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:14px}
+.pas select{padding:6px;border-radius:8px;border:1px solid var(--p200);font:inherit}
+.ok{display:none;background:var(--vert-f);color:var(--vert);border:1px solid #A5D6A7;border-radius:12px;padding:9px 12px;font-weight:700}
+.ok.vu{display:block}
+.alerte{display:none;background:#FFEBEE;color:#B71C1C;border:1px solid #FFCDD2;border-radius:12px;padding:9px 12px;font-size:14px}
+.alerte.vu{display:block}
+.nav{display:flex;gap:10px;margin-top:auto;padding-top:6px}
+.nav .btn{flex:1}
+.suivi{margin-top:14px;padding:16px 18px}
+.suivi h3{margin:0 0 10px;color:var(--prune);font-size:18px}
+.tuiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tuile{border:1px solid var(--p200);border-radius:14px;padding:10px 12px;background:#FBF9FD}
+.tuile small{display:block;color:var(--gris);font-size:13px}
+.tuile b{font-size:24px;font-variant-numeric:tabular-nums;color:var(--encre)}
+.tuile.m b{color:var(--prune)}.tuile.c b{color:var(--rose)}
+.suivi-bas{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;margin-top:12px}
+.graphe{border:1px solid var(--p100);border-radius:14px;padding:6px;background:#fff}
+.graphe canvas{width:100%;height:300px;display:block}
+.legende{display:flex;gap:14px;font-size:13px;color:var(--gris);padding:2px 8px 4px;flex-wrap:wrap}
+.legende i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.phase{display:inline-block;font-weight:700;border-radius:999px;padding:5px 14px;border:1px solid var(--p200);background:var(--p100);color:var(--prune)}
+.phase.eq{background:#FCE4EC;border-color:#F8BBD0;color:var(--rose)}
+.phase.apres{background:#EDE7F6;border-color:#D1C4E9;color:#4527A0}
+.equation{font-size:19px;margin:10px 0 6px}
+.interp{font-size:15px}
+.ions{display:grid;gap:6px;margin:10px 0}
+.ion{display:grid;grid-template-columns:62px 1fr 92px;gap:8px;align-items:center;font-size:14px}
+.ion .barre{height:14px;border-radius:7px;background:var(--p100);overflow:hidden}
+.ion .barre i{display:block;height:100%;border-radius:7px;transition:width .4s}
+.ion span:last-child{text-align:right;font-variant-numeric:tabular-nums;color:var(--gris);font-size:13px}
+.petit-texte{font-size:13.5px;color:var(--gris)}
+.securite{margin-top:14px;background:var(--ambre);border:1px solid #FFE082;border-left:5px solid #F9A825;border-radius:14px;padding:12px 16px}
+.securite h3{margin:0 0 6px;font-size:16px;color:#8D5A00}
+.securite ul{margin:0;padding-left:20px;font-size:14px}
+.pied{text-align:center;font-size:12px;color:var(--gris);padding:14px}
+sub,sup{font-size:.72em;line-height:0}
+@media (max-width:900px){
+ .grille{grid-template-columns:1fr}
+ .scene{min-height:440px;border-right:0;border-bottom:1px solid var(--p100)}
+ .tuiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .suivi-bas{grid-template-columns:1fr}
+ .tete h1{font-size:21px}
+}
+/* ===== Disposition « poste de travail » aérée, en colonnes sur le même plan =====
+   en haut : les parties du TP (01 à 04) · à gauche : l'étape, les réglages et l'action ·
+   au centre : le matériel, avec les résultats et la formule juste dessous · à droite : la courbe et l'analyse */
+body.poste{--esp:12px}
+body.poste .page{max-width:none;display:flex;flex-direction:column;gap:var(--esp);padding:var(--esp)}
+body.poste .carte{border-radius:20px;box-shadow:0 2px 14px rgba(74,20,140,.06)}
+/* en-tête */
+body.poste .tete{padding:10px 16px;align-items:center;flex-wrap:nowrap;gap:14px;position:relative}
+body.poste .tete-txt{flex:1 1 auto;min-width:0}
+body.poste .tete .fil{font-size:11.5px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.poste .tete h1{font-size:19px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.poste .tete .notion{display:none}
+body.poste .retour{margin:0!important;padding:5px 12px!important;font-size:13px!important}
+.parties{display:flex;gap:8px;flex:none;overflow-x:auto;scrollbar-width:none}
+.parties span{display:inline-flex;align-items:baseline;gap:7px;padding:8px 14px;border-radius:12px;border:1px solid var(--p200);background:#fff;color:var(--gris);font-size:14px;font-weight:700;white-space:nowrap}
+.parties span b{font-size:13px;color:var(--lav);letter-spacing:.04em}
+.parties span.fait{background:var(--p100);color:var(--prune)}
+.parties span.fait b::after{content:" ✓";color:var(--vert)}
+.parties span.ici{background:var(--prune);border-color:var(--prune);color:#fff;box-shadow:0 3px 10px rgba(74,20,140,.25)}
+.parties span.ici b{color:#E1BEE7}
+body.poste .pastille{font-size:13px;padding:6px 12px}
+.secu-btn{flex:none}
+.secu-btn summary{list-style:none;cursor:pointer;font-weight:700;font-size:13px;color:#8D5A00;background:var(--ambre);border:1px solid #FFE082;border-radius:999px;padding:6px 12px;white-space:nowrap}
+.secu-btn summary::-webkit-details-marker{display:none}
+.secu-btn[open] .securite{position:absolute;right:12px;top:calc(100% + 8px);z-index:30;width:min(430px,calc(100vw - 40px));margin:0;box-shadow:0 12px 30px rgba(31,22,48,.2)}
+/* colonnes */
+body.poste .trois{display:grid;gap:var(--esp);min-height:0}
+body.poste .col-action{padding:22px 22px 14px;display:flex;flex-direction:column;gap:14px}
+.sur-titre{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--rose)}
+body.poste .etape-titre{gap:12px;align-items:flex-start;margin-top:-6px}
+body.poste .etape-titre .num{width:30px;height:30px;font-size:14px;margin-top:1px}
+body.poste .etape-titre h2{font-size:19px;line-height:1.3}
+body.poste .desc{font-size:15.5px;line-height:1.6;color:var(--encre)}
+body.poste .desc .note{font-size:14px}
+body.poste .reglages{background:#FBF9FD;border-radius:14px;padding:14px;gap:14px}
+body.poste .reglages label{font-size:14px}
+body.poste .reglages small{font-size:12.5px;line-height:1.45}
+body.poste #action{width:100%;padding:12px 16px;font-size:15.5px}
+body.poste .pas{gap:8px}
+body.poste .col-action .lien-recom{order:9}
+body.poste .col-action .nav{order:10;margin-top:auto;position:sticky;bottom:-14px;background:#fff;padding:10px 0 14px;z-index:2}
+.lien-recom{align-self:flex-start;background:none;border:0;color:var(--gris);font-size:13px;text-decoration:underline;padding:2px 0}
+body.poste .col-scene{position:relative;overflow:hidden;display:flex;flex-direction:column;padding:0}
+body.poste .scene{flex:1;min-height:300px;border:0;border-radius:20px 20px 0 0}
+.resultats{padding:14px 16px 16px;border-top:1px solid var(--p100);display:grid;gap:10px;background:#fff}
+body.poste .resultats .tuiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+body.poste .tuile{padding:8px 12px;border-radius:14px;display:flex;flex-direction:column;justify-content:space-between;min-height:62px}
+body.poste .tuile small{font-size:12px;line-height:1.3}
+body.poste .tuile b{font-size:21px;line-height:1.2}
+.formule{font-size:16px;font-weight:700;color:var(--prune2);background:#FBF9FD;border:1px solid var(--p100);border-left:4px solid var(--prune);border-radius:12px;padding:9px 14px;line-height:1.5}
+.formule .sep{color:var(--lav);margin:0 10px;font-weight:400}
+body.poste .col-mesure{margin:0;padding:18px 18px 14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+body.poste .col-mesure h3{margin:0;font-size:16px}
+body.poste .bloc{display:flex;flex-direction:column;gap:10px}
+body.poste .graphe{border-radius:14px}
+body.poste .graphe .zone{position:relative;height:clamp(200px,36vh,360px)}
+body.poste .graphe .zone canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+body.poste .graphe .loupe-zone{height:150px}
+body.poste .duo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+body.poste .duo .zone{height:170px}
+body.poste .equation{font-size:16px;margin:0}
+body.poste .ion{grid-template-columns:54px 1fr 84px}
+body.poste .pied{padding:0;font-size:11px}
+body.poste .securite{margin:0}
+/* ordinateur : tout tient dans l'écran, seules les colonnes latérales défilent si besoin */
+@media (min-width:760px){
+ body.poste .page{height:100vh;height:100dvh;min-height:430px}
+ body.poste .trois{flex:1;grid-template-columns:minmax(280px,22%) minmax(0,1fr) minmax(320px,28%)}
+ body.poste .col-action,body.poste .col-mesure{overflow-y:auto;scrollbar-width:thin}
+ body.poste .scene{min-height:0}
+}
+@media (min-width:760px) and (max-width:1250px){
+ body.poste .trois{grid-template-columns:minmax(230px,25%) minmax(0,1fr) minmax(250px,28%)}
+ body.poste .tete .fil{display:none}
+ .parties span{padding:7px 10px;font-size:13px}
+}
+@media (min-width:760px) and (max-height:800px){
+ body.poste{--esp:10px}
+ body.poste .graphe .zone{height:clamp(180px,34vh,280px)}
+ body.poste .col-action{padding:18px 18px 12px;gap:12px}
+ body.poste .tuile{min-height:56px;padding:6px 10px}
+ body.poste .tuile b{font-size:19px}
+ .formule{font-size:15px;padding:7px 12px}
+}
+/* téléphone et tablette : le matériel et ses résultats, puis l'action, puis la courbe */
+@media (max-width:759px){
+ body.poste .tete{flex-wrap:wrap}
+ body.poste .tete-txt{flex-basis:calc(100% - 120px)}
+ .parties{order:3;flex:1 1 100%}
+ body.poste .pastille{order:2}
+ body.poste .trois{grid-template-columns:minmax(0,1fr)}
+ body.poste .col-scene{order:-1}
+ body.poste .scene{height:50vh;min-height:280px;max-height:480px;flex:none}
+ body.poste .resultats .tuiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.poste .graphe .zone{height:240px}
+ body.poste .badge{display:none}
+ body.poste .outils3d{max-width:100%;left:8px;right:8px;top:8px;justify-content:flex-start}
+ body.poste .outils3d button,body.poste .vues button{font-size:12px;padding:4px 9px}
+ body.poste .col-action .nav{bottom:0}
+ .formule{font-size:14.5px}
+}
+body.poste .frise[hidden]{display:none!important}
+body.poste .nav .btn{white-space:nowrap;padding:11px 10px}
+body.poste .tuile b{white-space:nowrap;font-size:clamp(16px,1.45vw,21px)}
+body.poste #zLambda .pas .btn{padding:6px 10px;font-size:13px}
+@media (max-width:759px){
+ body.poste .tete{gap:8px 10px;padding:10px 12px}
+ body.poste .tete-txt{flex-basis:100%}
+ body.poste .tete .fil{display:none}
+ body.poste .tete h1{white-space:normal;font-size:18px;line-height:1.25}
+ .parties span{padding:6px 10px;font-size:13px}
+ body.poste .tuile{min-height:0;padding:6px 10px}
+ body.poste .tuile small{font-size:11.5px}
+ body.poste .tuile b{font-size:18px}
+ body.poste .col-action{padding:16px}
+}
+body.poste #tS{white-space:normal;font-size:15px;line-height:1.25}
+@media (min-width:760px) and (max-height:800px){ body.poste #lNote{display:none} }
+@media (max-width:759px){ body.poste .pastille{order:1;margin-right:auto} body.poste .secu-btn{order:2} }
+/* écrans compacts (zoom Windows 125 % ou 150 %, petits portables) : tout reste visible */
+@media (min-width:760px) and (max-width:1100px){
+ .parties span{padding:6px 9px;font-size:12.5px} .parties span b{font-size:12px}
+ body.poste .tete h1{font-size:17px}
+ body.poste .col-action{padding:14px 14px 10px;gap:10px}
+ body.poste .col-mesure{padding:12px}
+ body.poste .resultats{padding:10px 12px 12px}
+ body.poste .resultats .tuiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ body.poste .vues button{font-size:12px;padding:4px 8px}
+ body.poste .outils3d button{font-size:12px;padding:4px 9px}
+ body.poste .badge{display:none}
+ .formule{font-size:13.5px}
+}
+@media (min-width:760px) and (max-height:620px){
+ body.poste{--esp:8px}
+ body.poste .tete{padding:6px 12px}
+ body.poste .tete .fil{display:none}
+ body.poste .tete h1{font-size:16px}
+ .parties span{padding:5px 9px}
+ body.poste .col-action{padding:12px 14px 8px;gap:9px}
+ body.poste .etape-titre h2{font-size:16.5px}
+ body.poste .desc{font-size:14.5px;line-height:1.5}
+ body.poste .reglages{padding:10px;gap:9px}
+ body.poste #action{padding:9px 12px;font-size:14.5px}
+ body.poste .nav .btn{padding:8px 10px}
+ body.poste .resultats{padding:8px 12px 10px;gap:7px}
+ body.poste .tuile{min-height:0;padding:4px 9px}
+ body.poste .tuile small{font-size:11px}
+ body.poste .tuile b{font-size:17px}
+ .formule{font-size:13px;padding:5px 10px}
+ body.poste .graphe .zone{height:clamp(150px,40vh,230px)}
+ body.poste .pied{display:none}
+}
+body.poste .nav .btn{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media (min-width:760px) and (max-width:1100px){ body.poste .nav .btn{font-size:12.5px;padding:9px 4px} }
+@media (min-width:760px) and (max-height:620px){
+ body.poste .resultats .tuiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+ body.poste .tuile small{font-size:10.5px;line-height:1.2}
+ body.poste .tuile b{font-size:15px}
+}
+body.poste .btn:disabled{background:#C9B8DE!important;color:#fff!important;border-color:#C9B8DE!important;cursor:not-allowed;box-shadow:none}
+body.poste .btn.sec:disabled{background:#fff!important;color:#B9A6D3!important;border:1px solid var(--p100)!important}
+/* marque © en bas de l'écran : la disposition lui laisse sa ligne, sans débordement */
+body.poste #efir-copyright{padding:0 12px 4px!important;font-size:11px!important;line-height:16px!important}
+@media (min-width:760px){ body.poste .page{height:calc(100vh - 20px);height:calc(100dvh - 20px);min-height:410px} }
+/* en-tête : les onglets des parties défilent plutôt que de pousser la page */
+body.poste .parties{flex:none}
+body.poste .tete-txt{flex:1 1 0;min-width:0}
+@media (min-width:760px) and (max-width:1100px){ body.poste .tete .pastille{display:none} }
+/* onglets des parties : en manque de place, seul l'onglet en cours garde son nom (jamais de mot coupé) */
+.parties span .nom{font-style:normal}
+@media (min-width:760px) and (max-width:1500px){ .parties span:not(.ici) .nom{display:none} .parties span:not(.ici){padding-left:11px;padding-right:11px} }
+/* bas à droite libre (badge de l'hébergeur) ; tableau non sélectionnable par mégarde */
+@media (min-width:760px){ body.poste .col-mesure{padding-bottom:58px} }
+body.poste .mesures{user-select:none;-webkit-user-select:none}
+/* portable : « Précédent » devient une flèche, « Suivant » garde son texte entier */
+@media (min-width:760px) and (max-width:1500px){
+ body.poste .nav #prec{flex:0 0 52px;padding:9px 0;font-size:18px!important}
+ body.poste .nav #prec .txt{display:none}
+ body.poste .nav #suiv{flex:1 1 auto}
+}
+/*efir-confort*/body.poste #a11y-in{flex:none;margin:0!important;padding:0!important;width:36px;height:36px;justify-content:center;gap:0}body.poste #a11y-in span{display:none}.retour{flex:none;white-space:nowrap;display:inline-block;margin-bottom:6px;font-weight:700;color:var(--prune);text-decoration:none;border:1px solid var(--p200);border-radius:999px;padding:4px 12px;font-size:14px;background:var(--p100)}</style><style id="efir-tete-tel">@media (max-width:759px){body.poste .tete{flex-wrap:wrap!important}body.poste .tete-txt{flex:1 1 100%!important;order:10;min-width:0!important}body.poste .tete h1{white-space:normal!important;word-break:normal!important;overflow-wrap:normal!important}body.poste .tete nav.parties{order:11;flex:1 1 100%!important;min-width:0;max-width:100%;overflow-x:auto;flex-wrap:nowrap!important;scrollbar-width:none}body.poste .tete nav.parties span{flex:none}}</style></head>
+<body class="poste">
+<div class="page">
+  <header class="carte tete"><a class="retour" href="#" onclick="try{parent.location.hash='terminale/matiere/M%C3%A9thodes%20chimiques%20d\'analyse'}catch(e){};return false">← Retour au chapitre</a>
+    <div class="tete-txt">
+      <div class="fil">EFIR · Terminale spécialité · Chapitre 3 · Méthodes chimiques d'analyse</div>
+      <h1>Titrage suivi par conductimétrie</h1>
+      <div class="notion">Notions : titrage, équivalence, loi de Kohlrausch, rôle de chaque ion</div>
+    </div>
+    <nav class="parties" id="parties"></nav><nav class="frise" hidden><span>1 · Monter</span><span>2 · Zéro de la burette</span><span>3 · Prise d'essai</span><span>4 · Cellule et agitation</span><span>5 · Titrer</span><span>6 · Exploiter</span><span>7 · Conclure</span></nav>
+    <span class="pastille" id="etapeN">Étape 1 / 7</span>
+    <details class="secu-btn"><summary>⚠️ Sécurité</summary>
+      <aside class="securite"><h3>⚠️ Rappel de sécurité</h3><ul>
+        <li>La soude et l'acide chlorhydrique sont corrosifs, même dilués : blouse, lunettes et gants pendant tout le titrage.</li>
+        <li>On remplit la burette robinet fermé, <b>en dessous du niveau des yeux</b>, avec un entonnoir que l'on retire ensuite.</li>
+        <li>La cellule de conductimétrie est fragile : elle ne doit toucher ni le barreau aimanté ni le fond du bécher ; on la rince à l'eau distillée avant et après usage.</li>
+        <li>Les solutions usagées vont dans le bidon de récupération.</li></ul></aside>
+    </details>
+  </header>
+
+  <main class="trois">
+    <section class="carte col-action assistant" aria-label="Étape et action">
+      <div class="sur-titre" id="surTitre"></div><div class="etape-titre"><span class="num" id="num">1</span><h2 id="etTitre"></h2></div>
+      <div class="desc" id="etDesc"></div>
+      <div class="reglages" id="regl" style="display:none">
+        <label>Solution titrée → titrant<select id="rSys"><option value="hcl">Acide chlorhydrique → soude</option><option value="ac">Acide éthanoïque → soude</option><option value="chauf">Éthanoate de sodium (chaufferette) → acide chlorhydrique</option></select></label>
+        <label>Concentration C<sub>a</sub> (à retrouver) <output id="oCa"></output><input id="rCa" type="range" min="5" max="20" step="0.5" value="10"></label>
+        <label>Prise d'essai V<sub>a</sub> (pipette jaugée) <output id="oVa"></output><input id="rVa" type="range" min="10" max="25" step="5" value="20"></label>
+        <label>Concentration du titrant C<sub>b</sub> <output id="oCb"></output><input id="rCb" type="range" min="10" max="50" step="5" value="20"></label>
+        <label>Eau distillée ajoutée <output id="oEau"></output><input id="rEau" type="range" min="0" max="100" step="10" value="50"><small id="hNiv"></small></label>
+      </div>
+      <div id="zoneTitrage" style="display:none">
+        <div class="pas">Pas
+          <select id="pas"><option value="0.05">1 goutte (0,05 mL)</option><option value="0.1">0,10 mL</option><option value="0.2">0,20 mL</option><option value="0.5" selected>0,50 mL</option><option value="1">1,00 mL</option></select>
+          <button class="btn petit" id="ajout">+ Verser un pas</button><button class="btn petit sec" id="auto">▶ Démarrer</button>
+        </div>
+        <p class="petit-texte" id="progT"></p>
+      </div>
+      <button class="btn" id="action"></button>
+      <div class="alerte" id="alerte"></div>
+      <div class="ok" id="ok">✓ Action validée !</div>
+      <div class="nav"><button class="btn sec" id="prec" aria-label="Précédent"><span class="ico">←</span><span class="txt"> Précédent</span></button><button class="btn" id="suiv">Suivant →</button></div>
+      <button class="lien-recom" id="recommencer">↺ Recommencer l'activité</button>
+    </section>
+
+    <section class="carte col-scene" aria-label="Paillasse en 3D">
+      <div class="scene" id="scene">
+        <span class="badge">↻ Glissez pour tourner</span>
+        <div class="outils3d"><button id="b3d" class="on">3D</button><button id="b2d">Schéma 2D</button><button id="bEt" class="on">🏷 Étiquettes</button></div>
+        <div class="vues"><button data-v="ensemble">Ensemble</button><button data-v="burette">Burette</button><button data-v="becher">Bécher</button><button data-v="appareil">Conductimètre</button></div>
+        <div class="secours" id="secours">La 3D n'est pas disponible sur cet appareil : le schéma 2D la remplace, toutes les étapes restent possibles.</div>
+        <div class="schema" id="schema"><svg id="svg2d" viewBox="0 0 520 520" font-family="Atkinson Hyperlegible, Arial, sans-serif"></svg></div>
+      </div>
+      <div class="resultats">
+      <div class="tuiles">
+        <div class="tuile m"><small>σ mesurée (mS·cm⁻¹)</small><b id="tM">—</b></div>
+        <div class="tuile"><small>Volume versé V (mL)</small><b id="tV">0,00</b></div>
+        <div class="tuile c"><small>σ corrigée de la dilution (mS·cm⁻¹)</small><b id="tC">—</b></div>
+        <div class="tuile"><small>pH (calculé, pour comparer)</small><b id="tP">—</b></div>
+      </div>
+      <div class="formule" id="formule"></div>
+      </div>
+    </section>
+
+    <section class="carte col-mesure suivi" aria-label="Mesure en direct">
+      <h3>Courbe et analyse</h3>
+      <div class="bloc">
+        <div class="graphe plein"><div class="zone"><canvas id="graphe"></canvas></div>
+          <div class="legende"><span><i style="background:#4A148C"></i>σ mesurée</span><span><i style="background:#fff;border:2px solid #C2185B"></i>σ corrigée = σ·(V₀+V)/V₀</span><span>-- droites modélisées</span></div></div>
+        <p class="petit-texte" id="infos"></p>
+      </div>
+      <div class="bloc">
+        <span class="phase" id="phase">Bécher vide</span>
+        <div class="equation" id="equation"></div>
+        <div class="interp" id="interp"></div>
+        <div class="ions" id="ions"></div>
+        <div class="graphe"><div class="zone loupe-zone"><canvas id="loupe"></canvas></div><div class="legende"><b style="color:#4A148C">🔍 Loupe sur la solution</b><span id="legIons"></span><span>· 1 bille ≈ 0,05 mmol·L⁻¹, molécules d'eau non dessinées</span></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ===== Cadrage automatique de la scène 3D (commun aux paillasses réalistes) =====
+   - facteur(nom) : distance multipliée pour que, dans la vue « ensemble », tout le matériel ET ses étiquettes
+     tiennent dans le cadre, quelle que soit la forme du panneau (portable, grand écran, téléphone) ;
+     pour les vues rapprochées, simple correction selon le rapport largeur/hauteur.
+   - etiquettes(cam, liste) : chaque étiquette reste entièrement visible (elle se décale vers l'intérieur). */
+const CADRAGE = (function () {
+  const T = window.THREE, v = () => new T.Vector3();
+  function boite(scene, exclure) {
+    const B = new T.Box3(), b = new T.Box3(), s = v(); scene.updateMatrixWorld(true);
+    scene.traverse(o => {
+      if (!o.isMesh || o.isSprite) return; let p = o; while (p) { if (p.visible === false || (exclure && exclure(p))) return; p = p.parent; }
+      b.setFromObject(o); if (b.isEmpty()) return; b.getSize(s); if (Math.max(s.x, s.z) > 90 || s.y > 140) return; B.union(b);
+    });
+    return B;
+  }
+  function pose(c, V, d) { c.position.set(V.cx + d * Math.sin(V.ph) * Math.sin(V.th), V.cy + d * Math.cos(V.ph), V.cz + d * Math.sin(V.ph) * Math.cos(V.th)); c.lookAt(V.cx, V.cy, V.cz); c.updateMatrixWorld(true); }
+  function demi(cam, s) { const t = Math.tan(cam.fov * Math.PI / 360); return [.5 * s.scale.x / (t * cam.aspect), .5 * s.scale.y / t]; }
+  /* plus petite distance telle que la boîte et les étiquettes tiennent dans le cadre */
+  function distance(cam, V, B, etiq) {
+    const pts = []; for (let i = 0; i < 8; i++) pts.push([new T.Vector3(i & 1 ? B.max.x : B.min.x, i & 2 ? B.max.y : B.min.y, i & 4 ? B.max.z : B.min.z), .92, .86]);
+    (etiq || []).forEach(s => { if (!s.visible) return; const [hx, hy] = demi(cam, s); pts.push([s.getWorldPosition(v()), .97 - .6 * hx, .95 - .6 * hy]); });
+    const c = cam.clone(); let lo = 4, hi = 700;
+    for (let k = 0; k < 28; k++) {
+      const d = (lo + hi) / 2; pose(c, V, d); let ok = true;
+      for (const [p, mx, my] of pts) { const q = p.clone().project(c); if (q.z > 1 || Math.abs(q.x) > Math.max(.2, mx) || Math.abs(q.y) > Math.max(.2, my)) { ok = false; break; } }
+      if (ok) hi = d; else lo = d;
+    }
+    return hi;
+  }
+  function etiquettes(cam, liste, H) {
+    const q = v(), f = 1;
+    liste.forEach(s => {
+      if (!s.visible) return; s.center.set(.5, .5);
+      if (!s.userData.base) s.userData.base = [s.scale.x, s.scale.y]; s.scale.set(s.userData.base[0] * f, s.userData.base[1] * f, 1); s.getWorldPosition(q).project(cam); const [hx, hy] = demi(cam, s);
+      const mx = .985 - hx, my = .97 - hy;
+      if (q.x > mx) s.center.x = Math.min(1.5, .5 + (q.x - mx) / (2 * hx)); else if (q.x < -mx) s.center.x = Math.max(-.5, .5 + (q.x + mx) / (2 * hx));
+      if (q.y > my) s.center.y = Math.min(1.5, .5 + (q.y - my) / (2 * hy)); else if (q.y < -my) s.center.y = Math.max(-.5, .5 + (q.y + my) / (2 * hy));
+    });
+  }
+  /* vue d'ensemble : centre la caméra sur le matériel et règle la distance ; renvoie le facteur de distance */
+  function ensemble(cam, scene, V, cible, exclure) {
+    const B = boite(scene, exclure); if (B.isEmpty()) return 1; const c = B.getCenter(v());
+    const W = Object.assign({}, V, { cx: c.x, cy: c.y - (B.max.y - B.min.y) * .03, cz: c.z });
+    Object.assign(cible, { cx: W.cx, cy: W.cy, cz: W.cz }); return distance(cam, W, B, null) / V.d;
+  }
+  return { boite, distance, etiquettes, ensemble };
+})();
+
+/* ===== Modèle physico-chimique des titrages conductimétriques (25 °C) =====
+   σ = Σ λi·[Xi] (loi de Kohlrausch), [Xi] en mol·m⁻³, λi en mS·m²·mol⁻¹ → σ en mS·m⁻¹ (÷100 → mS·cm⁻¹).
+   pH exact par électroneutralité (dichotomie sur log h), couple CH₃COOH/CH₃COO⁻ (pKa 4,76) traité exactement. */
+const CHIMIE = (function () {
+  const LAMBDA = { "H3O+": 34.98, "HO-": 19.86, "Na+": 5.01, "Cl-": 7.63, "CH3COO-": 4.09 };
+  const KW = 1e-14, KA = Math.pow(10, -4.76), KC = [3.13, 4.76, 6.40].map(p => Math.pow(10, -p));
+  /* échantillon : ce que contient le bécher ; titrant : ce que contient la burette (concentrations en ions apportés) */
+  const SYSTEMES = {
+    hcl: {
+      nom: "Acide chlorhydrique → soude", ech: { Cl: 1, Hfort: 1 }, tit: { Na: 1, OH: 1 },
+      titrant: ["Hydroxyde de sodium", "Na⁺(aq) + HO⁻(aq)"], titrantCourt: "soude", reactifTitre: "H₃O⁺",
+      eq: 'H<sub>3</sub>O<sup>+</sup>(aq) + HO<sup>−</sup>(aq) → 2 H<sub>2</sub>O(ℓ)',
+      ions: ["H3O+", "Cl-", "Na+", "HO-"], verses: ["Na+", "HO-"], consomme: "H3O+",
+      interp: {
+        avant: "Chaque ion H<sub>3</sub>O<sup>+</sup> consommé est <b>remplacé</b> par un ion Na<sup>+</sup> apporté par la burette. Or λ(Na<sup>+</sup>) = 5,0 est bien plus petit que λ(H<sub>3</sub>O<sup>+</sup>) = 35,0 mS·m²·mol⁻¹ : <b>la conductivité diminue fortement</b>.",
+        eq: "Il ne reste presque plus d'ions H<sub>3</sub>O<sup>+</sup> et pas encore d'ions HO<sup>−</sup> en excès : la conductivité passe par son <b>minimum</b>. C'est l'équivalence.",
+        apres: "La réaction est terminée : les ions Na<sup>+</sup> et HO<sup>−</sup> versés s'accumulent. λ(HO<sup>−</sup>) = 19,9 mS·m²·mol⁻¹ est élevé : <b>la conductivité augmente</b>, moins vite qu'elle n'a diminué."
+      }
+    },
+    ac: {
+      nom: "Acide éthanoïque → soude", ech: { Ac: 1 }, tit: { Na: 1, OH: 1 },
+      titrant: ["Hydroxyde de sodium", "Na⁺(aq) + HO⁻(aq)"], titrantCourt: "soude", reactifTitre: "CH₃COOH",
+      eq: 'CH<sub>3</sub>COOH(aq) + HO<sup>−</sup>(aq) → CH<sub>3</sub>COO<sup>−</sup>(aq) + H<sub>2</sub>O(ℓ)',
+      ions: ["H3O+", "CH3COO-", "Na+", "HO-"], verses: ["Na+", "HO-"], consomme: "AH",
+      interp: {
+        avant: "L'acide éthanoïque, faible, est très peu dissocié : la solution conduit mal au départ. Chaque molécule CH<sub>3</sub>COOH consommée <b>produit</b> un ion CH<sub>3</sub>COO<sup>−</sup>, et la burette apporte un ion Na<sup>+</sup> : <b>la conductivité augmente lentement</b>.",
+        eq: "Tout l'acide a réagi : la solution ne contient plus que Na<sup>+</sup> et CH<sub>3</sub>COO<sup>−</sup>. La pente change : c'est l'équivalence.",
+        apres: "Les ions HO<sup>−</sup> (λ = 19,9) et Na<sup>+</sup> versés ne réagissent plus : <b>la conductivité augmente nettement plus vite</b>."
+      }
+    },
+    cit: {
+      nom: "Acide citrique (limonade) → soude", ech: { Cit: 1 }, tit: { Na: 1, OH: 1 }, ph: true,
+      titrant: ["Hydroxyde de sodium", "Na⁺(aq) + HO⁻(aq)"], titrantCourt: "soude", reactifTitre: "AH₃", nEq: 3,
+      eq: 'AH<sub>3</sub>(aq) + 3 HO<sup>−</sup>(aq) → A<sup>3−</sup>(aq) + 3 H<sub>2</sub>O(ℓ)',
+      ions: ["AH3", "AH2-", "AH2m", "A3-", "Na+", "H3O+"], verses: ["Na+"], consomme: "AH3",
+      interp: {
+        avant: "Les ions HO<sup>−</sup> versés arrachent un à un les trois protons de l'acide citrique AH<sub>3</sub>. Ses trois pK<sub>A</sub> (3,13 ; 4,76 ; 6,40) sont proches : les trois acidités sont titrées <b>ensemble</b>, le pH monte lentement.",
+        eq: "Les trois acidités sont consommées : n(HO<sup>−</sup>) versé = 3 n<sub>0</sub>(AH<sub>3</sub>). Le pH fait un <b>saut</b> : c'est l'équivalence.",
+        apres: "Il n'y a plus d'acide : les ions HO<sup>−</sup> versés s'accumulent et le pH tend vers celui de la soude."
+      }
+    },
+    chauf: {
+      nom: "Éthanoate de sodium (chaufferette) → acide chlorhydrique", ech: { Ac: 1, Na: 1, base: 1 }, tit: { Hfort: 1, Cl: 1 },
+      titrant: ["Acide chlorhydrique", "H₃O⁺(aq) + Cl⁻(aq)"], titrantCourt: "acide chlorhydrique", reactifTitre: "CH₃COO⁻",
+      eq: 'CH<sub>3</sub>COO<sup>−</sup>(aq) + H<sub>3</sub>O<sup>+</sup>(aq) → CH<sub>3</sub>COOH(aq) + H<sub>2</sub>O(ℓ)',
+      ions: ["CH3COO-", "Na+", "Cl-", "H3O+"], verses: ["H3O+", "Cl-"], consomme: "CH3COO-",
+      interp: {
+        avant: "Chaque ion CH<sub>3</sub>COO<sup>−</sup> consommé est <b>remplacé</b> par un ion Cl<sup>−</sup> apporté par la burette ; les ions H<sub>3</sub>O<sup>+</sup> versés sont consommés. Comme λ(Cl<sup>−</sup>) = 7,6 > λ(CH<sub>3</sub>COO<sup>−</sup>) = 4,1 mS·m²·mol⁻¹ : <b>la conductivité augmente légèrement</b>.",
+        eq: "Tous les ions éthanoate ont réagi : la pente change brusquement. C'est l'équivalence.",
+        apres: "Les ions H<sub>3</sub>O<sup>+</sup> versés ne sont plus consommés et s'accumulent avec Cl<sup>−</sup>. λ(H<sub>3</sub>O<sup>+</sup>) = 35,0 est très élevé : <b>la conductivité augmente fortement</b>."
+      }
+    }
+  };
+  function etat(sys, Ca, Va, Cb, Veau, V) {
+    const S = SYSTEMES[sys], Vt = (Va + Veau + V) / 1000; // L
+    const na = Ca * Va / 1000, nb = Cb * V / 1000;
+    const ce = na / Vt, ct = nb / Vt;
+    const Na = (S.ech.Na ? ce : 0) + (S.tit.Na ? ct : 0), Cl = (S.ech.Cl ? ce : 0) + (S.tit.Cl ? ct : 0);
+    const Ac = S.ech.Ac ? ce : 0, Cit = S.ech.Cit ? ce : 0;
+    const fr3 = h => { const [k1, k2, k3] = KC, t = [h * h * h, h * h * k1, h * k1 * k2, k1 * k2 * k3], D = t[0] + t[1] + t[2] + t[3]; return t.map(x => x / D); };
+    /* bilan de charge, en posant h = [H3O+] libre : h + Na = [HO-] + Cl + [CH3COO-] ; les apports forts H+/HO- entrent dans le bilan via Na/Cl */
+    const f = h => { let q = h + Na - KW / h - Cl - Ac * KA / (KA + h); if (Cit) { const a = fr3(h); q -= Cit * (a[1] + 2 * a[2] + 3 * a[3]); } return q; };
+    let lo = -14.5, hi = 0.5;
+    for (let i = 0; i < 90; i++) { const mid = (lo + hi) / 2; if (f(Math.pow(10, mid)) > 0) hi = mid; else lo = mid; }
+    const h = Math.pow(10, (lo + hi) / 2), oh = KW / h, A = Ac * KA / (KA + h);
+    const c = { "H3O+": h, "HO-": oh, "Na+": Na, "Cl-": Cl, "CH3COO-": A, "AH": Ac - A };
+    if (Cit) { const a = fr3(h); c.AH3 = Cit * a[0]; c["AH2-"] = Cit * a[1]; c["AH2m"] = Cit * a[2]; c["A3-"] = Cit * a[3]; }
+    let sig = 0; for (const k in LAMBDA) sig += LAMBDA[k] * (c[k] || 0) * 1000; // mS/m
+    return { sigma: sig / 100, pH: -Math.log10(h), c, Vt: Vt * 1000, na, nb, Ve: (S.nEq || 1) * Ca * Va / Cb };
+  }
+  return { LAMBDA, SYSTEMES, etat };
+})();
+
+/* ===== Scène 3D réaliste du titrage conductimétrique (three.js r128) =====
+   Unités : centimètres, dimensions du vrai matériel.
+   Burette de 25 mL (Ø int. 10 mm → 1,27 cm par mL, bande de Schellbach, robinet PTFE),
+   bécher 150 mL forme basse, agitateur magnétique et barreau PTFE, potence + noix + pinces,
+   cellule de conductimétrie (2 plaques de platine platiné), conductimètre à afficheur LCD 7 segments. */
+const SCENE = (function () {
+  const CFG = window.CFG || { mode: "cond" };
+  const T = window.THREE;
+  let ok = false, R, scene, cam, hote, W = 1, H = 1, etiqOn = true;
+  const O = {}, etiq = [], gouttes = [], ronds = [];
+  const vue = { th: .38, ph: 1.32, d: 132, cx: 3, cy: 34, cz: 0, k: 1 }, cible = Object.assign({}, vue); let vueNom = "ensemble";
+  const VUES = {
+    ensemble: { th: .38, ph: 1.32, d: 132, cx: 3, cy: 34, cz: 0 },
+    burette: { th: .02, ph: 1.57, d: 16, cx: .9, cy: 57, cz: -1.1 },
+    becher: { th: .3, ph: 1.2, d: 44, cx: 0, cy: 15, cz: 0 },
+    appareil: { th: -.35, ph: 1.0, d: 34, cx: 23, cy: 4, cz: 3 },
+    tampons: { th: .15, ph: 1.12, d: 46, cx: -7, cy: 7, cz: 13 }
+  };
+  /* géométrie du montage */
+  const Y_PLAT = 8.4, BEC = { r: 3.5, ri: 3.35, h: 9.6 }, BUR = { x: 1.05, z: 0, yTip: 19.2, yRob: 22.2, y25: 25.2, k: 1.27, ri: .5, ro: .6 };
+  BUR.y0 = BUR.y25 + 25 * BUR.k; BUR.yHaut = BUR.y0 + 4.5;
+  const CEL = { x: -1.05, z: 0 }; /* burette et sonde centrées dans le bécher, de part et d'autre de l'axe ; sonde au-dessus du barreau */
+  const etat = { Vbur: -1, remplie: false, robinet: 0, robCible: 0, debit: 0, Vbec: 0, couleur: 0xd8ecff, agit: 0, agitCible: 0, celluleIn: 0, celCible: 0, celLieu: null, etal: false, burMont: 0, burCible: 0, becherVu: 0, becVuCible: 0, poubelle: 0, lcd: "", lcdU: "mS/cm" };
+
+  const mat = (c, r, me, o) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: r == null ? .5 : r, metalness: me || 0 }, o || {}));
+  const verre = (op) => new T.MeshPhysicalMaterial({ color: 0xf4f8ff, roughness: .04, metalness: 0, transparent: true, opacity: op || .22, side: T.DoubleSide, depthWrite: false, clearcoat: 1, clearcoatRoughness: .03, envMapIntensity: 1.6, reflectivity: .5 });
+  function mesh(g, ma, x, y, z, ombre) { const k = new T.Mesh(g, ma); k.position.set(x || 0, y || 0, z || 0); if (ombre !== false) { k.castShadow = true; k.receiveShadow = true; } return k; }
+  function cvs(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+  function tex(cv) { const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding; t.anisotropy = R ? R.capabilities.getMaxAnisotropy() : 4; return t; }
+  function cyl(a, b, r, ma, seg) { /* cylindre entre deux points */
+    const va = new T.Vector3(...a), vb = new T.Vector3(...b), l = va.distanceTo(vb);
+    const k = mesh(new T.CylinderGeometry(r, r, l, seg || 20), ma); k.position.copy(va).lerp(vb, .5);
+    k.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), vb.clone().sub(va).normalize()); return k;
+  }
+  function boiteArrondie(w, h, d, r, ma) {
+    const s = new T.Shape(), x = -w / 2, y = -d / 2;
+    s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + d - r); s.quadraticCurveTo(x + w, y + d, x + w - r, y + d);
+    s.lineTo(x + r, y + d); s.quadraticCurveTo(x, y + d, x, y + d - r); s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+    const g = new T.ExtrudeGeometry(s, { depth: h - .4, bevelEnabled: true, bevelThickness: .2, bevelSize: .2, bevelSegments: 3, curveSegments: 6 });
+    g.rotateX(-Math.PI / 2); g.translate(0, .2, 0); return mesh(g, ma);
+  }
+  function etiquette(txt, x, y, z, parent) {
+    const cv = cvs(512, 96), c = cv.getContext("2d");
+    c.font = "700 38px Atkinson Hyperlegible, Arial, sans-serif"; const w = Math.min(500, c.measureText(txt).width + 40), x0 = (512 - w) / 2;
+    c.fillStyle = "rgba(255,255,255,.95)"; c.strokeStyle = "#4A148C"; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(x0 + 20, 10); c.arcTo(x0 + w, 10, x0 + w, 86, 20); c.arcTo(x0 + w, 86, x0, 86, 20); c.arcTo(x0, 86, x0, 10, 20); c.arcTo(x0, 10, x0 + w, 10, 20); c.fill(); c.stroke();
+    c.fillStyle = "#4A148C"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(txt, 256, 49);
+    const s = new T.Sprite(new T.SpriteMaterial({ map: tex(cv), depthTest: false, transparent: true, sizeAttenuation: false }));
+    s.scale.set(.17, .032, 1); s.position.set(x, y, z); s.renderOrder = 20; (parent || scene).add(s); etiq.push(s); return s;
+  }
+
+  /* ---------- textures ---------- */
+  function texBurette() { /* graduations sur toute la circonférence (u = 0,5 → face avant) */
+    const cv = cvs(512, 4096), c = cv.getContext("2d"), Hh = 4096, L = BUR.yHaut - BUR.y25 + 1.5; // de y25-1.5 à yHaut
+    const yPix = y => Hh - (y - (BUR.y25 - 1.5)) / L * Hh;
+    c.clearRect(0, 0, 512, Hh);
+    /* bande de Schellbach (à l'arrière) : fond blanc laiteux + filet bleu */
+    c.fillStyle = "rgba(255,255,255,.9)"; c.fillRect(0, 0, 70, Hh); c.fillRect(442, 0, 70, Hh);
+    c.fillStyle = "#1565C0"; c.fillRect(0, 0, 9, Hh); c.fillRect(503, 0, 9, Hh);
+    c.strokeStyle = "#141414"; c.fillStyle = "#141414"; c.textBaseline = "middle";
+    for (let i = 0; i <= 250; i++) { // tous les 0,1 mL
+      const v = i / 10, y = yPix(BUR.y0 - v * BUR.k), ml = i % 10 === 0, demi = i % 5 === 0;
+      c.lineWidth = ml ? 5 : 2.8; const a = ml ? 200 : demi ? 222 : 232, b = ml ? 314 : demi ? 292 : 282;
+      c.beginPath(); c.moveTo(a, y); c.lineTo(b, y); c.stroke();
+      if (ml) { c.font = "700 46px Arial"; c.textAlign = "right"; c.fillText(String(v), 194, y - 2); }
+    }
+    c.font = "700 26px Arial"; c.textAlign = "center";
+    c.save(); c.translate(256, yPix(BUR.y0 + 1.1)); c.fillText("25 mL ± 0,03", 0, 0); c.fillText("AS  20 °C  Ex", 0, 34); c.restore();
+    const t = tex(cv); return t;
+  }
+  function texLCD(ctx, val, unite, temp, w, h) {
+    ctx.fillStyle = "#c5d3a6"; ctx.fillRect(0, 0, w, h);
+    const g = ctx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "rgba(255,255,255,.18)"); g.addColorStop(1, "rgba(0,0,0,.08)"); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    seg7(ctx, val, w * .06, h * .16, h * .5, "#1d2215");
+    ctx.fillStyle = "#1d2215"; ctx.font = "700 " + (h * .13) + "px Arial"; ctx.textAlign = "right"; ctx.fillText(unite, w * .95, h * .62);
+    ctx.font = (h * .11) + "px Arial"; ctx.textAlign = "left"; ctx.fillText(temp, w * .06, h * .88); ctx.textAlign = "right"; ctx.fillText(CFG.mode === "ph" ? (etat.etal ? "étalonné · pente 99 %" : "NON ÉTALONNÉ") : "K = 1,00 cm⁻¹   ATC", w * .95, h * .88);
+  }
+  function seg7(c, txt, x, y, h, coul) { /* afficheur 7 segments dessiné, 4 chiffres + point */
+    const S = { "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg", "-": "g", " ": "" };
+    const w = h * .52, e = h * .1, pas = w + h * .2; let cx = x;
+    const on = coul, off = "rgba(29,34,21,.07)";
+    for (let i = 0; i < txt.length; i++) {
+      const ch = txt[i]; if (ch === "." || ch === ",") { c.fillStyle = on; c.fillRect(cx - h * .16, y + h - e, e, e); continue; }
+      const segs = S[ch] || ""; const P = {
+        a: [cx + e, y, w - 2 * e, e], d: [cx + e, y + h - e, w - 2 * e, e], g: [cx + e, y + h / 2 - e / 2, w - 2 * e, e],
+        f: [cx, y + e, e, h / 2 - 1.5 * e], b: [cx + w - e, y + e, e, h / 2 - 1.5 * e], e: [cx, y + h / 2 + e / 2, e, h / 2 - 1.5 * e], c: [cx + w - e, y + h / 2 + e / 2, e, h / 2 - 1.5 * e]
+      };
+      for (const k in P) { c.fillStyle = segs.includes(k) ? on : off; const [a, b, ww, hh] = P[k]; c.save(); c.translate(a + ww / 2, b + hh / 2); c.transform(1, 0, -.12, 1, 0, 0); c.fillRect(-ww / 2, -hh / 2, ww, hh); c.restore(); }
+      cx += pas;
+    }
+  }
+  function texEtiquetteFlacon(lignes, pictos) {
+    const cv = cvs(512, 256), c = cv.getContext("2d");
+    c.fillStyle = "#fff"; c.fillRect(0, 0, 512, 256); c.fillStyle = "#4A148C"; c.fillRect(0, 0, 512, 46);
+    c.fillStyle = "#fff"; c.font = "700 28px Arial"; c.textAlign = "left"; c.fillText(lignes[0], 16, 33);
+    c.fillStyle = "#111"; c.font = "26px Arial"; lignes.slice(1).forEach((l, i) => c.fillText(l, 16, 90 + i * 36));
+    if (pictos) { /* pictogramme SGH05 corrosif (losange rouge) */
+      c.save(); c.translate(440, 150); c.rotate(Math.PI / 4); c.fillStyle = "#fff"; c.strokeStyle = "#d50000"; c.lineWidth = 8; c.fillRect(-46, -46, 92, 92); c.strokeRect(-46, -46, 92, 92); c.restore();
+      c.fillStyle = "#111"; c.fillRect(412, 128, 14, 6); c.fillRect(452, 128, 14, 6); c.beginPath(); c.arc(419, 146, 4, 0, 7); c.arc(459, 146, 4, 0, 7); c.fill(); c.fillRect(404, 168, 72, 8); c.fillRect(410, 160, 20, 8);
+    }
+    return tex(cv);
+  }
+  function texGradBecher() {
+    const cv = cvs(512, 512), c = cv.getContext("2d"); c.clearRect(0, 0, 512, 512);
+    c.fillStyle = "rgba(255,255,255,.95)"; c.strokeStyle = "rgba(255,255,255,.95)"; c.lineWidth = 6; c.font = "700 34px Arial"; c.textAlign = "left";
+    /* hauteur utile 0..BEC.h ↔ 512..0 ; 1 mL = 1/(π ri²) cm */
+    const hml = 1 / (Math.PI * BEC.ri * BEC.ri);
+    [50, 100, 150, 200].forEach(v => { const y = 512 - (v * hml + .25) / BEC.h * 512; c.beginPath(); c.moveTo(210, y); c.lineTo(v % 100 === 0 ? 300 : 300, y); c.stroke(); if (true) c.fillText(String(v), 310, y + 12); });
+    c.font = "700 30px Arial"; c.fillText("250 mL", 200, 70); c.font = "26px Arial"; c.fillText("≈ 5 %", 210, 128);
+    /* plage blanche émaillée pour écrire */
+    c.globalAlpha = .55; c.fillRect(196, 400, 150, 60); c.globalAlpha = 1;
+    return tex(cv);
+  }
+
+  /* ---------- objets ---------- */
+  function construit() {
+    scene = new T.Scene();
+    const pm = new T.PMREMGenerator(R), env = new T.Scene();
+    env.add(new T.Mesh(new T.BoxGeometry(300, 300, 300), new T.MeshBasicMaterial({ color: 0xa79fb5, side: T.BackSide })));
+    [[0, 120, 0, 160, 80, 0xffffff], [-130, 40, 40, 60, 110, 0xf3eefa], [120, 50, -40, 70, 90, 0xfff6ec], [0, 30, 140, 160, 40, 0xe9e4f0]].forEach(([x, y, z, w, h, col]) => {
+      const p = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: col, side: T.DoubleSide })); p.position.set(x, y, z); p.lookAt(0, 0, 0); env.add(p);
+    });
+    scene.environment = pm.fromScene(env, .03).texture;
+    scene.add(new T.HemisphereLight(0xffffff, 0xc9bdd8, .45));
+    const sol = new T.DirectionalLight(0xfffaf3, .95); sol.position.set(35, 95, 55); sol.castShadow = true;
+    sol.shadow.mapSize.set(2048, 2048); Object.assign(sol.shadow.camera, { left: -55, right: 55, top: 80, bottom: -40, near: 10, far: 260 }); sol.shadow.bias = -.0003; sol.shadow.normalBias = .02;
+    scene.add(sol);
+    const fill = new T.DirectionalLight(0xe9e0ff, .35); fill.position.set(-60, 40, 30); scene.add(fill);
+
+    /* paillasse en résine (gris clair) avec chant */
+    const pt = cvs(512, 512), pc = pt.getContext("2d"); pc.fillStyle = "#dcd8e2"; pc.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 9000; i++) { pc.fillStyle = `rgba(${Math.random() < .5 ? "255,255,255" : "90,80,110"},${Math.random() * .06})`; pc.fillRect(Math.random() * 512, Math.random() * 512, 2, 2); }
+    const ptx = tex(pt); ptx.wrapS = ptx.wrapT = T.RepeatWrapping; ptx.repeat.set(4, 2);
+    scene.add(mesh(new T.BoxGeometry(130, 3, 56), mat(0xffffff, .78, 0, { map: ptx }), 4, -1.5, 4));
+    scene.add(mesh(new T.BoxGeometry(130, 3.2, .8), mat(0x4A148C, .55), 4, -1.6, 32.4));
+
+    /* --- potence : socle en fonte laquée, tige inox --- */
+    const fonte = mat(0x2d2a33, .55, .35), inox = mat(0xe4e6ec, .22, .55), noixM = mat(0xa9acb5, .35, .5);
+    const socle = boiteArrondie(26, 1.4, 25, 1.2, fonte); socle.position.set(0, 0, -2.5); scene.add(socle);
+    const tigeX = 0, tigeZ = -12.6;
+    scene.add(cyl([tigeX, 1.2, tigeZ], [tigeX, 74, tigeZ], .6, inox, 28));
+    scene.add(mesh(new T.CylinderGeometry(1.2, 1.4, 1.2, 24), fonte, tigeX, 1.9, tigeZ));
+    function noix(y, angle) { /* noix de serrage (double vis papillon) */
+      const g = new T.Group(); g.position.set(tigeX, y, tigeZ); g.rotation.y = angle || 0;
+      g.add(mesh(new T.BoxGeometry(2.4, 2.4, 3.6), noixM, 0, 0, .6));
+      const vis1 = cyl([-1.2, 0, 0], [-3, 0, 0], .22, inox); g.add(vis1); g.add(mesh(new T.BoxGeometry(.4, 1.8, .5), mat(0x222, .5), -3.1, 0, 0));
+      const vis2 = cyl([0, 1.2, 1.4], [0, 2.8, 1.4], .22, inox); g.add(vis2); g.add(mesh(new T.BoxGeometry(1.8, .4, .5), mat(0x222, .5), 0, 2.9, 1.4));
+      scene.add(g); return g;
+    }
+    /* pince à burette (double, mâchoires gainées) */
+    const yP = BUR.y0 + 3.3;
+    noix(yP, 0);
+    const brasZ0 = tigeZ + 2.2, brasZ1 = BUR.z - 1.1;
+    scene.add(cyl([BUR.x, yP, brasZ0], [BUR.x, yP, brasZ1], .32, inox));
+    const pince = new T.Group(); pince.position.set(BUR.x, yP, BUR.z); scene.add(pince); O.pince = pince;
+    const plast = mat(0x1e88e5, .5), caout = mat(0x222226, .8);
+    pince.add(mesh(new T.BoxGeometry(3.6, 1.6, .7), mat(0x9ea2ab, .3, .8), 0, 0, -1.2));
+    [-1, 1].forEach(s => {
+      const bras = mesh(new T.BoxGeometry(.5, 1.3, 2.4), plast, s * 1.35, 0, -.2); pince.add(bras);
+      pince.add(mesh(new T.CylinderGeometry(.18, .18, 1.2, 10), caout, s * (BUR.ro + .2), 0, 0));
+    });
+    pince.add(mesh(new T.TorusGeometry(1.5, .14, 8, 24, Math.PI), mat(0x9ea2ab, .3, .8), 0, 0, -1.2).rotateX(Math.PI / 2));
+    /* pince 3 doigts pour la cellule */
+    const yC = Y_PLAT + 1.25 + 10.9; noix(yC, -.12);
+    scene.add(cyl([tigeX, yC, tigeZ + 2.2], [CEL.x - .2, yC, CEL.z - 1.3], .3, inox));
+    const p2 = new T.Group(); p2.position.set(CEL.x, yC, CEL.z); scene.add(p2);
+    for (let i = 0; i < 3; i++) { const a = i * 2.1 + .5; p2.add(mesh(new T.BoxGeometry(.3, 1.1, 1.2), mat(0x9ea2ab, .35, .5), Math.cos(a) * 1.0, 0, Math.sin(a) * 1.0).rotateY(-a)); }
+    O.pinceCel = p2;
+
+    /* --- agitateur magnétique (corps blanc, plateau céramique, 2 boutons, voyant) --- */
+    const ag = new T.Group(); ag.position.set(0, 1.4, 0); scene.add(ag);
+    const corps = boiteArrondie(15, 5.8, 16.5, 1.3, mat(0xf2f1f4, .38)); ag.add(corps);
+    const face = mesh(new T.BoxGeometry(13.6, 3.4, .3), mat(0x4A148C, .45), 0, 2.9, 8.3); ag.add(face);
+    const plateau = mesh(new T.CylinderGeometry(6.4, 6.4, 1.0, 64), mat(0xe9e7ee, .22, .05), 0, 6.5, 0); ag.add(plateau);
+    ag.add(mesh(new T.TorusGeometry(6.4, .12, 8, 64), mat(0xbdbac6, .3, .6), 0, 7.0, 0).rotateX(Math.PI / 2));
+    function bouton(x, coul) {
+      const g = new T.Group(); g.position.set(x, 2.9, 8.55); g.rotation.x = Math.PI / 2;
+      g.add(mesh(new T.CylinderGeometry(1.25, 1.35, 1.1, 32), mat(0x26222c, .45)));
+      g.add(mesh(new T.BoxGeometry(.22, 1.2, .9), mat(coul, .4), 0, -.18, -.7));
+      ag.add(g); return g;
+    }
+    O.boutonVit = bouton(3.2, 0xffffff); bouton(-3.2, 0xff7043);
+    const fl = cvs(1024, 256), fc = fl.getContext("2d"); fc.fillStyle = "#4A148C"; fc.fillRect(0, 0, 1024, 256); fc.fillStyle = "#fff"; fc.textAlign = "center";
+    fc.font = "700 34px Arial"; fc.fillText("CHAUFFAGE", 271, 228); fc.fillText("AGITATION", 753, 228);
+    fc.font = "26px Arial"; ["0", "300", "600", "900", "1200", "1500"].forEach((t, i) => { const a = Math.PI * (.8 + i * .28); fc.fillText(t, 753 + Math.cos(a) * 118, 118 + Math.sin(a) * 92); });
+    ag.add(mesh(new T.PlaneGeometry(13.6, 3.4), new T.MeshStandardMaterial({ map: tex(fl), roughness: .5 }), 0, 2.9, 8.46, false));
+    O.voyant = mesh(new T.SphereGeometry(.28, 16, 10), mat(0x3a3a3a, .3, 0, { emissive: 0x000000 }), 0, 3.8, 8.5, false); ag.add(O.voyant);
+    etiquette("Agitateur magnétique", -12, 3, 9);
+
+    /* --- bécher 150 mL forme basse (verre épais, bec verseur) --- */
+    const bc = new T.Group(); bc.position.set(0, Y_PLAT, 0); scene.add(bc); O.becher = bc;
+    const prof = [[0, 0], [BEC.r - .35, 0], [BEC.r - .05, .12], [BEC.r, .45], [BEC.r, BEC.h], [BEC.r + .12, BEC.h + .08], [BEC.r + .12, BEC.h + .2], [BEC.ri + .02, BEC.h + .2], [BEC.ri, BEC.h], [BEC.ri, .5], [BEC.ri - .3, .26], [0, .26]].map(p => new T.Vector2(p[0], p[1]));
+    bc.add(mesh(new T.LatheGeometry(prof, 72), verre(.2), 0, 0, 0, false));
+    const bec = mesh(new T.TorusGeometry(.5, .11, 8, 16, Math.PI), verre(.35), 0, BEC.h + .14, BEC.r + .05, false); bec.rotation.set(Math.PI / 2, 0, 0); bec.rotation.y = 0; bc.add(bec);
+    const grad = mesh(new T.CylinderGeometry(BEC.r + .015, BEC.r + .015, BEC.h, 64, 1, true, -.75, 1.5), new T.MeshBasicMaterial({ map: texGradBecher(), transparent: true, depthWrite: false }), 0, BEC.h / 2, 0, false);
+    grad.renderOrder = 5; bc.add(grad);
+    /* liquide : colonne + surface (vortex) */
+    O.liq = mesh(new T.CylinderGeometry(BEC.ri - .04, BEC.ri - .04, 1, 64, 1, true), new T.MeshPhysicalMaterial({ color: 0x8fc1ec, roughness: .05, transparent: true, opacity: .6, side: T.DoubleSide, depthWrite: false, clearcoat: 1 }), 0, 0, 0, false);
+    O.liq.renderOrder = 2; bc.add(O.liq);
+    O.fond = mesh(new T.CircleGeometry(BEC.ri - .04, 64), O.liq.material, 0, .27, 0, false); O.fond.rotation.x = -Math.PI / 2; bc.add(O.fond);
+    const sg = new T.CircleGeometry(BEC.ri - .04, 64, 0, Math.PI * 2); sg.rotateX(-Math.PI / 2); O.surfBase = sg.attributes.position.array.slice();
+    O.surf = mesh(sg, new T.MeshPhysicalMaterial({ color: 0xb8dbf7, roughness: .02, transparent: true, opacity: .75, side: T.DoubleSide, depthWrite: false, clearcoat: 1, envMapIntensity: 2 }), 0, 1, 0, false);
+    O.surf.renderOrder = 3; bc.add(O.surf);
+    /* barreau aimanté PTFE avec anneau central */
+    const bp = []; for (let i = 0; i <= 12; i++) { const a = -Math.PI / 2 + i / 12 * Math.PI; bp.push(new T.Vector2(Math.cos(a) * .3, 1.1 + Math.sin(a) * .3)); }
+    const bpts = bp.map(p => p.clone()).reverse().map(p => new T.Vector2(p.x, -p.y)).concat(bp);
+    const barreau = mesh(new T.LatheGeometry(bpts, 20), mat(0xffffff, .35)); barreau.rotation.z = Math.PI / 2;
+    const bg = new T.Group(); bg.add(barreau); bg.add(mesh(new T.TorusGeometry(.31, .07, 8, 20), mat(0xdddddd, .3), 0, 0, 0).rotateY(Math.PI / 2));
+    bg.position.y = .58; bc.add(bg); O.barreau = bg;
+    O.becherOmbre = null;
+    etiquette("Bécher 250 mL", 7.5, Y_PLAT + 5, 3);
+
+    /* bécher de récupération (pour l'ajustage du zéro) */
+    const bp2 = new T.Group(); bp2.position.set(0, Y_PLAT, 0); scene.add(bp2); O.poubelle = bp2; bp2.visible = false;
+    bp2.add(mesh(new T.LatheGeometry([[0, 0], [2.2, 0], [2.25, .3], [2.25, 5.5], [2.35, 5.65], [2.1, 5.65], [2.1, .3], [0, .3]].map(p => new T.Vector2(p[0], p[1])), 48), verre(.25), 0, 0, 0, false));
+    bp2.add(mesh(new T.CylinderGeometry(2.05, 2.05, .6, 40), mat(0xd8ecff, .1, 0, { transparent: true, opacity: .45 }), 0, .62, 0, false));
+    const tp = cvs(256, 64), tpc = tp.getContext("2d"); tpc.fillStyle = "#fff"; tpc.fillRect(0, 0, 256, 64); tpc.fillStyle = "#c62828"; tpc.font = "700 30px Arial"; tpc.textAlign = "center"; tpc.fillText("Récupération", 128, 42);
+    bp2.add(mesh(new T.CylinderGeometry(2.27, 2.27, 1.2, 40, 1, true, -.6, 1.2), new T.MeshBasicMaterial({ map: tex(tp) }), 0, 3, 0, false));
+
+    /* --- burette graduée 25 mL --- */
+    const bu = new T.Group(); scene.add(bu); O.burette = bu;
+    const vBur = verre(.2);
+    const profil = [[BUR.ri, BUR.y25 - 1.2], [BUR.ri, BUR.yHaut], [BUR.ri + .55, BUR.yHaut + 1.6], [BUR.ri + .7, BUR.yHaut + 1.6], [BUR.ro + .55, BUR.yHaut + 1.5], [BUR.ro, BUR.yHaut - .1], [BUR.ro, BUR.y25 - 1.2]].map(p => new T.Vector2(p[0], p[1]));
+    bu.add(mesh(new T.LatheGeometry(profil, 40), vBur, BUR.x, 0, BUR.z, false));
+    /* rétrécissement vers le robinet */
+    bu.add(mesh(new T.CylinderGeometry(BUR.ro, .3, BUR.y25 - 1.2 - (BUR.yRob + .55), 28, 1, true), vBur, BUR.x, (BUR.y25 - 1.2 + BUR.yRob + .55) / 2, BUR.z, false));
+    /* graduations + bande de Schellbach */
+    const gtex = texBurette(), Lg = BUR.yHaut - BUR.y25 + 1.5;
+    const gr = mesh(new T.CylinderGeometry(BUR.ro + .004, BUR.ro + .004, Lg, 64, 1, true, -Math.PI, Math.PI * 2), new T.MeshBasicMaterial({ map: gtex, transparent: true, depthWrite: false, side: T.DoubleSide, alphaTest: .02 }), BUR.x, BUR.y25 - 1.5 + Lg / 2, BUR.z, false);
+    gr.renderOrder = 6; bu.add(gr);
+    /* robinet : boisseau en verre + clé PTFE */
+    const rob = new T.Group(); rob.position.set(BUR.x, BUR.yRob, BUR.z); rob.rotation.y = -Math.PI / 2; bu.add(rob); O.robinet = rob; /* clé tournée vers l'élève, hors du chemin de la sonde */
+    rob.add(mesh(new T.CylinderGeometry(.55, .45, 2.6, 24), verre(.32), 0, 0, 0, false).rotateZ(Math.PI / 2));
+    rob.add(mesh(new T.CylinderGeometry(.42, .42, .7, 20), vBur, 0, .55, 0, false));
+    const cle = new T.Group(); rob.add(cle); O.cle = cle;
+    cle.add(mesh(new T.CylinderGeometry(.36, .3, 3.0, 20), mat(0xf5f5f5, .55), 0, 0, 0).rotateZ(Math.PI / 2));
+    const poignee = mesh(new T.BoxGeometry(.32, .9, 2.4), mat(0x1976d2, .45), 1.75, 0, 0); cle.add(poignee); O.poignee = poignee;
+    cle.add(mesh(new T.CylinderGeometry(.45, .45, .3, 20), mat(0x1976d2, .45), -1.55, 0, 0).rotateZ(Math.PI / 2));
+    cle.add(mesh(new T.TorusGeometry(.38, .08, 8, 20), mat(0x1976d2, .5), -1.75, 0, 0).rotateY(Math.PI / 2));
+    /* bec (pointe effilée) */
+    bu.add(mesh(new T.CylinderGeometry(.24, .1, BUR.yRob - .45 - BUR.yTip, 18, 1, true), verre(.35), BUR.x, (BUR.yRob - .45 + BUR.yTip) / 2, BUR.z, false));
+    /* solution titrante dans la burette + ménisque concave */
+    const lm = new T.MeshPhysicalMaterial({ color: 0xa9d2f5, roughness: .05, transparent: true, opacity: .55, depthWrite: false, side: T.DoubleSide });
+    O.colBur = mesh(new T.CylinderGeometry(BUR.ri - .02, BUR.ri - .02, 1, 28, 1, true), lm, BUR.x, 0, BUR.z, false); O.colBur.renderOrder = 4; bu.add(O.colBur);
+    O.colBas = mesh(new T.CylinderGeometry(BUR.ro - .1, .14, BUR.y25 - 1.2 - (BUR.yRob + .55), 24, 1, true), lm, BUR.x, (BUR.y25 - 1.2 + BUR.yRob + .55) / 2, BUR.z, false); bu.add(O.colBas);
+    const men = []; for (let i = 0; i <= 10; i++) { const r = i / 10 * (BUR.ri - .02); men.push(new T.Vector2(r, .16 * Math.pow(i / 10, 3))); }
+    O.menisque = mesh(new T.LatheGeometry(men, 28), new T.MeshStandardMaterial({ color: 0x5c6f86, roughness: .2, transparent: true, opacity: .85, side: T.DoubleSide }), BUR.x, 0, BUR.z, false);
+    bu.add(O.menisque);
+    etiquette("Burette graduée 25 mL", 6.2, BUR.y0 - 6, BUR.z, bu);
+    etiquette("Robinet (clé PTFE)", 12, BUR.yRob + 2, BUR.z, bu);
+    etiquette("Potence", -3, 66, tigeZ);
+
+    const ce = new T.Group(); scene.add(ce); O.cellule = ce;
+    if (CFG.mode !== "ph") {
+    /* --- cellule de conductimétrie --- */
+    ce.add(mesh(new T.CylinderGeometry(.62, .62, 9.8, 28), mat(0x1c1b20, .4), 0, 6.4, 0));
+    ce.add(mesh(new T.CylinderGeometry(.66, .66, .9, 28), mat(0x4A148C, .4), 0, 11.6, 0));
+    ce.add(mesh(new T.CylinderGeometry(.34, .5, 1.6, 20), mat(0x2a2930, .5), 0, 12.8, 0));
+    /* cloche de protection en verre ouverte, 2 plaques de platine platiné */
+    ce.add(mesh(new T.CylinderGeometry(.75, .75, 1.9, 28, 1, true), verre(.35), 0, .95 + .1, 0, false));
+    [-1, 1].forEach(s => { ce.add(mesh(new T.BoxGeometry(.06, .95, .9), mat(0x2b2b2e, .9, .2), s * .28, .9, 0, false)); ce.add(mesh(new T.CylinderGeometry(.03, .03, 1.2, 6), mat(0xd7d7d7, .3, .9), s * .28, 1.9, 0, false)); });
+    ce.position.set(CEL.x, Y_PLAT + 1.25 + 12, CEL.z);
+      etiquette("Cellule de conductimétrie", -12, 30, 3);
+    } else {
+      /* électrode combinée de pH : corps en verre, électrolyte KCl, réf. Ag/AgCl, membrane sphérique, diaphragme céramique */
+      const epoxy = mat(0x34495e, .45);
+      ce.add(mesh(new T.CylinderGeometry(.6, .6, 9.6, 28), epoxy, 0, 7.4, 0));
+      /* cage de protection ajourée (4 montants) autour de la membrane */
+      for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + .4; ce.add(mesh(new T.BoxGeometry(.22, 2.0, .22), epoxy, Math.cos(a) * .5, 1.65, Math.sin(a) * .5)); }
+      ce.add(mesh(new T.TorusGeometry(.5, .09, 8, 24), epoxy, 0, .62, 0).rotateX(Math.PI / 2));
+      ce.add(mesh(new T.CylinderGeometry(.22, .22, 2.0, 16), verre(.5), 0, 1.6, 0, false));
+      ce.add(mesh(new T.SphereGeometry(.36, 24, 16), new T.MeshPhysicalMaterial({ color: 0xdfeeff, roughness: .05, transparent: true, opacity: .75, clearcoat: 1 }), 0, .78, 0, false));
+      ce.add(mesh(new T.CylinderGeometry(.1, .1, .14, 10), mat(0xe8e0d0, .9), .6, 2.9, 0).rotateZ(Math.PI / 2));
+      const et = cvs(256, 64), etc = et.getContext("2d"); etc.fillStyle = "#34495e"; etc.fillRect(0, 0, 256, 64); etc.fillStyle = "#fff"; etc.font = "700 34px Arial"; etc.textAlign = "center"; etc.fillText("pH 0–14", 128, 44);
+      ce.add(mesh(new T.CylinderGeometry(.605, .605, 2.4, 28, 1, true, -.6, 1.2), new T.MeshBasicMaterial({ map: tex(et) }), 0, 7.5, 0, false));
+      ce.add(mesh(new T.CylinderGeometry(.66, .66, 1.6, 28), mat(0x4A148C, .45), 0, 12.8, 0));
+      ce.add(mesh(new T.CylinderGeometry(.34, .5, 1.4, 20), mat(0x2a2930, .5), 0, 14.1, 0));
+      ce.userData.haut = 14.8;
+      ce.position.set(CEL.x, Y_PLAT + 1.25 + 12, CEL.z);
+      etiquette("Électrode combinée de pH", -12, 30, 3);
+      /* béchers de solutions tampons pour l'étalonnage */
+      O.tampons = {};
+      [["t7", -10.5, 13, 0xf6d23a, "Tampon pH 7,00"], ["t4", -4.2, 14.5, 0xf06292, "Tampon pH 4,00"]].forEach(([k, x, z, col, txt]) => {
+        const g = new T.Group(); g.position.set(x, 0, z); scene.add(g);
+        g.add(mesh(new T.LatheGeometry([[0, 0], [2.1, 0], [2.15, .25], [2.15, 5.6], [2.27, 5.72], [2.0, 5.72], [2.0, .25], [0, .25]].map(p => new T.Vector2(p[0], p[1])), 48), verre(.25), 0, 0, 0, false));
+        g.add(mesh(new T.CylinderGeometry(1.95, 1.95, 2.6, 40), new T.MeshPhysicalMaterial({ color: col, roughness: .1, transparent: true, opacity: .55, depthWrite: false }), 0, 1.55, 0, false));
+        const cv = cvs(256, 96), c = cv.getContext("2d"); c.fillStyle = "#fff"; c.fillRect(0, 0, 256, 96); c.fillStyle = "#333"; c.font = "700 30px Arial"; c.textAlign = "center"; c.fillText(txt, 128, 58);
+        g.add(mesh(new T.CylinderGeometry(2.17, 2.17, 1.2, 40, 1, true, -.75, 1.5), new T.MeshBasicMaterial({ map: tex(cv) }), 0, 4.2, 0, false));
+        O.tampons[k] = { x, z };
+      });
+      etiquette("Solutions tampons", -7, 9, 16);
+    }
+
+    /* --- conductimètre de paillasse --- */
+    const ap = new T.Group(); ap.position.set(23, 0, 3); ap.rotation.y = -.35; scene.add(ap); O.appareil = ap;
+    /* boîtier en biseau : profil (z, y) extrudé selon x */
+    const pr = new T.Shape(); pr.moveTo(-8, 0); pr.lineTo(8, 0); pr.lineTo(8, 2.6); pr.quadraticCurveTo(8, 3.2, 7.4, 3.3); pr.lineTo(-7, 6.4); pr.quadraticCurveTo(-8, 6.6, -8, 5.6); pr.lineTo(-8, 0);
+    const bgeo = new T.ExtrudeGeometry(pr, { depth: 14, bevelEnabled: true, bevelThickness: .25, bevelSize: .25, bevelSegments: 3 });
+    bgeo.rotateY(-Math.PI / 2); bgeo.translate(7, 0, 0); ap.add(mesh(bgeo, mat(0xf3f2f6, .4)));
+    const pan = new T.Group(); const pente = Math.atan2(6.4 - 3.3, 7.4 + 7); pan.position.set(0, (3.3 + 6.4) / 2 + .27, (7.4 - 7) / 2 + .1); pan.rotation.x = pente; ap.add(pan);
+    pan.add(mesh(new T.PlaneGeometry(13, 14.2), mat(0x2d1b4e, .5), 0, 0, 0, false).rotateX(-Math.PI / 2));
+    const lcdC = cvs(1024, 512); O.lcdCtx = lcdC.getContext("2d"); O.lcdTex = tex(lcdC);
+    const lcd = mesh(new T.PlaneGeometry(10, 5), new T.MeshStandardMaterial({ map: O.lcdTex, roughness: .25, emissive: 0xffffff, emissiveMap: O.lcdTex, emissiveIntensity: .35 }), 0, .1, -2.6, false); lcd.rotation.x = -Math.PI / 2; pan.add(lcd);
+    pan.add(mesh(new T.BoxGeometry(10.6, .12, 5.6), mat(0x15101f, .4), 0, 0, -2.6, false));
+    const bl = cvs(1024, 320), bcx = bl.getContext("2d"); bcx.fillStyle = "#2d1b4e"; bcx.fillRect(0, 0, 1024, 320); bcx.fillStyle = "#fff"; bcx.font = "700 46px Arial"; bcx.textAlign = "center";
+    bcx.fillText(CFG.mode === "ph" ? "pH-MÈTRE" : "CONDUCTIMÈTRE", 512, 64); bcx.font = "34px Arial"; ["MODE", "CAL", "RANGE", "HOLD"].forEach((t, i) => bcx.fillText(t, 140 + i * 248, 290));
+    const pl = mesh(new T.PlaneGeometry(12.4, 3.9), new T.MeshBasicMaterial({ map: tex(bl) }), 0, .02, 3.6, false); pl.rotation.x = -Math.PI / 2; pan.add(pl);
+    [-4.65, -1.55, 1.55, 4.65].forEach((x, i) => { pan.add(mesh(new T.CylinderGeometry(.8, .8, .35, 24), mat(i === 3 ? 0xC2185B : 0xe1bee7, .4), x, .18, 3.5)); });
+    ap.add(mesh(new T.CylinderGeometry(.55, .55, 1, 16), mat(0x9a9aa3, .3, .6), -4.5, 3, -8.5).rotateX(Math.PI / 2));
+    etiquette(CFG.mode === "ph" ? "pH-mètre" : "Conductimètre", 23, 11, 3);
+    /* câble de la cellule vers l'appareil */
+    O.cable = mesh(new T.BufferGeometry(), mat(0x1c1b20, .6)); scene.add(O.cable);
+    /* flacon de soude + pissette */
+    const fl2 = new T.Group(); fl2.position.set(-20, 0, -4); scene.add(fl2);
+    fl2.add(mesh(new T.CylinderGeometry(3, 3, 10, 40), new T.MeshPhysicalMaterial({ color: 0xffffff, roughness: .25, transparent: true, opacity: .55, clearcoat: 1 }), 0, 5, 0));
+    fl2.add(mesh(new T.CylinderGeometry(1.1, 2.9, 2.2, 32), new T.MeshPhysicalMaterial({ color: 0xffffff, roughness: .25, transparent: true, opacity: .55 }), 0, 11.1, 0));
+    fl2.add(mesh(new T.CylinderGeometry(1.25, 1.25, 1.6, 24), mat(0x1565c0, .5), 0, 12.9, 0));
+    fl2.add(mesh(new T.CylinderGeometry(2.85, 2.85, 7.5, 40), mat(0xe3f2fd, .2, 0, { transparent: true, opacity: .35 }), 0, 4, 0, false));
+    O.etiqSoude = mesh(new T.CylinderGeometry(3.02, 3.02, 5, 40, 1, true, -.9, 1.8), new T.MeshStandardMaterial({ map: texEtiquetteFlacon(["Hydroxyde de sodium", "Na⁺(aq) + HO⁻(aq)", "C = 2,0×10⁻² mol·L⁻¹", "Danger : corrosif"], true), roughness: .6 }), 0, 5.4, 0, false);
+    fl2.add(O.etiqSoude); O.flacon = fl2;
+    const pis = new T.Group(); pis.position.set(-19, 0, 9); scene.add(pis);
+    pis.add(mesh(new T.CylinderGeometry(2.6, 2.7, 11, 36), mat(0xf7f7f7, .5, 0, { transparent: true, opacity: .9 }), 0, 5.5, 0));
+    pis.add(mesh(new T.CylinderGeometry(1.2, 1.2, 1.4, 24), mat(0x1e88e5, .5), 0, 11.7, 0));
+    const tube = new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(0, 12.3, 0), new T.Vector3(0, 15, 0), new T.Vector3(1.5, 16.2, 0), new T.Vector3(4, 15.2, 0), new T.Vector3(5.2, 13.6, 0)]), 30, .14, 8);
+    pis.add(mesh(tube, mat(0xeeeeee, .5)));
+    const tp3 = cvs(256, 96), t3 = tp3.getContext("2d"); t3.fillStyle = "#fff"; t3.fillRect(0, 0, 256, 96); t3.fillStyle = "#1565c0"; t3.font = "700 34px Arial"; t3.textAlign = "center"; t3.fillText("Eau distillée", 128, 60);
+    pis.add(mesh(new T.CylinderGeometry(2.72, 2.72, 2.6, 36, 1, true, -.8, 1.6), new T.MeshBasicMaterial({ map: tex(tp3) }), 0, 6, 0, false));
+    etiquette("Soude (titrant)", -20, 17, -4);
+    etiquette("Pissette", -19, 19.5, 9);
+  }
+  function majCable() {
+    const cy = O.cellule.position.y + (O.cellule.userData.haut || 13.6), a = O.cellule.position.clone(); a.y = cy;
+    O.appareil.updateMatrixWorld(); const b = O.appareil.localToWorld(new T.Vector3(-4.5, 3, -9));
+    const pts = [a, a.clone().add(new T.Vector3(-.5, 3, -.5)), new T.Vector3(-3, cy + 2, -6), new T.Vector3(4, cy - 6, -14), new T.Vector3(12, 1.2, -13), new T.Vector3(b.x - 2, .8, b.z - 3), b];
+    O.cable.geometry.dispose(); O.cable.geometry = new T.TubeGeometry(new T.CatmullRomCurve3(pts), 80, .2, 8, false);
+  }
+  /* ---------- mise à jour ---------- */
+  function niveauBecher(V) { return .27 + V / (Math.PI * BEC.ri * BEC.ri); } // hauteur (cm) au-dessus du fond extérieur
+  function majLiquides(t, dt) {
+    /* burette */
+    const remplie = etat.Vbur > -2 && etat.remplie;
+    O.colBur.visible = O.menisque.visible = O.colBas.visible = remplie;
+    if (remplie) {
+      const yN = BUR.y0 - etat.Vbur * BUR.k, y0 = BUR.y25 - 1.2, h = Math.max(.01, yN - y0);
+      O.colBur.scale.y = h; O.colBur.position.y = y0 + h / 2; O.menisque.position.y = yN - .16;
+    }
+    /* bécher */
+    const vis = etat.becherVu > .01; O.becher.visible = vis; O.poubelle.visible = etat.poubelle > 0;
+    if (vis) {
+      O.becher.position.y = Y_PLAT + (1 - etat.becherVu) * 14; O.becher.position.x = (1 - etat.becherVu) * -14;
+      const hN = niveauBecher(etat.Vbec), on = etat.Vbec > .5; O.liq.visible = O.surf.visible = O.fond.visible = on;
+      if (on) {
+        O.liq.scale.y = hN - .27; O.liq.position.y = .27 + (hN - .27) / 2; O.surf.position.y = hN;
+        const p = O.surf.geometry.attributes.position, b = O.surfBase, prof = .55 * etat.agit;
+        for (let i = 0; i < p.count; i++) { const x = b[i * 3], z = b[i * 3 + 2], r = Math.hypot(x, z) / (BEC.ri - .04); p.array[i * 3 + 1] = -prof * Math.pow(1 - r * r, 2) + prof * .25 + .015 * Math.sin(t * 6 + r * 9) * etat.agit; }
+        p.needsUpdate = true;
+      }
+      O.barreau.rotation.y += dt * 22 * etat.agit;
+    }
+    O.liq.material.color.setHex(etat.couleur);
+  }
+  function majGouttes(dt) {
+    if (etat.debit > 0) {
+      etat._acc = (etat._acc || 0) + etat.debit * dt / .05; // 1 goutte ≈ 0,05 mL
+      while (etat._acc >= 1) { etat._acc -= 1; const g = mesh(new T.SphereGeometry(.17, 12, 8), new T.MeshPhysicalMaterial({ color: 0xe0f0ff, roughness: 0, transparent: true, opacity: .75, clearcoat: 1 }), BUR.x, BUR.yTip - .1, BUR.z, false); g.scale.set(1, 1.25, 1); g.userData.v = 0; scene.add(g); gouttes.push(g); }
+    }
+    const fondY = etat.poubelle > 0 ? Y_PLAT + .9 : Y_PLAT + niveauBecher(etat.Vbec);
+    for (let i = gouttes.length - 1; i >= 0; i--) {
+      const g = gouttes[i]; g.userData.v += 981 * dt * .35; g.position.y -= g.userData.v * dt;
+      if (g.position.y <= fondY) { scene.remove(g); g.geometry.dispose(); gouttes.splice(i, 1); onde(fondY); }
+    }
+    for (let i = ronds.length - 1; i >= 0; i--) { const r = ronds[i]; r.userData.t += dt; const k = r.userData.t / .6; r.scale.setScalar(.3 + k * 2.2); r.material.opacity = .6 * (1 - k); if (k >= 1) { scene.remove(r); ronds.splice(i, 1); } }
+  }
+  function onde(y) {
+    const r = mesh(new T.RingGeometry(.25, .33, 32), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .6, side: T.DoubleSide, depthWrite: false }), BUR.x, y + .03, BUR.z, false);
+    r.rotation.x = -Math.PI / 2; r.userData.t = 0; scene.add(r); ronds.push(r);
+  }
+  function majLCD(txt, u, temp) {
+    const cle = txt + u + temp + etat.etal; if (cle === etat.lcd) return; etat.lcd = cle;
+    texLCD(O.lcdCtx, txt, u, temp, 1024, 512); O.lcdTex.needsUpdate = true;
+  }
+
+  /* ---------- caméra : rotation à la souris / au doigt ---------- */
+  function placeCam() {
+    const k = 1 - Math.exp(-(api._dt || .016) * 7); for (const c in cible) vue[c] += (cible[c] - vue[c]) * k;
+    const d = vue.d * vue.k;
+    cam.position.set(vue.cx + d * Math.sin(vue.ph) * Math.sin(vue.th), vue.cy + d * Math.cos(vue.ph), vue.cz + d * Math.sin(vue.ph) * Math.cos(vue.th));
+    cam.lookAt(vue.cx, vue.cy, vue.cz); cam.updateMatrixWorld(); if (etiqOn) CADRAGE.etiquettes(cam, etiq, H);
+  }
+  function facteur(n) { /* cadrage automatique : tout le montage et ses étiquettes dans le cadre */
+    if (n !== "ensemble") return Math.pow(Math.max(1, 1.25 / cam.aspect), .9);
+    return CADRAGE.ensemble(cam, scene, VUES.ensemble, cible);
+  }
+  function controles(cv) {
+    const pts = new Map(); let d0 = 0, glisse = false, sur = null;
+    const ray = new T.Raycaster(), ndc = new T.Vector2();
+    function touche(e) { const r = cv.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, cam); return ray.intersectObjects([O.cle], true).length > 0; }
+    cv.addEventListener("pointerdown", e => {
+      cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); glisse = false;
+      if (pts.size === 1 && touche(e) && api.surRobinet) { sur = true; api.surRobinet(true); }
+      if (pts.size === 2) { const [a, b] = [...pts.values()]; d0 = Math.hypot(a.x - b.x, a.y - b.y); }
+    });
+    cv.addEventListener("pointermove", e => {
+      const p = pts.get(e.pointerId); if (!p) return;
+      if (pts.size === 1 && !sur) { const dx = e.clientX - p.x, dy = e.clientY - p.y; if (Math.abs(dx) + Math.abs(dy) > 2) glisse = true; cible.th -= dx * .006; cible.ph = Math.max(.35, Math.min(1.62, cible.ph - dy * .005)); }
+      p.x = e.clientX; p.y = e.clientY;
+      if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (d0) cible.d = Math.max(14, Math.min(190, cible.d * d0 / d)); d0 = d; }
+    });
+    const fin = e => { pts.delete(e.pointerId); if (sur) { sur = null; api.surRobinet(false); } };
+    cv.addEventListener("pointerup", fin); cv.addEventListener("pointercancel", fin);
+    cv.addEventListener("wheel", e => { e.preventDefault(); cible.d = Math.max(14, Math.min(190, cible.d * (e.deltaY > 0 ? 1.1 : .9))); }, { passive: false });
+  }
+
+  /* ---------- boucle ---------- */
+  let t0 = performance.now(), temps = 0;
+  function boucle() {
+    requestAnimationFrame(boucle);
+    const now = performance.now(), dt = Math.min(.05, (now - t0) / 1000); t0 = now; temps += dt;
+    if (api.tick) api.tick(dt);
+    const lis = (a, b, k) => a + (b - a) * Math.min(1, dt * k);
+    etat.robinet = lis(etat.robinet, etat.robCible, 10); O.cle.rotation.x = etat.robinet * Math.PI / 2;
+    etat.agit = lis(etat.agit, etat.agitCible, 2.2); O.boutonVit.rotation.y = -etat.agitCible * 2.4;
+    O.voyant.material.emissive.setHex(etat.agitCible > 0 ? 0x33ff66 : 0x000000); O.voyant.material.color.setHex(etat.agitCible > 0 ? 0x66ff88 : 0x3a3a3a);
+    { /* déplacement de la sonde : monter, se déplacer, descendre */
+      const P = O.cellule.position, L = etat.celLieu && O.tampons ? O.tampons[etat.celLieu] : null;
+      const tx = L ? L.x : CEL.x, tz = L ? L.z : CEL.z, ty = L ? .55 : Y_PLAT + 1.25 + (1 - etat.celCible) * 12;
+      const loin = Math.hypot(P.x - tx, P.z - tz) > .3, k = Math.min(1, dt * 3.2);
+      if (loin && P.y < 24) P.y += (25 - P.y) * k; else if (loin) { P.x += (tx - P.x) * k; P.z += (tz - P.z) * k; if (Math.hypot(P.x - tx, P.z - tz) < .35) { P.x = tx; P.z = tz; } }
+      else { P.x = tx; P.z = tz; P.y += (ty - P.y) * k; }
+      O.pinceCel.visible = Math.hypot(P.x - CEL.x, P.z - CEL.z) < .3; O.pinceCel.position.y = P.y + 10.9;
+    }
+    etat.burMont = lis(etat.burMont, etat.burCible, 3); O.burette.position.y = (1 - etat.burMont) * 9; O.burette.position.x = (1 - etat.burMont) * -10;
+    etat.becherVu = lis(etat.becherVu, etat.becVuCible, 3.5);
+    majLiquides(temps, dt); majGouttes(dt); majCable();
+    placeCam(); R.render(scene, cam);
+  }
+  function taille() { const r = hote.getBoundingClientRect(); W = Math.max(1, r.width); H = Math.max(1, r.height); R.setSize(W, H, false); cam.aspect = W / H; cam.updateProjectionMatrix(); if (ok || scene) { cible.k = facteur(vueNom); if (!ok) vue.k = cible.k; } }
+
+  const api = {
+    BUR, etat,
+    init(el) {
+      hote = el;
+      try {
+        if (!T) throw 0; const cv = document.createElement("canvas"); cv.className = "gl";
+        R = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true });
+        if (!R.getContext()) throw 0;
+      } catch (e) { return false; }
+      R.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); R.outputEncoding = T.sRGBEncoding; R.toneMapping = T.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
+      R.shadowMap.enabled = true; R.shadowMap.type = T.PCFSoftShadowMap; R.physicallyCorrectLights = false;
+      el.prepend(R.domElement);
+      cam = new T.PerspectiveCamera(32, 1, .5, 900);
+      construit(); controles(R.domElement); taille(); window.addEventListener("resize", taille);
+      if (window.ResizeObserver) new ResizeObserver(taille).observe(el);
+      majLCD("----", "mS/cm", "25,0 °C"); ok = true; boucle(); return true;
+    },
+    vue(n) { vueNom = n; Object.assign(cible, VUES[n]); cible.k = facteur(n); if (n === "burette") cible.cy = BUR.y0 - Math.max(0, etat.Vbur) * BUR.k + .5; },
+    etiquettes(on) { etiqOn = on; etiq.forEach(s => s.visible = on); cible.k = facteur(vueNom); },
+    lcd: majLCD,
+    flacon(l) { if (!O.etiqSoude) return; O.etiqSoude.material.map = texEtiquetteFlacon(l, true); O.etiqSoude.material.needsUpdate = true; },
+    pret: () => ok, _scene: () => scene
+  };
+  return api;
+})();
+
+/* ===== Assistant pas à pas + mesures en direct + schéma 2D + loupe sur les ions ===== */
+(function () {
+  const $ = s => document.querySelector(s), fr = (x, d) => x.toFixed(d).replace(".", ",");
+  const CFG = window.CFG || { mode: "cond" }, PH = CFG.mode === "ph";
+  const PRESETS = {
+    hcl: { Ca: [5, 20, .5, 10], Va: [10, 25, 5, 20], Cb: [10, 50, 5, 20], Veau: [0, 150, 10, 100] },
+    ac: { Ca: [5, 20, .5, 10], Va: [10, 25, 5, 20], Cb: [10, 50, 5, 20], Veau: [0, 150, 10, 100] },
+    chauf: { Ca: [100, 250, 5, 160], Va: [5, 10, 5, 10], Cb: [50, 150, 10, 100], Veau: [0, 200, 10, 150] },
+    cit: { Ca: [4, 15, .5, 9], Va: [10, 25, 5, 20], Cb: [20, 100, 10, 50], Veau: [0, 150, 10, 100] }
+  };
+  const P = { sys: PH ? "cit" : "hcl", Ca: 0.010, Va: 20.0, Cb: 0.020, Veau: 100 };
+  const M = { V: 0, Vbur: -1, sigMes: 0, sigAff: 0, temp: 25.0, agit: false, immerge: false, pts: [], aVerser: 0, tenu: false, auto: false, pas: 0.5, droites: null, poubelle: 0, zero: false };
+  let etapeI = 0; const faits = new Set();
+  const NOM_ION = { "H3O+": "H₃O⁺", "HO-": "HO⁻", "Na+": "Na⁺", "Cl-": "Cl⁻", "CH3COO-": "CH₃COO⁻", "AH3": "AH₃", "AH2-": "AH₂⁻", "AH2m": "AH²⁻", "A3-": "A³⁻" };
+  const COUL_ION = { "H3O+": "#C2185B", "HO-": "#1565C0", "Na+": "#F9A825", "Cl-": "#2E7D32", "CH3COO-": "#6D4C41", "AH3": "#9E9E9E", "AH2-": "#80CBC4", "AH2m": "#26A69A", "A3-": "#00695C" };
+  const CHARGE = { "H3O+": "+", "Na+": "+", "HO-": "−", "Cl-": "−", "CH3COO-": "−", "AH2-": "−", "AH2m": "2−", "A3-": "3−", "AH3": "", "AH": "" };
+
+  /* ---------- modèle de mesure : sonde réelle (temps de réponse, bruit, résolution) ---------- */
+  function vrai() { return CHIMIE.etat(P.sys, P.Ca, P.Va, P.Cb, P.Veau, M.V); }
+  function tick(dt) {
+    dt *= (window.__acc || 1);
+    const S = SCENE.etat;
+    /* écoulement de la burette */
+    let debit = 0;
+    if (M.aVerser > 1e-9) debit = M.poubelle ? .3 : Math.max(.35, Math.min(1.2, M.pas * 1.1));
+    if (M.tenu) debit = .16;
+    if (M.Vbur >= 25 && debit) { debit = 0; M.aVerser = 0; }
+    if (debit) {
+      let dv = debit * dt; if (!M.tenu) dv = Math.min(dv, M.aVerser);
+      if (M.poubelle > 0) { dv = Math.min(dv, -M.Vbur); M.Vbur += dv; if (M.Vbur >= -1e-6) { M.Vbur = 0; M.poubelle = 0; M.aVerser = 0; } else M.aVerser -= dv; }
+      else { M.Vbur += dv; M.V += dv; M.aVerser = Math.max(0, M.aVerser - dv); if (M.aVerser < 1e-7) M.aVerser = 0; }
+    }
+    S.debit = debit; S.robCible = debit ? 1 : 0; S.Vbur = M.Vbur;
+    S.Vbec = M.becher ? P.Va + P.Veau + M.V : 0; S.poubelle = M.poubelle;
+    /* sonde : réponse du 1er ordre ; sans agitation, l'homogénéisation est lente */
+    const e = vrai(); const tau = (M.agit ? 1.1 : 9) * (PH ? 1.6 : 1);
+    const vraiMes = PH ? (M.tampon != null ? M.tampon : e.pH) : e.sigma;
+    const cible = M.immerge || M.tampon != null ? vraiMes : (PH ? 7 : 0);
+    M.sigMes += (cible - M.sigMes) * Math.min(1, dt / tau);
+    M._t = (M._t || 0) + dt;
+    if (M._t > .35) { /* le conductimètre rafraîchit son affichage ~3 fois par seconde */
+      M._t = 0; const bruit = M.immerge ? (PH ? (Math.random() - .5) * .012 : (1 + (Math.random() - .5) * .003)) : (PH ? 0 : 1);
+      M.sigAff = PH ? brut(M.sigMes) + bruit : M.sigMes * bruit;
+      M.temp = 25 + (Math.random() - .5) * .2;
+      SCENE.lcd && SCENE.pret() && SCENE.lcd(affLCD(M.sigAff).v, affLCD(M.sigAff).u, fr(M.temp, 1) + " °C");
+      majSuivi(e);
+    }
+    /* enregistrement automatique d'un point quand la mesure est stable */
+    if (etapeI >= idx("titrer") && M.immerge && !debit && Math.abs(M.sigMes - vraiMes) < (PH ? .006 : vraiMes * .002)) {
+      const der = M.pts[M.pts.length - 1];
+      if (!der || Math.abs(der.V - M.V) > .004) { M.pts.push({ V: M.V, s: M.sigAff, sc: M.sigAff * (P.Va + P.Veau + M.V) / (P.Va + P.Veau) }); dessineGraphe(); majEtape(); }
+      else if (M.auto && M.V < 25 - 1e-6 && M.aVerser <= 0) { M.aVerser = Math.min(M.pas, 25 - M.V); }
+      if (M.auto && M.V >= Math.min(25, 2.2 * e.Ve) - 1e-6) { M.auto = false; majBoutons(); }
+    }
+    schema2D(e);
+    loupeTick(dt, e);
+  }
+  function brut(ph) { return SCENE.etat.etal ? ph : .955 * ph + .38; } /* pH-mètre non étalonné : pente et décalage faux */
+  function affLCD(s) { /* affichage auto-gamme d'un conductimètre de paillasse */
+    if (PH) return { v: (M.immerge || M.tampon != null) ? s.toFixed(2).padStart(5, " ") : " ----", u: "pH" };
+    if (!M.immerge) return { v: " 0.00", u: "µS/cm" };
+    if (s < .2) return { v: (s * 1000).toFixed(1).padStart(5, " "), u: "µS/cm" };
+    if (s < 2) return { v: s.toFixed(3), u: "mS/cm" };
+    return { v: s.toFixed(2).padStart(5, " "), u: "mS/cm" };
+  }
+
+  /* ---------- étapes ---------- */
+  const ETAPES = [
+    {
+      id: "monter", t: "Monter le dispositif de titrage",
+      d: "Fixez la burette de 25 mL dans la pince, bien verticale, au-dessus de l'agitateur magnétique. Vérifiez que le <b>robinet est fermé</b> : la poignée est perpendiculaire à la burette.<span class='note'>Repérez sur la burette la bande blanche à filet bleu (bande de Schellbach) : elle aide à lire le bas du ménisque.</span>",
+      a: "Fixer la burette", vue: "ensemble",
+      fait() { SCENE.etat.burCible = 1; }
+    },
+    {
+      id: "zero", t: "Remplir la burette et ajuster le zéro",
+      d: "Après rinçage avec la solution titrante, on remplit la burette <b>au-dessus du zéro</b>, on chasse la bulle d'air sous le robinet, puis on fait couler <b>goutte à goutte dans un bécher de récupération</b> jusqu'à ce que le <b>bas du ménisque</b> soit tangent au trait 0, l'œil à sa hauteur.",
+      a: "Remplir puis ajuster le zéro", vue: "burette",
+      fait() { M.Vbur = -1.2; SCENE.etat.remplie = true; M.poubelle = 1; M.aVerser = 1.2; setTimeout(() => SCENE.vue("burette"), 50); },
+      attendre: () => M.poubelle === 0 && M.Vbur === 0
+    },
+    {
+      id: "prise", t: "Prélever la solution à titrer et la diluer",
+      d: "Avec une pipette jaugée, prélevez V<sub>a</sub> de solution titrée dans le bécher, puis ajoutez de l'eau distillée à l'éprouvette. <b>L'eau ne change pas la quantité d'acide</b>, donc pas V<sub>E</sub> ; elle permet d'immerger la cellule et de rendre faible la dilution due au titrant.",
+      a: "Verser la prise d'essai et l'eau", vue: "becher", reglages: true,
+      fait() { M.becher = true; SCENE.etat.becVuCible = 1; SCENE.etat.couleur = 0xdcefff; verrouiller(true); }
+    },
+    {
+      id: "cellule", t: "Plonger la cellule et lancer l'agitation",
+      d: "Rincez la cellule à l'eau distillée, plongez-la : les <b>deux plaques de platine</b> doivent être entièrement immergées, sans toucher le barreau aimanté. Mettez l'agitation <b>modérée</b> (pas de tourbillon qui aspire de l'air). Le conductimètre affiche alors σ.",
+      a: "Plonger la cellule et agiter", vue: "becher",
+      fait() {
+        SCENE.etat.celCible = 1; SCENE.etat.agitCible = .7; M.agit = true;
+        const h = (P.Va + P.Veau) / (Math.PI * 3.35 * 3.35);
+        M.immerge = h >= 2.4; if (!M.immerge) alerte("Le niveau ne monte qu'à " + fr(h * 10, 0) + " mm : les plaques de la cellule (jusqu'à 24 mm du fond, la cellule étant tenue au-dessus du barreau) ne sont pas immergées. Revenez à l'étape précédente et ajoutez de l'eau.");
+        return M.immerge;
+      }
+    },
+    {
+      id: "titrer", t: "Titrer : verser, attendre que la mesure se stabilise",
+      d: "Versez le titrant <b>par pas réguliers</b>. Après chaque ajout, la cellule met environ une seconde à se stabiliser : le point (V ; σ) est noté <b>automatiquement</b> quand l'affichage ne bouge plus. Poursuivez <b>bien au-delà</b> de l'équivalence pour tracer deux droites.<span class='note'>Vous pouvez aussi <b>maintenir la poignée bleue du robinet</b> dans la scène 3D pour verser goutte à goutte.</span>",
+      titrage: true, vue: "becher",
+      valide: () => { const e = vrai(); return M.V >= Math.min(24, 1.7 * e.Ve) && M.pts.length >= 8; }
+    },
+    {
+      id: "exploiter", t: "Exploiter : deux droites, un point d'intersection",
+      d: "Loin de l'équivalence, σ varie <b>linéairement</b> avec V (surtout avec σ corrigée de la dilution). On modélise chaque partie par une droite : l'abscisse de leur intersection est le volume équivalent V<sub>E</sub>. À l'équivalence : n(acide initial) = C<sub>b</sub> · V<sub>E</sub>.",
+      a: "Tracer les deux droites", vue: "appareil",
+      fait() { return exploiter(); }
+    },
+    {
+      id: "fin", t: "Conclusion", d: "", fin: true, vue: "ensemble",
+      fait() { SCENE.etat.agitCible = 0; }
+    }
+  ];
+  if (PH) adapterPH(ETAPES);
+  /* consignes courtes (une ou deux lignes) affichées dans la colonne de gauche */
+  const CONSIGNES = PH ? {
+    monter: "Fixez la burette dans la pince, bien verticale au-dessus du bécher, <b>robinet fermé</b>.",
+    etal: "Étalonnez le pH-mètre : électrode rincée dans le <b>tampon pH 7,00</b>, puis dans le <b>tampon pH 4,00</b>.",
+    zero: "Remplissez la burette au-dessus du zéro, chassez la bulle, puis amenez le <b>bas du ménisque</b> sur le trait 0.",
+    prise: "Réglez les volumes, puis versez la limonade <b>dégazée</b> et l'eau distillée. L'eau ne change pas V<sub>E</sub>.",
+    cellule: "Plongez l'électrode (membrane et diaphragme immergés, loin du barreau), puis agitez <b>modérément</b>.",
+    titrer: "Versez 1 mL à la fois, puis 0,2 mL près du saut de pH. Chaque point est noté dès que le pH est stable.",
+    exploiter: "Tracez les tangentes parallèles : la parallèle équidistante coupe la courbe en E, d'abscisse V<sub>E</sub>."
+  } : {
+    monter: "Fixez la burette dans la pince, bien verticale au-dessus du bécher, <b>robinet fermé</b>.",
+    zero: "Remplissez la burette au-dessus du zéro, chassez la bulle, puis amenez le <b>bas du ménisque</b> sur le trait 0.",
+    prise: "Réglez les volumes, puis versez la prise d'essai V<sub>a</sub> et l'eau distillée. L'eau ne change pas V<sub>E</sub>.",
+    cellule: "Plongez la cellule (plaques immergées, loin du barreau), puis agitez <b>modérément</b>.",
+    titrer: "Versez par pas réguliers, bien au-delà de l'équivalence. Chaque point est noté dès que σ est stable.",
+    exploiter: "Tracez les deux droites : l'abscisse de leur intersection est le volume équivalent V<sub>E</sub>."
+  };
+  ETAPES.forEach(E => { if (CONSIGNES[E.id]) E.c = CONSIGNES[E.id]; });
+  function idx(id) { return ETAPES.findIndex(E => E.id === id); }
+  document.querySelector(".frise").innerHTML = ETAPES.map((E, i) => `<span>${i + 1} · ${E.court || E.t.split(" ")[0]}</span>`).join("");
+  function alerte(t) { const a = $("#alerte"); a.innerHTML = "⚠️ " + t; a.classList.add("vu"); }
+  function verrouiller(on) { document.querySelectorAll("#regl input, #regl select").forEach(i => i.disabled = on); }
+  function rendEtape() {
+    const E = ETAPES[etapeI];
+    $("#etapeN").textContent = "Étape " + (etapeI + 1) + " / " + ETAPES.length;
+    $("#num").textContent = etapeI + 1; $("#etTitre").textContent = E.t;
+    $("#etDesc").innerHTML = E.fin ? conclusion() : (E.c || E.d); document.body.dataset.etape = E.id;
+    $("#regl").style.display = E.reglages ? "" : "none";
+    $("#zoneTitrage").style.display = E.titrage ? "" : "none";
+    const b = $("#action"); b.style.display = E.a ? "" : "none"; b.textContent = E.a || ""; b.disabled = faits.has(etapeI);
+    $("#alerte").classList.remove("vu");
+    document.querySelectorAll(".frise span").forEach((s, i) => s.className = i < etapeI ? "fait" : i === etapeI ? "ici" : "");
+    if (E.vue) SCENE.pret() && SCENE.vue(E.vue);
+    if (E.fin) { faits.add(etapeI); E.fait(); }
+    majEtape();
+  }
+  function majEtape() {
+    const E = ETAPES[etapeI]; let fini = faits.has(etapeI);
+    if (E.attendre && fini && !E.attendre()) fini = false;
+    if (E.valide) fini = E.valide();
+    $("#ok").classList.toggle("vu", !!fini && !E.fin);
+    $("#suiv").disabled = !fini || etapeI === ETAPES.length - 1;
+    $("#prec").disabled = etapeI === 0;
+    if (E.titrage) { const e = vrai(); $("#progT").innerHTML = `${M.pts.length} points notés · V = <b>${fr(M.V, 2)} mL</b>` + (E.valide() ? " · assez de points ✓" : ` · continuez au-delà de ${fr(Math.min(24, 1.7 * e.Ve), 1)} mL`); }
+  }
+  setInterval(majEtape, 400);
+  $("#action").onclick = () => { const E = ETAPES[etapeI]; const r = E.fait ? E.fait() : true; if (r !== false) { faits.add(etapeI); $("#action").disabled = true; } majEtape(); };
+  $("#suiv").onclick = () => { if (etapeI < ETAPES.length - 1) { etapeI++; rendEtape(); } };
+  $("#prec").onclick = () => { if (etapeI > 0) { etapeI--; if (ETAPES[etapeI].id === "prise") { faits.delete(idx("cellule")); faits.delete(idx("prise")); M.becher = false; SCENE.etat.becVuCible = 0; SCENE.etat.celCible = 0; SCENE.etat.agitCible = 0; M.agit = false; M.immerge = false; verrouiller(false); } rendEtape(); } };
+
+  /* ---------- titrage : ajouts par pas ---------- */
+  $("#pas").onchange = e => { M.pas = +e.target.value; };
+  $("#ajout").onclick = () => { if (M.aVerser <= 0) M.aVerser = Math.min(M.pas, 25 - M.V); };
+  $("#auto").onclick = () => { M.auto = !M.auto; majBoutons(); };
+  function majBoutons() { $("#auto").textContent = M.auto ? "⏸ Pause" : "▶ Démarrer"; }
+  SCENE.surRobinet = null;
+
+  /* ---------- exploitation ---------- */
+  function regr(p) { const n = p.length; let sx = 0, sy = 0, sxx = 0, sxy = 0; p.forEach(q => { sx += q.x; sy += q.y; sxx += q.x * q.x; sxy += q.x * q.y; }); const a = (n * sxy - sx * sy) / (n * sxx - sx * sx); return { a, b: (sy - a * sx) / n }; }
+  function exploiter() {
+    if (PH) return exploiterPH();
+    const Ve = vrai().Ve, av = M.pts.filter(p => p.V < .85 * Ve && p.V > 0.01 * Ve - 1e-9), ap = M.pts.filter(p => p.V > 1.15 * Ve);
+    if (av.length < 3 || ap.length < 3) { alerte("Il faut au moins 3 points de chaque côté de l'équivalence. Revenez à l'étape de titrage."); return false; }
+    const d1 = regr(av.map(p => ({ x: p.V, y: p.sc }))), d2 = regr(ap.map(p => ({ x: p.V, y: p.sc })));
+    const VE = (d2.b - d1.b) / (d1.a - d2.a); M.droites = { d1, d2, VE }; dessineGraphe();
+    const Cmes = P.Cb * VE / P.Va, ecart = Math.abs(Cmes - P.Ca) / P.Ca * 100;
+    $("#etDesc").innerHTML = ETAPES[idx("exploiter")].d + `<span class='note'>Droite 1 : σ<sub>corr</sub> = ${fr(d1.a, 4)} V ${d1.b < 0 ? '−' : '+'} ${fr(Math.abs(d1.b), 3)} · Droite 2 : σ<sub>corr</sub> = ${fr(d2.a, 4)} V ${d2.b < 0 ? '−' : '+'} ${fr(Math.abs(d2.b), 3)}<br>Intersection : <b>V<sub>E</sub> = ${fr(VE, 2)} mL</b>.<br>C<sub>a</sub> = C<sub>b</sub> · V<sub>E</sub> / V<sub>a</sub> = ${fr(P.Cb, 3)} × ${fr(VE, 2)} / ${fr(P.Va, 1)} = <b>${fr(Cmes * 1000, 2)} mmol·L⁻¹</b> (valeur de préparation : ${fr(P.Ca * 1000, 2)} mmol·L⁻¹, écart ${fr(ecart, 1)} %).</span>`;
+    return true;
+  }
+  function conclusion() {
+    if (PH) return conclusionPH();
+    const S = CHIMIE.SYSTEMES[P.sys], D = M.droites;
+    return `Le titrage conductimétrique repère l'équivalence par un <b>changement de pente</b> de σ = f(V), sans indicateur coloré. Il s'explique ion par ion avec la loi de Kohlrausch : σ = Σ λ<sub>i</sub>[X<sub>i</sub>].` +
+      (D ? `<span class='note'>Résultat : V<sub>E</sub> = ${fr(D.VE, 2)} mL, donc C<sub>a</sub> = ${fr(P.Cb * D.VE / P.Va * 1000, 2)} mmol·L⁻¹.</span>` : "") +
+      `<span class='note'>À retenir : on ajoute beaucoup d'eau pour immerger la cellule et pour que la dilution par le titrant reste faible ; sinon on trace σ corrigée = σ · (V<sub>0</sub> + V) / V<sub>0</sub>. Les points proches de l'équivalence ne servent pas aux droites.</span>`;
+  }
+
+  /* ---------- suivi en direct ---------- */
+  function phase(e) { const r = M.V / e.Ve; return r < .93 ? "avant" : r <= 1.07 ? "eq" : "apres"; }
+  function majSuivi(e) {
+    if (PH) return majSuiviPH(e);
+    const S = CHIMIE.SYSTEMES[P.sys], V0 = P.Va + P.Veau;
+    $("#tM").textContent = M.immerge ? fr(M.sigAff, 3) : "—";
+    $("#tV").textContent = fr(M.V, 2);
+    $("#tC").textContent = M.immerge ? fr(M.sigAff * (V0 + M.V) / V0, 3) : "—";
+    $("#tP").textContent = fr(e.pH, 2);
+    const ph = M.becher ? phase(e) : null;
+    const b = $("#phase"); b.className = "phase " + (ph || ""); b.textContent = !ph ? "Bécher vide" : ph === "avant" ? "Avant l'équivalence" : ph === "eq" ? "Autour de l'équivalence" : "Après l'équivalence";
+    $("#equation").innerHTML = S.eq;
+    $("#interp").innerHTML = ph ? S.interp[ph] : "Préparez le bécher pour voir la solution évoluer.";
+    $("#infos").innerHTML = `V<sub>0</sub> = V<sub>a</sub> + V<sub>eau</sub> = ${fr(V0, 1)} mL · V<sub>total</sub> = ${fr(V0 + M.V, 2)} mL · n(acide)<sub>initial</sub> = ${fr(e.na * 1000, 4)} mmol · n(titrant) versé = ${fr(e.nb * 1000, 4)} mmol`;
+    /* barres des ions : concentration et contribution λ·c */
+    const box = $("#ions"); let h = "";
+    const max = Math.max(...S.ions.map(k => CHIMIE.LAMBDA[k] * (e.c[k] || 0))) || 1;
+    const maxRef = Math.max(max, (CHIMIE.LAMBDA["H3O+"] + 8) * P.Ca * P.Va / (P.Va + P.Veau));
+    if (!M.becher) { box.innerHTML = ""; return; }
+    S.ions.forEach(k => { const c = e.c[k] || 0, contrib = CHIMIE.LAMBDA[k] * c * 10; /* mS/cm ×100 */ h += `<div class="ion"><span><b style="color:${COUL_ION[k]}">${NOM_ION[k]}</b></span><span class="barre"><i style="width:${Math.min(100, CHIMIE.LAMBDA[k] * c / maxRef * 100)}%;background:${COUL_ION[k]}"></i></span><span>${fr(c * 1000, 2)} mmol/L</span></div>`; });
+    box.innerHTML = h;
+  }
+
+  /* ---------- graphe σ = f(V) ---------- */
+  function dessineGraphe() {
+    if (PH) return grapheePH();
+    const cv = $("#graphe"), r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = r.width * dpr; cv.height = r.height * dpr; const c = cv.getContext("2d"); c.scale(dpr, dpr);
+    const w = r.width, h = r.height, g = 48, d = 14, ht = 14, b = 36;
+    const e0 = CHIMIE.etat(P.sys, P.Ca, P.Va, P.Cb, P.Veau, 0), Vmax = Math.max(5, Math.ceil(Math.min(25, 2.4 * e0.Ve) / 5) * 5);
+    let smax = Math.max(e0.sigma * 1.15, ...M.pts.map(p => p.sc * 1.1), .1); smax = Math.ceil(smax * 10) / 10;
+    const X = v => g + v / Vmax * (w - g - d), Y = s => h - b - s / smax * (h - b - ht);
+    c.clearRect(0, 0, w, h); c.font = "12px Atkinson Hyperlegible, Arial"; c.fillStyle = "#5b5368"; c.strokeStyle = "#EDE7F6"; c.lineWidth = 1;
+    for (let v = 0; v <= Vmax; v += Vmax > 15 ? 2 : 1) { c.beginPath(); c.moveTo(X(v), ht); c.lineTo(X(v), h - b); c.stroke(); c.textAlign = "center"; c.fillText(String(v), X(v), h - b + 16); }
+    const ps = smax > 1 ? .2 : smax > .4 ? .1 : .05;
+    for (let s = 0; s <= smax + 1e-9; s += ps) { c.beginPath(); c.moveTo(g, Y(s)); c.lineTo(w - d, Y(s)); c.stroke(); c.textAlign = "right"; c.fillText(fr(s, 2), g - 6, Y(s) + 4); }
+    c.strokeStyle = "#4A148C"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(g, ht); c.lineTo(g, h - b); c.lineTo(w - d, h - b); c.stroke();
+    c.fillStyle = "#4A148C"; c.textAlign = "right"; c.font = "700 12.5px Atkinson Hyperlegible, Arial"; c.fillText("V (mL)", w - d, h - 4); c.textAlign = "left"; c.fillText("σ (mS·cm⁻¹)", g + 6, ht + 2);
+    const D = M.droites;
+    if (D) {
+      c.setLineDash([6, 4]); c.lineWidth = 1.8;
+      [[D.d1, 0, D.VE * 1.12, "#7E57C2"], [D.d2, D.VE * .88, Vmax, "#7E57C2"]].forEach(([dr, v1, v2, col]) => { c.strokeStyle = col; c.beginPath(); c.moveTo(X(v1), Y(dr.a * v1 + dr.b)); c.lineTo(X(v2), Y(dr.a * v2 + dr.b)); c.stroke(); });
+      c.setLineDash([3, 3]); c.strokeStyle = "#C2185B"; const sE = D.d1.a * D.VE + D.d1.b; c.beginPath(); c.moveTo(X(D.VE), Y(sE)); c.lineTo(X(D.VE), h - b); c.stroke(); c.setLineDash([]);
+      c.fillStyle = "#C2185B"; c.textAlign = "center"; c.font = "700 13px Atkinson Hyperlegible, Arial"; c.fillText("V_E = " + fr(D.VE, 2) + " mL", X(D.VE), h - b - 6);
+    }
+    M.pts.forEach(p => { c.fillStyle = "#4A148C"; c.beginPath(); c.arc(X(p.V), Y(p.s), 3.4, 0, 7); c.fill(); c.strokeStyle = "#C2185B"; c.lineWidth = 1.6; c.beginPath(); c.arc(X(p.V), Y(p.sc), 3.6, 0, 7); c.stroke(); });
+  }
+  window.addEventListener("resize", dessineGraphe);
+
+  /* ---------- loupe : les ions à l'échelle microscopique ---------- */
+  const L = { parts: [], cv: null, c: null, w: 0, h: 0, eclairs: [] };
+  function loupeInit() { L.cv = $("#loupe"); L.c = L.cv.getContext("2d"); }
+  function loupeTick(dt, e) {
+    if (!L.c) return; const cv = L.cv, r = cv.getBoundingClientRect(); if (!r.width) return;
+    const dpr = Math.min(2, devicePixelRatio || 1); if (cv.width !== Math.round(r.width * dpr)) { cv.width = r.width * dpr; cv.height = r.height * dpr; }
+    const c = L.c, w = r.width, h = r.height; c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    /* nombre de particules ∝ concentration (échelle : 1 particule ≈ 0,05 mmol/L) */
+    const S = CHIMIE.SYSTEMES[P.sys], cible = {};
+    S.ions.forEach(k => cible[k] = M.becher ? Math.round((e.c[k] || 0) * 1000 / .05) : 0);
+    if (S.ech.Ac && M.becher) cible["AH"] = Math.round(Math.max(0, e.c.AH) * 1000 / .05);
+    const compte = {}; L.parts.forEach(p => compte[p.k] = (compte[p.k] || 0) + 1);
+    for (const k in cible) {
+      let n = compte[k] || 0;
+      while (n < Math.min(cible[k], 70)) { const venant = S.verses.includes(k) && etapeI >= idx("titrer"); L.parts.push({ k, x: venant ? w * .5 + (Math.random() - .5) * 30 : Math.random() * w, y: venant ? -8 : Math.random() * h, vx: (Math.random() - .5) * 40, vy: venant ? 60 : (Math.random() - .5) * 40 }); n++; }
+      while (n > Math.min(cible[k], 70)) {
+        const i = L.parts.findIndex(p => p.k === k); if (i < 0) break; const p = L.parts[i];
+        if (k === S.consomme) L.eclairs.push({ x: p.x, y: p.y, t: 0 });
+        L.parts.splice(i, 1); n--;
+      }
+    }
+    c.clearRect(0, 0, w, h);
+    const g = c.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, Math.max(w, h) * .7); g.addColorStop(0, "#f4f9ff"); g.addColorStop(1, "#dde9f7"); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    const agit = M.agit ? 1.6 : .6;
+    L.parts.forEach(p => {
+      p.vx += (Math.random() - .5) * 120 * dt * agit; p.vy += (Math.random() - .5) * 120 * dt * agit; p.vx *= .98; p.vy *= .98;
+      p.x += p.vx * dt; p.y += p.vy * dt; if (p.x < 8) { p.x = 8; p.vx = Math.abs(p.vx); } if (p.x > w - 8) { p.x = w - 8; p.vx = -Math.abs(p.vx); } if (p.y < 8 && p.vy < 0) { p.vy = Math.abs(p.vy); } if (p.y > h - 8) { p.y = h - 8; p.vy = -Math.abs(p.vy); }
+      const rad = p.k === "Na+" ? 6 : p.k === "Cl-" ? 7.5 : p.k === "AH" ? 6.5 : p.k.startsWith("A") ? 8 : 7;
+      c.fillStyle = p.k === "AH" ? "#BCAAA4" : COUL_ION[p.k]; c.beginPath(); c.arc(p.x, p.y, rad, 0, 7); c.fill();
+      c.fillStyle = "#fff"; c.font = "700 9px Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(CHARGE[p.k] || "", p.x, p.y + .5);
+    });
+    L.eclairs = L.eclairs.filter(f => (f.t += dt) < .7);
+    L.eclairs.forEach(f => { c.strokeStyle = `rgba(74,20,140,${1 - f.t / .7})`; c.lineWidth = 2; c.beginPath(); c.arc(f.x, f.y, 6 + f.t * 26, 0, 7); c.stroke(); c.fillStyle = `rgba(74,20,140,${1 - f.t / .7})`; c.font = "700 10px Arial"; c.fillText(P.sys === "chauf" ? "CH₃COOH" : "H₂O", f.x, f.y - 12 - f.t * 10); });
+  }
+
+  /* ---------- schéma 2D réaliste (vue de secours et vue « schéma ») ---------- */
+  function schema2D(e) {
+    const s = $("#svg2d"); if (!s || s.parentNode.style.display === "none" && SCENE.pret()) return;
+    const yTop = 40, y0 = 70, k = 9.2, y25 = y0 + 25 * k; // burette
+    const niv = M.Vbur >= -1.5 && SCENE.etat.remplie ? y0 + M.Vbur * k : null;
+    s.querySelector("#b-liq").setAttribute("y", niv == null ? y25 : niv); s.querySelector("#b-liq").setAttribute("height", niv == null ? 0 : Math.max(0, y25 + 18 - niv));
+    s.querySelector("#b-men").setAttribute("transform", `translate(0,${niv == null ? -999 : niv})`);
+    const Vb = M.becher ? P.Va + P.Veau + M.V : 0, hb = Vb * .42;
+    s.querySelector("#c-liq").setAttribute("y", 462 - hb); s.querySelector("#c-liq").setAttribute("height", hb);
+    s.querySelector("#rob").setAttribute("transform", `rotate(${SCENE.etat.debit ? 90 : 0} 208 ${y25 + 34})`);
+    s.querySelector("#goutte").style.display = SCENE.etat.debit ? "" : "none";
+    s.querySelector("#cel").setAttribute("transform", `translate(22,${M.immerge || SCENE.etat.celCible ? 0 : -90})`);
+    s.querySelector("#lcd2").textContent = M.immerge ? affLCD(M.sigAff).v.trim().replace(".", ",") : "0,00";
+    s.querySelector("#lcdu").textContent = affLCD(M.sigAff).u;
+    s.querySelector("#barreau").setAttribute("transform", `rotate(${M.agit ? (performance.now() / 4) % 360 : 0} 210 455) `);
+    s.querySelector("#poub").style.display = M.poubelle ? "" : "none";
+  }
+  function construitSchema() {
+    const y0 = 70, k = 9.2, y25 = y0 + 25 * k; let gr = "";
+    for (let i = 0; i <= 250; i++) { const y = y0 + i / 10 * k, ml = i % 10 === 0, d = i % 5 === 0; if (i % 2 && !ml && !d) continue; gr += `<line x1="${ml ? 200 : d ? 203 : 205}" x2="${ml ? 216 : d ? 213 : 211}" y1="${y}" y2="${y}" stroke="#222" stroke-width="${ml ? 1.1 : .6}"/>`; if (ml && i % 50 === 0) gr += `<text x="196" y="${y + 3}" font-size="8" text-anchor="end">${i / 10}</text>`; }
+    $("#svg2d").innerHTML = `
+<defs><linearGradient id="gv" x1="0" x2="1"><stop offset="0" stop-color="#cfd8e3" stop-opacity=".9"/><stop offset=".25" stop-color="#fff" stop-opacity=".4"/><stop offset=".8" stop-color="#e8eef5" stop-opacity=".3"/><stop offset="1" stop-color="#b8c3d0" stop-opacity=".9"/></linearGradient>
+<linearGradient id="gl" x1="0" x2="1"><stop offset="0" stop-color="#b9daf7"/><stop offset=".5" stop-color="#e6f3ff"/><stop offset="1" stop-color="#b3d4f2"/></linearGradient>
+<linearGradient id="gm" x1="0" x2="1"><stop offset="0" stop-color="#9ea3ad"/><stop offset=".45" stop-color="#f4f5f7"/><stop offset="1" stop-color="#8d929c"/></linearGradient></defs>
+<rect x="0" y="508" width="520" height="12" fill="#d9d4e2"/>
+<!-- potence -->
+<rect x="70" y="492" width="190" height="16" rx="4" fill="#2d2a33"/><rect x="96" y="20" width="8" height="474" fill="url(#gm)"/>
+<rect x="90" y="150" width="20" height="18" rx="2" fill="#8c8f98"/><rect x="104" y="155" width="96" height="7" fill="url(#gm)"/><rect x="196" y="148" width="24" height="22" rx="3" fill="#1e88e5" opacity=".85"/>
+<rect x="90" y="330" width="20" height="18" rx="2" fill="#8c8f98"/><path d="M104 336 L170 336 L170 342 L104 342Z" fill="url(#gm)"/><rect x="164" y="330" width="14" height="18" rx="3" fill="#f57c00"/>
+<!-- burette -->
+<rect x="201" y="${y0 - 30}" width="14" height="${y25 - y0 + 50}" fill="#fff" stroke="#9aa6b5" stroke-width="1"/>
+<rect id="b-liq" x="202" y="${y0}" width="12" height="0" fill="url(#gl)" opacity=".9"/>
+<g id="b-men"><path d="M202 0 Q208 5 214 0" fill="none" stroke="#33475e" stroke-width="1.6"/></g>
+<rect x="213" y="${y0 - 30}" width="2" height="${y25 - y0 + 50}" fill="#1565C0" opacity=".55"/>
+${gr}
+<path d="M201 ${y25 + 20} L215 ${y25 + 20} L211 ${y25 + 30} L205 ${y25 + 30}Z" fill="url(#gv)" stroke="#9aa6b5"/>
+<rect x="196" y="${y25 + 30}" width="24" height="8" rx="3" fill="#eef1f5" stroke="#9aa6b5"/>
+<g id="rob"><rect x="219" y="${y25 + 30}" width="20" height="8" rx="2" fill="#1976d2"/></g>
+<path d="M205 ${y25 + 38} L211 ${y25 + 38} L209.5 ${y25 + 62} L206.5 ${y25 + 62}Z" fill="url(#gv)" stroke="#9aa6b5"/>
+<ellipse id="goutte" cx="208" cy="${y25 + 72}" rx="2.6" ry="3.4" fill="#9cc8f0"/>
+<text x="232" y="${y0 + 40}" font-size="11" fill="#4A148C" font-weight="700">Burette graduée</text><text x="232" y="${y0 + 54}" font-size="10" fill="#5b5368">soude C_b</text>
+<!-- bécher de récupération -->
+<g id="poub" style="display:none"><path d="M180 400 L236 400 L236 460 L180 460Z" fill="url(#gv)" stroke="#9aa6b5"/><text x="208" y="430" font-size="9" text-anchor="middle" fill="#c62828">récup.</text></g>
+<!-- agitateur -->
+<rect x="140" y="466" width="140" height="28" rx="6" fill="#f2f1f4" stroke="#bdb8c7"/><rect x="146" y="470" width="128" height="6" rx="3" fill="#e2dfe8"/>
+<rect x="150" y="480" width="120" height="12" rx="3" fill="#4A148C"/><circle cx="178" cy="486" r="5" fill="#26222c"/><circle cx="242" cy="486" r="5" fill="#26222c"/><circle cx="210" cy="486" r="2.5" fill="${'#66ff88'}"/>
+<text x="290" y="486" font-size="11" fill="#4A148C" font-weight="700">Agitateur magnétique</text>
+<!-- bécher -->
+<rect id="c-liq" x="172" y="462" width="76" height="0" fill="url(#gl)" opacity=".85"/>
+<path d="M168 392 L168 462 Q168 466 172 466 L248 466 Q252 466 252 462 L252 392 L256 388" fill="none" stroke="#7d8a9a" stroke-width="2.2"/>
+<g id="barreau"><rect x="200" y="451" width="20" height="7" rx="3.5" fill="#fff" stroke="#999"/></g>
+<text x="262" y="430" font-size="11" fill="#4A148C" font-weight="700">Bécher</text>
+<!-- cellule -->
+<g id="cel"><rect x="164" y="334" width="10" height="92" rx="2" fill="#1c1b20"/><rect x="162" y="424" width="14" height="22" fill="url(#gv)" stroke="#7d8a9a"/><rect x="164.5" y="428" width="2" height="14" fill="#333"/><rect x="171.5" y="428" width="2" height="14" fill="#333"/>
+<path d="M169 334 C169 300 250 280 330 300 C360 308 372 330 380 360" fill="none" stroke="#1c1b20" stroke-width="3"/></g>
+<text x="40" y="420" font-size="11" fill="#4A148C" font-weight="700">${PH ? "Électrode" : "Cellule de"}</text><text x="40" y="434" font-size="11" fill="#4A148C" font-weight="700">${PH ? "de pH" : "conductimétrie"}</text><line x1="112" y1="426" x2="182" y2="432" stroke="#4A148C" stroke-width=".8"/>
+<!-- conductimètre -->
+<rect x="350" y="360" width="150" height="112" rx="10" fill="#f3f2f6" stroke="#bdb8c7"/><rect x="362" y="372" width="126" height="56" rx="4" fill="#c5d3a6" stroke="#8a957a"/>
+<text id="lcd2" x="476" y="408" font-size="26" text-anchor="end" font-family="DejaVu Sans Mono, monospace" fill="#1d2215">0,00</text><text id="lcdu" x="476" y="422" font-size="9" text-anchor="end" fill="#1d2215">mS/cm</text>
+<rect x="362" y="438" width="126" height="24" rx="4" fill="#2d1b4e"/><circle cx="385" cy="450" r="6" fill="#e1bee7"/><circle cx="412" cy="450" r="6" fill="#e1bee7"/><circle cx="439" cy="450" r="6" fill="#e1bee7"/><circle cx="466" cy="450" r="6" fill="#C2185B"/>
+<text x="425" y="352" font-size="11" fill="#4A148C" font-weight="700" text-anchor="middle">${PH ? "pH-mètre" : "Conductimètre"}</text>`;
+  }
+
+
+  /* ================= variante pH-métrique ================= */
+  function adapterPH(E) {
+    const i = E.findIndex(x => x.id === "zero");
+    E.splice(i, 0, {
+      id: "etal", court: "Étalonner", t: "Étalonner le pH-mètre avec deux solutions tampons",
+      d: "Un pH-mètre neuf ou resté inutilisé affiche des valeurs fausses : sa pente et son décalage ont dérivé. On plonge l'électrode rincée dans le <b>tampon pH 7,00</b>, puis, après rinçage, dans le <b>tampon pH 4,00</b> ; l'appareil corrige alors sa droite d'étalonnage.<span class='note'>Observez l'afficheur : avant étalonnage, il indique une valeur proche mais inexacte (par exemple 7,07 dans le tampon 7,00 et 4,20 dans le tampon 4,00).</span>",
+      a: "Étalonner (tampon 7 puis tampon 4)", vue: "tampons",
+      fait() {
+        const S = SCENE.etat; S.celLieu = "t7"; M.tampon = 7.00;
+        setTimeout(() => { S.celLieu = "t4"; M.tampon = 4.00; }, 4200);
+        setTimeout(() => { S.etal = true; }, 7600);
+        setTimeout(() => { S.celLieu = null; S.celCible = 0; M.tampon = null; }, 9200);
+      },
+      attendre: () => SCENE.etat.etal && M.tampon == null
+    });
+    E.forEach(x => {
+      if (x.id === "monter") x.court = "Monter";
+      if (x.id === "zero") x.court = "Zéro de la burette";
+      if (x.id === "prise") { x.court = "Prise d'essai"; x.d = "Avec une pipette jaugée, prélevez V<sub>a</sub> de limonade <b>dégazée</b> (le CO<sub>2</sub> dissous est un acide : il serait titré aussi) dans le bécher, puis ajoutez de l'eau distillée. <b>L'eau ne change pas la quantité d'acide</b>, donc pas V<sub>E</sub> ; elle permet d'immerger l'électrode."; }
+      if (x.id === "cellule") {
+        x.court = "Électrode et agitation"; x.t = "Plonger l'électrode et lancer l'agitation";
+        x.d = "Rincez l'électrode à l'eau distillée et plongez-la : la <b>membrane de verre</b> et le <b>diaphragme</b> (petit point sur le côté) doivent être immergés, sans toucher le barreau aimanté. Agitation modérée.";
+        x.a = "Plonger l'électrode et agiter";
+        x.fait = function () {
+          SCENE.etat.celCible = 1; SCENE.etat.agitCible = .7; M.agit = true;
+          const h = (P.Va + P.Veau) / (Math.PI * 3.35 * 3.35);
+          M.immerge = h >= 2.4; if (!M.immerge) alerte("Le niveau ne monte qu'à " + fr(h * 10, 0) + " mm : le diaphragme de l'électrode (à 24 mm du fond, l'électrode étant tenue au-dessus du barreau) n'est pas immergé, la mesure est impossible. Revenez à l'étape précédente et ajoutez de l'eau.");
+          return M.immerge;
+        };
+      }
+      if (x.id === "titrer") { x.court = "Titrer"; x.d = "Versez la soude par pas : <b>1 mL</b> loin de l'équivalence, puis <b>0,2 mL ou goutte à goutte</b> près du saut de pH, pour bien le décrire. L'électrode de verre met environ 2 s à se stabiliser : le point (V ; pH) est noté automatiquement quand l'affichage ne bouge plus.<span class='note'>Vous pouvez aussi <b>maintenir la poignée bleue du robinet</b> dans la scène 3D pour verser goutte à goutte.</span>"; }
+      if (x.id === "exploiter") { x.court = "Exploiter"; x.t = "Exploiter : tangentes parallèles et dérivée"; x.d = "On trace deux tangentes parallèles à la courbe pH = f(V) de part et d'autre du saut, puis la parallèle équidistante : elle coupe la courbe en E (V<sub>E</sub> ; pH<sub>E</sub>). La courbe dérivée dpH/dV présente un pic à la même abscisse. Pour l'acide citrique, triacide : n<sub>0</sub>(AH<sub>3</sub>) = n<sub>E</sub>(HO<sup>−</sup>) / 3."; x.a = "Tracer les tangentes et la dérivée"; }
+      if (x.id === "fin") x.court = "Conclure";
+    });
+  }
+  function interpole(pts, V) { for (let i = 1; i < pts.length; i++) if (pts[i].V >= V) { const a = pts[i - 1], b = pts[i], t = (V - a.V) / ((b.V - a.V) || 1); return a.s + t * (b.s - a.s); } return pts[pts.length - 1].s; }
+  function derivee(pts) { const d = []; for (let i = 1; i < pts.length; i++) { const dv = pts[i].V - pts[i - 1].V; if (dv > 1e-6) d.push({ V: (pts[i].V + pts[i - 1].V) / 2, d: (pts[i].s - pts[i - 1].s) / dv }); } return d; }
+  function exploiterPH() {
+    const Ve = vrai().Ve, pts = M.pts;
+    if (!pts.length || pts[pts.length - 1].V < Ve * 1.2 || pts.filter(p => Math.abs(p.V - Ve) < .12 * Ve).length < 3) { alerte("Il faut des points serrés autour du saut et des points au-delà. Revenez au titrage et versez par petits pas près du saut."); return false; }
+    /* tangentes : on choisit deux points de même pente de part et d'autre du saut sur la courbe modèle de l'élève (points mesurés) */
+    const f = V => interpole(pts, V), pente = (V, h) => (f(V + h) - f(V - h)) / (2 * h);
+    const V1 = Ve * .78, s1 = pente(V1, Ve * .06);
+    let V2 = Ve * 1.12; for (let V = Ve * 1.06; V < Math.min(pts[pts.length - 1].V - .3, Ve * 1.8); V += .02) { if (pente(V, Ve * .04) <= s1) { V2 = V; break; } }
+    const b1 = f(V1) - s1 * V1, b2 = f(V2) - s1 * V2, bm = (b1 + b2) / 2;
+    let VE = Ve; for (let V = V1; V < V2; V += .005) { if (f(V) >= s1 * V + bm) { VE = V; break; } }
+    const d = derivee(pts); let Vd = 0, dm = -1; d.forEach(q => { if (q.d > dm) { dm = q.d; Vd = q.V; } });
+    M.droites = { s1, b1, b2, bm, VE, V1, V2, d, Vd, pHE: f(VE) }; dessineGraphe();
+    const S = CHIMIE.SYSTEMES[P.sys], n = S.nEq || 1, Cmes = P.Cb * VE / (n * P.Va), ecart = Math.abs(Cmes - P.Ca) / P.Ca * 100;
+    $("#etDesc").innerHTML = ETAPES[idx("exploiter")].d + `<span class='note'>Tangentes : V<sub>E</sub> = <b>${fr(VE, 2)} mL</b>, pH<sub>E</sub> = ${fr(f(VE), 2)} · Pic de la dérivée : V<sub>E</sub> ≈ ${fr(Vd, 2)} mL.<br>C<sub>a</sub> = C<sub>b</sub> · V<sub>E</sub> / (${n > 1 ? n + " " : ""}V<sub>a</sub>) = ${fr(P.Cb, 3)} × ${fr(VE, 2)} / (${n > 1 ? n + " × " : ""}${fr(P.Va, 1)}) = <b>${fr(Cmes * 1000, 2)} mmol·L⁻¹</b> (valeur de préparation : ${fr(P.Ca * 1000, 2)} mmol·L⁻¹, écart ${fr(ecart, 1)} %).</span>`;
+    return true;
+  }
+  function conclusionPH() {
+    const D = M.droites, S = CHIMIE.SYSTEMES[P.sys], n = S.nEq || 1;
+    return `Le titrage pH-métrique repère l'équivalence par le <b>saut de pH</b> : méthode des tangentes parallèles ou maximum de la dérivée dpH/dV.` +
+      (D ? `<span class='note'>Résultat : V<sub>E</sub> = ${fr(D.VE, 2)} mL, donc C<sub>a</sub> = ${fr(P.Cb * D.VE / (n * P.Va) * 1000, 2)} mmol·L⁻¹` + (P.sys === "cit" ? `, soit ${fr(P.Cb * D.VE / (n * P.Va) * 192, 2)} g·L⁻¹ d'acide citrique dans la limonade.` : ".") + `</span>` : "") +
+      `<span class='note'>À retenir : on étalonne le pH-mètre avant toute mesure ; on resserre les ajouts près du saut ; l'acide citrique est un triacide dont les trois acidités, de pK<sub>A</sub> proches, sont titrées ensemble : un seul saut, à n(HO⁻) = 3 n<sub>0</sub>(AH<sub>3</sub>).</span>`;
+  }
+  function majSuiviPH(e) {
+    const S = CHIMIE.SYSTEMES[P.sys], V0 = P.Va + P.Veau, d = M.pts.length > 1 ? derivee(M.pts.slice(-2))[0] : null;
+    $("#tM").textContent = M.immerge ? fr(M.sigAff, 2) : "—";
+    $("#tV").textContent = fr(M.V, 2);
+    $("#tC").textContent = d ? fr(d.d, 2) : "—";
+    $("#tP").textContent = M.becher ? fr(e.nb / e.na, 2) : "—";
+    const ph = M.becher ? phase(e) : null;
+    const b = $("#phase"); b.className = "phase " + (ph || ""); b.textContent = !ph ? "Bécher vide" : ph === "avant" ? "Avant l'équivalence" : ph === "eq" ? "Saut de pH : équivalence" : "Après l'équivalence";
+    $("#equation").innerHTML = S.eq;
+    $("#interp").innerHTML = ph ? S.interp[ph] : "Préparez le bécher pour voir la solution évoluer.";
+    $("#infos").innerHTML = `V<sub>0</sub> = ${fr(V0, 1)} mL · V<sub>total</sub> = ${fr(V0 + M.V, 2)} mL · n<sub>0</sub>(acide) = ${fr(e.na * 1000, 4)} mmol · n(HO⁻) versé = ${fr(e.nb * 1000, 4)} mmol` + (P.sys === "cit" ? " · il faut 3 HO⁻ par AH₃" : "");
+    const box = $("#ions"); if (!M.becher) { box.innerHTML = ""; return; }
+    const ref = Math.max(...S.ions.map(k => e.c[k] || 0), 1e-9);
+    box.innerHTML = S.ions.map(k => `<div class="ion"><span><b style="color:${COUL_ION[k]}">${NOM_ION[k]}</b></span><span class="barre"><i style="width:${Math.min(100, (e.c[k] || 0) / ref * 100)}%;background:${COUL_ION[k]}"></i></span><span>${fr((e.c[k] || 0) * 1000, 2)} mmol/L</span></div>`).join("");
+  }
+  function grapheePH() {
+    const cv = $("#graphe"), r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = r.width * dpr; cv.height = r.height * dpr; const c = cv.getContext("2d"); c.scale(dpr, dpr);
+    const w = r.width, h = r.height, g = 40, dr = 58, ht = 16, b = 36;
+    const e0 = vrai(), Vmax = Math.max(5, Math.ceil(Math.min(25, 2 * e0.Ve) / 5) * 5);
+    const X = v => g + v / Vmax * (w - g - dr), Y = p => h - b - p / 14 * (h - b - ht);
+    c.clearRect(0, 0, w, h); c.font = "12px Atkinson Hyperlegible, Arial"; c.fillStyle = "#5b5368"; c.strokeStyle = "#EDE7F6"; c.lineWidth = 1;
+    for (let v = 0; v <= Vmax; v += Vmax > 15 ? 2 : 1) { c.beginPath(); c.moveTo(X(v), ht); c.lineTo(X(v), h - b); c.stroke(); c.textAlign = "center"; c.fillText(String(v), X(v), h - b + 16); }
+    for (let p = 0; p <= 14; p += 2) { c.beginPath(); c.moveTo(g, Y(p)); c.lineTo(w - dr, Y(p)); c.stroke(); c.textAlign = "right"; c.fillText(String(p), g - 6, Y(p) + 4); }
+    c.strokeStyle = "#4A148C"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(g, ht); c.lineTo(g, h - b); c.lineTo(w - dr, h - b); c.stroke();
+    c.fillStyle = "#4A148C"; c.font = "700 12.5px Atkinson Hyperlegible, Arial"; c.textAlign = "right"; c.fillText("V (mL)", w - dr, h - 4); c.textAlign = "left"; c.fillText("pH", g + 6, ht + 2);
+    const d = derivee(M.pts), dmax = Math.max(1, ...d.map(q => q.d));
+    if (d.length > 1) { /* courbe dérivée, axe de droite */
+      const Yd = q => h - b - q / dmax * (h - b - ht) * .9;
+      c.strokeStyle = "#C2185B"; c.lineWidth = 1.6; c.beginPath(); d.forEach((q, i) => i ? c.lineTo(X(q.V), Yd(q.d)) : c.moveTo(X(q.V), Yd(q.d))); c.stroke();
+      c.fillStyle = "#C2185B"; c.textAlign = "left"; c.fillText("dpH/dV", w - dr + 4, ht + 2); c.font = "11px Arial"; c.fillText(fr(dmax, 1), w - dr + 4, Yd(dmax) + 14);
+    }
+    const D = M.droites;
+    if (D) {
+      c.setLineDash([6, 4]); c.lineWidth = 1.6; c.strokeStyle = "#7E57C2";
+      [[D.b1, D.V1], [D.b2, D.V2], [D.bm, D.VE]].forEach(([bb, Vc], i) => { const v1 = Math.max(0, Vc - Vmax * .18), v2 = Math.min(Vmax, Vc + Vmax * .18); c.strokeStyle = i === 2 ? "#C2185B" : "#7E57C2"; c.beginPath(); c.moveTo(X(v1), Y(D.s1 * v1 + bb)); c.lineTo(X(v2), Y(D.s1 * v2 + bb)); c.stroke(); });
+      c.setLineDash([3, 3]); c.strokeStyle = "#C2185B"; c.beginPath(); c.moveTo(X(D.VE), Y(D.pHE)); c.lineTo(X(D.VE), h - b); c.stroke(); c.setLineDash([]);
+      c.fillStyle = "#C2185B"; c.beginPath(); c.arc(X(D.VE), Y(D.pHE), 5, 0, 7); c.fill(); c.font = "700 13px Atkinson Hyperlegible, Arial"; c.textAlign = "left"; c.fillText("E : V_E = " + fr(D.VE, 2) + " mL", X(D.VE) + 8, Y(D.pHE) + 4);
+    }
+    M.pts.forEach(p => { c.fillStyle = "#4A148C"; c.beginPath(); c.arc(X(p.V), Y(p.s), 3.2, 0, 7); c.fill(); });
+  }
+
+  /* ---------- réglages ---------- */
+  function lieRegl() {
+    const preset = () => { const Q = PRESETS[$("#rSys").value]; [["rCa", "Ca"], ["rVa", "Va"], ["rCb", "Cb"], ["rEau", "Veau"]].forEach(([id, k]) => { const el = $("#" + id), [mi, ma, st, v] = Q[k]; el.min = mi; el.max = ma; el.step = st; el.value = v; }); };
+    if (PH) $("#rSys").innerHTML = '<option value="cit">Acide citrique (limonade) → soude</option><option value="hcl">Acide chlorhydrique → soude</option><option value="ac">Acide éthanoïque → soude</option>';
+    $("#rSys").value = P.sys; preset();
+    $("#rSys").addEventListener("change", () => { preset(); maj(); });
+    const maj = () => {
+      P.sys = $("#rSys").value; P.Ca = +$("#rCa").value / 1000; P.Va = +$("#rVa").value; P.Cb = +$("#rCb").value / 1000; P.Veau = +$("#rEau").value;
+      $("#oCa").textContent = fr(P.Ca * 1000, 1) + " mmol·L⁻¹"; $("#oVa").textContent = fr(P.Va, 1) + " mL"; $("#oCb").textContent = fr(P.Cb * 1000, 1) + " mmol·L⁻¹"; $("#oEau").textContent = P.Veau + " mL";
+      const h = (P.Va + P.Veau) / (Math.PI * 3.35 * 3.35) * 10; $("#hNiv").textContent = PH ? `Hauteur de liquide ≈ ${fr(h, 0)} mm (la membrane et le diaphragme de l'électrode doivent être immergés : 24 mm au moins, l'électrode restant au-dessus du barreau).` : `Hauteur de liquide ≈ ${fr(h, 0)} mm (les plaques de la cellule montent jusqu'à 24 mm : elle est tenue au-dessus du barreau).`;
+      SCENE.etat.couleur = 0xdcefff; SCENE.pret() && SCENE.flacon(CHIMIE.SYSTEMES[P.sys].titrant.concat(["C = " + fr(P.Cb * 1000, 1) + " mmol·L⁻¹", "Danger"]));
+      const S = CHIMIE.SYSTEMES[P.sys]; $("#legIons").innerHTML = S.ions.map(k => `<span><i style="background:${COUL_ION[k]}"></i>${NOM_ION[k]}</span>`).join(" ") + (S.ech.Ac ? ' <span><i style="background:#BCAAA4"></i>CH₃COOH</span>' : "");
+      $("#equation").innerHTML = S.eq; dessineGraphe();
+    };
+    document.querySelectorAll("#regl input, #regl select").forEach(i => i.oninput = maj); maj();
+  }
+  $("#recommencer").onclick = () => location.reload();
+
+  /* ---------- 3D / 2D ---------- */
+  function mode(m) {
+    const d3 = m === "3d" && SCENE.pret();
+    document.querySelector("#scene canvas.gl") && (document.querySelector("#scene canvas.gl").style.visibility = d3 ? "visible" : "hidden");
+    $("#schema").style.display = d3 ? "none" : "flex"; $(".vues").style.display = d3 ? "" : "none"; $(".badge").style.display = d3 ? "" : "none";
+    $("#b3d").classList.toggle("on", d3); $("#b2d").classList.toggle("on", !d3); $("#bEt").style.display = d3 ? "" : "none";
+  }
+  if (PH) {
+    document.querySelector(".tete h1").textContent = "Titrage suivi par pH-métrie";
+    document.querySelector(".tete .notion").textContent = "Notions : titrage, équivalence, méthode des tangentes, courbe dérivée, polyacide";
+    document.querySelector(".securite ul").innerHTML = "<li>La soude est corrosive, même diluée : blouse, lunettes et gants pendant tout le titrage.</li><li>On remplit la burette robinet fermé, <b>en dessous du niveau des yeux</b>, avec un entonnoir que l'on retire ensuite.</li><li>La membrane de verre de l'électrode est très fragile : elle ne doit toucher ni le barreau aimanté ni le fond du bécher. On la rince à l'eau distillée, on la tamponne sans frotter, et on la range dans sa solution de stockage (jamais à sec).</li><li>Les solutions usagées vont dans le bidon de récupération.</li>";
+    document.querySelector(".tuile.m small").textContent = "pH mesuré"; document.querySelector(".tuile.c small").textContent = "Pente dpH/dV (mL⁻¹)"; document.querySelectorAll(".tuile small")[3].textContent = "n(HO⁻) versé / n₀(acide)";
+    document.querySelector(".suivi h3").textContent = "Courbe et analyse";
+    document.querySelector('.vues button[data-v=appareil]').textContent = "pH-mètre";
+    document.querySelector(".graphe .legende").innerHTML = '<span><i style="background:#4A148C"></i>pH mesuré</span><span><i style="background:#C2185B"></i>dérivée dpH/dV</span><span>-- tangentes parallèles et parallèle équidistante</span>';
+  }
+  construitSchema(); loupeInit(); lieRegl();
+  const ok3d = SCENE.init($("#scene"));
+  if (!ok3d) { $("#secours").style.display = "block"; $("#b3d").disabled = true; }
+  mode(ok3d ? "3d" : "2d");
+  $("#b3d").onclick = () => mode("3d"); $("#b2d").onclick = () => mode("2d");
+  let et = true; $("#bEt").onclick = () => { et = !et; SCENE.etiquettes(et); $("#bEt").classList.toggle("on", et); };
+  document.querySelectorAll(".vues button").forEach(b => b.onclick = () => SCENE.vue(b.dataset.v));
+  SCENE.tick = tick;
+  SCENE.surRobinet = on => { if (ETAPES[etapeI].id === "titrer") M.tenu = on; };
+  if (!ok3d) { let t = performance.now(); (function f() { const n = performance.now(); tick(Math.min(.05, (n - t) / 1000)); t = n; requestAnimationFrame(f); })(); }
+  rendEtape(); dessineGraphe(); majSuivi(vrai());
+  window.__M = M; window.__P = P; window.__go = i => { etapeI = i; rendEtape(); };
+})();
+
+/* ===== Onglets des parties du TP, sur-titre de l'étape et formule utilisée ===== */
+(function () {
+  const mode = (window.CFG || {}).mode;
+  const PARTIES = mode === "spectro" ? [
+    ["Régler l'appareil", ["allumer", "spectre", "lambda", "blanc"]],
+    ["Étalonner", ["etalons", "droite"]],
+    ["Doser la solution S", ["inconnue"]],
+    ["Conclure", ["fin"]]
+  ] : [
+    ["Préparer", ["monter", "etal", "zero", "prise", "cellule"]],
+    ["Titrer", ["titrer"]],
+    ["Exploiter", ["exploiter"]],
+    ["Conclure", ["fin"]]
+  ];
+  const FORMULE = {
+    cond: "σ = Σ λ<sub>i</sub>·[X<sub>i</sub>] <span class='sep'>•</span> à l'équivalence : n<sub>titré</sub> = C<sub>titrant</sub> · V<sub>E</sub>",
+    ph: "pH = − log [H<sub>3</sub>O<sup>+</sup>] <span class='sep'>•</span> à l'équivalence : n<sub>0</sub>(AH<sub>3</sub>) = C<sub>b</sub> · V<sub>E</sub> / 3",
+    spectro: "A = log (I<sub>0</sub> / I) = ε · ℓ · C = k · C <span class='sep'>•</span> C<sub>S</sub> = A<sub>S</sub> / k"
+  }[mode] || "";
+  const nav = document.getElementById("parties"), sur = document.getElementById("surTitre"), fo = document.getElementById("formule");
+  if (fo) fo.innerHTML = FORMULE;
+  if (nav) nav.innerHTML = PARTIES.map((P, i) => `<span title="${P[0]}"><b>0${i + 1}</b><i class="nom"> ${P[0]}</i></span>`).join("");
+  function maj() {
+    const id = document.body.dataset.etape, k = Math.max(0, PARTIES.findIndex(P => P[1].includes(id)));
+    if (nav) nav.querySelectorAll("span").forEach((s, i) => s.className = i < k ? "fait" : i === k ? "ici" : "");
+    if (sur) sur.textContent = "0" + (k + 1) + " / " + PARTIES[k][0];
+    const col = document.querySelector(".col-action"); if (col && col.scrollHeight > col.clientHeight) col.scrollTop = 0;
+  }
+  new MutationObserver(maj).observe(document.body, { attributes: true, attributeFilter: ["data-etape"] });
+  maj();
+})();
+
+</script>
+<script id="efir-bilan-fin-js">window.EFIR_ACT_ID="tle-ch3-titrage-cond";
+/* « Télécharger mon bilan » à la fin des paillasses réalistes et des TP « sondes » (© EFIR, Mme Messaoudi).
+   Paillasses : un encadré Nom / Classe / bouton apparaît à l'étape « Conclusion ».
+   TP sondes : le bouton s'ajoute à côté de « Télécharger mon compte rendu (PDF) » à la dernière étape.
+   Le PDF est créé par EFIR_BILAN (page d'accueil) ; le code TPEFIR1 est rangé dans ses propriétés pour l'Espace professeur. */
+(function () {
+  const ID = window.EFIR_ACT_ID || "activite", CT0 = "efir-bilan-t0-" + ID;
+  let t0 = Date.now(); try { t0 = +localStorage.getItem(CT0) || t0; localStorage.setItem(CT0, String(t0)); } catch (e) {}
+  const $ = s => document.querySelector(s);
+  const nu = h => String(h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const texte = el => { if (!el) return ""; const c = el.cloneNode(true); c.querySelectorAll("button,input,select,textarea,#efir-bilan-fin").forEach(e => e.remove());
+    c.querySelectorAll("h1,h2,h3,h4,p,li,tr,div,br").forEach(e => e.append("\n")); c.querySelectorAll("td,th").forEach(e => e.append(" | "));
+    return c.textContent.replace(/[ \t]+/g, " ").replace(/ \| \n/g, "\n").replace(/\n\s*\n+/g, "\n").trim(); };
+  const memo = (k, v) => { try { if (v === undefined) return localStorage.getItem("efir-eleve-" + k) || ""; localStorage.setItem("efir-eleve-" + k, v); } catch (e) { return ""; } };
+  const fr = x => typeof x === "number" ? (Math.abs(x) >= 1e4 || (x !== 0 && Math.abs(x) < 1e-3) ? x.toExponential(3) : (+x.toPrecision(4)).toString()).replace(".", ",") : String(x);
+
+  function contenu() {
+    const h1 = $("h1"), titre = nu(h1 ? h1.innerHTML : document.title) || ID, parts = [];
+    let fait = 0, n = 0;
+    const et = $("#etapeN"); const m = et && et.textContent.match(/(\d+)\s*\/\s*(\d+)/); if (m) { fait = +m[1]; n = +m[2]; }
+    /* paillasse : tableau de mesures + interprétation ; TP sondes : résultats du moteur */
+    document.querySelectorAll("table.mesures").forEach(t => { const x = texte(t); if (x) parts.push("Tableau de mesures\n" + x); });
+    try { if (typeof ETAPES !== "undefined" && ETAPES) {
+      if (ETAPES.finies && ETAPES.finies.size != null && typeof PARTIES !== "undefined") { fait = ETAPES.finies.size; n = PARTIES.length || n; }
+      if (ETAPES.res) { const r = Object.entries(ETAPES.res).filter(([k, v]) => v != null && typeof v !== "object").map(([k, v]) => k + " = " + fr(v)); if (r.length) parts.push("Résultats\n" + r.join("\n")); } } } catch (e) {}
+    try { if (typeof LAB !== "undefined" && LAB && Array.isArray(LAB.data) && LAB.data.length) parts.push("Mesures enregistrées\n" + LAB.data.slice(0, 80).map(p => Object.entries(p).filter(([k, v]) => typeof v === "number").map(([k, v]) => k + " = " + fr(v)).join(" ; ")).join("\n")); } catch (e) {}
+    const interp = texte($("#interp")); if (interp) parts.push("Dernière interprétation\n" + interp);
+    const conc = texte($("#etDesc")) || texte($(".etape.active, .etape-courante"));
+    return { titre, fait, n, detail: parts.join("\n\n"), conc };
+  }
+
+  async function telecharge(nomI, clI, dit, b) {
+    const nom = nomI ? nomI.value.trim() : "", cl = clI ? clI.value.trim() : "";
+    if (!nom) { dit("Écrivez d'abord votre nom et prénom."); nomI && nomI.focus(); return; }
+    if (!cl) { dit("Écrivez d'abord votre classe."); clI && clI.focus(); return; }
+    memo("nom", nom); memo("classe", cl);
+    const c = contenu(), t1 = Date.now(), av = c.n ? Math.min(1, c.fait / c.n) : 1;
+    const o = { v: 1, tp: "act_" + ID, titre: c.titre, eleve: nom, classe: cl, t0, t1, note: null, av: Math.round(av * 100) / 100,
+      parties: [[c.titre, c.fait, c.n || c.fait]], erreurs: [], conc: c.conc.slice(0, 1500),
+      annexes: [{ titre: "Compte rendu de l'élève", texte: (c.detail + "\n\n" + c.conc).slice(0, 6000) }], j: [] };
+    const code = "TPEFIR1:" + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+    const champs = { eleve: nom, classe: cl, tp: c.titre, note: "à corriger", avancement: Math.round(av * 100) + " %", erreurs: "—", reponses_fausses: "",
+      temps: Math.max(1, Math.round((t1 - t0) / 60000)) + " min", detail: (c.n ? `Étapes réalisées : ${c.fait} / ${c.n}\n\n` : "") + (c.detail || "—"),
+      conclusion: c.conc.slice(0, 3000) || "(conclusion vide)", date: new Date().toLocaleString("fr-FR"), code };
+    b.disabled = true; dit("Préparation de votre bilan PDF…");
+    try { const f = window.EFIR_BILAN || (window.top && window.top.EFIR_BILAN); if (!f) throw new Error("bilan"); const r = await f(champs); if (!r || !r.ok) throw new Error("pdf");
+      dit("✓ Bilan PDF téléchargé : déposez-le dans le devoir Google Classroom."); }
+    catch (e) { dit("Le PDF n'a pas pu être créé. Réessayez, ou utilisez « Télécharger mon compte rendu (PDF) » s'il est proposé."); }
+    finally { b.disabled = false; }
+  }
+
+  const CSS = `#efir-bilan-fin{margin:12px 0;padding:12px 14px;border:1px solid #E1BEE7;border-radius:12px;background:#F8F6FA}
+#efir-bilan-fin h3{margin:0 0 4px;font-size:1rem;color:#4A148C}#efir-bilan-fin p{margin:0 0 8px;font-size:.9rem}
+#efir-bilan-fin .lig{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}#efir-bilan-fin input{flex:1 1 140px;min-width:0;padding:7px 10px;border:1px solid #D1C4E9;border-radius:8px;font:inherit;background:#fff}
+.efir-bilan-btn{background:#4A148C!important;color:#fff!important;border:1px solid #4A148C!important;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+.efir-bilan-btn:hover:not([disabled]){background:#380E6B!important}.efir-bilan-btn[disabled]{opacity:.6;cursor:wait}
+#efir-bilan-note{display:block;margin-top:6px;font-size:.88rem;color:#4A148C}`;
+  const st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
+
+  /* paillasse : encadré à l'étape « Conclusion » */
+  function paillasse() {
+    const desc = $("#etDesc"); if (!desc || !document.body.dataset) return;
+    let box = $("#efir-bilan-fin"); const fin = document.body.dataset.etape === "fin";
+    if (!fin) { if (box) box.hidden = true; return; }
+    if (!box) {
+      box = document.createElement("div"); box.id = "efir-bilan-fin";
+      box.innerHTML = `<h3>📄 Mon bilan</h3><p>Écrivez votre nom et votre classe, téléchargez le bilan PDF, puis déposez-le dans le devoir Google Classroom.</p>
+        <div class="lig"><input id="eb-nom" placeholder="Nom et prénom" autocomplete="name" aria-label="Nom et prénom"><input id="eb-classe" placeholder="Classe" aria-label="Classe"></div>
+        <button type="button" class="efir-bilan-btn" id="eb-btn">📄 Télécharger mon bilan</button><span id="efir-bilan-note" role="status" aria-live="polite"></span>`;
+      const nav = desc.parentElement.querySelector(".nav"); (nav ? nav.before(box) : desc.after(box));
+      const nomI = $("#eb-nom"), clI = $("#eb-classe"); nomI.value = memo("nom"); clI.value = memo("classe");
+      $("#eb-btn").addEventListener("click", e => telecharge(nomI, clI, t => $("#efir-bilan-note").textContent = t, e.currentTarget));
+    }
+    box.hidden = false;
+  }
+  /* TP sondes : bouton à côté du compte rendu PDF */
+  function sondes() {
+    const nomI = $("#cr-nom"); if (!nomI || $("#eb-btn-s")) return;
+    const cr = [...document.querySelectorAll("button")].find(x => /Télécharger mon compte rendu/.test(x.textContent)); if (!cr) return;
+    const b = document.createElement("button"); b.type = "button"; b.id = "eb-btn-s"; b.className = cr.className + " efir-bilan-btn"; b.textContent = "📄 Télécharger mon bilan";
+    const note = document.createElement("span"); note.id = "efir-bilan-note"; note.setAttribute("role", "status");
+    cr.after(b); b.after(note);
+    if (!nomI.value) nomI.value = memo("nom"); const clI = $("#cr-classe"); if (clI && !clI.value) clI.value = memo("classe");
+    b.addEventListener("click", () => telecharge($("#cr-nom"), $("#cr-classe"), t => note.textContent = t, b));
+  }
+  const tour = () => { try { paillasse(); sondes(); } catch (e) {} };
+  new MutationObserver(tour).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-etape"] });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tour); else tour();
+})();
+
+</script>
+</body></html>

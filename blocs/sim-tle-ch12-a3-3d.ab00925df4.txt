@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel 3D · Accélérateur linéaire de particules</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Paillasse : en-tête de fiche, puis deux colonnes (tubes à gauche, flacons et carnet à droite), une seule colonne sur téléphone */
+:root {
+  --bg: #eef2f5;          /* carrelage de paillasse, gris bleuté */
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #15212d;
+  --muted: #576776;
+  --line: #d3dce4;
+  --navy: #003366;        /* bleu marine EFIR */
+  --navy-soft: #e3ecf6;
+  --red: #b42318;         /* sécurité, interdit */
+  --red-soft: #fdecea;
+  --green: #2f6f45;       /* vérifié */
+  --green-soft: #e7f3eb;
+  --amber: #8c6d1f;
+  --amber-soft: #fbf3df;
+  --glass: rgba(120, 150, 175, .55);
+  --glass-fill: rgba(255, 255, 255, .55);
+  --water: rgba(170, 205, 230, .38);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+    --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+    --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+    --water: rgba(150, 190, 225, .28); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+  --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+  --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+  --water: rgba(150, 190, 225, .28); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; color: var(--navy); }
+h1 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); line-height: 1.15; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+sub, sup { font-size: .7em; line-height: 0; }
+.kicker { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+header.fiche { display: grid; gap: 10px; }
+.pb { border: 1.5px solid var(--red); background: var(--surface); border-radius: var(--radius); padding: 10px 14px; font-weight: 700; }
+.pb span { color: var(--red); }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .92rem; padding: 0; margin: 0; list-style: none; }
+.steps li b { color: var(--ink); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: .88rem; }
+
+/* sécurité */
+.epi { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .92rem; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--green); background: var(--green-soft); color: var(--green); font-weight: 700; }
+.chip:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+
+/* porte-tubes */
+.rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px 6px; }
+.tube { font: inherit; background: none; border: 2px solid transparent; border-radius: 10px; padding: 4px 2px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; color: var(--ink); }
+.tube[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); }
+.tube svg { width: 52px; height: 178px; overflow: visible; }
+.tube .lab { font-size: .72rem; line-height: 1.15; text-align: center; min-height: 2.3em; color: var(--muted); }
+.tube .num { font-weight: 700; font-size: .8rem; }
+.glass { fill: var(--glass-fill); stroke: var(--glass); stroke-width: 2; }
+.drop { animation: fall .55s ease-in forwards; }
+@keyframes fall { from { transform: translateY(-34px); opacity: 1; } to { transform: translateY(var(--dy, 120px)); opacity: .2; } }
+.ppt circle { transition: fill 9s linear, opacity .9s ease, transform 2.2s ease-in; }
+@media (prefers-reduced-motion: reduce) { .drop { animation: none; opacity: 0; } .ppt circle { transition: none; } }
+.bench-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sel-info { flex: 1 1 220px; min-width: 0; font-size: .92rem; }
+
+/* flacons */
+.bottles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bottle { font: inherit; text-align: left; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 8px 10px; cursor: pointer; display: grid; gap: 4px; }
+.bottle:hover { border-color: var(--navy); }
+.bottle .nm { font-weight: 700; line-height: 1.2; }
+.bottle .io { font-size: .85rem; color: var(--muted); }
+.bottle .act { font-size: .78rem; color: var(--navy); font-weight: 700; }
+.bottle.reagent { background: var(--navy-soft); }
+.bottle[disabled] { opacity: .45; cursor: not-allowed; }
+.pic { display: flex; gap: 4px; }
+.pic img { width: 30px; height: 30px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--glass); vertical-align: -1px; margin-right: 4px; }
+
+button.btn { font: inherit; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1.5px solid var(--navy); background: var(--navy); color: var(--surface); }
+button.btn.ghost { background: transparent; color: var(--navy); }
+button.btn.warn { border-color: var(--red); color: var(--red); background: transparent; }
+button.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* messages */
+.toast { border-radius: 8px; padding: 9px 12px; font-size: .95rem; border: 1px solid var(--line); background: var(--surface-2); }
+.toast.err { border-color: var(--red); background: var(--red-soft); }
+.toast.ok { border-color: var(--green); background: var(--green-soft); }
+.toast.info { border-color: var(--amber); background: var(--amber-soft); }
+
+/* carnet */
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.log li { font-size: .92rem; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.log li.pos { border-left-color: var(--navy); }
+.log li:empty { display: none; }
+.log .t { color: var(--muted); font-size: .8rem; }
+
+/* tableaux */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 640px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; vertical-align: middle; }
+thead th, tbody th { background: var(--navy-soft); color: var(--navy); font-weight: 700; }
+tbody th { text-align: left; }
+td select { font: inherit; font-size: .88rem; width: 100%; min-width: 0; padding: 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+td.good select { border-color: var(--green); background: var(--green-soft); }
+td.bad select { border-color: var(--red); background: var(--red-soft); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.foot { color: var(--muted); font-size: .82rem; text-align: center; }
+details summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+
+/* animation et guide (version 3e) */
+.guide { display: flex; gap: 12px; align-items: center; background: var(--navy); color: var(--surface); border-radius: var(--radius); padding: 12px 14px; font-size: 1.05rem; }
+.guide b { color: inherit; }
+.guide .gn { flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--surface); color: var(--navy); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; }
+.next { box-shadow: 0 0 0 3px var(--amber); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--amber) 35%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .next { animation: none; } }
+.bench { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 520px) { .bench { grid-template-columns: minmax(0, 1fr); } .stage svg { max-height: 260px; } }
+.stage { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; display: grid; gap: 6px; justify-items: center; }
+.stage svg { width: 100%; max-width: 200px; height: auto; overflow: hidden; }
+.stage .caption { font-size: .95rem; text-align: center; min-height: 4.5em; }
+.stlbl { font: 700 15px var(--font-body); fill: var(--ink); }
+.mots summary { font-size: 1rem; }
+.mots dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 0; }
+.mots dt { font-weight: 700; color: var(--navy); }
+.mots dd { margin: 0; }
+@media (max-width: 520px) { .mots dl { grid-template-columns: 1fr; } .mots dd { margin-bottom: 6px; } }
+.tube .lab { font-size: .78rem; }
+.bottle .act { font-size: .88rem; }
+
+/* version 2 : actions rapides et compte rendu */
+.quick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.quick:empty { display: none; }
+.qbtn { font-size: .9rem; padding: 6px 10px; }
+.crform { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.crform label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+.crform input { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; width: 100%; }
+.crform label:first-child { flex: 1 1 220px; } .crform label:nth-child(2) { flex: 0 1 120px; }
+.cr { border: 1.5px solid var(--navy); border-radius: var(--radius); padding: 14px; background: var(--surface); display: grid; gap: 8px; }
+.cr h3, .cr h4 { margin: 4px 0 0; color: var(--navy); font-family: var(--font-display); }
+.cr ol, .cr ul { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.cr table { min-width: 0; font-size: .88rem; } .cr td, .cr th { text-align: left; }
+.cr .t { display: none; } .cr[hidden] { display: none; }
+.codebox { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.codebox input { font: inherit; width: 9em; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-transform: uppercase; }
+
+/* version 3 : question ion utile, mode économe */
+.ask { display: grid; gap: 8px; max-width: 260px; font-size: .92rem; text-align: center; }
+.ask .toast { text-align: left; }
+body.eco *, body.eco *::before, body.eco *::after { animation: none !important; transition: none !important; }
+#effacer { font-size: .85rem; padding: 4px 10px; margin-left: 6px; }
+
+/* version 4 : manipulations pilotées par l'élève */
+.vol { font-size: .92rem; align-self: center; }
+#verser { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.askbox:empty { display: none; }
+.askbox .ask { max-width: 280px; }
+.stage svg { overflow: visible; }
+
+.qtitle { width: 100%; text-align: center; font-size: .92rem; margin: 2px 0 0; }
+.quick .qbtn.next { font-size: .95rem; }
+.prof { margin: -4px 0 0; color: var(--navy); font-size: 1rem; }
+
+/* protocole de la fiche */
+.proto { border: 1.5px solid var(--navy); border-radius: var(--radius); background: var(--surface); padding: 10px 12px; }
+.proto summary { font-weight: 700; color: var(--navy); cursor: pointer; }
+.proto ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.proto li { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 1.4em; gap: 8px; align-items: start; font-size: .92rem; padding: 6px 8px; border-radius: 8px; }
+.proto li.partie { display: block; grid-template-columns: none; font-family: var(--font-display); font-weight: 700; color: var(--navy); padding: 6px 0 0; font-size: .95rem; }
+.proto .q { font-weight: 700; color: var(--muted); font-size: .8rem; padding-top: 2px; }
+.proto .st { font-weight: 700; color: var(--green); text-align: center; }
+.proto li.cur { background: var(--amber-soft); outline: 1.5px solid var(--amber); }
+.proto li.cur .st { color: var(--amber); }
+.proto li.fait .tx { color: var(--muted); }
+.proto li.fait { background: var(--green-soft); }
+.proto ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.proto ul li { display: block; padding: 0; font-size: .88rem; background: none; outline: none; }
+.proto ul li.fait { color: var(--green); background: none; }
+
+#prototout { margin-top: 8px; }
+.proto:not(.tout) #proto > li:not(.cur) { display: none; }
+.proto li { grid-template-columns: 4.2em minmax(0, 1fr) 1.4em; }
+.extract{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center}.extract svg{width:120px;height:120px}
+
+/* ===== Compléments communs aux simulations 3D (Terminale) ===== */
+.scene3d { margin: 0; position: relative; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.scene3d canvas.c3d { width: 100%; aspect-ratio: 16 / 10; display: block; touch-action: none; cursor: grab; }
+.scene3d canvas.c3d:active { cursor: grabbing; }
+.scene3d .vues { position: absolute; top: 8px; left: 8px; display: flex; flex-wrap: wrap; gap: 4px; max-width: calc(100% - 16px); }
+.scene3d .vues button, .scene3d .zoom button { font: inherit; font-size: .78rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--navy); cursor: pointer; }
+.scene3d .vues button[aria-pressed="true"] { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.scene3d .zoom { position: absolute; right: 8px; bottom: 8px; display: grid; gap: 4px; }
+.scene3d .zoom button { width: 2rem; height: 2rem; padding: 0; font-size: 1.1rem; }
+.scene3d .hud { position: absolute; left: 8px; bottom: 8px; font-size: .8rem; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-variant-numeric: tabular-nums; max-width: calc(100% - 64px); }
+.scene3d .hud:empty { display: none; }
+.scene3d .astuce { position: absolute; right: 8px; top: 8px; font-size: .72rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 80%, transparent); border-radius: 6px; padding: 2px 6px; }
+@media (max-width: 520px) { .scene3d canvas.c3d { aspect-ratio: 4 / 3.6; } .scene3d .astuce { display: none; } }
+.nogl { padding: 30px 16px; text-align: center; color: var(--red); font-weight: 700; }
+.reglages { display: grid; gap: 10px; }
+.reglage { display: grid; grid-template-columns: 9em minmax(0, 1fr) 7.6em; gap: 10px; align-items: center; font-size: .95rem; }
+.reglage label { font-weight: 700; }
+.reglage output { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); text-align: right; }
+.reglage input[type=range] { width: 100%; accent-color: var(--navy); }
+@media (max-width: 520px) { .reglage { grid-template-columns: minmax(0, 1fr) auto; } .reglage input[type=range] { grid-column: 1 / -1; grid-row: 2; } }
+.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
+.calc div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .88rem; }
+.calc b { display: block; font-variant-numeric: tabular-nums; color: var(--navy); font-size: 1rem; }
+.question { border: 1.5px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--surface); min-width: 0; }
+.question h3 { font-size: 1rem; }
+.question .tag { font-size: .72rem; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: 2px; }
+.question select, .question input[type=text] { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.question select { width: 100%; }
+.question label { display: block; }
+.question label select { display: block; margin-top: 4px; }
+.question select.ok, .question input.ok { border-color: var(--green); background: var(--green-soft); }
+.question select.ko, .question input.ko { border-color: var(--red); background: var(--red-soft); }
+.question .pouce summary { font-size: .9rem; color: var(--amber); }
+.question .pouce { font-size: .88rem; }
+.question.verrou { opacity: .55; pointer-events: none; }
+.onglets { display: flex; flex-wrap: wrap; gap: 6px; }
+.onglets button { font: inherit; font-size: .88rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+.onglets button[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); color: var(--navy); }
+.graphe { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
+.graphe canvas { width: 100%; height: auto; aspect-ratio: 16 / 10; display: block; }
+.code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .84rem; background: #fffbe8; color: #2b2b2b; border: 1px solid #e8d9a0; border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre; line-height: 1.45; margin: 0; }
+.code .n { color: #9a8b55; user-select: none; }
+.code .c { color: #2f7d4a; }
+.code .k { color: #b22a7a; }
+.code .trou { background: #fff; border: 1.5px dashed #c77700; border-radius: 4px; padding: 0 6px; }
+.tablewrap.pointage { max-height: 230px; overflow: auto; }
+.tablewrap.pointage table { min-width: 420px; font-size: .84rem; }
+.tablewrap.pointage td { font-variant-numeric: tabular-nums; padding: 3px 6px; }
+.tablewrap.pointage tr.vu td { background: var(--amber-soft); }
+.badge3d { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--surface); background: var(--navy); border-radius: 4px; padding: 1px 6px; vertical-align: 3px; }
+#maconc { width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cr[hidden] { display: none; }
+/* gabarit pédagogique : situation et modèle, prédiction, énergie, python, piège du bac */
+.parcours { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; counter-reset: et; font-size: .9rem; }
+.parcours li { counter-increment: et; color: var(--muted); }
+.parcours li::before { content: counter(et, decimal-leading-zero) " "; font-weight: 700; color: var(--navy); }
+.parcours li b { color: var(--ink); }
+.modele { border: 1.5px solid var(--amber); background: var(--amber-soft); border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 4px; font-size: .95rem; }
+.modele h3 { font-size: .95rem; color: var(--amber); }
+.modele ul { margin: 0; padding-left: 1.2em; }
+.predire { border: 2px solid var(--navy); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--navy-soft); }
+.predire h3 { font-size: 1rem; }
+.predire .chip { text-align: left; }
+.energies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; height: 150px; padding: 6px 10px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.energies .barre { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.energies .barre .j { position: relative; }
+.energies .barre .j i { position: absolute; bottom: 0; left: 15%; right: 15%; border-radius: 4px 4px 0 0; height: 0; background: var(--c); }
+.energies .barre b { color: var(--navy); }
+.piege { border: 1.5px solid #c77700; background: #fff4e0; color: #4a3200; border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 6px; }
+.piege h3 { color: #a05a00; font-size: 1rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .piege { background: #33291a; color: #f3e2c0; } }
+.legende3d { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .84rem; color: var(--muted); }
+.legende3d span::before { content: ""; display: inline-block; width: 16px; height: 4px; border-radius: 2px; background: var(--c); vertical-align: middle; margin-right: 5px; }
+
+.particules { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pyout { font-family: ui-monospace, Consolas, monospace; font-size: .82rem; background: #15212d; color: #d8f3dc; border-radius: 8px; padding: 8px 10px; white-space: pre; overflow-x: auto; margin: 0; }
+.pyout[hidden] { display: none; }
+</style>
+<script src="lib/three-r128.min.js"></script>
+<style id="efir-colonnes">.wrap{grid-template-columns:minmax(0,1fr)}.wrap>*{min-width:0}canvas{max-width:100%}table{min-width:0;max-width:100%}th,td{overflow-wrap:anywhere}</style></head>
+<body>
+<div class="wrap">
+  <header class="fiche">
+    <a class="retour" href="#" onclick="parent.location.hash='terminale/mouvement/Mouvement%20dans%20un%20champ%20uniforme';return false" style="display:inline-block;margin:0 0 8px;font-weight:700;color:#1f6fd1;text-decoration:none">← Retour au chapitre</a>
+    <p class="kicker">EFIR · Terminale spécialité · Chapitre 12 · Activité 3 p. 241 (documentaire) · Simulation 3D <span class="badge3d">3D</span></p>
+    <h1>Un accélérateur linéaire de particules chargées</h1>
+    <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+    <p class="pb"><span>Problématique :</span> quel est le principe de fonctionnement d'un accélérateur linéaire de particules chargées ?</p>
+    <ol class="parcours"><li><b>Prédire</b> avant de lancer</li><li><b>Expérimenter</b> en 3D</li><li><b>Calculer</b> F et v<sub>B</sub></li><li><b>Confronter</b> avec Python</li><li><b>Garder une trace</b> (compte rendu)</li></ol>
+    <div class="modele"><h3>Le dispositif et le modèle</h3><ul>
+      <li><b>1 étage</b> = le condensateur plan du complément scientifique : la particule entre en A (plaque P<sub>A</sub>) sans vitesse et sort en B (plaque P<sub>B</sub>). Le champ E⃗ y est uniforme, de valeur E = |U<sub>AB</sub>| / d.</li>
+      <li><b>Plusieurs étages</b> : des tubes creux en cuivre, alternativement chargés + et −. À l'intérieur d'un tube, il n'y a pas de champ : la vitesse reste constante. Le champ n'existe que dans les intervalles entre deux tubes.</li>
+      <li>Seule force : F⃗ = q E⃗ (poids négligé, environ 10<sup>13</sup> fois plus petit). Mécanique classique. La scène n'est pas à l'échelle (d = 4,0 m dans le manuel) ; les valeurs affichées sont physiques.</li></ul></div>
+    <details class="panel mots"><summary>📖 Mots utiles et données</summary><dl>
+      <dt>Champ entre deux plaques</dt><dd>Direction perpendiculaire aux plaques ; sens de la plaque chargée + vers la plaque chargée − (sens des potentiels décroissants) ; valeur E = |U<sub>AB</sub>| / d (V·m<sup>−1</sup>).</dd>
+      <dt>Force électrique</dt><dd>F⃗ = q E⃗ ; pour un électron, q = −e : F⃗ est opposée à E⃗.</dd>
+      <dt>Travail de la force électrique</dt><dd>W<sub>A→B</sub>(F⃗) = q × U<sub>AB</sub>.</dd>
+      <dt>Théorème de l'énergie cinétique</dt><dd>E<sub>c</sub>(B) − E<sub>c</sub>(A) = W<sub>A→B</sub>(F⃗).</dd>
+      <dt>Données</dt><dd>m<sub>e</sub> = 9,1 × 10<sup>−31</sup> kg ; q = −e = −1,60 × 10<sup>−19</sup> C ; m<sub>p</sub> = 1,67 × 10<sup>−27</sup> kg ; g = 9,81 m·s<sup>−2</sup>.</dd>
+    </dl></details>
+    <details class="panel mots" id="aide"><summary>❓ Aide</summary><dl>
+      <dt>Lancer</dt><dd>1. Faire sa prédiction. 2. Choisir la particule, U<sub>AB</sub>, d et le nombre d'étages. 3. « ▶ Lancer ».</dd>
+      <dt>Inversion de la tension</dt><dd>Cochée : la tension alternative change de signe pendant que la particule est dans un tube (les signes + et − des tubes s'échangent). Décochée : les charges des tubes restent fixes.</dd>
+      <dt>Écrire un nombre</dt><dd>1,9 ou 1.9 (sans la puissance de 10, déjà écrite).</dd>
+    </dl></details>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-sc">
+      <header><h2 id="h-sc">L'accélérateur</h2><span class="row-actions"><button class="btn" id="demo" type="button">▶ Voir une démonstration</button><button class="btn ghost" id="reset" type="button">Tout remettre à zéro</button><button class="btn ghost" id="aidebtn" type="button">❓ Aide</button><button class="btn ghost" id="ecobtn" type="button" aria-pressed="false">🐢 Mode économe</button></span></header>
+      <details class="proto" open><summary>📋 Étapes à suivre (activité 3) <span class="hint" id="protocount"></span></summary><ol id="proto"></ol><button class="btn ghost qbtn" id="prototout" type="button">Voir toutes les étapes</button></details>
+      <figure class="scene3d" id="fig3d">
+        <canvas class="c3d" role="img" aria-label="Accélérateur linéaire en 3D : source de particules, plaques et tubes de cuivre chargés + et −, champ électrique dans les intervalles, particule avec ses vecteurs vitesse et force"></canvas>
+        <div class="vues" role="group" aria-label="Point de vue"><button type="button" data-vue="d3" aria-pressed="true">Vue 3D</button><button type="button" data-vue="face">De côté</button><button type="button" data-vue="suivre">Suivre la particule</button></div>
+        <div class="zoom"><button type="button" data-z="+" aria-label="Zoomer">+</button><button type="button" data-z="-" aria-label="Dézoomer">−</button></div>
+        <div class="hud" id="hud"></div>
+        <span class="astuce">Glisser pour tourner</span>
+      </figure>
+      <div class="legende3d"><span style="--c:#2f8f4e">vitesse v⃗</span><span style="--c:#e67e22">force F⃗ = qE⃗</span><span style="--c:#6fb3c8">champ E⃗ (intervalles)</span><span style="--c:#c0392b">électrode +</span><span style="--c:#1f6fd1">électrode −</span></div>
+      <div class="predire"><h3>🔮 Je prédis avant de lancer</h3><div id="predict"></div></div>
+      <div class="particules" role="group" aria-label="Particule"><span class="hint">Particule :</span>
+        <button class="chip" type="button" data-part="electron" aria-pressed="true">Électron (q = −e)</button><button class="chip" type="button" data-part="proton" aria-pressed="false">Proton (q = +e)</button></div>
+      <div class="reglages">
+        <div class="reglage"><label for="rU">Tension U<sub>AB</sub></label><input type="range" id="rU" min="-5" max="5" step="0.5" value="-1" data-save><output id="oU"></output></div>
+        <div class="reglage"><label for="rd">Distance d</label><input type="range" id="rd" min="1" max="8" step="0.5" value="4" data-save><output id="od"></output></div>
+        <div class="reglage"><label for="rN">Nombre d'étages</label><input type="range" id="rN" min="1" max="8" step="1" value="1" data-save><output id="oN"></output></div>
+      </div>
+      <div class="calc" aria-live="polite">
+        <div>E = |U<sub>AB</sub>| / d<b id="cE"></b></div>
+        <div>F = e |U<sub>AB</sub>| / d<b id="cF"></b></div>
+        <div>Gain d'énergie par étage |q U<sub>AB</sub>|<b id="cW"></b></div>
+      </div>
+      <div class="row-actions">
+        <button class="btn" id="lancer" type="button">▶ Lancer</button>
+        <label class="hint"><input type="checkbox" id="sync" data-save checked> Inverser la tension à chaque passage (tension alternative)</label>
+        <label class="hint"><input type="checkbox" id="vect" data-save checked> Vecteurs v⃗, F⃗ et E⃗</label>
+      </div>
+      <p class="toast info" id="msg" role="status" aria-live="polite">Faites votre première prédiction, puis lancez la particule.</p>
+    </section>
+
+    <div class="wrap" style="gap:18px">
+      <section class="panel" aria-labelledby="h-g">
+        <header><h2 id="h-g">Vitesse et énergie après chaque étage</h2></header>
+        <div class="onglets" role="group" aria-label="Graphique"><button type="button" data-g="v" aria-pressed="true">v = f(n)</button><button type="button" data-g="ec" aria-pressed="false">E<sub>c</sub> = f(n)</button></div>
+        <figure class="graphe" id="gfig"><canvas id="gcv" width="900" height="560" role="img" aria-label="Vitesse ou énergie cinétique de la particule en fonction du nombre d'étages traversés"></canvas></figure>
+      </section>
+
+      <section class="panel" aria-labelledby="h-q">
+        <header><h2 id="h-q">Questions de l'activité 3</h2><span class="hint">répondre dans l'ordre</span></header>
+        <div class="question">
+          <h3>1. Champ et charges <span class="tag">COM</span></h3>
+          <p>Des électrons sont accélérés vers la droite (doc. A). Observez la scène avec « Vecteurs » coché.</p>
+          <label>a. Les champs E⃗ qui accélèrent les électrons sont :<select id="q1a" data-save data-lib="Q1.a direction et sens de E" data-bonne="horizontaux (selon l'axe), orientés vers la gauche, à l'opposé du mouvement"><option value="">…</option><option>horizontaux (selon l'axe), orientés vers la droite, dans le sens du mouvement</option><option>horizontaux (selon l'axe), orientés vers la gauche, à l'opposé du mouvement</option><option>verticaux, orientés vers le haut</option></select></label>
+          <label>b. Le tube que l'électron quitte et le tube vers lequel il se dirige sont chargés :<select id="q1b" data-save data-lib="Q1.b signes des charges de deux tubes consécutifs" data-bonne="négativement, puis positivement"><option value="">…</option><option>positivement, puis négativement</option><option>négativement, puis positivement</option><option>tous les deux positivement</option></select></label>
+          <div class="row-actions"><button class="btn" type="button" data-check="q1a,q1b" data-ok="F⃗ = −e E⃗ est vers la droite, donc E⃗ est vers la gauche. E⃗ va de la plaque + vers la plaque − : le tube quitté est −, le tube suivant est +.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+        <div class="question">
+          <h3>2.a Force électrique <span class="tag">RÉA</span></h3>
+          <p>Plaques séparées de d = 4,0 m, U<sub>AB</sub> = −1,0 kV.</p>
+          <label>Expression de F :<select id="q2a" data-save data-lib="Q2.a expression de F" data-bonne="F = e × |UAB| / d"><option value="">…</option><option>F = e × |UAB| × d</option><option>F = e × |UAB| / d</option><option>F = |UAB| / d</option><option>F = e / (|UAB| × d)</option></select></label>
+          <label>F ≈ <input type="text" id="q2f" data-save data-lib="Q2.a valeur de F (× 10^-17 N)" data-val="F" data-tol="0.15" inputmode="decimal" size="6"> × 10<sup>−17</sup> N</label>
+          <div class="row-actions"><button class="btn" type="button" data-check="q2a,q2f" data-ok="F = |q| E = e |U<sub>AB</sub>| / d = 1,60 × 10<sup>−19</sup> × 1,0 × 10<sup>3</sup> / 4,0 = 4,0 × 10<sup>−17</sup> N.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+        <div class="question">
+          <h3>2.b Vitesse en sortie <span class="tag">RÉA</span></h3>
+          <p>Théorème de l'énergie cinétique entre A (v<sub>A</sub> = 0) et B. Vérifiez avec un lancer : électron, U<sub>AB</sub> = −1,0 kV, d = 4,0 m, 1 étage.</p>
+          <label>v<sub>B</sub> =<select id="q2b" data-save data-lib="Q2.b expression de vB" data-bonne="√( 2 × (−e) × UAB / me )"><option value="">…</option><option>√( 2 × (−e) × UAB / me )</option><option>2 × (−e) × UAB / me</option><option>√( 2 × e × UAB / me )</option><option>√( (−e) × UAB × d / me )</option></select></label>
+          <label>v<sub>B</sub> ≈ <input type="text" id="q2v" data-save data-lib="Q2.b valeur de vB (× 10^7 m/s)" data-val="vB" data-tol="0.06" inputmode="decimal" size="6"> × 10<sup>7</sup> m·s<sup>−1</sup></label>
+          <details class="pouce"><summary>Coup de pouce</summary>½ m<sub>e</sub> v<sub>B</sub><sup>2</sup> − 0 = q U<sub>AB</sub> = (−e) U<sub>AB</sub>. Avec U<sub>AB</sub> &lt; 0, le produit (−e) U<sub>AB</sub> est positif.</details>
+          <div class="row-actions"><button class="btn" type="button" data-check="q2b,q2v" data-pre="ref" data-ok="v<sub>B</sub> = √(2 × 1,60 × 10<sup>−19</sup> × 1,0 × 10<sup>3</sup> / 9,1 × 10<sup>−31</sup>) ≈ 1,9 × 10<sup>7</sup> m·s<sup>−1</sup> : la distance d n'intervient pas.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+        <div class="question">
+          <h3>Confronter avec Python <span class="tag">capacité numérique</span></h3>
+          <p>Ce programme calcule la vitesse de l'électron après chacun des 8 étages (|U<sub>AB</sub>| = 1,0 kV par étage). Complétez la ligne 6 et exécutez : les points rouges doivent tomber sur ceux d'un lancer à 8 étages.</p>
+<pre class="code"><span class="n">1 </span>e, m = 1.60e-19, 9.1e-31        <span class="c"># électron</span>
+<span class="n">2 </span>U = 1.0e3                        <span class="c"># |UAB| pour un étage (V)</span>
+<span class="n">3 </span>v = 0                            <span class="c"># vitesse en A (m/s)</span>
+<span class="n">4 </span>V = [v]
+<span class="n">5 </span><span class="k">for</span> n <span class="k">in</span> range(1, 9):
+<span class="n">6 </span>    v = <span class="trou">  ?  </span>              <span class="c"># théorème de l'énergie cinétique</span>
+<span class="n">7 </span>    V.append(v)
+<span class="n">8 </span>    print(n, v)
+<span class="n">9 </span>plt.plot(range(9), V, 'ro'); plt.show()</pre>
+          <label>Ligne 6 : v =<select id="qpy" data-save data-lib="Python : ligne 6 (vitesse après un étage)" data-bonne="(v**2 + 2*e*U/m)**0.5"><option value="">…</option><option>v + 2*e*U/m</option><option>(2*e*U/m)**0.5</option><option>(v**2 + 2*e*U/m)**0.5</option><option>v + (2*e*U/m)**0.5</option></select></label>
+          <div class="row-actions"><button class="btn" type="button" id="runpy">▶ Exécuter le programme</button></div>
+          <pre class="pyout" id="pyout" hidden></pre>
+          <p class="toast" id="outpy" hidden></p>
+        </div>
+
+        <span class="codebox" style="display:none"><label for="code">☎ Appel : faites vérifier vos réponses 1 et 2 par le professeur. Il vous donne un code pour débloquer la suite.</label><input id="code" type="text" autocomplete="off" aria-label="Code du professeur"></span>
+
+        <div class="question verrou-appel">
+          <h3>3. Pourquoi plusieurs étages ? <span class="tag">VAL</span></h3>
+          <p>En radiothérapie, on communique une grande énergie cinétique à des électrons. Comparez un lancer à 1 étage de 4,0 kV et un lancer à 4 étages de 1,0 kV.</p>
+          <select id="q3" data-save data-lib="Q3 intérêt de plusieurs étages" data-bonne="On obtient la même énergie qu'avec une seule tension très élevée, mais avec des tensions modestes : l'installation est moins dangereuse"><option value="">…</option><option>Plusieurs étages donnent plus d'énergie qu'un seul condensateur alimenté par la somme des tensions</option><option>On obtient la même énergie qu'avec une seule tension très élevée, mais avec des tensions modestes : l'installation est moins dangereuse</option><option>Les tubes de cuivre ajoutent leur propre énergie à l'électron</option></select>
+          <div class="row-actions"><button class="btn" type="button" data-check="q3" data-pre="comp" data-ok="Chaque étage apporte e |U<sub>AB</sub>| : N étages de 1,0 kV équivalent à une seule tension de N kV, sans avoir à produire (ni isoler) une très haute tension.">Vérifier</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+        <div class="question verrou-appel piege">
+          <h3>⚠ Défi et piège du bac</h3>
+          <p>Piège : « pour gagner plus de vitesse, il suffit de rapprocher les plaques, car E = |U<sub>AB</sub>| / d augmente ». Faux : la force augmente, mais la distance parcourue diminue ; le travail q U<sub>AB</sub> ne change pas.</p>
+          <p>Défi : avec |U<sub>AB</sub>| = 1,0 kV par étage, combien d'étages faut-il au minimum pour qu'un électron sorte à plus de <b>5,0 × 10<sup>7</sup> m·s<sup>−1</sup></b> ? Calculez, puis vérifiez avec un lancer.</p>
+          <label>Nombre d'étages : <input type="text" id="q5" data-save data-lib="Défi : nombre minimal d'étages" data-val="nmin" data-tol="0" inputmode="numeric" size="4"></label>
+          <details class="pouce"><summary>Coup de pouce</summary>Après N étages, ½ m v<sup>2</sup> = N e |U<sub>AB</sub>|, donc v = √N × v<sub>B</sub> (v<sub>B</sub> : vitesse après un étage).</details>
+          <div class="row-actions"><button class="btn" type="button" data-check="q5" data-ok="v = √N × 1,875 × 10<sup>7</sup> &gt; 5,0 × 10<sup>7</sup> impose N &gt; 7,1 : il faut 8 étages (7 étages ne donnent que 4,96 × 10<sup>7</sup> m·s<sup>−1</sup>).">Vérifier</button><button class="btn ghost" type="button" onclick="parent.location.hash='tle-qcm-ch12'">Réviser avec le QCM du chapitre 12 →</button></div>
+          <p class="toast" data-out hidden></p>
+        </div>
+      </section>
+
+      <section class="panel essais" aria-labelledby="h-ess">
+        <header><h2 id="h-ess">Mes lancers</h2><span class="hint" id="nbess"></span></header>
+        <div class="tablewrap"><table style="min-width:500px"><thead><tr><th>n°</th><th>Particule</th><th>U<sub>AB</sub></th><th>d</th><th>Étages</th><th>Inversion</th><th>Résultat</th></tr></thead><tbody id="ess"></tbody></table></div>
+        <p class="hint" id="essvide">Aucun lancer pour l'instant.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="h-conc">
+    <header><h2 id="h-conc">Un pas vers le cours · Réponse à la problématique</h2></header>
+    <p><b>4.</b> Quel est le principe de fonctionnement d'un accélérateur linéaire de particules chargées ?</p>
+    <div class="checks">
+      <button class="chip" type="button" data-concl="a" aria-pressed="false" data-juste>Dans chaque intervalle, un champ électrique uniforme dirigé selon l'axe (dans le sens du mouvement si q &gt; 0, en sens contraire si q &lt; 0) accélère la particule ; la tension alternative inverse les charges des tubes pour que chaque intervalle accélère, et les gains d'énergie s'additionnent.</button>
+      <button class="chip" type="button" data-concl="b" aria-pressed="false" data-pourquoi="Non : à l'intérieur des tubes, il n'y a pas de champ ; la vitesse y reste constante.">La particule est accélérée en continu à l'intérieur des tubes de cuivre.</button>
+      <button class="chip" type="button" data-concl="c" aria-pressed="false" data-pourquoi="Non : sans inversion de la tension, le deuxième intervalle freine la particule (le champ y est dans le mauvais sens).">Il suffit de charger les tubes une fois pour toutes, alternativement + et −.</button>
+    </div>
+    <label for="maconc" style="display:block;margin:14px 0 6px"><b>Ma conclusion rédigée</b> : en deux ou trois phrases (champ dans les intervalles, rôle de la tension alternative, énergie gagnée).</label>
+    <textarea id="maconc" data-save rows="4"></textarea>
+    <div class="row-actions"><button class="btn" id="checkconcl" type="button" data-ok="Un accélérateur linéaire accélère en ligne droite des particules chargées grâce à des champs électriques uniformes dirigés selon son axe ; chaque étage apporte l'énergie |q U|, et la tension alternative garde le bon sens du champ à chaque passage.">Vérifier ma conclusion</button></div>
+    <p class="toast" id="outconcl" role="status" aria-live="polite" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-cr">
+    <header><h2 id="h-cr">Mon compte rendu</h2></header>
+    <div class="crform">
+      <label>Nom et prénom<input id="crnom" data-save type="text" autocomplete="name"></label>
+      <label>Classe<input id="crclasse" data-save type="text" placeholder="Tle…"></label>
+      <button class="btn ghost" id="crbtn" type="button">Afficher mon compte rendu</button><button class="btn" id="crpdf" type="button">⬇ Télécharger mon compte rendu (PDF)</button>
+    </div>
+    <div class="cr" id="cr" hidden></div>
+    <div class="row-actions"><span class="hint" id="crnote" role="status" aria-live="polite"></span></div>
+    <p class="hint">Déposez le PDF dans le devoir Google Classroom (Ajouter &gt; Fichier, puis Rendre). Votre travail est enregistré automatiquement dans ce navigateur. <button class="btn warn" id="effacer" type="button">Effacer mon travail</button></p>
+  </section>
+  <p class="foot">Simulation 3D d'après l'activité 3 p. 241 du manuel Hachette Terminale spécialité · Mme Messaoudi · EFIR 2026-2027. Théorème de l'énergie cinétique dans chaque intervalle (poids négligé, mécanique classique). Scène non à l'échelle : la longueur des tubes croît comme la vitesse.</p>
+</div>
+
+<script>
+/* =====================================================================
+   Moteur commun des simulations 3D du labo virtuel EFIR (Terminale)
+   three.js r128 (cdnjs), caméra orbitale maison, graphiques 2D,
+   protocole, questions, appel professeur, sauvegarde, compte rendu PDF.
+   Mme Messaoudi · EFIR · 2026-2027
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+let REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+try { if (localStorage.getItem("efir-eco") === "1") REDUCED = true; } catch (e) {}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+/* nombre à la française : n chiffres significatifs, virgule décimale */
+function fr(x, n = 2) {
+  if (!isFinite(x)) return "–";
+  if (x === 0) return "0";
+  const ex = Math.floor(Math.log10(Math.abs(x)));
+  if (ex >= -2 && ex <= 3) { const d = Math.max(0, n - 1 - ex); return x.toFixed(d).replace(".", ","); }
+  let m = x / 10 ** ex, ms = m.toFixed(n - 1);
+  if (Math.abs(+ms) >= 10) return fr(x * 1.0000001, n);
+  return `${ms.replace(".", ",")} × 10<sup>${ex < 0 ? "−" + -ex : ex}</sup>`;
+}
+const fx = (x, d = 2) => (Math.round(x * 10 ** d) / 10 ** d).toFixed(d).replace(".", ",").replace("-", "−");
+const lireNombre = s => { const t = String(s).replace(/\s/g, "").replace(",", ".").replace("−", "-"); return t === "" ? NaN : +t; };
+const wait = ms => new Promise(r => setTimeout(r, REDUCED ? 60 : ms));
+const enc = s => btoa(unescape(encodeURIComponent(s)));
+const dec = s => { try { return decodeURIComponent(escape(atob(s))); } catch (e) { return ""; } };
+function say(html, kind = "info") { const m = $("#msg"); if (!m) return; m.className = "toast " + kind; m.innerHTML = html; }
+
+/* ---------------------------------------------------------------------
+   SCÈNE 3D
+   --------------------------------------------------------------------- */
+function Scene3D(fig, opt = {}) {
+  const canvas = fig.querySelector("canvas.c3d");
+  if (!window.THREE) { fig.innerHTML = '<p class="nogl">La 3D n\'a pas pu se charger (connexion internet ?). Rechargez la page.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: !REDUCED, alpha: false }); }
+  catch (e) { fig.innerHTML = '<p class="nogl">Votre navigateur ne permet pas l\'affichage 3D (WebGL). Essayez un autre navigateur.</p><div class="hud" id="hud" hidden></div>'; return null; }
+  renderer.setPixelRatio(REDUCED ? 1 : Math.min(devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = !REDUCED;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(opt.fov || 40, 1.6, 0.05, 400);
+  const fond = () => { const dark = matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light"; scene.background = new THREE.Color(dark ? (opt.fondSombre || 0x101a26) : (opt.fond || 0xdfeaf3)); };
+  fond(); matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { fond(); demande(); });
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9a7a, 0.75));
+  const soleil = new THREE.DirectionalLight(0xffffff, 0.75); soleil.position.set(-6, 14, 9); soleil.castShadow = true;
+  soleil.shadow.mapSize.set(1024, 1024); Object.assign(soleil.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(soleil);
+  /* caméra orbitale */
+  const O = { cible: new THREE.Vector3(...(opt.cible || [0, 0, 0])), r: opt.r || 10, az: opt.az ?? -0.6, el: opt.el ?? 0.35, rmin: opt.rmin || 1, rmax: opt.rmax || 60 };
+  let anim = null;
+  function placer() {
+    O.el = Math.max(-0.2, Math.min(1.55, O.el)); O.r = Math.max(O.rmin, Math.min(O.rmax, O.r));
+    camera.position.set(O.cible.x + O.r * Math.cos(O.el) * Math.sin(O.az), O.cible.y + O.r * Math.sin(O.el), O.cible.z + O.r * Math.cos(O.el) * Math.cos(O.az));
+    camera.lookAt(O.cible); demande();
+  }
+  const pts = new Map(); let pinch0 = 0, actif = 0;
+  canvas.addEventListener("pointerdown", e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); actif = Date.now(); anim = null; api.onUser && api.onUser(); });
+  canvas.addEventListener("pointermove", e => {
+    if (!pts.has(e.pointerId)) return; const [x0, y0] = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 1) { O.az -= (e.clientX - x0) * 0.008; O.el += (e.clientY - y0) * 0.006; placer(); }
+    else if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch0) { O.r *= pinch0 / d; placer(); } pinch0 = d; }
+  });
+  const fin = e => { pts.delete(e.pointerId); pinch0 = 0; };
+  canvas.addEventListener("pointerup", fin); canvas.addEventListener("pointercancel", fin);
+  canvas.addEventListener("wheel", e => { if (!(e.ctrlKey || e.metaKey || Date.now() - actif < 4000)) return; e.preventDefault(); O.r *= Math.exp(e.deltaY * 0.0012); placer(); }, { passive: false });
+  const zb = fig.querySelector(".zoom"); if (zb) { zb.querySelector("[data-z='+']").onclick = () => { O.r /= 1.25; placer(); }; zb.querySelector("[data-z='-']").onclick = () => { O.r *= 1.25; placer(); }; }
+  /* vues prédéfinies, transition douce */
+  function vue(v, nom) {
+    const but = { r: v.r ?? O.r, az: v.az ?? O.az, el: v.el ?? O.el, c: v.cible ? new THREE.Vector3(...v.cible) : O.cible.clone() };
+    $$(".vues button", fig).forEach(b => b.setAttribute("aria-pressed", b.dataset.vue === nom));
+    if (REDUCED) { O.r = but.r; O.az = but.az; O.el = but.el; O.cible.copy(but.c); placer(); return; }
+    const d = { r: O.r, az: O.az, el: O.el, c: O.cible.clone() }; let t0 = performance.now();
+    anim = now => { let k = Math.min(1, (now - t0) / 700); k = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      O.r = d.r + (but.r - d.r) * k; O.az = d.az + (but.az - d.az) * k; O.el = d.el + (but.el - d.el) * k; O.cible.lerpVectors(d.c, but.c, k); placer(); if (k >= 1) anim = null; };
+    demande();
+  }
+  /* rendu à la demande + boucle d'animation */
+  let enAttente = false; const cbs = new Set(); let tPrec = performance.now();
+  function demande() { if (!enAttente) { enAttente = true; requestAnimationFrame(boucle); } }
+  function boucle(now) {
+    enAttente = false; const dt = Math.min(0.05, (now - tPrec) / 1000); tPrec = now;
+    if (anim) anim(now);
+    let encore = !!anim; cbs.forEach(f => { if (f(dt, now)) encore = true; });
+    renderer.render(scene, camera); if (encore) demande();
+  }
+  function taille() { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); demande(); }
+  new ResizeObserver(taille).observe(canvas); taille(); placer();
+  /* aides de dessin */
+  function etiquette(texte, o = {}) {
+    const c = document.createElement("canvas"), g = c.getContext("2d"), fs = 64, font = `${o.italic ? "italic " : ""}700 ${fs}px Atkinson Hyperlegible, Segoe UI, sans-serif`;
+    /* la flèche de vecteur (U+20D7) n'existe pas dans les polices : on la dessine au-dessus de la lettre */
+    const morceaux = []; [...texte].forEach(ch => { if (ch === "⃗" && morceaux.length) morceaux[morceaux.length - 1].vec = true; else morceaux.push({ ch }); });
+    g.font = font; const larg = morceaux.map(m => g.measureText(m.ch).width), w = Math.ceil(larg.reduce((a, b) => a + b, 0)) + 28;
+    const vec = morceaux.some(m => m.vec); c.width = w; c.height = fs + 26 + (vec ? 14 : 0);
+    g.font = font; g.textBaseline = "middle";
+    if (o.fond !== false) { g.fillStyle = o.fond || "rgba(255,255,255,.88)"; const rr = 18; g.beginPath(); g.moveTo(rr, 0); g.arcTo(w, 0, w, c.height, rr); g.arcTo(w, c.height, 0, c.height, rr); g.arcTo(0, c.height, 0, 0, rr); g.arcTo(0, 0, w, 0, rr); g.fill(); }
+    const coul = o.couleur || "#15212d"; g.fillStyle = g.strokeStyle = coul; let xx = 14; const ym = c.height / 2 + 2 + (vec ? 7 : 0);
+    morceaux.forEach((m, i) => {
+      g.fillText(m.ch, xx, ym);
+      if (m.vec) { const x0 = xx + larg[i] * (o.italic ? .25 : .1), x1 = xx + larg[i] * (o.italic ? 1.05 : .9), yv = ym - fs * .52; g.lineWidth = 5; g.beginPath(); g.moveTo(x0, yv); g.lineTo(x1, yv); g.stroke(); g.beginPath(); g.moveTo(x1 + 4, yv); g.lineTo(x1 - 10, yv - 8); g.lineTo(x1 - 10, yv + 8); g.closePath(); g.fill(); }
+      xx += larg[i];
+    });
+    const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: o.depthTest ?? false, transparent: true }));
+    const h = o.taille || 0.4; sp.scale.set(h * c.width / c.height, h, 1); sp.renderOrder = 10; return sp;
+  }
+  function fleche(couleur, epaisseur = 0.03) {
+    const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: couleur, roughness: .5 });
+    const tige = new THREE.Mesh(new THREE.CylinderGeometry(epaisseur, epaisseur, 1, 12), mat);
+    const tete = new THREE.Mesh(new THREE.ConeGeometry(epaisseur * 3, epaisseur * 8, 16), mat); g.add(tige, tete);
+    g.regler = (orig, vec) => {
+      const L = vec.length(); g.visible = L > 1e-6; if (!g.visible) return; const lt = Math.max(0, L - epaisseur * 8);
+      g.position.copy(orig); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vec.clone().normalize());
+      tige.scale.set(1, Math.max(lt, 1e-4), 1); tige.position.set(0, lt / 2, 0); tete.position.set(0, lt + epaisseur * 4, 0);
+    };
+    return g;
+  }
+  const api = { THREE, scene, camera, renderer, O, vue, demande, placer, etiquette, fleche, anime: f => { cbs.add(f); demande(); return () => cbs.delete(f); }, onUser: null };
+  $$(".vues button", fig).forEach(b => b.addEventListener("click", () => { const x = opt.vues && opt.vues[b.dataset.vue]; if (x) vue(typeof x === "function" ? x() : x, b.dataset.vue); }));
+  return api;
+}
+
+/* ---------------------------------------------------------------------
+   GRAPHIQUE 2D (canvas) : axes gradués, séries de points et courbes
+   --------------------------------------------------------------------- */
+function Graphe(canvas) {
+  const ctx = canvas.getContext("2d");
+  function pas(etendue) { const b = 10 ** Math.floor(Math.log10(etendue / 5)), m = etendue / 5 / b; return b * (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10); }
+  function trace(cfg) {
+    const W = canvas.width, H = canvas.height, ink = css("--ink"), mut = css("--muted"), line = css("--line");
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = css("--surface"); ctx.fillRect(0, 0, W, H);
+    const m = { g: 74, d: 18, h: 34, b: 52 }, pw = W - m.g - m.d, ph = H - m.h - m.b;
+    let { xmin, xmax, ymin, ymax } = cfg;
+    const tous = cfg.series.flatMap(s => s.pts || []);
+    if (xmin == null) xmin = Math.min(0, ...tous.map(p => p[0])); if (xmax == null) xmax = Math.max(...tous.map(p => p[0]), xmin + 1e-9);
+    if (ymin == null) ymin = Math.min(0, ...tous.map(p => p[1])); if (ymax == null) ymax = Math.max(...tous.map(p => p[1]), ymin + 1e-9);
+    const py0 = (ymax - ymin) * 0.06; ymax += py0; if (ymin < 0) ymin -= py0;
+    const X = x => m.g + (x - xmin) / (xmax - xmin) * pw, Y = y => m.h + ph - (y - ymin) / (ymax - ymin) * ph;
+    ctx.font = "20px " + css("--font-body"); ctx.textBaseline = "middle";
+    const sx = pas(xmax - xmin), sy = pas(ymax - ymin);
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.fillStyle = mut;
+    for (let v = Math.ceil(xmin / sx) * sx; v <= xmax + 1e-9; v += sx) { ctx.beginPath(); ctx.moveTo(X(v), m.h); ctx.lineTo(X(v), m.h + ph); ctx.stroke(); ctx.textAlign = "center"; ctx.fillText(fx(v, sx < 1 ? (sx < .1 ? 2 : 1) : 0), X(v), m.h + ph + 18); }
+    for (let v = Math.ceil(ymin / sy) * sy; v <= ymax + 1e-9; v += sy) { ctx.beginPath(); ctx.moveTo(m.g, Y(v)); ctx.lineTo(m.g + pw, Y(v)); ctx.stroke(); ctx.textAlign = "right"; ctx.fillText(fx(v, sy < 1 ? (sy < .1 ? 2 : 1) : 0), m.g - 8, Y(v)); }
+    ctx.strokeStyle = ink; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(m.g, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.lineTo(m.g + pw, Y(Math.max(ymin, Math.min(ymax, 0)))); ctx.moveTo(X(Math.max(xmin, 0)), m.h); ctx.lineTo(X(Math.max(xmin, 0)), m.h + ph); ctx.stroke();
+    ctx.fillStyle = ink; ctx.font = "700 20px " + css("--font-body"); ctx.textAlign = "right"; ctx.fillText(cfg.xlab || "", m.g + pw, m.h + ph + 40); ctx.textAlign = "left"; ctx.fillText(cfg.ylab || "", 8, 16);
+    ctx.save(); ctx.beginPath(); ctx.rect(m.g, m.h - 4, pw, ph + 8); ctx.clip();
+    cfg.series.forEach(s => {
+      ctx.strokeStyle = ctx.fillStyle = s.c || ink; ctx.lineWidth = s.w || 2.5; ctx.setLineDash(s.dash || []);
+      if (s.f) { ctx.beginPath(); for (let i = 0; i <= 300; i++) { const x = xmin + (xmax - xmin) * i / 300, y = s.f(x); i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); } ctx.stroke(); }
+      else if (s.points) s.pts.forEach(([x, y]) => { ctx.beginPath(); if (s.croix) { ctx.lineWidth = 2; ctx.moveTo(X(x) - 5, Y(y) - 5); ctx.lineTo(X(x) + 5, Y(y) + 5); ctx.moveTo(X(x) - 5, Y(y) + 5); ctx.lineTo(X(x) + 5, Y(y) - 5); ctx.stroke(); } else { ctx.arc(X(x), Y(y), s.r || 4, 0, 7); ctx.fill(); } });
+      else { ctx.beginPath(); s.pts.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))); ctx.stroke(); }
+      ctx.setLineDash([]);
+    });
+    if (cfg.curseur != null) { ctx.strokeStyle = css("--amber"); ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(X(cfg.curseur), m.h); ctx.lineTo(X(cfg.curseur), m.h + ph); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.restore();
+    /* légende */
+    ctx.font = "18px " + css("--font-body"); ctx.textAlign = "left";
+    const noms = cfg.series.filter(s => s.nom); let lx = W - m.d - noms.reduce((a, s) => a + ctx.measureText(s.nom).width + 44, 0) + 20;
+    ctx.font = "700 20px " + css("--font-body"); lx = Math.max(lx, 16 + ctx.measureText(cfg.ylab || "").width + 24); ctx.font = "18px " + css("--font-body");
+    noms.forEach(s => { ctx.fillStyle = s.c || ink; ctx.fillRect(lx, 14, 16, 4); ctx.fillStyle = ink; ctx.fillText(s.nom, lx + 22, 16); lx += ctx.measureText(s.nom).width + 44; });
+  }
+  return { trace };
+}
+/* régression polynomiale (moindres carrés), degré 1 ou 2, avec ou sans constante */
+function ajuste(pts, deg, constante = true) {
+  const base = x => { const b = []; if (constante) b.push(1); b.push(x); if (deg === 2) b.push(x * x); return b; };
+  const n = base(0).length, A = Array.from({ length: n }, () => Array(n + 1).fill(0));
+  pts.forEach(([x, y]) => { const b = base(x); for (let i = 0; i < n; i++) { for (let j = 0; j < n; j++) A[i][j] += b[i] * b[j]; A[i][n] += b[i] * y; } });
+  for (let i = 0; i < n; i++) { let p = i; for (let k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > Math.abs(A[p][i])) p = k; [A[i], A[p]] = [A[p], A[i]];
+    for (let k = 0; k < n; k++) if (k !== i) { const f = A[k][i] / A[i][i]; for (let j = i; j <= n; j++) A[k][j] -= f * A[i][j]; } }
+  const c = A.map((r, i) => r[n] / r[i]); const res = { c0: constante ? c[0] : 0, c1: c[constante ? 1 : 0], c2: deg === 2 ? c[constante ? 2 : 1] : 0 };
+  res.f = x => res.c0 + res.c1 * x + res.c2 * x * x; return res;
+}
+
+/* ---------------------------------------------------------------------
+   QUESTIONS : <select data-b="(bonne réponse codée)"> ou
+   <input data-val="nom de la fonction LAB.val" data-tol="0.1" data-rel>
+   --------------------------------------------------------------------- */
+const LAB = { S: {}, val: {}, key: "", demarche: () => [], mesures: () => [], cr: {}, appel: true, choix: "" };
+function juste(id) {
+  const el = document.getElementById(id); if (!el || !el.value) return false;
+  if (el.dataset.b) return el.value === dec(el.dataset.b);
+  if (el.dataset.val) { const v = lireNombre(el.value), ref = LAB.val[el.dataset.val](), tol = +el.dataset.tol; if (!isFinite(v)) return false; return el.hasAttribute("data-rel") ? Math.abs(v - ref) <= tol * Math.abs(ref) : Math.abs(v - ref) <= tol; }
+  return false;
+}
+function brancherQuestions() {
+  /* coder les bonnes réponses écrites en clair dans data-bonne */
+  $$("select[data-bonne]").forEach(s => { s.dataset.b = enc(s.dataset.bonne); s.removeAttribute("data-bonne"); });
+  $$("[data-check]").forEach(btn => btn.addEventListener("click", () => {
+    const ids = btn.dataset.check.split(","), out = btn.closest(".question").querySelector(".toast[data-out]");
+    let nb = 0, vides = 0;
+    ids.forEach(id => { const el = document.getElementById(id); el.classList.remove("ok", "ko"); if (!el.value) { vides++; return; } const j = juste(id); el.classList.add(j ? "ok" : "ko"); if (j) nb++; });
+    const pre = btn.dataset.pre && LAB.pre && LAB.pre[btn.dataset.pre] ? LAB.pre[btn.dataset.pre]() : "";
+    out.hidden = false;
+    if (pre) { out.className = "toast info"; out.innerHTML = pre; return; }
+    if (vides) { out.className = "toast info"; out.innerHTML = "Répondez à toutes les parties de la question avant de vérifier."; return; }
+    if (nb === ids.length) { out.className = "toast ok"; out.innerHTML = "✓ " + (btn.dataset.ok || "Bonne réponse."); }
+    else { out.className = "toast err"; out.innerHTML = `✗ ${ids.length > 1 ? `${nb} réponse${nb > 1 ? "s" : ""} juste${nb > 1 ? "s" : ""} sur ${ids.length}. ` : ""}${btn.dataset.ko || "Revoyez la simulation et réessayez."}`; }
+  }));
+  /* appel professeur */
+  const code = $("#code");
+  if (code) code.addEventListener("input", () => { if (code.value.trim().toUpperCase() === "EFIR") { LAB.appel = true; majAppel(); say("✓ Code accepté : la suite est débloquée.", "ok"); } });
+  /* conclusion à choix */
+  $$("[data-concl]").forEach(b => b.addEventListener("click", () => { LAB.choix = b.dataset.concl; $$("[data-concl]").forEach(x => x.setAttribute("aria-pressed", x === b)); }));
+  const c2 = $("#checkconcl");
+  if (c2) c2.addEventListener("click", () => {
+    const o = $("#outconcl"); o.hidden = false; const mc = $("#maconc").value.trim();
+    if (!LAB.choix) { o.className = "toast info"; o.innerHTML = "Choisissez d'abord une réponse."; return; }
+    const b = $(`[data-concl="${LAB.choix}"]`);
+    if (b.hasAttribute("data-juste")) { o.className = "toast ok"; o.innerHTML = "✓ " + (c2.dataset.ok || "Bonne conclusion.") + (mc.length > 20 ? "" : "<br>Rédigez maintenant votre conclusion dans la case ci-dessus."); }
+    else { o.className = "toast err"; o.innerHTML = "✗ " + (b.dataset.pourquoi || "Ce n'est pas la bonne conclusion : relisez vos réponses."); }
+  });
+}
+function majAppel() {
+  $$(".question.verrou-appel").forEach(q => q.classList.toggle("verrou", !LAB.appel));
+  const c = $("#code"); if (c && LAB.appel) { c.value = "EFIR"; c.disabled = true; }
+}
+const conclJuste = () => { const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`); return !!(b && b.hasAttribute("data-juste")); };
+
+/* ---------------------------------------------------------------------
+   PROTOCOLE (étapes de la fiche, cochées automatiquement)
+   --------------------------------------------------------------------- */
+function Protocole(etapes) {
+  const ol = $("#proto");
+  function rendu() {
+    const etats = etapes.map(e => { const sous = (e.sous || []).map(x => !!x.ok()); return { ok: e.sous ? sous.every(Boolean) : !!e.ok(), sous }; });
+    const courant = etats.findIndex(x => !x.ok);
+    ol.innerHTML = etapes.map((e, k) => {
+      const st = etats[k], cls = st.ok ? "fait" : k === courant ? "cur" : "";
+      const sous = e.sous ? `<ul>${e.sous.map((x, j) => `<li class="${st.sous[j] ? "fait" : ""}">${st.sous[j] ? "✓" : "○"} ${x.html}</li>`).join("")}</ul>` : "";
+      const part = e.partie ? `<li class="partie">${e.partie}</li>` : "";
+      return `${part}<li class="${cls}"><span class="q">${e.q}</span><span class="tx">${e.html}${sous}</span><span class="st" aria-label="${st.ok ? "fait" : "à faire"}">${st.ok ? "✓" : k === courant ? "➜" : ""}</span></li>`;
+    }).join("");
+    const c = $("#protocount"); if (c) c.textContent = `${etats.filter(x => x.ok).length}/${etapes.length} étapes`;
+  }
+  const bx = ol.closest(".proto"), bt = $("#prototout");
+  if (bt) bt.addEventListener("click", () => { bx.classList.toggle("tout"); bt.textContent = bx.classList.contains("tout") ? "Voir seulement l'étape en cours" : "Voir toutes les étapes"; });
+  let t = 0; const plusTard = () => { clearTimeout(t); t = setTimeout(rendu, 250); };
+  ["click", "change", "pointerup", "input"].forEach(ev => document.addEventListener(ev, plusTard));
+  setInterval(rendu, 1500); rendu();
+  LAB.protoRendu = rendu;
+}
+
+/* ---------------------------------------------------------------------
+   COMPTE RENDU (affichage + PDF jsPDF)
+   --------------------------------------------------------------------- */
+function construireCR() {
+  const nom = $("#crnom").value.trim() || "(nom non renseigné)", cl = $("#crclasse").value.trim() || "…";
+  const d = new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
+  const rows = $$("[data-lib]").map(el => [el.dataset.lib, el.value, !el.value ? "–" : juste(el.id) ? "✓" : "✗"]);
+  const ok = rows.filter(r => r[2] === "✓").length;
+  const tab = rows.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1] ? esc(r[1]) : "<i>vide</i>"}</td><td>${r[2]}</td></tr>`).join("");
+  const b = LAB.choix && $(`[data-concl="${LAB.choix}"]`), mc = $("#maconc").value.trim();
+  const mes = LAB.mesures(); const dem = LAB.demarche();
+  return { nom, html: `<h3>${LAB.cr.titre}</h3>
+<p><b>Élève :</b> ${esc(nom)} · <b>Classe :</b> ${esc(cl)} · <b>Date :</b> ${d}</p>
+<h4>Mes mesures et essais</h4><ol>${mes.length ? mes.map(m => `<li>${m}</li>`).join("") : "<li>Aucun essai.</li>"}</ol>
+${LAB.PRED ? LAB.PRED.cr() : ""}<h4>Démarche</h4><ul>${dem.map(([t, v]) => `<li>${t} : ${v ? "oui" : "non"}</li>`).join("")}</ul>
+<h4>Réponses : ${ok} juste${ok > 1 ? "s" : ""} sur ${rows.length}</h4>
+<table><thead><tr><th>Question</th><th>Réponse</th><th></th></tr></thead><tbody>${tab}</tbody></table>
+<h4>Conclusion</h4><p>${b ? b.textContent.trim() + (b.hasAttribute("data-juste") ? " → ✓" : " → ✗ à revoir.") : "Aucune réponse choisie."}</p>
+<h4>Ma conclusion rédigée</h4><p>${mc ? esc(mc).replace(/\n/g, "<br>") : "<i>non rédigée</i>"}</p>` };
+}
+const W1252 = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
+const SUPS = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁺": "+", "⁻": "-", "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9", "−": "-", "→": "->", "✓": "(juste)", "✗": "(faux)", "≤": "<=", "≥": ">=", "≈": "~", "α": "alpha", "Δ": "Delta", "√": "racine ", "×": "x", "⃗": "", "ℰ": "E", "σ": "sigma", "ρ": "rho", "λ": "lambda", " ": " ", " ": " " };
+const txtPDF = s => [...String(s).replace(/\s+/g, " ").trim()].map(c => SUPS[c] != null ? SUPS[c] : c).join("").split("").filter(c => c.charCodeAt(0) < 256 || W1252.includes(c)).join("").replace(/ {2,}/g, " ").trim();
+const plat = node => { const c = node.cloneNode(true); c.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); c.querySelectorAll("sub").forEach(s => s.replaceWith(s.textContent)); return c.textContent; };
+function chargerJsPDF() {
+  if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = () => window.jspdf ? ok(window.jspdf) : ko(); s.onerror = ko; document.head.appendChild(s); });
+}
+function faitPDF(r) {
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" });
+  const X = 18, Lg = 174, BAS = 282; let y = 18;
+  const place = h => { if (y + h > BAS) { doc.addPage(); y = 18; } };
+  const ligne = (t, o = {}) => { doc.setFont("helvetica", o.b ? "bold" : "normal"); doc.setFontSize(o.s || 10.5); doc.setTextColor(...(o.c || [21, 33, 45]));
+    const lh = (o.s || 10.5) * .45, ls = doc.splitTextToSize(txtPDF(t), Lg - (o.ind || 0)); ls.forEach(l => { place(lh); doc.text(l, X + (o.ind || 0), y); y += lh; }); y += o.ap || 1.2; };
+  doc.setFillColor(0, 51, 102); doc.rect(0, 0, 210, 8, "F");
+  const tmp = document.createElement("div"); tmp.innerHTML = r.html;
+  [...tmp.children].forEach(e => {
+    const tag = e.tagName;
+    if (tag === "H3") ligne(plat(e), { b: 1, s: 15, c: [0, 51, 102], ap: 2 });
+    else if (tag === "H4") { y += 2.5; ligne(plat(e), { b: 1, s: 12, c: [0, 51, 102], ap: 1.5 }); }
+    else if (tag === "P") ligne(plat(e));
+    else if (tag === "OL" || tag === "UL") [...e.children].forEach((li, k) => ligne((tag === "OL" ? (k + 1) + ". " : "- ") + plat(li), { ind: 2, ap: 1.6 }));
+    else if (tag === "TABLE") [...e.querySelectorAll("tbody tr")].forEach(tr => { const c = [...tr.children].map(td => plat(td).trim()); ligne(`${c[0]} : ${c[1]} ${c[2] === "–" ? "" : c[2]}`, { ind: 2, s: 10, ap: .8 }); });
+  });
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) { doc.setPage(p); doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(87, 103, 118); doc.text(txtPDF(`${LAB.cr.pied} · ${r.nom} · page ${p}/${n}`), X, 290); }
+  const nomF = (r.nom === "(nom non renseigné)" ? "eleve" : r.nom).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  doc.save(`${LAB.cr.fichier}_compte_rendu_${nomF || "eleve"}.pdf`);
+}
+function brancherCR() {
+  const box = $("#cr"), crnote = $("#crnote");
+  $("#crbtn").addEventListener("click", () => { const r = construireCR(); box.innerHTML = r.html; box.hidden = false; box.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); crnote.textContent = "Cliquez sur « Télécharger mon compte rendu (PDF) », puis déposez le fichier dans votre devoir Google Classroom."; });
+  $("#crpdf").addEventListener("click", () => {
+    if (!$("#crnom").value.trim()) { crnote.textContent = "Écrivez d'abord votre nom et prénom."; $("#crnom").focus(); return; }
+    const r = construireCR(); box.innerHTML = r.html; box.hidden = false; crnote.textContent = "Préparation du PDF…"; $("#crpdf").disabled = true;
+    chargerJsPDF().then(() => { faitPDF(r); crnote.textContent = "✓ PDF téléchargé : déposez-le dans votre devoir Google Classroom (Ajouter > Fichier, puis Rendre)."; })
+      .catch(() => { crnote.textContent = "Le PDF n'a pas pu être préparé (connexion ?). Utilisez Imprimer > Enregistrer au format PDF."; window.print(); })
+      .finally(() => { $("#crpdf").disabled = false; });
+  });
+}
+
+/* ---------------------------------------------------------------------
+   AIDE, MODE ÉCONOME, SAUVEGARDE
+   --------------------------------------------------------------------- */
+function brancherOutils() {
+  const aide = $("#aidebtn"), bx = $("#aide"), eco = $("#ecobtn");
+  aide.addEventListener("click", () => { bx.open = true; bx.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); bx.querySelector("summary").focus(); });
+  const show = () => { eco.setAttribute("aria-pressed", REDUCED); document.body.classList.toggle("eco", REDUCED); eco.textContent = REDUCED ? "🐢 Mode économe : activé" : "🐢 Mode économe"; };
+  eco.addEventListener("click", () => { REDUCED = !REDUCED; try { localStorage.setItem("efir-eco", REDUCED ? "1" : "0"); } catch (e) {} show(); say(REDUCED ? "Mode économe activé : animations raccourcies. Rechargez la page pour alléger aussi l'affichage 3D." : "Mode économe désactivé.", "info"); });
+  show();
+}
+function sauvegarde(apresChargement) {
+  function save() {
+    try { localStorage.setItem(LAB.key, JSON.stringify({ v: 1, S: LAB.S, appel: LAB.appel, choix: LAB.choix, champs: Object.fromEntries($$("[data-save]").map(e => [e.id, e.type === "checkbox" ? e.checked : e.value])) })); } catch (e) {}
+  }
+  let t = 0; const later = () => { clearTimeout(t); t = setTimeout(save, 400); };
+  ["change", "click", "input"].forEach(ev => document.addEventListener(ev, later)); setInterval(save, 5000);
+  let retrouve = false;
+  try {
+    const d = JSON.parse(localStorage.getItem(LAB.key) || "null");
+    if (d && d.v === 1) {
+      Object.assign(LAB.S, d.S || {}); LAB.appel = true;
+      for (const id in d.champs || {}) { const e = document.getElementById(id); if (e) { if (e.type === "checkbox") e.checked = !!d.champs[id]; else e.value = d.champs[id]; } }
+      if (d.choix) { const b = $(`[data-concl="${d.choix}"]`); if (b) b.click(); }
+      retrouve = true;
+    }
+  } catch (e) {}
+  majAppel(); apresChargement && apresChargement(retrouve);
+  $("#effacer").addEventListener("click", () => {
+    const eff = $("#effacer");
+    if (!eff.dataset.sure) { eff.dataset.sure = "1"; eff.textContent = "Cliquez encore pour tout effacer"; setTimeout(() => { delete eff.dataset.sure; eff.textContent = "Effacer mon travail"; }, 4000); return; }
+    try { localStorage.removeItem(LAB.key); } catch (e) {} location.reload();
+  });
+}
+function demarrerLAB() { brancherQuestions(); brancherCR(); brancherOutils(); }
+
+/* ---------------------------------------------------------------------
+   PRÉDICTIONS : l'élève prévoit AVANT de lancer, puis confronte.
+   liste : [{ id, consigne, q, opts: [...], bonne, expl, cond: essai => bool }]
+   --------------------------------------------------------------------- */
+function Predictions(el, liste) {
+  const S = LAB.S; S.pred = S.pred || {};
+  const idx = () => liste.findIndex(p => !(S.pred[p.id] && S.pred[p.id].vu));
+  let attente = false; /* prédiction confrontée, en attente du clic « suivante » */
+  function rendu() {
+    const k = attente !== false ? attente : idx();
+    if (k < 0) { el.innerHTML = `<p class="toast ok">✓ Toutes les prédictions ont été confrontées à l'expérience (${liste.filter(p => S.pred[p.id].juste).length}/${liste.length} justes du premier coup).</p>`; return; }
+    const p = liste[k], st = S.pred[p.id] || {};
+    el.innerHTML = `<p class="hint">Prédiction ${k + 1} sur ${liste.length}</p><p><b>${p.consigne}</b></p><p>${p.q}</p>
+      <div class="checks">${p.opts.map((o, i) => `<button class="chip" type="button" data-pi="${i}" aria-pressed="${st.choix === o}" ${st.vu ? "disabled" : ""}>${o}</button>`).join("")}</div>
+      ${st.vu ? `<p class="toast ${st.juste ? "ok" : "err"}">${st.juste ? "✓ Votre prédiction était juste." : "✗ L'expérience contredit votre prédiction : c'est en se trompant qu'on apprend !"} ${p.expl}</p><div class="row-actions"><button class="btn" type="button" data-suiv>Prédiction suivante →</button></div>`
+        : st.choix ? `<p class="hint">Prédiction enregistrée. Faites maintenant le lancer demandé pour la vérifier.</p>` : `<p class="hint">Choisissez votre prédiction : le lancer est bloqué tant que vous n'avez pas prévu le résultat.</p>`}`;
+    $$("[data-pi]", el).forEach(b => b.addEventListener("click", () => { S.pred[p.id] = { choix: p.opts[+b.dataset.pi] }; rendu(); }));
+    const sv = $("[data-suiv]", el); if (sv) sv.addEventListener("click", () => { attente = false; rendu(); });
+  }
+  const api = {
+    peutLancer() {
+      if (LAB.demo) return true; const k = idx(); if (attente !== false || k < 0) return true;
+      if (S.pred[liste[k].id] && S.pred[liste[k].id].choix) return true;
+      say("✋ Faites d'abord votre <b>prédiction</b> (cadre « Je prédis ») avant de lancer.", "err"); el.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" }); return false;
+    },
+    apres(essai) {
+      if (LAB.demo || attente !== false) return; const k = idx(); if (k < 0) return;
+      const p = liste[k], st = S.pred[p.id]; if (!st || !st.choix || !p.cond(essai)) return;
+      st.vu = true; st.juste = st.choix === p.bonne; attente = k; rendu();
+    },
+    fait: () => idx() < 0,
+    nb: () => liste.filter(p => S.pred[p.id] && S.pred[p.id].vu).length,
+    cr() { return `<h4>Mes prédictions</h4><ol>${liste.map(p => { const st = S.pred[p.id] || {}; return `<li>${p.q} Prédit : ${st.choix || "–"}${st.vu ? (st.juste ? " → confirmé ✓" : " → contredit par l'expérience ✗ (bonne réponse : " + p.bonne + ")") : " (non vérifiée)"}</li>`; }).join("")}</ol>`; },
+    rendu
+  };
+  LAB.PRED = api; rendu(); return api;
+}
+
+</script>
+<script>
+/* =================== Activité 3 : accélérateur linéaire =================== */
+const e0 = 1.60e-19;
+const PART = { electron: { nom: "électron", q: -e0, m: 9.1e-31, c: 0x1f6fd1 }, proton: { nom: "proton", q: e0, m: 1.67e-27, c: 0xc0392b } };
+LAB.key = "efir-tle-ch12-a3-3d-v1";
+LAB.cr = { titre: "Tle · Ch. 12 · Activité 3 p. 241 · Accélérateur linéaire de particules (simulation 3D)", pied: "Tle Ch. 12 Activité 3 · Accélérateur 3D", fichier: "Tle_Ch12_A3" };
+Object.assign(LAB.S, { part: "electron", essais: [], graphe: "v", py: "", pyJuste: false, pred: {} });
+const S = LAB.S;
+const reg = () => ({ part: S.part, U: +$("#rU").value * 1e3, d: +$("#rd").value, N: +$("#rN").value, sync: $("#sync").checked });
+const vB1 = Math.sqrt(2 * e0 * 1e3 / PART.electron.m);
+LAB.val.F = () => e0 * 1e3 / 4 / 1e-17;
+LAB.val.vB = () => vB1 / 1e7;
+LAB.val.nmin = () => Math.ceil((5e7 / vB1) ** 2);
+/* potentiel de l'électrode j (phase φ) : V_j = (−1)^(j+φ) × U_AB / 2, d'où V_A − V_B = U_AB au départ */
+const pot = (j, phi, U) => ((j + phi) % 2 ? -1 : 1) * U / 2;
+/* bilan exact d'un lancer : vitesses après chaque intervalle, arrêt éventuel */
+function bilan(r) {
+  const P = PART[r.part], v = [0], ec = [0]; let E = 0, stop = null;
+  for (let k = 1; k <= r.N; k++) {
+    const phi = r.sync ? k - 1 : 0, W = P.q * (pot(k - 1, phi, r.U) - pot(k, phi, r.U));
+    if (E + W <= 1e-30) { stop = { k, f: W < 0 ? Math.min(1, E / -W) : 0 }; break; }
+    E += W; ec.push(E); v.push(Math.sqrt(2 * E / P.m));
+  }
+  return { v, ec, stop, vf: v[v.length - 1] };
+}
+const meme = (e, part, U, d, N, sync = true) => e.part === part && Math.abs(e.U - U) < 1 && Math.abs(e.d - d) < .01 && e.N === N && e.sync === sync;
+LAB.pre = {
+  ref: () => S.essais.some(e => meme(e, "electron", -1e3, 4, 1)) ? "" : "Faites d'abord le lancer de vérification : électron, U<sub>AB</sub> = −1,0 kV, d = 4,0 m, 1 étage.",
+  comp: () => S.essais.some(e => e.part === "electron" && Math.abs(e.U + 4e3) < 1 && e.N === 1) && S.essais.some(e => e.part === "electron" && Math.abs(e.U + 1e3) < 1 && e.N === 4 && e.sync) ? "" : "Faites d'abord les deux lancers à comparer (électron) : 1 étage avec U<sub>AB</sub> = −4,0 kV, puis 4 étages avec U<sub>AB</sub> = −1,0 kV."
+};
+
+/* ---------- scène 3D (non à l'échelle) ---------- */
+const fig = $("#fig3d");
+const V = Scene3D(fig, { cible: [4, 0, 0], r: 16, az: -0.5, el: 0.35, rmin: 3, rmax: 60, fond: 0xe6eef4,
+  vues: { d3: () => cadre(-0.5, 0.35), face: () => cadre(0, 0.02), suivre: () => ({ az: -0.35, el: 0.25, r: 5.5, cible: [part ? part.position.x : 0, 0, 0] }) } });
+let part, grp, vV, vF, eV, eF, geo = null;
+if (V) {
+  const T = THREE, sc = V.scene;
+  grp = new T.Group(); sc.add(grp);
+  /* source de particules */
+  const src = new T.Mesh(new T.BoxGeometry(1, .7, .7), new T.MeshStandardMaterial({ color: 0x9aa4ae, metalness: .4, roughness: .5 })); src.position.set(-1.2, 0, 0); sc.add(src);
+  const es = V.etiquette("source", { taille: .32 }); es.position.set(-1.2, .75, 0); sc.add(es);
+  /* axe */
+  const axe = new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(-1.8, 0, 0), new T.Vector3(40, 0, 0)]), new T.LineDashedMaterial({ color: 0x8a96a3, dashSize: .2, gapSize: .15 })); axe.computeLineDistances(); sc.add(axe);
+  part = new T.Mesh(new T.SphereGeometry(.13, 24, 16), new T.MeshStandardMaterial({ color: 0x1f6fd1, emissive: 0x1f6fd1, emissiveIntensity: .7 })); sc.add(part);
+  vV = V.fleche(0x2f8f4e, .05); vF = V.fleche(0xe67e22, .05); sc.add(vV, vF);
+  eV = V.etiquette("v⃗", { taille: .5, couleur: "#2f8f4e", italic: true, fond: false }); eF = V.etiquette("F⃗", { taille: .5, couleur: "#c26a12", italic: true, fond: false }); sc.add(eV, eF);
+  V.onUser = () => $$(".vues button", fig).forEach(b => b.setAttribute("aria-pressed", "false"));
+}
+const MAT = V ? { cu: new THREE.MeshStandardMaterial({ color: 0xc8793c, metalness: .6, roughness: .35, emissive: 0x000000, transparent: true, opacity: .55, depthWrite: false }), verre: new THREE.MeshStandardMaterial({ color: 0xbfdcef, transparent: true, opacity: .16, side: THREE.DoubleSide, depthWrite: false }) } : null;
+/* géométrie : électrode 0 = plaque A ; électrodes 1..N-1 = tubes ; électrode N = plaque de sortie */
+function construire(r) {
+  if (!V) return null;
+  grp.clear(); const T = THREE, w = .35 + .09 * r.d, el = [], gaps = []; let x = 0;
+  const plaque = (x0, nom) => { const m = new T.Mesh(new T.BoxGeometry(.1, 1.7, 1.7), MAT.cu.clone()); m.position.set(x0 - .05, 0, 0); grp.add(m); const t = V.etiquette(nom, { taille: .34, fond: false }); t.position.set(x0 - .05, -1.15, 0); grp.add(t); return { m, x0: x0 - .1, x1: x0, cx: x0 - .05, haut: 1.2 }; };
+  el.push(plaque(0, r.N === 1 ? "P_A" : "A")); x = 0;
+  for (let k = 1; k <= r.N; k++) {
+    gaps.push({ x0: x, x1: x + w }); x += w;
+    if (k < r.N) { const L = 1.1 * Math.sqrt(k), m = new T.Mesh(new T.CylinderGeometry(.42, .42, L, 32, 1, true), MAT.cu.clone()); m.material.side = T.DoubleSide; m.rotation.z = Math.PI / 2; m.position.set(x + L / 2, 0, 0); grp.add(m); el.push({ m, x0: x, x1: x + L, cx: x + L / 2, haut: .8 }); x += L; }
+    else { const p = plaque(x + .1, r.N === 1 ? "P_B" : "sortie"); p.x0 = x; p.x1 = x + .1; el.push(p); x += .1; }
+  }
+  /* tube à vide en verre */
+  const verre = new T.Mesh(new T.CylinderGeometry(1.05, 1.05, x + 1.6, 40, 1, true), MAT.verre); verre.rotation.z = Math.PI / 2; verre.position.set(x / 2 + .3, 0, 0); grp.add(verre);
+  /* signes + / − (deux étiquettes par électrode) et champ dans chaque intervalle */
+  el.forEach(o => { o.plus = V.etiquette("+", { taille: .55, couleur: "#b42318", fond: false }); o.moins = V.etiquette("−", { taille: .55, couleur: "#1f3b5c", fond: false }); [o.plus, o.moins].forEach(s => { s.position.set(o.cx, o.haut, 0); grp.add(s); }); });
+  gaps.forEach(g => { g.fl = [-.45, 0, .45].map(y => { const f = V.fleche(0x6fb3c8, .03); grp.add(f); f.userData.y = y; return f; }); });
+  if (r.N === 1) { const a = V.etiquette("A", { taille: .3, fond: false }); a.position.set(.12, .22, 0); grp.add(a); const b = V.etiquette("B", { taille: .3, fond: false }); b.position.set(w - .12, .22, 0); grp.add(b);
+    const dd = V.etiquette(`d = ${fx(r.d, 1)} m (non à l'échelle)`, { taille: .26 }); dd.position.set(w / 2, 1.55, 0); grp.add(dd); }
+  const eE = V.etiquette("E⃗", { taille: .45, couleur: "#1b7f99", italic: true, fond: false }); eE.position.set(w / 2, .78, .6); grp.add(eE);
+  const fin = x + 1.4; return { el, gaps, w, fin, r };
+}
+function phase(geo, phi) {
+  if (!geo) return; const r = geo.r;
+  geo.el.forEach((o, j) => { const Vj = pot(j, phi, r.U), s = Math.sign(Vj); o.plus.visible = s > 0; o.moins.visible = s < 0; o.m.material.emissive.setHex(s > 0 ? 0x5a1010 : s < 0 ? 0x0c2a55 : 0); });
+  geo.gaps.forEach((g, i) => { const dV = pot(i, phi, r.U) - pot(i + 1, phi, r.U), on = $("#vect").checked && Math.abs(dV) > 0, L = (g.x1 - g.x0) * .8, dir = Math.sign(dV);
+    g.fl.forEach(f => { f.visible = on; if (on) f.regler(new THREE.Vector3(dir > 0 ? g.x0 + .1 * (g.x1 - g.x0) : g.x1 - .1 * (g.x1 - g.x0), f.userData.y, 0), new THREE.Vector3(dir * L, 0, 0)); }); });
+  V.demande();
+}
+/* ---------- réglages ---------- */
+let enCours = false, stop = null, dernierN = null;
+function cadre(az, el) { const L = geo ? geo.fin : 3; return { az, el, r: Math.max(7, L * 0.95 + 3), cible: [L / 2 - .6, 0, 0] }; }
+function majSorties() {
+  const r = reg(), P = PART[r.part];
+  $("#oU").innerHTML = (r.U > 0 ? "+" : r.U < 0 ? "−" : "") + fx(Math.abs(r.U) / 1e3, 1) + " kV"; $("#od").textContent = fx(r.d, 1) + " m"; $("#oN").textContent = r.N;
+  $("#cE").innerHTML = fr(Math.abs(r.U) / r.d, 2) + " V·m<sup>−1</sup>"; $("#cF").innerHTML = fr(e0 * Math.abs(r.U) / r.d, 2) + " N"; $("#cW").innerHTML = fr(e0 * Math.abs(r.U), 2) + " J";
+  if (!enCours && V) { geo = construire(r); phase(geo, 0); placer(r, 0, 0, 0); part.material.color.setHex(P.c); part.material.emissive.setHex(P.c);
+    if (dernierN !== null && dernierN !== r.N) { V.vue(cadre(-0.5, 0.35), "d3"); } dernierN = r.N; }
+}
+["rU", "rd", "rN"].forEach(id => $("#" + id).addEventListener("input", majSorties));
+$("#sync").addEventListener("change", majSorties); $("#vect").addEventListener("change", majSorties);
+$$("[data-part]").forEach(b => b.addEventListener("click", () => { if (enCours) return; S.part = b.dataset.part; $$("[data-part]").forEach(x => x.setAttribute("aria-pressed", x === b)); majSorties(); }));
+function placer(r, x, v, Fdir) {
+  if (!V) return; const o = new THREE.Vector3(x, 0, 0), on = $("#vect").checked; part.position.copy(o);
+  vV.visible = eV.visible = on && v > 0; vF.visible = eF.visible = on && Fdir !== 0;
+  if (on && v > 0) { const L = .4 + 1.6 * Math.min(1, v / 6e7) ** .7, dv = new THREE.Vector3(L, 0, 0); vV.regler(o.clone().add(new THREE.Vector3(0, .3, 0)), dv); eV.position.copy(o.clone().add(new THREE.Vector3(L + .25, .3, 0))); }
+  if (on && Fdir) { const df = new THREE.Vector3(.9 * Fdir, 0, 0); vF.regler(o.clone().add(new THREE.Vector3(0, -.3, 0)), df); eF.position.copy(o.clone().add(new THREE.Vector3(.9 * Fdir + .25 * Fdir, -.3, 0))); }
+  V.demande();
+}
+/* ---------- lancer ---------- */
+function lancer() {
+  if (!V || enCours) return; if (!LAB.PRED.peutLancer()) return;
+  const r = reg(), P = PART[r.part], B = bilan(r); geo = construire(r); let phi = 0; phase(geo, phi);
+  const g = geo, vmax = Math.max(B.vf, 1), K = 2.6 / Math.max(vmax, 1e5) * (REDUCED ? 60 : 1);
+  let x = 0, k = 1;
+  const Wg = n => P.q * (pot(n - 1, r.sync ? n - 1 : 0, r.U) - pot(n, r.sync ? n - 1 : 0, r.U));
+  say(`Lancer : ${P.nom}, U<sub>AB</sub> = ${$("#oU").textContent}, d = ${fx(r.d, 1)} m, ${r.N} étage${r.N > 1 ? "s" : ""}${r.N > 1 ? (r.sync ? ", tension inversée à chaque passage" : ", sans inversion") : ""}…`);
+  if (B.stop && B.stop.k === 1) { placer(r, 0, 0, Math.sign(Wg(1))); fin(r, B); return; }
+  enCours = true;
+  stop = V.anime(dt => {
+    const gp = g.gaps[k - 1]; let v, Fd = 0, enGap = false, f = 0;
+    if (gp && x >= gp.x0) { enGap = true; f = Math.min(1, (x - gp.x0) / (gp.x1 - gp.x0)); const W = Wg(k); v = Math.sqrt(Math.max(0, 2 * (B.ec[k - 1] + W * f) / P.m)); Fd = Math.sign(W); }
+    else v = B.v[Math.min(k - 1, B.v.length - 1)];
+    if (enGap && B.stop && B.stop.k === k && f >= B.stop.f - 1e-9) { placer(r, gp.x0 + B.stop.f * (gp.x1 - gp.x0), 0, Fd); fin(r, B); return false; }
+    placer(r, x, v, Fd);
+    $("#hud").innerHTML = `${enGap ? "intervalle " + k + " : champ E⃗, accélération" + (Fd < 0 ? " négative (freinage)" : "") : k > r.N ? "sortie" : "dans un tube : pas de champ, v constante"} · v = ${fr(v, 3)} m·s<sup>−1</sup> · E<sub>c</sub> = ${fr(.5 * P.m * v * v, 3)} J`;
+    x += Math.max(K * v, .35) * Math.min(dt, .05);
+    const xs = gp && B.stop && B.stop.k === k ? gp.x0 + B.stop.f * (gp.x1 - gp.x0) : null;
+    if (xs !== null && x >= xs) x = xs; else if (gp && x >= gp.x1) k++;
+    /* la tension s'inverse pendant que la particule traverse un tube */
+    if (r.sync && k <= r.N && phi < k - 1 && x >= g.el[k - 1].cx) { phi = k - 1; phase(g, phi); }
+    if (x >= g.fin) { fin(r, B); return false; }
+    return true;
+  });
+}
+function fin(r, B) {
+  enCours = false; if (stop) { stop(); stop = null; }
+  const P = PART[r.part], arret = !!B.stop, res = arret ? (B.stop.k === 1 ? "repoussée : pas d'accélération" : `freinée et arrêtée dans l'intervalle ${B.stop.k}`) : `sort à ${fr(B.vf, 3)} m·s⁻¹`;
+  S.essais.push({ part: r.part, U: r.U, d: r.d, N: r.N, sync: r.sync, vf: B.vf, arret, res, v: B.v, ec: B.ec });
+  if (S.essais.length > 40) S.essais.shift();
+  tableEssais(); dessiner();
+  if (!arret) say(`${P.nom === "proton" ? "Le proton" : "L'électron"} sort avec v = ${fr(B.vf, 3)} m·s<sup>−1</sup> et E<sub>c</sub> = ${fr(B.ec[B.ec.length - 1], 3)} J (${B.v.length - 1} étage${B.v.length > 2 ? "s" : ""}).`, "ok");
+  else if (B.stop.k === 1) say(`La force électrique est dirigée vers la source : ${P.nom === "proton" ? "le proton" : "l'électron"} n'est pas accéléré vers B. Changez le signe de U<sub>AB</sub>.`, "err");
+  else say(`Le champ de l'intervalle ${B.stop.k} est dans le mauvais sens : la particule est freinée jusqu'à l'arrêt, puis repartirait en arrière. Sans inversion de la tension, un seul étage est utile.`, "err");
+  LAB.PRED.apres({ r, B });
+}
+$("#lancer").addEventListener("click", lancer);
+/* ---------- graphique ---------- */
+const G = Graphe($("#gcv"));
+const PYV = {
+  "(v**2 + 2*e*U/m)**0.5": v => Math.sqrt(v * v + 2 * e0 * 1e3 / 9.1e-31),
+  "v + 2*e*U/m": v => v + 2 * e0 * 1e3 / 9.1e-31,
+  "(2*e*U/m)**0.5": () => Math.sqrt(2 * e0 * 1e3 / 9.1e-31),
+  "v + (2*e*U/m)**0.5": v => v + Math.sqrt(2 * e0 * 1e3 / 9.1e-31)
+};
+const pyListe = c => { const out = [0]; let v = 0; for (let n = 1; n <= 8; n++) { v = PYV[c](v); out.push(v); } return out; };
+const COUL = ["#e67e22", "#1f6fd1", "#2f8f4e", "#8e44ad", "#c0392b"];
+function dessiner() {
+  const vv = S.graphe === "v", der = S.essais.filter(e => !e.arret).slice(-4), series = [];
+  der.forEach((e, i) => { const pts = (vv ? e.v.map(x => x / 1e7) : e.ec.map(x => x / 1e-16)).map((y, n) => [n, y]);
+    series.push({ pts, c: COUL[i], w: 2, nom: `${PART[e.part].nom}, ${fx(Math.abs(e.U) / 1e3, 1)} kV × ${e.N}` }, { pts, points: true, r: 5, c: COUL[i] }); });
+  let ymax;
+  if (vv && S.py) { const pts = pyListe(S.py).map((y, n) => [n, y / 1e7]); if (pts.every(p => isFinite(p[1]))) { series.push({ pts, points: true, croix: true, c: "#d62728", nom: "Python" }); ymax = Math.min(Math.max(6, ...pts.map(p => p[1])), 8); } }
+  G.trace({ series, xmin: 0, xmax: 8.5, ymin: 0, ymax: ymax ?? (vv ? 6 : 13), xlab: "étages traversés n", ylab: vv ? "v (× 10⁷ m·s⁻¹)" : "Ec (× 10⁻¹⁶ J)" });
+}
+$$(".onglets button").forEach(b => b.addEventListener("click", () => { S.graphe = b.dataset.g; $$(".onglets button").forEach(x => x.setAttribute("aria-pressed", x === b)); dessiner(); }));
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", dessiner);
+$("#runpy").addEventListener("click", () => {
+  const o = $("#outpy"), c = $("#qpy").value, out = $("#pyout"); o.hidden = false;
+  if (!c) { o.className = "toast info"; o.innerHTML = "Complétez d'abord la ligne 6."; out.hidden = true; return; }
+  const L = pyListe(c); out.hidden = false; out.textContent = L.slice(1).map((v, i) => `${i + 1} ${v.toExponential(4)}`).join("\n");
+  S.py = c; S.pyJuste = juste("qpy"); S.graphe = "v"; $$(".onglets button").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === "v")); dessiner();
+  const ref = S.essais.some(e => meme(e, "electron", -1e3, e.d, 8));
+  o.className = "toast " + (S.pyJuste ? "ok" : "err");
+  o.innerHTML = (S.pyJuste ? "✓ Les croix rouges tombent sur les points simulés : v<sub>n</sub> = √n × v<sub>1</sub>. L'énergie cinétique, elle, augmente de la même quantité e|U<sub>AB</sub>| à chaque étage." : "✗ Les valeurs ne correspondent pas à la simulation (ou dépassent la vitesse de la lumière !). À chaque étage, c'est l'énergie cinétique qui augmente de e U : ½ m v<sub>n</sub><sup>2</sup> = ½ m v<sub>n−1</sub><sup>2</sup> + e U.") + (ref ? "" : " Faites aussi un lancer de référence : électron, U<sub>AB</sub> = −1,0 kV, 8 étages.");
+});
+function tableEssais() {
+  $("#ess").innerHTML = S.essais.map((e, i) => `<tr><td>${i + 1}</td><td>${PART[e.part].nom}</td><td>${e.U > 0 ? "+" : e.U < 0 ? "−" : ""}${fx(Math.abs(e.U) / 1e3, 1)} kV</td><td>${fx(e.d, 1)} m</td><td>${e.N}</td><td>${e.N > 1 ? (e.sync ? "oui" : "non") : "–"}</td><td>${e.res.replace(/⁻¹/g, "<sup>−1</sup>").replace(/ × 10<sup>/g, " × 10<sup>")}</td></tr>`).join("");
+  $("#essvide").hidden = S.essais.length > 0; $("#nbess").textContent = S.essais.length ? S.essais.length + " lancer" + (S.essais.length > 1 ? "s" : "") : "";
+}
+/* ---------- prédictions ---------- */
+const deja = (part, U, d, N, sync = true) => S.essais.slice(0, -1).some(e => meme(e, part, U, d, N, sync));
+Predictions($("#predict"), [
+  { id: "signe", consigne: "Réglez : électron, U<sub>AB</sub> = +1,0 kV (A au potentiel le plus élevé), 1 étage.", q: "L'électron, sans vitesse en A :", opts: ["est accéléré vers B", "n'est pas accéléré vers B : il est repoussé vers la source"], bonne: "n'est pas accéléré vers B : il est repoussé vers la source",
+    cond: e => e.r.part === "electron" && e.r.U > 0 && e.r.N === 1, expl: "E⃗ va de A (+) vers B (−) ; F⃗ = −eE⃗ est dirigée vers A. Pour accélérer un électron de A vers B, il faut U<sub>AB</sub> &lt; 0 (B chargée +)." },
+  { id: "d", consigne: "Électron, U<sub>AB</sub> = −1,0 kV, 1 étage : lancez avec d = 4,0 m, puis avec d = 2,0 m.", q: "Avec des plaques deux fois plus proches, la vitesse en B :", opts: ["double", "est multipliée par √2", "ne change pas"], bonne: "ne change pas",
+    cond: e => meme(e.r, "electron", -1e3, 2, 1, e.r.sync) && S.essais.slice(0, -1).some(x => x.part === "electron" && Math.abs(x.U + 1e3) < 1 && Math.abs(x.d - 4) < .01 && x.N === 1), expl: "E et F doublent, mais la distance est divisée par 2 : le travail W = qU<sub>AB</sub> est le même. v<sub>B</sub> ≈ 1,9 × 10<sup>7</sup> m·s<sup>−1</sup> dans les deux cas." },
+  { id: "etages", consigne: "Électron, U<sub>AB</sub> = −1,0 kV, inversion cochée : lancez avec 1 étage, puis avec 4 étages.", q: "Avec 4 étages, la vitesse de sortie est :", opts: ["4 fois plus grande", "2 fois plus grande", "la même"], bonne: "2 fois plus grande",
+    cond: e => e.r.part === "electron" && Math.abs(e.r.U + 1e3) < 1 && e.r.N === 4 && e.r.sync && S.essais.slice(0, -1).some(x => x.part === "electron" && Math.abs(x.U + 1e3) < 1 && x.N === 1), expl: "L'énergie cinétique est 4 fois plus grande (4 × eU), donc v est multipliée par √4 = 2 : 3,75 × 10<sup>7</sup> m·s<sup>−1</sup>. Regardez l'onglet E<sub>c</sub> = f(n) : une droite !" },
+  { id: "sync", consigne: "Électron, U<sub>AB</sub> = −1,0 kV, 3 étages : décochez « Inverser la tension » et lancez.", q: "Si les charges des tubes restent fixes, l'électron :", opts: ["est accéléré à chaque intervalle", "est accéléré dans le 1er intervalle, puis freiné dans le 2e", "n'est jamais accéléré"], bonne: "est accéléré dans le 1er intervalle, puis freiné dans le 2e",
+    cond: e => e.r.part === "electron" && !e.r.sync && e.r.N >= 2 && e.r.U < 0, expl: "Les tubes étant alternativement + et −, le champ change de sens d'un intervalle au suivant. Il faut inverser la tension pendant que l'électron traverse un tube : c'est le rôle de la source de tension alternative." }
+]);
+/* ---------- démonstration, remise à zéro ---------- */
+const regle = (id, v) => { const el = $("#" + id); el.value = v; el.dispatchEvent(new Event("input")); };
+$("#demo").addEventListener("click", async () => {
+  const b = $("#demo"); b.disabled = true; LAB.demo = true;
+  try {
+    say("Démonstration : un électron, U<sub>AB</sub> = −1,0 kV, d = 4,0 m, 1 étage : c'est le condensateur du complément scientifique. (En temps normal, vous prédisez d'abord !)");
+    $("[data-part=electron]").click(); $("#sync").checked = true; regle("rU", -1); regle("rd", 4); regle("rN", 1); V && V.vue({ az: -0.3, el: 0.25, r: 7, cible: [1, 0, 0] }, "d3"); await wait(1600);
+    lancer(); await wait(3500);
+    say("Même tension, mais 4 étages : observez les signes + et − des tubes qui s'échangent pendant que l'électron traverse un tube."); regle("rN", 4); V && V.vue(cadre(-0.5, 0.35), "d3"); await wait(1500);
+    lancer(); await wait(6500);
+    say("Démonstration terminée : chaque étage apporte la même énergie e|U<sub>AB</sub>|. À vous : faites vos prédictions !", "ok");
+  } finally { b.disabled = false; LAB.demo = false; }
+});
+$("#reset").addEventListener("click", () => { if (enCours) return; regle("rU", -1); regle("rd", 4); regle("rN", 1); $("#sync").checked = true; $("[data-part=electron]").click(); V && V.vue(cadre(-0.5, 0.35), "d3"); say("Réglages remis à zéro. Vos lancers et vos réponses sont conservés."); });
+/* ---------- compte rendu et protocole ---------- */
+LAB.mesures = () => S.essais.map(e => `${PART[e.part].nom}, UAB = ${e.U > 0 ? "+" : e.U < 0 ? "−" : ""}${fx(Math.abs(e.U) / 1e3, 1)} kV, d = ${fx(e.d, 1)} m, ${e.N} étage(s)${e.N > 1 ? (e.sync ? ", inversion" : ", sans inversion") : ""} : ${e.res.replace(/<[^>]+>/g, "")}`);
+LAB.demarche = () => [[`Prédictions confrontées à l'expérience (${LAB.PRED.nb()} sur 4)`, LAB.PRED.fait()], ["Lancer de référence (électron, −1,0 kV, d = 4,0 m)", S.essais.some(e => meme(e, "electron", -1e3, 4, 1))], ["Programme Python exécuté et validé", S.pyJuste], ["Comparaison 1 étage de 4 kV / 4 étages de 1 kV", !LAB.pre.comp()]];
+Protocole([
+  { partie: "Prédire et expérimenter", q: "Prédire", html: "Faire les <b>4 prédictions</b> du cadre « Je prédis » en lançant à chaque fois la particule demandée.", ok: () => LAB.PRED.fait() },
+  { partie: "Analyse des documents", q: "Q1", html: "Direction et sens des champs ; signes des charges de deux tubes consécutifs.", ok: () => juste("q1a") && juste("q1b") },
+  { q: "Q2.a", html: "Expression et valeur de F (d = 4,0 m, U<sub>AB</sub> = −1,0 kV).", ok: () => juste("q2a") && juste("q2f") },
+  { q: "Q2.b", html: "Théorème de l'énergie cinétique : v<sub>B</sub>, vérifiée par un lancer.", sous: [
+    { html: "lancer de référence fait", ok: () => S.essais.some(e => meme(e, "electron", -1e3, 4, 1)) }, { html: "v<sub>B</sub> juste", ok: () => juste("q2b") && juste("q2v") }] },
+  { q: "Python", html: "Compléter la ligne 6, exécuter et comparer à un lancer à 8 étages.", ok: () => S.pyJuste },
+  { q: "✔ Vérification", html: "Relire ses réponses avant de continuer.", ok: () => true },
+  { q: "Q3", html: "Comparer 1 étage de 4,0 kV et 4 étages de 1,0 kV ; conclure sur l'intérêt de plusieurs étages.", ok: () => juste("q3") },
+  { q: "Défi", html: "Nombre minimal d'étages pour dépasser 5,0 × 10<sup>7</sup> m·s<sup>−1</sup>.", ok: () => juste("q5") },
+  { partie: "Un pas vers le cours", q: "Q4", html: "Répondre à la problématique, rédiger sa conclusion, télécharger le compte rendu.", ok: () => conclJuste() && $("#maconc").value.trim().length > 20 }
+]);
+demarrerLAB();
+sauvegarde(retrouve => {
+  $$("[data-part]").forEach(x => x.setAttribute("aria-pressed", x.dataset.part === S.part)); majSorties(); tableEssais(); V && V.vue(cadre(-0.5, 0.35), "d3");
+  $$(".onglets button").forEach(x => x.setAttribute("aria-pressed", x.dataset.g === S.graphe)); dessiner(); LAB.PRED.rendu();
+  if (retrouve && S.essais.length) say("Votre travail précédent a été retrouvé (lancers et réponses).", "ok");
+});
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style id="charte-efir-2026">
+/* Code couleur « prune » du labo virtuel (accueil retenu le 06/11/2026), version claire pour les pages de TP */
+:root:root:root {
+  --bg: #FAF7FC; --surface: #ffffff; --surface-2: #F6F0F9; --ink: #1F1630; --muted: #6B5B78; --line: #E7DDEE;
+  --navy: #4A2C5A; --navy-soft: #F3E8F7; --blue: #4A2C5A; --line-2: #D9CBE3; --soft: #5B4A68;
+  --call-bg: #F6F0F9; --call-line: #E7DDEE; --call-ink: #4A2C5A;
+  --font-display: "Inter", "Segoe UI", system-ui, sans-serif; --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:root:root:not([data-theme="light"]) {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; } }
+:root:root:root[data-theme="dark"] {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; }
+body, button, input, select, textarea { font-family: var(--font-body); }
+body { font-family: var(--font-body); }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -.01em; }
+a.retour { color: var(--navy) !important; }
+</style>
+</body>
+</html>

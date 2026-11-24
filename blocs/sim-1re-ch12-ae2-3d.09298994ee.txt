@@ -1,0 +1,165 @@
+<!--efir1re:AE1 · Forces et vecteur vitesse 3D-->
+window.EFIR_RETOUR = "premiere/mouvement/Mouvements%20d%27un%20syst%C3%A8me";
+
+// ====================================================================
+// Ch. 12 · AE1 · L'effet de forces sur le vecteur vitesse (balle reliée à un point fixe)
+// ====================================================================
+// ====================================================================
+// Module commun : chronophotographie et construction de vecteurs (mécanique)
+// ====================================================================
+function makeChrono(parent, y = .002) {
+  const g = new THREE.Group(); parent.add(g);
+  const vec = new THREE.Group(); parent.add(vec);
+  const C = {
+    g, vec, pts: [],
+    clear() { g.clear(); vec.clear(); this.pts = []; },
+    add(p, i, showLabel = true) {
+      const d = new THREE.Mesh(new THREE.SphereGeometry(.0045, 12, 8), new THREE.MeshBasicMaterial({ color: 0x1A237E })); d.position.set(p.x, y + .003, p.z); g.add(d);
+      if (showLabel) { const l = label('M' + i, { size: 22, scale: .00045, bg: 'rgba(255,255,255,.8)' }); l.position.set(p.x, y + .02, p.z - .012); g.add(l); }
+      this.pts.push(p.clone());
+    },
+    clearVec() { vec.clear(); },
+    arrow(from, v, color, txt, dashed) {
+      const L = v.length(); if (L < 1e-5) { const d = new THREE.Mesh(new THREE.RingGeometry(.006, .009, 20), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide })); d.rotation.x = -Math.PI / 2; d.position.set(from.x, y + .004, from.z); vec.add(d); if (txt) { const l = label(txt + ' = 0', { size: 22, scale: .0005, color: '#' + color.toString(16).padStart(6, '0') }); l.position.set(from.x + .03, y + .03, from.z); vec.add(l); } return; }
+      const dir = v.clone().normalize(), o = new THREE.Vector3(from.x, y + .004, from.z);
+      if (dashed) { const n = Math.max(2, Math.round(L / .012)); for (let k = 0; k < n; k += 2) { const a = o.clone().addScaledVector(dir, L * k / n), b = o.clone().addScaledVector(dir, Math.min(L * (k + 1) / n, L - .008)); vec.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color }))); } const head = new THREE.ArrowHelper(dir, o.clone().addScaledVector(dir, L - .009), .009, color, .009, .006); vec.add(head); }
+      else vec.add(new THREE.ArrowHelper(dir, o, L, color, Math.min(.014, L * .35), Math.min(.009, L * .25)));
+      if (txt) { const l = label(txt, { size: 24, scale: .00038, color: '#' + color.toString(16).padStart(6, '0'), bg: 'rgba(255,255,255,.6)' }); const m = o.clone().addScaledVector(dir, L * .55), sd = dashed ? -1 : 1; l.position.set(m.x - sd * dir.z * .016, y + .012, m.z + sd * dir.x * .016); vec.add(l); }
+    },
+  };
+  return C;
+}
+
+const RR = .15, VV = .375, TAU = .2, OM = VV / RR, NPT = 11, VS = .25, Y0 = .03, TH0 = Math.PI * .5, CUT_AT = 5;
+let chr12, ball12, fil12, pivot12, S14 = null;
+const fresh14 = () => ({ run: null, i: 2, shown: { v: false, dv: false, F: false }, lastDv: null });
+const ff = (v, n = 2) => v.toFixed(n).replace('.', ',');
+function posAt(k, cut) { // position (x, z) à la date k·τ
+  if (!cut || k <= CUT_AT) { const t = TH0 + OM * k * TAU; return new THREE.Vector3(RR * Math.cos(t), 0, RR * Math.sin(t)); }
+  const p5 = posAt(CUT_AT, false), t5 = TH0 + OM * CUT_AT * TAU, v = new THREE.Vector3(-Math.sin(t5), 0, Math.cos(t5)).multiplyScalar(VV);
+  return p5.clone().addScaledVector(v, (k - CUT_AT) * TAU);
+}
+function vAt(i, cut) { // vecteur vitesse en Mi : tangent, de valeur MiMi+1/τ
+  const a = posAt(i, cut), b = posAt(i + 1, cut), val = a.distanceTo(b) / TAU;
+  if (cut && i >= CUT_AT) return b.clone().sub(a).normalize().multiplyScalar(val);
+  const t = TH0 + OM * i * TAU; return new THREE.Vector3(-Math.sin(t), 0, Math.cos(t)).multiplyScalar(val);
+}
+const C14 = {
+  id: 'p1_ch12_ae2', code: 'AE1', short: 'Forces et vecteur vitesse 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 12 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'L\'effet de forces sur le vecteur vitesse',
+  problem: 'En patinage artistique, le patineur fait tourner sa partenaire autour de lui. Quel lien existe-t-il entre le vecteur variation de vitesse d\'un système et la somme des forces qui s\'exercent sur lui ?',
+  mots: `<p><b>Modélisation</b> : la balle modélise la patineuse, le fil les bras liés des patineurs, le point fixe le patineur. La balle glisse sans frottement sur une table horizontale.<br>
+  <b>Vecteur vitesse</b> en M<sub>i</sub> : tangent à la trajectoire, dans le sens du mouvement, de valeur v<sub>i</sub> = M<sub>i</sub>M<sub>i+1</sub> / (t<sub>i+1</sub> − t<sub>i</sub>).<br>
+  <b>Vecteur variation de vitesse</b> : Δv⃗<sub>i→i+1</sub> = v⃗<sub>i+1</sub> − v⃗<sub>i</sub> (on ajoute à v⃗<sub>i+1</sub> le vecteur −v⃗<sub>i</sub>).<br>
+  <b>Principe d'inertie</b> : si les forces qui s'exercent sur un système se compensent, son vecteur vitesse ne varie pas.<br>
+  Chronophotographie : τ = t<sub>i+1</sub> − t<sub>i</sub> = 0,20 s. Échelle des vecteurs : 1 cm ↔ 0,04 m·s⁻¹ (la grille de la table est en carreaux de 5 cm).</p>`,
+  aide: `<p>1. Lance la balle : la chronophotographie de ses positions M<sub>0</sub> à M<sub>10</sub> s'affiche.<br>
+  2. Choisis une position i, mesure M<sub>i</sub>M<sub>i+1</sub> et M<sub>i+1</sub>M<sub>i+2</sub>, calcule v<sub>i</sub> et v<sub>i+1</sub>.<br>
+  3. Trace v⃗<sub>i</sub>, v⃗<sub>i+1</sub>, puis Δv⃗ = v⃗<sub>i+1</sub> − v⃗<sub>i</sub>.<br>
+  4. Affiche la force exercée par le fil et compare-la à Δv⃗.<br>
+  5. Recommence en coupant le fil au passage en M<sub>5</sub> : que devient Δv⃗ ?</p>`,
+  views: { ensemble: [[0, .7, .7], [0, 0, 0]] },
+  viewbar: [['Vue de dessus', () => flyTo([0, .85, .02], [0, 0, 0])], ['Vue rapprochée', () => { const p = S14 && S14.run ? posAt(S14.i + 1, S14.run.cut) : new THREE.Vector3(); flyTo([p.x, .32, p.z + .14], [p.x, 0, p.z]); }]],
+  protocol: [
+    { id: 'lancer', q: 'Q1', html: 'Lancer la balle reliée au point fixe et obtenir la chronophotographie.' },
+    { id: 'vitesse', q: 'Q1', html: 'Calculer v<sub>i</sub> et v<sub>i+1</sub>, puis tracer les vecteurs vitesse.' },
+    { id: 'deltav', q: 'Q1', html: 'Construire le vecteur variation de vitesse Δv⃗<sub>i→i+1</sub>.' },
+    { id: 'force', q: 'Q3-4', html: 'Représenter la force exercée par le fil et la comparer à Δv⃗.' },
+    { id: 'coupe', q: 'Q5', html: 'Couper le fil et construire Δv⃗ après la coupure (i ≥ 5).' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q1-5', html: 'Répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'aucun produit chimique ; manipulation sans danger',
+  table: { rowTitle: 'Vecteur', rows: [{ label: 'Δv⃗ (fil tendu)', ans: [0, 0] }, { label: 'Somme des forces ΣF⃗ (fil tendu)', ans: [0, 0] }, { label: 'Δv⃗ après la coupure du fil', ans: [2, 2] }],
+    cols: [{ title: 'Direction', options: ['celle du fil', 'tangente à la trajectoire', 'aucune (vecteur nul)'] }, { title: 'Sens', options: ['vers le point fixe', 'vers l\'extérieur du cercle', 'aucun (vecteur nul)'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', num: true, text: 'Valeur de la vitesse de la balle (fil tendu) : v =', unit: 'm·s⁻¹', ans: 2 * RR * Math.sin(OM * TAU / 2) / TAU, tol: .04 },
+    { q: 'Q1', text: 'Le mouvement de la balle (fil tendu) est…', options: ['circulaire uniforme', 'rectiligne uniforme', 'circulaire accéléré'], ans: 0 },
+    { q: 'Q3', text: 'Les forces qui s\'exercent sur la balle sont…', options: ['son poids P⃗, l\'action R⃗ du support et la force F⃗ exercée par le fil', 'son poids seulement', 'la force exercée par le fil seulement'], ans: 0 },
+    { q: 'Q3', text: 'Sans frottement, P⃗ + R⃗ = 0⃗ ; la somme des forces est donc…', options: ['ΣF⃗ = F⃗ fil/balle', 'ΣF⃗ = P⃗', 'ΣF⃗ = 0⃗'], ans: 0 },
+    { q: 'Q4', text: 'Pour la patineuse, Δv⃗ et la somme des forces sont dirigés…', options: ['vers le patineur (centre du cercle)', 'vers l\'extérieur', 'dans le sens du mouvement'], ans: 0 },
+    { q: 'Q5', text: 'Après la coupure du fil, les forces se compensent ; alors…', options: ['Δv⃗ = 0⃗ : le mouvement est rectiligne uniforme', 'la balle continue de tourner', 'la balle s\'arrête aussitôt'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Le vecteur variation de vitesse Δv⃗ d\'un système et la somme des forces ΣF⃗ qui s\'exercent sur lui sont colinéaires et de même sens ; si les forces se compensent, Δv⃗ = 0⃗ (principe d\'inertie).', 'Δv⃗ est toujours tangent à la trajectoire.', 'Δv⃗ et ΣF⃗ sont de sens opposés.', 'Le vecteur vitesse ne varie jamais pour un mouvement circulaire uniforme.'], ans: 0 },
+  build() {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 1024; const c = cv.getContext('2d'); c.fillStyle = '#f5f7fb'; c.fillRect(0, 0, 1024, 1024); c.strokeStyle = '#d4dbe8'; c.lineWidth = 2; const n = 16; for (let k = 0; k <= n; k++) { const p = k * 1024 / n; c.beginPath(); c.moveTo(p, 0); c.lineTo(p, 1024); c.stroke(); c.beginPath(); c.moveTo(0, p); c.lineTo(1024, p); c.stroke(); }
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(.8, .03, .8), [0, 0, new THREE.MeshStandardMaterial({ map: tx, roughness: .6 }), 0, 0, 0].map(m => m || new THREE.MeshStandardMaterial({ color: 0x90a4ae }))); top.position.y = .015; scene.add(top);
+    const tl = label('Table horizontale (sans frottement)', { size: 22, scale: .0008 }); tl.position.set(-.2, .05, .42); scene.add(tl);
+    pivot12 = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .03, 16), new THREE.MeshStandardMaterial({ color: 0x263238, metalness: .6 })); pivot12.position.set(0, Y0 + .015, 0); scene.add(pivot12);
+    const pl = label('Point fixe', { size: 22, scale: .0007 }); pl.position.set(0, Y0 + .06, -.03); scene.add(pl);
+    ball12 = new THREE.Mesh(new THREE.SphereGeometry(.015, 24, 16), new THREE.MeshStandardMaterial({ color: 0xe65100, roughness: .4 })); scene.add(ball12);
+    fil12 = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0x212121 })); scene.add(fil12);
+    const root = new THREE.Group(); root.position.y = Y0; scene.add(root); chr12 = makeChrono(root);
+    this.resetScene(); this.buildPanel();
+  },
+  placeBall(p, attached) { ball12.position.set(p.x, Y0 + .015, p.z); fil12.visible = attached; fil12.geometry.setFromPoints([new THREE.Vector3(0, Y0 + .015, 0), new THREE.Vector3(p.x, Y0 + .015, p.z)]); },
+  resetScene() { S14 = fresh14(); if (!ball12) return; chr12.clear(); this.placeBall(posAt(0, false), true); if ($('#q14')) this.refreshPanel(); },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act(typeof a === 'function' ? a() : { ...a }) }, t);
+    const si = () => +$('#iSel').value;
+    $('#actions').append(
+      h('h3', {}, '1. Chronophotographie'),
+      h('div', { class: 'row' }, B('b1', '▶ Lancer la balle (fil tendu)', { t: 'launch', cut: false }), B('b2', '✂ Lancer et couper le fil en M5', { t: 'launch', cut: true })),
+      h('h3', {}, '2. Construire les vecteurs'),
+      h('div', { class: 'row' }, h('label', {}, 'Position i = ', h('select', { id: 'iSel', onchange: () => this.refreshPanel() }, ...[1, 2, 3, 4, 5, 6, 7, 8].map(i => h('option', { value: i, selected: i === 2 }, String(i)))))),
+      h('div', { class: 'row' }, B('b3', '📏 Mesurer MiMi+1 et Mi+1Mi+2', () => ({ t: 'measure', i: si() })), B('b4', 'Tracer v⃗i et v⃗i+1', () => ({ t: 'v', i: si() })), B('b5', 'Construire Δv⃗ = v⃗i+1 − v⃗i', () => ({ t: 'dv', i: si() })), B('b6', 'Représenter la force du fil', () => ({ t: 'F', i: si() })), B('b7', 'Effacer les vecteurs', { t: 'clearv' })),
+      h('div', { id: 'q14', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S14, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#b1,#b2', true); en('#b3,#b4,#b5,#b6,#b7', !!s.run);
+    $('#q14').innerHTML = s.run ? `Chronophotographie ${s.run.cut ? '<b>avec coupure du fil en M5</b>' : 'fil tendu'} · τ = 0,20 s · ` + (s.meas ? `M${s.meas.i}M${s.meas.i + 1} = ${ff(s.meas.d1 * 100, 1)} cm ; M${s.meas.i + 1}M${s.meas.i + 2} = ${ff(s.meas.d2 * 100, 1)} cm` : 'mesure des distances pour calculer les vitesses.') : 'Lance la balle pour obtenir la chronophotographie.';
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S14;
+    if (a.t === 'launch') {
+      chr12.clear(); s.run = { cut: a.cut }; s.meas = null;
+      if (!INSTANT) { flyTo([0, .85, .02], [0, 0, 0]); const T = (NPT - 1) * TAU; let k = 0; await tween(T * 1.6, p => { const t = p * T, kk = t / TAU; const ki = Math.floor(kk); const pp = posFrac(kk, a.cut); if (inTable(pp)) this.placeBall(pp, !a.cut || kk <= CUT_AT); while (k <= ki && k < NPT) { if (inTable(posAt(k, a.cut))) chr12.add(posAt(k, a.cut), k); k++; } }); while (k < NPT) { if (inTable(posAt(k, a.cut))) chr12.add(posAt(k, a.cut), k); k++; } }
+      else for (let k = 0; k < NPT; k++) if (inTable(posAt(k, a.cut))) chr12.add(posAt(k, a.cut), k);
+      this.placeBall(chr12.pts[chr12.pts.length - 1], !a.cut);
+      if (!a.cut) step('lancer');
+      say(a.cut ? 'Le fil est coupé au passage en M5 : observe la suite de la trajectoire.' : 'Chronophotographie obtenue : la balle décrit un arc de cercle à vitesse constante (positions régulièrement espacées).');
+      return;
+    }
+    if (!s.run) return false;
+    const i = a.i, cut = s.run.cut;
+    if (a.t === 'measure') { s.meas = { i, d1: posAt(i, cut).distanceTo(posAt(i + 1, cut)), d2: posAt(i + 1, cut).distanceTo(posAt(i + 2, cut)) }; say(`M${i}M${i + 1} = ${ff(s.meas.d1 * 100, 1)} cm et M${i + 1}M${i + 2} = ${ff(s.meas.d2 * 100, 1)} cm (τ = 0,20 s) : calcule v${i} et v${i + 1}.`); return; }
+    if (a.t === 'v') {
+      const v1 = vAt(i, cut), v2 = vAt(i + 1, cut); chr12.arrow(posAt(i, cut), v1.clone().multiplyScalar(VS), 0x1565c0, 'v' + i); chr12.arrow(posAt(i + 1, cut), v2.clone().multiplyScalar(VS), 0x1565c0, 'v' + (i + 1));
+      zoomAt(i); step('vitesse'); say(`v${i} = ${ff(v1.length())} m·s⁻¹ et v${i + 1} = ${ff(v2.length())} m·s⁻¹ : même valeur, mais pas la même direction${cut && i >= CUT_AT ? ' (ici, si : mouvement rectiligne)' : ''}.`); return;
+    }
+    if (a.t === 'dv') {
+      const v1 = vAt(i, cut), v2 = vAt(i + 1, cut), dv = v2.clone().sub(v1), P = posAt(i + 1, cut);
+      chr12.arrow(P, v2.clone().multiplyScalar(VS), 0x1565c0, 'v' + (i + 1)); chr12.arrow(P.clone().addScaledVector(v2, VS), v1.clone().multiplyScalar(-VS), 0xef6c00, '−v' + i, true); chr12.arrow(P, dv.clone().multiplyScalar(VS), 0xc62828, 'Δv');
+      s.lastDv = { i, cut }; zoomAt(i); step('deltav'); if (cut && i >= CUT_AT) step('coupe');
+      const msg = dv.length() < 1e-3 ? `Après la coupure du fil (i = ${i}) : Δv⃗ = 0⃗, le vecteur vitesse ne change plus.` : `Δv⃗ (${i}→${i + 1}) : valeur ${ff(dv.length())} m·s⁻¹, dirigé vers le point fixe.`;
+      if (!INSTANT) observe(msg); say(msg); return;
+    }
+    if (a.t === 'F') {
+      const P = posAt(i + 1, cut), free = cut && i + 1 > CUT_AT;
+      if (free) { chr12.arrow(P, new THREE.Vector3(), 0x2e7d32, 'ΣF'); say('Le fil est coupé : P⃗ et R⃗ se compensent, ΣF⃗ = 0⃗.'); }
+      else { chr12.arrow(P, P.clone().negate().normalize().multiplyScalar(.06), 0x2e7d32, 'F'); say('Force exercée par le fil sur la balle : direction du fil, vers le point fixe. P⃗ et R⃗ se compensent, donc ΣF⃗ = F⃗ fil/balle.'); }
+      if (s.lastDv && s.lastDv.i === i && s.lastDv.cut === cut) step('force');
+      return;
+    }
+    if (a.t === 'clearv') { chr12.clearVec(); return; }
+  },
+  async demo() {
+    say('Démonstration : chronophotographie puis vecteurs vitesse.');
+    await act({ t: 'launch', cut: false }, { record: false }); await wait(600); await act({ t: 'v', i: 2 }, { record: false }); await wait(1500);
+    say('À toi : construis Δv⃗ et compare-le à la force exercée par le fil.'); await wait(1200);
+  },
+};
+const inTable = p => Math.abs(p.x) < .37 && Math.abs(p.z) < .37;
+const zoomAt = i => { if (INSTANT) return; const p = posAt(i + 1, S14.run.cut); flyTo([p.x, .32, p.z + .14], [p.x, 0, p.z]); };
+function posFrac(kk, cut) { const k0 = Math.floor(kk), f = kk - k0; if (!cut || kk <= CUT_AT) { const t = TH0 + OM * kk * TAU; return new THREE.Vector3(RR * Math.cos(t), 0, RR * Math.sin(t)); } return posAt(k0, cut).lerp(posAt(k0 + 1, cut), f); }
+startTP(C14);
+
+</script></body></html>

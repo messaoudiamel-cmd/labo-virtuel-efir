@@ -1,0 +1,108 @@
+<!--efir1re:AE1 · Perturbations mécaniques 3D-->
+window.EFIR_RETOUR = "premiere/ondes/Ondes%20m%C3%A9caniques";
+
+// ====================================================================
+// Ch. 15 · AE1 · Production de perturbations mécaniques
+// ====================================================================
+const MED = {
+  corde: { nom: 'la corde', pos: [-.35, 0, -.2], view: [[-.35, .35, .55], [-.35, .1, -.2]] },
+  ressort: { nom: 'le ressort', pos: [.35, 0, -.2], view: [[.35, .35, .55], [.35, .1, -.2]] },
+  eau: { nom: 'la surface de l\'eau', pos: [-.35, 0, .3], view: [[-.35, .5, .75], [-.35, 0, .3]] },
+  air: { nom: 'l\'air', pos: [.35, 0, .3], view: [[.35, .35, .75], [.35, .08, .3]] },
+};
+const LEN15 = .5, C15 = .25;
+let M15 = {}, S21 = null;
+const fresh21 = () => ({ cur: null, seen: {}, t: -1 });
+const pulse = (x, t, w = .03) => Math.exp(-(((x - C15 * t) / w) ** 2));
+function buildMedia() {
+  // corde
+  { const g = new THREE.Group(); g.position.set(...MED.corde.pos); const n = 120, pts = []; for (let i = 0; i <= n; i++) pts.push(new THREE.Vector3(-LEN15 / 2 + LEN15 * i / n, .1, 0));
+    const geo = new THREE.BufferGeometry().setFromPoints(pts); const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xc62828 })); g.add(line);
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 120, .003, 6), new THREE.MeshStandardMaterial({ color: 0xc62828 })); g.add(tube);
+    const mk = new THREE.Mesh(new THREE.SphereGeometry(.007, 12, 8), new THREE.MeshStandardMaterial({ color: 0xffeb3b, emissive: 0x332b00 })); g.add(mk);
+    for (const x of [-LEN15 / 2 - .01, LEN15 / 2 + .01]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .14, 8), new THREE.MeshStandardMaterial({ color: 0x546e7a })); p.position.set(x, .07, 0); g.add(p); }
+    const l = label('Corde', { size: 24, scale: .0008 }); l.position.set(0, .2, 0); g.add(l); scene.add(g);
+    M15.corde = { g, lab: l, update(t) { const P = pts.map(p => new THREE.Vector3(p.x, .1 + (t < 0 ? 0 : .04 * pulse(p.x + LEN15 / 2, t)), 0)); tube.geometry.dispose(); tube.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P), 120, .003, 6); line.visible = false; const xm = .05; mk.position.set(xm, .1 + (t < 0 ? 0 : .04 * pulse(xm + LEN15 / 2, t)), 0); } }; }
+  // ressort
+  { const g = new THREE.Group(); g.position.set(...MED.ressort.pos); const n = 40, rings = [];
+    for (let i = 0; i <= n; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(.018, .0018, 6, 24), new THREE.MeshStandardMaterial({ color: i === 24 ? 0xffb300 : 0x78909c, metalness: .7, roughness: .3 })); r.rotation.y = Math.PI / 2; r.position.set(-LEN15 / 2 + LEN15 * i / n, .1, 0); r.x0 = r.position.x; g.add(r); rings.push(r); }
+    const l = label('Ressort', { size: 24, scale: .0008 }); l.position.set(0, .2, 0); g.add(l); scene.add(g);
+    M15.ressort = { g, lab: l, update(t) { for (const r of rings) { const xi = r.x0 + LEN15 / 2; r.position.x = r.x0 + (t < 0 ? 0 : .012 * Math.exp(-(((xi - C15 * t) / .04) ** 2)) * ((C15 * t - xi) > 0 ? -1 : 1) * Math.min(1, Math.abs(xi - C15 * t) / .02)); } } }; }
+  // eau
+  { const g = new THREE.Group(); g.position.set(...MED.eau.pos); const geo = new THREE.PlaneGeometry(.5, .35, 90, 64); geo.rotateX(-Math.PI / 2); const base = geo.attributes.position.array.slice();
+    const water = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x4fc3f7, roughness: .15, metalness: .1, transparent: true, opacity: .85 })); water.position.y = .03; g.add(water);
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(.52, .03, .37), new THREE.MeshStandardMaterial({ color: 0x37474f })); tray.position.y = .0; g.add(tray);
+    const cork = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .008, 12), new THREE.MeshStandardMaterial({ color: 0xffb300 })); g.add(cork);
+    const l = label('Cuve à ondes (surface de l\'eau)', { size: 24, scale: .0008 }); l.position.set(0, .14, -.15); g.add(l); scene.add(g);
+    const hAt = (x, z, t) => { if (t < 0) return 0; const r = Math.hypot(x + .15, z); return .018 * Math.exp(-(((r - C15 * .8 * t) / .025) ** 2)) / Math.sqrt(1 + r * 6); };
+    M15.eau = { g, lab: l, update(t) { const a = geo.attributes.position.array; for (let i = 0; i < a.length; i += 3) a[i + 1] = base[i + 1] + hAt(base[i], base[i + 2], t); geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); cork.position.set(.1, .034 + hAt(.1, 0, t), 0); } }; }
+  // air
+  { const g = new THREE.Group(); g.position.set(...MED.air.pos); const gm = GLASS(); gm.opacity = .15; const tube = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, LEN15, 32, 1, true), gm); tube.rotation.z = Math.PI / 2; tube.position.y = .08; g.add(tube);
+    const N = 420, arr = new Float32Array(N * 3), x0 = []; for (let i = 0; i < N; i++) { const x = -LEN15 / 2 + LEN15 * (i + Math.random()) / N, r = Math.sqrt(Math.random()) * .045, a = Math.random() * 6.283; arr.set([x, .08 + r * Math.cos(a), r * Math.sin(a)], i * 3); x0.push(x); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(arr, 3)); const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x1565c0, size: .006 })); g.add(pts);
+    const mk = new THREE.Mesh(new THREE.SphereGeometry(.006, 12, 8), new THREE.MeshStandardMaterial({ color: 0xffb300, emissive: 0x332b00 })); g.add(mk);
+    const hp = new THREE.Mesh(new THREE.CylinderGeometry(.06, .07, .03, 24), new THREE.MeshStandardMaterial({ color: 0x212121 })); hp.rotation.z = Math.PI / 2; hp.position.set(-LEN15 / 2 - .02, .08, 0); g.add(hp);
+    const l = label('Air dans un tube (modèle : molécules)', { size: 24, scale: .0008 }); l.position.set(0, .2, 0); g.add(l); scene.add(g);
+    const u = (x, t) => t < 0 ? 0 : .025 * Math.exp(-(((x + LEN15 / 2 - C15 * t) / .04) ** 2));
+    M15.air = { g, lab: l, update(t) { const a = geo.attributes.position.array; for (let i = 0; i < N; i++) a[i * 3] = x0[i] + u(x0[i], t); geo.attributes.position.needsUpdate = true; mk.position.set(.05 + u(.05, t), .08, .05); } }; }
+}
+const C21 = {
+  id: 'p1_ch15_ae1', code: 'AE1', short: 'Perturbations mécaniques 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 15 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Production de perturbations mécaniques',
+  problem: 'Qu\'ont en commun une vague, un son ou une secousse le long d\'une corde ? Comment une perturbation se propage-t-elle dans un milieu matériel ?',
+  mots: `<p><b>Perturbation</b> : modification locale et temporaire des propriétés d'un milieu (position, hauteur, pression…).<br>
+  <b>Onde mécanique progressive</b> : propagation d'une perturbation dans un milieu matériel, <b>sans transport de matière</b> mais avec transport d'énergie.<br>
+  <b>Onde transversale</b> : la perturbation est perpendiculaire à la direction de propagation ; <b>onde longitudinale</b> : elle lui est parallèle.<br>
+  Le point jaune repère un constituant du milieu : observe son mouvement au passage de la perturbation.</p>`,
+  aide: `<p>1. Choisis un milieu (corde, ressort, surface de l'eau, air) et crée une perturbation à une extrémité.<br>
+  2. Observe la perturbation à une date t puis quelques instants plus tard (t') : utilise le ralenti.<br>
+  3. Observe le point jaune : se déplace-t-il avec la perturbation ? Revient-il à sa position ?<br>
+  4. Pour chaque milieu, indique la grandeur physique qui varie au passage de la perturbation.</p>`,
+  views: { ensemble: [[0, .85, 1.35], [0, .05, .05]] },
+  viewbar: Object.entries(MED).map(([k, m]) => ['Zoom ' + m.nom.replace(/^la |^le |^l'/, ''), () => flyTo(...m.view)]),
+  protocol: [
+    { id: 'corde', q: 'Q1', html: 'Créer une perturbation le long d\'une corde et observer sa propagation.' },
+    { id: 'ressort', q: 'Q1', html: 'Créer une perturbation (compression) le long d\'un ressort.' },
+    { id: 'eau', q: 'Q1', html: 'Créer une perturbation à la surface de l\'eau.' },
+    { id: 'air', q: 'Q1', html: 'Créer une perturbation dans l\'air (haut-parleur) et observer le modèle moléculaire.' },
+    { id: 'tableau', q: 'Q1', html: 'Compléter le tableau B puis le vérifier.' },
+    { id: 'extra', q: 'Q2', html: 'Répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'aucun produit chimique ; essuyer l\'eau renversée',
+  table: { rowTitle: 'Milieu de propagation', rows: [{ label: 'Corde', ans: [0, 0] }, { label: 'Ressort', ans: [1, 1] }, { label: 'Surface de l\'eau', ans: [0, 2] }, { label: 'Air', ans: [1, 3] }],
+    cols: [{ title: 'Type d\'onde', options: ['transversale', 'longitudinale'] }, { title: 'Grandeur qui varie au passage de la perturbation', options: ['distance d\'un point de la corde à sa position de repos', 'distance d\'une spire du ressort à sa position de repos', 'hauteur d\'un point de la surface par rapport au repos', 'position des molécules par rapport à leur position de repos'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q2', text: 'Au passage de la perturbation, le point jaune…', options: ['s\'écarte de sa position de repos puis y revient : il n\'y a pas de transport de matière', 'se déplace avec la perturbation jusqu\'au bout du milieu', 'reste immobile'], ans: 0 },
+    { q: 'Q2', text: 'Une onde mécanique peut-elle se propager dans le vide ?', options: ['non : il faut un milieu matériel dont les constituants interagissent entre eux', 'oui, comme la lumière', 'oui, mais plus lentement'], ans: 0 },
+    { q: 'Q2', text: 'De proche en proche, la perturbation se propage parce que…', options: ['chaque constituant écarté de sa position d\'équilibre agit sur ses voisins (force de rappel) et leur transfère de l\'énergie', 'les constituants se déplacent tous ensemble', 'la matière est transportée'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Une onde mécanique progressive est la propagation d\'une perturbation dans un milieu matériel élastique, de proche en proche, sans transport de matière mais avec transport d\'énergie ; elle peut être transversale (corde, surface de l\'eau) ou longitudinale (ressort, son dans l\'air).', 'Une onde mécanique transporte la matière du milieu.', 'Une onde mécanique se propage dans le vide.', 'Le son est une onde transversale.'], ans: 0 },
+  build() { buildMedia(); for (const k in M15) { M15[k].update(-1); M15[k].lab.visible = true; } this.resetScene(); this.buildPanel(); },
+  resetScene() { S21 = fresh21(); if (!M15.corde) return; for (const k in M15) { M15[k].update(-1); M15[k].lab.visible = true; } if ($('#q21')) this.refreshPanel(); },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, ...Object.entries(MED).map(([k, m]) => B('p_' + k, '〰 Perturber ' + m.nom, { t: 'go', k }))),
+      h('div', { class: 'row' }, h('label', {}, h('input', { type: 'checkbox', id: 'slow21' }), ' Ralenti ×4')),
+      h('div', { id: 'q21', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() { const s = S21, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok); Object.keys(MED).forEach(k => en('#p_' + k, true)); $('#q21').innerHTML = 'Milieux étudiés : ' + (Object.keys(s.seen).map(k => MED[k].nom).join(', ') || 'aucun'); },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S21, m = M15[a.k]; s.cur = a.k;
+    Object.entries(M15).forEach(([k2, o]) => o.lab.visible = k2 === a.k);
+    if (!INSTANT) { flyTo(...MED[a.k].view); const slow = $('#slow21') && $('#slow21').checked ? 4 : 1, T = (LEN15 + .1) / C15; await tween(T * slow * (a.k === 'eau' ? 1.4 : 1), p => m.update(p * T * (a.k === 'eau' ? 1.4 : 1))); }
+    m.update(-1); s.seen[a.k] = true; step(a.k);
+    const txt = { corde: 'La déformation se déplace le long de la corde ; le point jaune monte puis redescend (perpendiculairement à la propagation) et revient à sa position.', ressort: 'La zone de spires resserrées se propage le long du ressort ; la spire jaune avance puis recule (parallèlement à la propagation) et revient à sa place.', eau: 'Une ride circulaire s\'éloigne du point de perturbation ; le bouchon monte puis redescend sur place.', air: 'Une zone de molécules plus serrées (surpression) se propage ; la molécule repérée oscille autour de sa position puis s\'immobilise.' }[a.k];
+    observe(MED[a.k].nom[0].toUpperCase() + MED[a.k].nom.slice(1) + ' : ' + txt); say(txt); return;
+  },
+  async demo() { say('Démonstration : perturbation le long de la corde, au ralenti.'); const c = $('#slow21'); if (c) c.checked = true; await act({ t: 'go', k: 'corde' }, { record: false }); if (c) c.checked = false; say('À toi : étudie les quatre milieux.'); await wait(1200); },
+};
+startTP(C21);
+
+</script></body></html>

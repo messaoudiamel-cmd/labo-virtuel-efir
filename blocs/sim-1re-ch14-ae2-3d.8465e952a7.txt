@@ -1,0 +1,148 @@
+<!--efir1re:AE1 · Conservation de l'énergie mécanique 3D-->
+window.EFIR_RETOUR = "premiere/energie/Aspects%20%C3%A9nerg%C3%A9tiques%20des%20ph%C3%A9nom%C3%A8nes%20m%C3%A9caniques";
+
+// ====================================================================
+// Ch. 14 · AE1 · La conservation de l'énergie mécanique (pendule simple)
+// ====================================================================
+// ====================================================================
+// Module commun : pointage vidéo simulé et énergies (Ec, Ep, Em)
+// ====================================================================
+const GG14 = 9.81;
+// données brutes [{t, x, y}] → ajoute v (dérivée centrée, comme un logiciel de pointage) et les énergies
+function energize(raw, m) {
+  return raw.map((p, i) => {
+    const a = raw[Math.max(0, i - 1)], b = raw[Math.min(raw.length - 1, i + 1)], dt = b.t - a.t;
+    const v = Math.hypot(b.x - a.x, b.y - a.y) / dt;
+    const Ec = .5 * m * v * v, Ep = m * GG14 * p.y; return { ...p, v, Ec, Ep, Em: Ec + Ep };
+  }).slice(1, -1);
+}
+function energyChart(cv, data, o = {}) {
+  if (!data.length) { drawChart(cv, { xmax: o.tmax || 2, ymax: o.ymax || .1, xlabel: 't (s)', ylabel: 'Énergie (J)', pts: [] }); return; }
+  const tmax = o.tmax || Math.ceil(data[data.length - 1].t * 5) / 5, ymax = o.ymax || Math.max(...data.map(d => d.Em)) * 1.25;
+  drawChart(cv, { xmax: tmax, ymax, xlabel: 't (s)', ylabel: 'Énergie (J)', pts: [], curves: [{ pts: data.map(d => [d.t, d.Ec]), color: '#E65100' }, { pts: data.map(d => [d.t, d.Ep]), color: '#2F5DA8' }, { pts: data.map(d => [d.t, d.Em]), color: '#2e7d32' }], xfmt: x => x.toFixed(2).replace('.', ','), yfmt: y => y.toPrecision(2).replace('.', ',') });
+}
+const LEG14 = '<span style="color:#E65100">■ ℰc</span> &nbsp; <span style="color:#2F5DA8">■ ℰp</span> &nbsp; <span style="color:#2e7d32">■ ℰm = ℰc + ℰp</span>';
+function energyTable(data, n = 3) {
+  const f = (v, k) => v.toFixed(k).replace('.', ',');
+  return '<thead><tr><th>t (s)</th><th>x (m)</th><th>y (m)</th><th>v (m·s⁻¹)</th><th>ℰc (J)</th><th>ℰp (J)</th><th>ℰm (J)</th></tr></thead><tbody>' + data.map(d => `<tr><td>${f(d.t, 2)}</td><td>${f(d.x, 3)}</td><td>${f(d.y, 3)}</td><td>${f(d.v, 3)}</td><td>${f(d.Ec, n)}</td><td>${f(d.Ep, n)}</td><td>${f(d.Em, n)}</td></tr>`).join('') + '</tbody>';
+}
+
+const LP = .65, PIVY = .9, DT14 = .04, TREC = 2.0;
+let pend14, bob14, dots14, S19 = null;
+const fresh19 = () => ({ m: .1, th0: 26, runs: [], cur: null, energ: false });
+const f19 = (v, n = 2) => v.toFixed(n).replace('.', ',');
+function simulate14(th0deg) { // RK4, θ'' = −(g/L) sin θ ; départ sans vitesse en θ0 (côté x > 0)
+  let th = th0deg * Math.PI / 180, w = 0; const h = .002, out = []; let t = 0, next = 0;
+  const f = (th, w) => [w, -GG14 / LP * Math.sin(th)];
+  while (t <= TREC + 1e-9) {
+    if (t >= next - 1e-9) { const nz = (Math.sin(t * 97.3) + Math.sin(t * 41.1)) * .0004; out.push({ t: +next.toFixed(2), x: +(LP * Math.sin(th) + nz).toFixed(4), y: +(LP * (1 - Math.cos(th)) + nz * .5).toFixed(4), th }); next += DT14; }
+    const k1 = f(th, w), k2 = f(th + h / 2 * k1[0], w + h / 2 * k1[1]), k3 = f(th + h / 2 * k2[0], w + h / 2 * k2[1]), k4 = f(th + h * k3[0], w + h * k3[1]);
+    th += h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]); w += h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]); t += h;
+  }
+  return out;
+}
+const C19 = {
+  id: 'p1_ch14_ae2', code: 'AE1', short: 'Conservation de l\'énergie mécanique 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 14 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'La conservation de l\'énergie mécanique',
+  problem: 'Au Panthéon, le pendule de Foucault oscille pendant des heures. Que devient l\'énergie mécanique d\'un pendule simple au cours de ses oscillations ?',
+  mots: `<p><b>Énergie cinétique</b> : ℰ<sub>c</sub> = ½ m v² ; <b>énergie potentielle de pesanteur</b> : ℰ<sub>p</sub> = m g y (y : altitude, origine à la position d'équilibre, axe vers le haut) ; <b>énergie mécanique</b> : ℰ<sub>m</sub> = ℰ<sub>c</sub> + ℰ<sub>p</sub>.<br>
+  <b>Pointage vidéo</b> : la caméra enregistre une image toutes les 40 ms ; le logiciel donne x, y et calcule la vitesse v.<br>
+  Pendule simple : fil de longueur ℓ = 0,65 m ; g = 9,81 N·kg⁻¹. On néglige les frottements sur une courte durée.</p>`,
+  aide: `<p>1. Choisis la masse et l'angle de lâcher, puis lâche le pendule sans vitesse : l'acquisition dure 2 s.<br>
+  2. Crée les variables ℰc, ℰp et ℰm et trace-les en fonction du temps.<br>
+  3. Observe : comment évoluent ℰc et ℰp ? Et ℰm ?<br>
+  4. Recommence avec un autre angle (ou une autre masse) et compare.</p>`,
+  views: { ensemble: [[0, .55, 1.45], [0, .5, 0]] },
+  viewbar: [['Zoom pendule', () => flyTo([0, .4, .9], [0, .35, 0])]],
+  protocol: [
+    { id: 'lacher', q: 'Q1', html: 'Lâcher le pendule sans vitesse et réaliser l\'acquisition (pointage) sur 2 s.' },
+    { id: 'energies', q: 'Q1', html: 'Calculer v, ℰc, ℰp et ℰm et les représenter en fonction du temps.' },
+    { id: 'autre', q: 'Q1', html: 'Recommencer avec un autre angle de lâcher ou une autre masse.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q1-3', html: 'Exploiter la conservation de l\'énergie mécanique (pendule de Foucault).' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'laisser un espace libre autour du pendule',
+  table: { rowTitle: 'Position du pendule', rows: [{ label: 'La plus haute (S)', ans: [1, 0] }, { label: 'La plus basse (O, équilibre)', ans: [0, 1] }],
+    cols: [{ title: 'ℰc', options: ['maximale', 'nulle', 'intermédiaire'] }, { title: 'ℰp', options: ['maximale', 'nulle', 'intermédiaire'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'Au cours des oscillations, l\'énergie mécanique du pendule…', options: ['reste constante : elle se conserve', 'augmente', 'diminue rapidement'], ans: 0 },
+    { q: 'Q1', text: 'Quand ℰp augmente…', options: ['ℰc diminue d\'autant (il y a conversion d\'énergie)', 'ℰc augmente aussi', 'ℰc reste constante'], ans: 0 },
+    { q: 'Q1', num: true, text: 'Énergie mécanique de ta première acquisition : ℰm ≈', unit: 'J', get ans() { const r = S19 && S19.runs[0]; return r ? r.m * GG14 * LP * (1 - Math.cos(r.th0 * Math.PI / 180)) : NaN; }, tol: .06 },
+    { q: 'Q2', text: 'Au point le plus haut S, le pendule de Foucault a une vitesse nulle ; au point le plus bas O, son altitude est nulle. La conservation de ℰm donne…', options: ['½ m v_O² = m g z_S, soit v_O = √(2 g z_S)', 'v_O = 2 g z_S', 'v_O = m g z_S'], ans: 0 },
+    { q: 'Q2', num: true, text: 'Valeur de v<sub>O</sub> pour z<sub>S</sub> = 6,7 × 10⁻² m :', unit: 'm·s⁻¹', ans: Math.sqrt(2 * 9.81 * .067), tol: .04 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['En l\'absence de frottements, l\'énergie mécanique ℰm = ℰc + ℰp d\'un système se conserve : l\'énergie potentielle de pesanteur se convertit en énergie cinétique et inversement. Cela permet de calculer une vitesse ou une altitude.', 'L\'énergie cinétique du pendule est constante.', 'L\'énergie mécanique est maximale au point le plus bas seulement.', 'L\'énergie potentielle et l\'énergie cinétique augmentent en même temps.'], ans: 0 },
+  build() {
+    const met = new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: .8, roughness: .3 });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(.3, .02, .2), new THREE.MeshStandardMaterial({ color: 0x455a64 })); base.position.set(-.45, .01, -.1); scene.add(base);
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, PIVY + .05, 12), met); rod.position.set(-.45, (PIVY + .05) / 2, -.1); scene.add(rod);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .47, 12), met); arm.rotation.z = Math.PI / 2; arm.position.set(-.225, PIVY, -.1); scene.add(arm);
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(.008, 12, 8), new THREE.MeshStandardMaterial({ color: 0x263238 })); knot.position.set(0, PIVY, -.1); scene.add(knot);
+    pend14 = new THREE.Group(); pend14.position.set(0, PIVY, -.1); scene.add(pend14);
+    const fil = new THREE.Mesh(new THREE.CylinderGeometry(.0008, .0008, LP, 4), new THREE.MeshBasicMaterial({ color: 0x212121 })); fil.position.y = -LP / 2; pend14.add(fil);
+    bob14 = new THREE.Mesh(new THREE.SphereGeometry(.022, 24, 16), new THREE.MeshStandardMaterial({ color: 0xc62828, metalness: .3, roughness: .4 })); bob14.position.y = -LP; pend14.add(bob14);
+    const bg = new THREE.Mesh(new THREE.PlaneGeometry(.9, .5), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 })); bg.position.set(0, PIVY - LP + .15, -.16); scene.add(bg);
+    const cv = document.createElement('canvas'); cv.width = 900; cv.height = 40; const c = cv.getContext('2d'); c.fillStyle = '#fffde7'; c.fillRect(0, 0, 900, 40); c.fillStyle = '#1d2433'; c.font = '600 18px Inter'; for (let k = 0; k <= 90; k++) { c.fillRect(k * 10, 0, 1.5, k % 10 ? 10 : 22); }
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; const rl = new THREE.Mesh(new THREE.PlaneGeometry(.9, .04), new THREE.MeshStandardMaterial({ map: tx })); rl.position.set(0, PIVY - LP - .07, -.155); scene.add(rl);
+    const sl = label('Échelle : 10 cm', { size: 22, scale: .0007 }); sl.position.set(.38, PIVY - LP - .04, -.15); scene.add(sl);
+    const cam = new THREE.Group(); const cb = new THREE.Mesh(new THREE.BoxGeometry(.08, .05, .06), new THREE.MeshStandardMaterial({ color: 0x212121 })); const lens = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .03, 16), new THREE.MeshStandardMaterial({ color: 0x37474f })); lens.rotation.x = Math.PI / 2; lens.position.z = -.045; cam.add(cb, lens); cam.position.set(.25, .3, .55); scene.add(cam);
+    const tri = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, .28, 6), new THREE.MeshStandardMaterial({ color: 0x546e7a })); tri.position.set(.25, .14, .55); scene.add(tri);
+    const cl = label('Caméra (25 images/s)', { size: 22, scale: .0007 }); cl.position.set(.25, .37, .55); scene.add(cl);
+    dots14 = new THREE.Group(); scene.add(dots14);
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Énergies en fonction du temps'), h('canvas', { id: 'chE19', style: 'width:100%;display:block;border:1px solid var(--line);border-radius:8px' }), h('div', { class: 'note', id: 'chE19Info' })));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Tableau du pointage'), h('div', { class: 'tblwrap', style: 'max-height:260px;overflow:auto' }, h('table', { class: 'tbl', id: 'pTab19' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  setTh(th) { pend14.rotation.z = th; },
+  resetScene() { S19 = fresh19(); if (!pend14) return; this.setTh(0); dots14.clear(); this.drawData(); if ($('#q19')) this.refreshPanel(); },
+  drawData() {
+    const s = S19; if (!$('#pTab19')) return;
+    const r = s.cur, d = r && s.energ ? energize(r.raw, r.m) : null;
+    $('#pTab19').innerHTML = r ? (d ? energyTable(d) : '<thead><tr><th>t (s)</th><th>x (m)</th><th>y (m)</th></tr></thead><tbody>' + r.raw.map(p => `<tr><td>${f19(p.t)}</td><td>${f19(p.x, 3)}</td><td>${f19(p.y, 3)}</td></tr>`).join('') + '</tbody>') : '<tbody><tr><td>Aucune acquisition.</td></tr></tbody>';
+    energyChart($('#chE19'), d || [], { tmax: 2, ymax: d ? undefined : .1 });
+    $('#chE19Info').innerHTML = d ? LEG14 + `<br>Acquisition : m = ${f19(r.m * 1000, 0)} g, angle de lâcher ${r.th0}° ; ℰm moyenne ≈ ${f19(d.reduce((a, q) => a + q.Em, 0) / d.length, 3)} J.` : 'Réalise une acquisition puis crée les variables ℰc, ℰp et ℰm.';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, h('span', {}, 'Masse :'), B('m1', '100 g', { t: 'm', m: .1 }), B('m2', '200 g', { t: 'm', m: .2 })),
+      h('div', { class: 'row' }, h('span', {}, 'Angle de lâcher :'), ...[15, 26, 35].map(a => B('a' + a, a + '°', { t: 'th', a }))),
+      h('div', { class: 'row' }, B('g1', '🎥 Lâcher le pendule et filmer (2 s)', { t: 'run' }), B('g2', 'Créer les variables v, ℰc, ℰp, ℰm', { t: 'energ' })),
+      h('div', { id: 'q19', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S19, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#m1,#m2', true); $('#m1').classList.toggle('on', s.m === .1); $('#m2').classList.toggle('on', s.m === .2);
+    [15, 26, 35].forEach(a => { en('#a' + a, true); $('#a' + a).classList.toggle('on', s.th0 === a); }); en('#g1', true); en('#g2', !!s.cur && !s.energ);
+    $('#q19').innerHTML = `m = ${f19(s.m * 1000, 0)} g ; angle de lâcher ${s.th0}° (hauteur de lâcher ${f19(LP * (1 - Math.cos(s.th0 * Math.PI / 180)) * 100, 1)} cm) · acquisitions réalisées : ${s.runs.length}`;
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S19;
+    if (a.t === 'm') { s.m = a.m; bob14.scale.setScalar(a.m === .2 ? 1.26 : 1); say(`Masse du pendule : ${a.m * 1000} g.`); return; }
+    if (a.t === 'th') { s.th0 = a.a; if (!INSTANT) { const t0 = pend14.rotation.z, t1 = a.a * Math.PI / 180; await tween(.5, p => this.setTh(t0 + (t1 - t0) * p)); } this.setTh(a.a * Math.PI / 180); say(`Pendule écarté de ${a.a}° de la verticale.`); return; }
+    if (a.t === 'run') {
+      const raw = simulate14(s.th0); s.cur = { raw: raw.map(({ t, x, y }) => ({ t, x, y })), m: s.m, th0: s.th0 }; s.runs.push({ m: s.m, th0: s.th0 }); s.energ = false; dots14.clear();
+      const addDot = p => { const d = new THREE.Mesh(new THREE.SphereGeometry(.004, 8, 6), new THREE.MeshBasicMaterial({ color: 0x1A237E })); d.position.set(p.x, PIVY - LP + p.y, -.1 + .03); dots14.add(d); };
+      if (!INSTANT) { flyTo([0, .4, .9], [0, .35, 0]); let k = 0; await tween(TREC * 1.5, p => { const t = p * TREC, i = Math.min(raw.length - 1, Math.round(t / DT14)); this.setTh(raw[i].th); while (k <= i) addDot(raw[k++]); }); }
+      else raw.forEach(addDot);
+      this.setTh(0); this.drawData(); step('lacher');
+      say('Acquisition terminée : 50 positions pointées (une toutes les 40 ms).'); return;
+    }
+    if (a.t === 'energ') {
+      if (!s.cur) return false; s.energ = true; this.drawData(); step('energies');
+      const d = energize(s.cur.raw, s.cur.m), mn = Math.min(...d.map(q => q.Em)), mx = Math.max(...d.map(q => q.Em));
+      if (s.runs.length >= 2 && new Set(s.runs.map(r => r.m + '_' + r.th0)).size >= 2) step('autre');
+      const msg = `m = ${f19(s.cur.m * 1000, 0)} g, ${s.cur.th0}° : ℰc et ℰp varient en sens contraires ; ℰm reste comprise entre ${f19(mn, 3)} J et ${f19(mx, 3)} J (constante aux erreurs de pointage près).`; observe(msg); say(msg); return;
+    }
+  },
+  async demo() { say('Démonstration : lâcher à 26°.'); await act({ t: 'th', a: 26 }, { record: false }); await act({ t: 'run' }, { record: false }); await wait(800); say('À toi : crée les variables et trace les énergies.'); await wait(1200); },
+};
+startTP(C19);
+
+</script></body></html>

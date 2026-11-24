@@ -1,0 +1,143 @@
+<!--efir1re:AD1 · Eau de Javel et équation d'oxydoréduction 3D-->
+window.EFIR_RETOUR = "premiere/matiere/R%C3%A9actions%20d%27oxydor%C3%A9duction";
+
+// ====================================================================
+// Ch. 2 · Activité 3 (documentaire, manuel Hachette p. 37) · Établir une équation d'oxydoréduction : l'eau de Javel
+// Doc. 1 : étiquette « à diluer dans les 3 mois… à conserver au frais et à l'abri de la lumière »
+// Doc. 2 : couple ClO⁻/Cl⁻ ; Doc. 3 : couples de l'eau O₂/H₂O, H₂O/H₂, H₂O₂/H₂O
+// Modèle simplifié (illustratif) de la décomposition 2 ClO⁻ → 2 Cl⁻ + O₂ : c(t) = c₀ e^(−k t),
+// k = 0,074 mois⁻¹ à 20 °C à l'abri de la lumière (c = 0,80 c₀ au bout de 3 mois), k double tous les +10 °C, ×3 en plein soleil.
+// ====================================================================
+const C0J = .36, SEUILJ = .8 * C0J;
+const kJ = (T, sol) => .0744 * Math.pow(2, (T - 20) / 10) * (sol ? 3 : 1);
+const FLAC = [
+  { nom: 'A', lieu: 'placard frais, à l\'abri de la lumière (20 °C)', T: 20, sol: false, x: -.42 },
+  { nom: 'B', lieu: 'près d\'un radiateur, à l\'abri de la lumière (30 °C)', T: 30, sol: false, x: 0 },
+  { nom: 'C', lieu: 'sur le rebord d\'une fenêtre, en plein soleil (20 °C)', T: 20, sol: true, x: .42 },
+];
+const cJ = (F, t) => C0J * Math.exp(-kJ(F.T, F.sol) * t);
+const fJ = (v, n = 2) => v.toFixed(n).replace('.', ',');
+let flacJ = [], jaugesJ = [], bullesJ, solJ, SJ = null;
+const freshJ = () => ({ etiquette: false, mois: 0, couples: false, methode: false });
+const AD1J = {
+  id: 'p1_ch02_ae4', code: 'AD1', short: 'Eau de Javel et équation d\'oxydoréduction 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 2 · Activité documentaire AD1 · Simulation 3D',
+  title: 'Établir une équation d\'oxydoréduction : l\'eau de Javel',
+  problem: 'L\'eau de Javel désinfecte grâce aux ions hypochlorite ClO⁻. Pourtant, son flacon porte une date limite d\'utilisation. Pourquoi les flacons d\'eau de Javel indiquent-ils une date limite d\'utilisation ?',
+  mots: `<p><b>Couple oxydant/réducteur</b> Ox/Red : Ox + n e⁻ ⇌ Red (l'oxydant s'écrit à gauche).<br>
+  <b>Couple de l'ion hypochlorite</b> : ClO⁻(aq) + 2 H⁺(aq) + 2 e⁻ ⇌ Cl⁻(aq) + H₂O(ℓ).<br>
+  <b>Couples de l'eau</b> : O₂(g)/H₂O(ℓ) ; H₂O(ℓ)/H₂(g) ; H₂O₂(aq)/H₂O(ℓ).<br>
+  <b>Équation d'oxydoréduction</b> : on écrit les deux demi-équations dans le sens des réactifs, on égalise le nombre d'électrons, on additionne puis on simplifie. Il ne reste aucun électron ; flèche →.</p>`,
+  aide: `<p>1. Lis l'étiquette du flacon (doc. 1).<br>
+  2. Fais vieillir les trois flacons et compare l'évolution de la concentration en ions ClO⁻ et les bulles qui apparaissent.<br>
+  3. L'ion hypochlorite est un <b>oxydant</b> : avec quel <b>réducteur</b> peut-il réagir dans le flacon ? L'eau de Javel contient surtout de l'eau : dans quels couples l'eau est-elle le réducteur ?<br>
+  4. Écris les deux demi-équations dans le sens des réactifs, égalise les électrons, additionne, simplifie.</p>`,
+  views: { ensemble: [[0, 1.35, 2.3], [0, .95, 0]] },
+  viewbar: [['Zoom étiquette', () => flyTo([-.42, 1.05, .75], [-.42, 1.0, 0])]],
+  protocol: [
+    { id: 'etiquette', q: 'Q1', html: 'Lire l\'étiquette du flacon d\'eau de Javel (doc. 1).' },
+    { id: 'vieillir', q: 'Q1', html: 'Faire vieillir les trois flacons et observer la concentration en ions ClO⁻ et le gaz formé.' },
+    { id: 'couples', q: 'Q1', html: 'Afficher les couples oxydant/réducteur (doc. 2 et 3) et choisir ceux qui conviennent.' },
+    { id: 'tableau', q: 'Q1', html: 'Compléter le tableau des couples de l\'eau puis le vérifier.' },
+    { id: 'methode', q: 'Q2', html: 'Suivre la méthode : demi-équations, électrons égalisés, addition, simplification.' },
+    { id: 'extra', q: 'Q1-2', html: 'Répondre aux questions et établir l\'équation.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'activité documentaire : ne jamais mélanger eau de Javel et produit acide (dégagement de dichlore toxique)',
+  table: { rowTitle: 'Couple de l\'eau (doc. 3)',
+    rows: [{ label: 'O₂(g) / H₂O(ℓ)', ans: [1, 0] }, { label: 'H₂O(ℓ) / H₂(g)', ans: [0, 1] }, { label: 'H₂O₂(aq) / H₂O(ℓ)', ans: [1, 0] }],
+    cols: [{ title: 'Rôle de l\'eau dans ce couple', options: ['oxydant', 'réducteur'] }, { title: 'Peut-il réagir avec l\'oxydant ClO⁻ ?', options: ['oui : l\'eau y est le réducteur', 'non : l\'eau y est l\'oxydant'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'L\'ion hypochlorite est un oxydant. Dans le flacon, il peut réagir avec…', options: ['l\'eau, qui joue le rôle de réducteur', 'l\'ion chlorure Cl⁻, son propre réducteur conjugué', 'rien : la solution ne contient que lui'], ans: 0 },
+    { q: 'Q1', text: 'Le gaz qui se forme lentement dans les flacons est le dioxygène. Le couple de l\'eau retenu est donc…', options: ['O₂(g) / H₂O(ℓ)', 'H₂O(ℓ) / H₂(g)', 'H₂O₂(aq) / H₂O(ℓ)'], ans: 0 },
+    { q: 'Q1', text: 'Demi-équation du couple O₂/H₂O écrite dans le sens où l\'eau réagit :', options: ['2 H₂O(ℓ) → O₂(g) + 4 H⁺(aq) + 4 e⁻', 'O₂(g) + 4 H⁺(aq) + 4 e⁻ → 2 H₂O(ℓ)', 'H₂O(ℓ) → O₂(g) + 2 H⁺(aq) + 2 e⁻'], ans: 0 },
+    { q: 'Q1', num: true, text: 'Par combien faut-il multiplier la demi-équation du couple ClO⁻/Cl⁻ pour égaliser les électrons ?', unit: '', ans: 2, tol: .01 },
+    { q: 'Q1', text: 'Après addition et simplification, l\'équation de la réaction est :', options: ['2 ClO⁻(aq) → 2 Cl⁻(aq) + O₂(g)', 'ClO⁻(aq) + H₂O(ℓ) → Cl⁻(aq) + O₂(g) + 2 H⁺(aq)', '2 ClO⁻(aq) + 4 e⁻ → 2 Cl⁻(aq) + O₂(g)'], ans: 0 },
+    { q: 'Q1', num: true, text: 'Flacon A : au bout de 3 mois, c(ClO⁻) = 0,80 × c₀ avec c₀ = 0,36 mol·L⁻¹. Calculer c(ClO⁻) :', unit: 'mol·L⁻¹', ans: .8 * C0J, tol: .03 },
+    { q: 'Q2', text: 'Pour établir une demi-équation à partir d\'un couple, on équilibre dans l\'ordre…', options: ['les éléments autres que O et H, puis O avec H₂O, puis H avec H⁺, puis les charges avec e⁻', 'les charges d\'abord, puis les éléments', 'uniquement les charges avec e⁻'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['L\'ion hypochlorite oxyde lentement l\'eau du flacon : 2 ClO⁻(aq) → 2 Cl⁻(aq) + O₂(g). Sa concentration diminue, plus vite à la chaleur et à la lumière, et l\'eau de Javel perd son efficacité : d\'où la date limite et la conservation au frais, à l\'abri de la lumière.', 'L\'eau de Javel s\'évapore : c\'est pour cela qu\'il faut l\'utiliser vite.', 'Les ions hypochlorite se forment avec le temps : l\'eau de Javel devient de plus en plus efficace.'], ans: 0 },
+  build() {
+    const bois = new THREE.MeshStandardMaterial({ color: 0xb08a5a, roughness: .8 });
+    const plateau = new THREE.Mesh(new THREE.BoxGeometry(1.5, .04, .4), bois); plateau.position.set(0, .7, 0); scene.add(plateau);
+    [-.72, .72].forEach(x => { const m = new THREE.Mesh(new THREE.BoxGeometry(.04, .7, .4), bois); m.position.set(x, .35, 0); scene.add(m); });
+    const mur = new THREE.Mesh(new THREE.PlaneGeometry(4, 2.4), new THREE.MeshStandardMaterial({ color: 0xf1ecf6 })); mur.position.set(0, 1.2, -.3); scene.add(mur);
+    bullesJ = new THREE.Group(); scene.add(bullesJ);
+    FLAC.forEach((F, i) => {
+      const g = new THREE.Group(); g.position.set(F.x, .72, 0);
+      const corps = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .34, 28), new THREE.MeshPhysicalMaterial({ color: 0xe8f5e9, transparent: true, opacity: .45, roughness: .15 }));
+      corps.position.y = .17; g.add(corps);
+      const liq = new THREE.Mesh(new THREE.CylinderGeometry(.084, .084, .28, 28), new THREE.MeshStandardMaterial({ color: 0xd9f0a3, transparent: true, opacity: .75 })); liq.position.y = .145; g.add(liq);
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(.03, .06, .06, 20), corps.material); col.position.y = .37; g.add(col);
+      const bouchon = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, .04, 20), new THREE.MeshStandardMaterial({ color: 0x1565c0 })); bouchon.position.y = .42; g.add(bouchon);
+      const et = label('Eau de Javel\n2,6 % de chlore actif', { size: 20, scale: .0011, color: '#1A237E' }); et.position.set(0, .18, .1); g.add(et);
+      const nl = label('Flacon ' + F.nom, { size: 26, scale: .0014, color: '#4a148c' }); nl.position.set(0, .56, 0); g.add(nl);
+      scene.add(g); flacJ.push({ g, liq });
+      const j = new THREE.Mesh(new THREE.BoxGeometry(.03, 1, .03), new THREE.MeshStandardMaterial({ color: 0x7b1fa2 })); j.position.set(F.x + .14, .72, .05); j.scale.y = .3; j.position.y = .72 + .15; scene.add(j); jaugesJ.push(j);
+    });
+    solJ = new THREE.Mesh(new THREE.SphereGeometry(.09, 20, 14), new THREE.MeshBasicMaterial({ color: 0xffc107 })); solJ.position.set(.75, 1.55, .1); scene.add(solJ);
+    const sl = label('Soleil', { size: 22, scale: .0012, color: '#e65100' }); sl.position.set(.75, 1.72, .1); scene.add(sl);
+    const rad = new THREE.Mesh(new THREE.BoxGeometry(.5, .3, .06), new THREE.MeshStandardMaterial({ color: 0xeeeeee })); rad.position.set(0, .22, -.1); scene.add(rad);
+    const rl = label('Radiateur (30 °C)', { size: 20, scale: .0011, color: '#c62828' }); rl.position.set(0, .45, .15); scene.add(rl);
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'c(ClO⁻) = f(t)'), h('canvas', { id: 'chJ', style: 'width:100%;display:block;border:1px solid var(--line);border-radius:8px' }), h('div', { class: 'note', id: 'chJInfo' })));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Documents et méthode'), h('div', { id: 'docJ', class: 'note' })));
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene() { SJ = freshJ(); if (!flacJ.length) return; bullesJ.clear(); this.majJauges(); this.drawData(); if ($('#qJp')) this.refreshPanel(); },
+  majJauges() { FLAC.forEach((F, i) => { const r = cJ(F, SJ.mois) / C0J, j = jaugesJ[i]; j.scale.y = .3 * r; j.position.y = .72 + .15 * r; j.material.color.setHex(cJ(F, SJ.mois) >= SEUILJ ? 0x7b1fa2 : 0xc62828); }); },
+  drawData() {
+    const s = SJ; if (!$('#chJ')) return;
+    const cols = ['#2F5DA8', '#E65100', '#C62828'], curves = [];
+    if (s.mois > 0) FLAC.forEach((F, i) => { const pts = []; for (let t = 0; t <= s.mois + 1e-9; t += .1) pts.push([t, cJ(F, t)]); curves.push({ pts, color: cols[i] }); });
+    curves.push({ pts: [[0, SEUILJ], [6, SEUILJ]], color: '#9e9e9e' });
+    drawChart($('#chJ'), { xmax: 6, ymax: .4, xlabel: 't (mois)', ylabel: 'c(ClO⁻) (mol·L⁻¹)', pts: [], curves, xfmt: x => fJ(x, 0), yfmt: y => fJ(y, 2) });
+    $('#chJInfo').innerHTML = s.mois > 0 ? FLAC.map((F, i) => `<span style="color:${cols[i]}">■ flacon ${F.nom} : ${fJ(cJ(F, s.mois))} mol·L⁻¹</span>`).join(' · ') + ' · <span style="color:#757575">— seuil d\'efficacité 0,29 mol·L⁻¹ (modèle simplifié)</span>' : 'Fais vieillir les flacons pour tracer c(ClO⁻) = f(t).';
+    const d = [];
+    if (s.etiquette) d.push('<p><b>Doc. 1 · Étiquette :</b> « à diluer dans les 3 mois qui suivent la date de fabrication et à conserver au frais et à l\'abri de la lumière ».</p>');
+    if (s.couples) d.push('<p><b>Doc. 2 :</b> ClO⁻(aq) + 2 H⁺(aq) + 2 e⁻ ⇌ Cl⁻(aq) + H₂O(ℓ).<br><b>Doc. 3 · couples de l\'eau :</b> O₂(g)/H₂O(ℓ) ; H₂O(ℓ)/H₂(g) ; H₂O₂(aq)/H₂O(ℓ).</p>');
+    if (s.methode) d.push('<p><b>Méthode :</b><br>① ClO⁻ + 2 H⁺ + 2 e⁻ → Cl⁻ + H₂O &nbsp;(× 2)<br>② 2 H₂O → O₂ + 4 H⁺ + 4 e⁻<br>③ addition : 2 ClO⁻ + 4 H⁺ + 2 H₂O → 2 Cl⁻ + 2 H₂O + O₂ + 4 H⁺<br>④ simplification : <b>2 ClO⁻(aq) → 2 Cl⁻(aq) + O₂(g)</b></p>');
+    $('#docJ').innerHTML = d.join('') || 'Commence par lire l\'étiquette du flacon.';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, B('bJ1', '🏷️ Lire l\'étiquette (doc. 1)', { t: 'etiquette' })),
+      h('div', { class: 'row' }, B('bJ2', '⏳ Faire vieillir les flacons (6 mois)', { t: 'vieillir' })),
+      h('div', { class: 'row' }, B('bJ3', '🔗 Afficher les couples (doc. 2 et 3)', { t: 'couples' })),
+      h('div', { class: 'row' }, B('bJ4', '✍️ Suivre la méthode de l\'équation', { t: 'methode' })),
+      h('div', { id: 'qJp', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = SJ, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#bJ1', true); en('#bJ2', s.etiquette); en('#bJ3', s.mois > 0); en('#bJ4', s.couples);
+    $('#qJp').innerHTML = FLAC.map(F => `Flacon ${F.nom} : ${F.lieu}`).join('<br>');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = SJ;
+    if (a.t === 'etiquette') {
+      s.etiquette = true; if (!INSTANT) await flyTo([-.42, 1.05, .75], [-.42, 1.0, 0]);
+      this.drawData(); step('etiquette');
+      const m = 'Étiquette : « À diluer dans les 3 mois qui suivent la date de fabrication et à conserver au frais et à l\'abri de la lumière. »'; observe(m); say(m); return;
+    }
+    if (a.t === 'vieillir') {
+      if (!s.etiquette) return false;
+      if (!INSTANT) flyTo(...this.views.ensemble);
+      const dur = INSTANT ? 0 : 5;
+      await tween(dur, p => { s.mois = 6 * p; this.majJauges(); if (Math.random() < .5) FLAC.forEach((F, i) => { if (Math.random() < kJ(F.T, F.sol) * 1.2) { const b = new THREE.Mesh(new THREE.SphereGeometry(.008, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff })); b.position.set(F.x + (Math.random() - .5) * .1, .76 + Math.random() * .2, .02); bullesJ.add(b); } }); bullesJ.children.forEach(b => b.position.y = Math.min(1.0, b.position.y + .004)); this.drawData(); });
+      s.mois = 6; this.majJauges(); this.drawData(); step('vieillir');
+      const m = `Après 6 mois : flacon A ${fJ(cJ(FLAC[0], 6))} mol·L⁻¹, flacon B ${fJ(cJ(FLAC[1], 6))} mol·L⁻¹, flacon C ${fJ(cJ(FLAC[2], 6))} mol·L⁻¹ (c₀ = 0,36 mol·L⁻¹). Des bulles de gaz (dioxygène) apparaissent, surtout dans B et C. Le flacon A passe sous le seuil d'efficacité au bout d'environ 3 mois.`;
+      observe(m); say(m); return;
+    }
+    if (a.t === 'couples') { if (s.mois <= 0) return false; s.couples = true; this.drawData(); step('couples'); say('L\'ion ClO⁻ est un oxydant : cherche dans le doc. 3 les couples où <b>l\'eau est le réducteur</b>, puis complète le tableau.'); return; }
+    if (a.t === 'methode') { if (!s.couples) return false; s.methode = true; this.drawData(); step('methode'); say('Méthode : demi-équations dans le sens des réactifs, électrons égalisés (× 2), addition, simplification. Équation : 2 ClO⁻(aq) → 2 Cl⁻(aq) + O₂(g).'); return; }
+  },
+  async demo() { say('Démonstration : on lit l\'étiquette puis on fait vieillir les flacons.'); await act({ t: 'etiquette' }, { record: false }); await wait(1200); await act({ t: 'vieillir' }, { record: false }); await wait(1500); say('À toi : affiche les couples et complète le tableau.'); await wait(1200); },
+};
+startTP(AD1J);
+
+
+</script></body></html>

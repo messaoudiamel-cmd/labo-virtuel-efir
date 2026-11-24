@@ -1,0 +1,139 @@
+<!--efir1re:AE2 · Énergie mécanique et frottements 3D-->
+window.EFIR_RETOUR = "premiere/energie/Aspects%20%C3%A9nerg%C3%A9tiques%20des%20ph%C3%A9nom%C3%A8nes%20m%C3%A9caniques";
+
+// ====================================================================
+// Ch. 14 · AE2 · L'énergie mécanique et les frottements (chute d'une bille dans l'eau)
+// ====================================================================
+// ====================================================================
+// Module commun : pointage vidéo simulé et énergies (Ec, Ep, Em)
+// ====================================================================
+const GG14 = 9.81;
+// données brutes [{t, x, y}] → ajoute v (dérivée centrée, comme un logiciel de pointage) et les énergies
+function energize(raw, m) {
+  return raw.map((p, i) => {
+    const a = raw[Math.max(0, i - 1)], b = raw[Math.min(raw.length - 1, i + 1)], dt = b.t - a.t;
+    const v = Math.hypot(b.x - a.x, b.y - a.y) / dt;
+    const Ec = .5 * m * v * v, Ep = m * GG14 * p.y; return { ...p, v, Ec, Ep, Em: Ec + Ep };
+  }).slice(1, -1);
+}
+function energyChart(cv, data, o = {}) {
+  if (!data.length) { drawChart(cv, { xmax: o.tmax || 2, ymax: o.ymax || .1, xlabel: 't (s)', ylabel: 'Énergie (J)', pts: [] }); return; }
+  const tmax = o.tmax || Math.ceil(data[data.length - 1].t * 5) / 5, ymax = o.ymax || Math.max(...data.map(d => d.Em)) * 1.25;
+  drawChart(cv, { xmax: tmax, ymax, xlabel: 't (s)', ylabel: 'Énergie (J)', pts: [], curves: [{ pts: data.map(d => [d.t, d.Ec]), color: '#E65100' }, { pts: data.map(d => [d.t, d.Ep]), color: '#2F5DA8' }, { pts: data.map(d => [d.t, d.Em]), color: '#2e7d32' }], xfmt: x => x.toFixed(2).replace('.', ','), yfmt: y => y.toPrecision(2).replace('.', ',') });
+}
+const LEG14 = '<span style="color:#E65100">■ ℰc</span> &nbsp; <span style="color:#2F5DA8">■ ℰp</span> &nbsp; <span style="color:#2e7d32">■ ℰm = ℰc + ℰp</span>';
+function energyTable(data, n = 3) {
+  const f = (v, k) => v.toFixed(k).replace('.', ',');
+  return '<thead><tr><th>t (s)</th><th>x (m)</th><th>y (m)</th><th>v (m·s⁻¹)</th><th>ℰc (J)</th><th>ℰp (J)</th><th>ℰm (J)</th></tr></thead><tbody>' + data.map(d => `<tr><td>${f(d.t, 2)}</td><td>${f(d.x, 3)}</td><td>${f(d.y, 3)}</td><td>${f(d.v, 3)}</td><td>${f(d.Ec, n)}</td><td>${f(d.Ep, n)}</td><td>${f(d.Em, n)}</td></tr>`).join('') + '</tbody>';
+}
+
+const MB = .05, RB = .02, VB = 4 / 3 * Math.PI * RB ** 3, AB = Math.PI * RB * RB, Y0B = .85, TUBEH = 1.0, DTB = .04;
+const MIL = { air: { nom: 'l\'air', rho: 1.2, col: 0xffffff, op: .05 }, eau: { nom: 'l\'eau', rho: 1000, col: 0x81d4fa, op: .35 } };
+let ball20, liq20, dots20, S20b = null;
+const fresh20b = () => ({ mil: 'eau', cur: null, energ: false, runs: [] });
+const f20 = (v, n = 2) => v.toFixed(n).replace('.', ',');
+function simulate20(mil) {
+  const rho = MIL[mil].rho; let y = Y0B, v = 0, t = 0, next = 0; const h = .0005, out = [];
+  const acc = v => (MB * GG14 - rho * VB * GG14 - .5 * rho * .5 * AB * v * Math.abs(v)) / MB; // v positive vers le bas
+  while (y > RB + .01 && t < 3) { if (t >= next - 1e-9) { const nz = Math.sin(t * 77.7) * .0008; out.push({ t: +next.toFixed(2), x: 0, y: +(y + nz).toFixed(4) }); next += DTB; } const a = acc(v); v += a * h; y -= v * h; t += h; }
+  return out;
+}
+const C20b = {
+  id: 'p1_ch14_ae3', code: 'AE2', short: 'Énergie mécanique et frottements 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 14 · Activité expérimentale AE2 · Simulation 3D',
+  title: 'L\'énergie mécanique et les frottements',
+  problem: 'Le 24 octobre 2014, Alan Eustace réalise une chute de 37 615 m avant d\'ouvrir son parachute à 3 804 m d\'altitude ; son saut dure 4 min 27 s et il atteint près de 1 300 km·h⁻¹. Pourquoi l\'énergie mécanique d\'un système peut-elle varier au cours d\'un mouvement ?',
+  mots: `<p><b>Chute libre</b> : un système est en chute libre s'il n'est soumis qu'à son poids ; son énergie mécanique se conserve alors.<br>
+  ℰ<sub>c</sub> = ½ m v² ; ℰ<sub>p</sub> = m g y (origine au fond du tube, axe vers le haut) ; ℰ<sub>m</sub> = ℰ<sub>c</sub> + ℰ<sub>p</sub>.<br>
+  Bille de masse m = 50,0 g et de diamètre 4,0 cm ; tube de 1 m ; caméra à 25 images par seconde ; g = 9,81 N·kg⁻¹.<br>
+  <b>Chute libre</b> d'une hauteur z sans vitesse initiale : z = g × (Δt)² / 2, soit Δt = √(2 z / g).<br>
+  <b>Vitesse au tableur</b> : v<sub>M</sub> = MM' / Δt entre deux positions successives M et M' (colonne C : =(B3−B2)/(A3−A2)).</p>`,
+  aide: `<p>1. Lâche la bille sans vitesse dans le tube rempli d'eau et filme sa chute.<br>
+  2. Crée les variables ℰc, ℰp, ℰm et trace-les en fonction du temps.<br>
+  3. Compare avec la même bille lâchée dans l'air (tube vide).<br>
+  4. Fais le diagramme des interactions de la bille dans chaque cas.</p>`,
+  views: { ensemble: [[0, .6, 1.55], [0, .5, 0]] },
+  viewbar: [['Zoom tube', () => flyTo([0, .5, .9], [0, .45, 0])]],
+  protocol: [
+    { id: 'eau', q: 'Q1a', html: 'Filmer la chute de la bille dans l\'eau et pointer ses positions.' },
+    { id: 'energies', q: 'Q1a', html: 'Tracer ℰc, ℰp et ℰm en fonction du temps.' },
+    { id: 'air', q: 'Q1a', html: 'Comparer avec la chute de la même bille dans l\'air.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q1-3', html: 'Interpréter et répondre aux questions (Alan Eustace).' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'essuyer l\'eau renversée ; récupérer la bille avec l\'aimant ou la pince',
+  table: { rowTitle: 'Chute de la bille', rows: [{ label: 'Dans l\'air (sur 80 cm)', ans: [0, 0] }, { label: 'Dans l\'eau', ans: [1, 1] }],
+    cols: [{ title: 'Énergie mécanique', options: ['se conserve', 'diminue', 'augmente'] }, { title: 'La bille est…', options: ['pratiquement en chute libre', 'soumise aussi à l\'action de l\'eau (pas en chute libre)'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1b', text: 'Dans l\'eau, la bille est soumise…', options: ['à son poids (action de la Terre) et à l\'action de l\'eau (frottements et poussée d\'Archimède)', 'uniquement à son poids', 'uniquement à l\'action de l\'eau'], ans: 0 },
+    { q: 'Q1a', text: 'Dans l\'eau, au bout d\'un moment, la vitesse de la bille…', options: ['devient constante, alors que ℰp continue de diminuer', 'augmente sans cesse', 'devient nulle'], ans: 0 },
+    { q: 'Q2a', num: true, text: 'Durée de chute libre théorique d\'Alan Eustace depuis 37 615 m : Δt = √(2z/g) =', unit: 's', ans: Math.sqrt(2 * 37615 / 9.81), tol: .02 },
+    { q: 'Q2b', text: 'Sa durée de chute réelle (4 min 27 s) est bien plus grande car…', options: ['il est soumis à l\'action de l\'air : il n\'est pas en chute libre', 'g est plus grand en altitude', 'il est en chute libre'], ans: 0 },
+    { q: 'Q3', text: 'Si un système est soumis à des forces de frottement non négligeables, son énergie mécanique…', options: ['diminue : elle ne se conserve pas', 'se conserve', 'augmente'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Lorsqu\'un système est soumis, en plus de son poids, à des actions comme celle d\'un fluide (frottements), son énergie mécanique diminue : elle ne se conserve pas. Elle ne se conserve qu\'en chute libre (poids seul).', 'L\'énergie mécanique se conserve toujours.', 'Dans l\'eau, l\'énergie cinétique de la bille augmente sans cesse.', 'Les frottements augmentent l\'énergie mécanique.'], ans: 0 },
+  build() {
+    const gm = GLASS(); gm.opacity = .22;
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, TUBEH, 40, 1, true), gm); tube.position.y = TUBEH / 2 + .01; scene.add(tube);
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(.07, .08, .02, 32), new THREE.MeshStandardMaterial({ color: 0x455a64 })); foot.position.y = .01; scene.add(foot);
+    liq20 = new THREE.Mesh(new THREE.CylinderGeometry(.043, .043, .95, 40), new THREE.MeshStandardMaterial({ color: 0x81d4fa, transparent: true, opacity: .35, depthWrite: false })); liq20.position.y = .02 + .475; scene.add(liq20);
+    ball20 = new THREE.Mesh(new THREE.SphereGeometry(RB, 24, 16), new THREE.MeshStandardMaterial({ color: 0x6a1b9a, roughness: .35 })); scene.add(ball20);
+    const cv = document.createElement('canvas'); cv.width = 64; cv.height = 1024; const c = cv.getContext('2d'); c.fillStyle = '#fffde7'; c.fillRect(0, 0, 64, 1024); c.fillStyle = '#1d2433'; c.font = '600 20px Inter'; for (let k = 0; k <= 100; k++) { const y = 1024 - 12 - k * 10; c.fillRect(0, y, k % 10 ? 12 : 26, k % 10 ? 1.5 : 3); if (k % 10 === 0) c.fillText(String(k / 100).replace('.', ','), 28, y + 7); }
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; const rl = new THREE.Mesh(new THREE.PlaneGeometry(.06, 1.024 * 1.0), new THREE.MeshStandardMaterial({ map: tx })); rl.position.set(-.09, .02 + .512 - .012 * 1.0, 0); scene.add(rl);
+    const yl = label('y (m)', { size: 22, scale: .0007 }); yl.position.set(-.09, 1.08, 0); scene.add(yl);
+    dots20 = new THREE.Group(); scene.add(dots20);
+    this.place(Y0B);
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Énergies en fonction du temps'), h('canvas', { id: 'chE20', style: 'width:100%;display:block;border:1px solid var(--line);border-radius:8px' }), h('div', { class: 'note', id: 'chE20Info' })));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Tableau du pointage'), h('div', { class: 'tblwrap', style: 'max-height:260px;overflow:auto' }, h('table', { class: 'tbl', id: 'pTab20' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  place(y) { ball20.position.set(0, .02 + y, 0); },
+  resetScene() { S20b = fresh20b(); if (!ball20) return; this.setMil('eau'); this.place(Y0B); dots20.clear(); this.drawData(); if ($('#q20')) this.refreshPanel(); },
+  setMil(k) { liq20.visible = k === 'eau'; },
+  drawData() {
+    const s = S20b; if (!$('#pTab20')) return; const r = s.cur, d = r && s.energ ? energize(r.raw, MB) : null;
+    $('#pTab20').innerHTML = r ? (d ? energyTable(d, 4) : '<thead><tr><th>t (s)</th><th>y (m)</th></tr></thead><tbody>' + r.raw.map(p => `<tr><td>${f20(p.t)}</td><td>${f20(p.y, 3)}</td></tr>`).join('') + '</tbody>') : '<tbody><tr><td>Aucune acquisition.</td></tr></tbody>';
+    energyChart($('#chE20'), d || [], { tmax: r && r.mil === 'air' ? .5 : 1.4, ymax: .5 });
+    $('#chE20Info').innerHTML = d ? LEG14 + `<br>Chute dans ${MIL[r.mil].nom} : ℰm passe de ${f20(d[0].Em, 3)} J à ${f20(d[d.length - 1].Em, 3)} J.` : 'Filme une chute puis crée les variables ℰc, ℰp et ℰm.';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, h('span', {}, 'Tube :'), B('t1', 'Rempli d\'eau', { t: 'mil', k: 'eau' }), B('t2', 'Vide (air)', { t: 'mil', k: 'air' })),
+      h('div', { class: 'row' }, B('g1', '🎥 Lâcher la bille et filmer', { t: 'run' }), B('g2', 'Créer les variables v, ℰc, ℰp, ℰm', { t: 'energ' })),
+      h('div', { id: 'q20', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S20b, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#t1', s.mil !== 'eau'); en('#t2', s.mil !== 'air'); $('#t1').classList.toggle('on', s.mil === 'eau'); $('#t2').classList.toggle('on', s.mil === 'air'); en('#g1', true); en('#g2', !!s.cur && !s.energ);
+    $('#q20').innerHTML = `Tube ${s.mil === 'eau' ? 'rempli d\'eau' : 'vide (air)'} · bille de 50,0 g lâchée sans vitesse à y = 0,85 m` + (s.cur ? ` · dernière acquisition : chute dans ${MIL[s.cur.mil].nom}` : '');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S20b;
+    if (a.t === 'mil') { s.mil = a.k; this.setMil(a.k); say(a.k === 'eau' ? 'Tube rempli d\'eau.' : 'Tube vidé : la bille tombera dans l\'air.'); return; }
+    if (a.t === 'run') {
+      const raw = simulate20(s.mil); s.cur = { raw, mil: s.mil }; s.energ = false; s.runs.push(s.mil); dots20.clear();
+      const addDot = p => { const d = new THREE.Mesh(new THREE.SphereGeometry(.004, 8, 6), new THREE.MeshBasicMaterial({ color: 0x1A237E })); d.position.set(.06, .02 + p.y, 0); dots20.add(d); };
+      if (!INSTANT) { flyTo([0, .5, .9], [0, .45, 0]); const T = raw[raw.length - 1].t; let k = 0; await tween(Math.max(1, T * 2.5), p => { const t = p * T, i = Math.min(raw.length - 1, Math.round(t / DTB)); this.place(raw[i].y); while (k <= i) addDot(raw[k++]); }); }
+      else raw.forEach(addDot);
+      this.place(RB + .01); this.drawData(); if (s.mil === 'eau') step('eau');
+      say(`Acquisition terminée : ${raw.length} positions pointées (chute dans ${MIL[s.mil].nom}).`); return;
+    }
+    if (a.t === 'energ') {
+      if (!s.cur) return false; s.energ = true; this.drawData(); const d = energize(s.cur.raw, MB);
+      if (s.cur.mil === 'eau') step('energies'); else step('air');
+      const msg = s.cur.mil === 'eau' ? `Chute dans l'eau : ℰm diminue de ${f20(d[0].Em, 3)} J à ${f20(d[d.length - 1].Em, 3)} J ; la vitesse devient presque constante (≈ ${f20(d[d.length - 1].v)} m·s⁻¹).` : `Chute dans l'air : ℰm reste pratiquement constante (de ${f20(d[0].Em, 3)} J à ${f20(d[d.length - 1].Em, 3)} J).`;
+      observe(msg); say(msg); return;
+    }
+  },
+  async demo() { say('Démonstration : chute dans l\'eau.'); await act({ t: 'mil', k: 'eau' }, { record: false }); await act({ t: 'run' }, { record: false }); await wait(800); say('À toi : trace les énergies puis compare avec une chute dans l\'air.'); await wait(1200); },
+};
+startTP(C20b);
+
+
+</script></body></html>
