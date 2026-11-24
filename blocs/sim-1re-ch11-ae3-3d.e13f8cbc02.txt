@@ -1,0 +1,142 @@
+<!--efir1re:AE3 · Loi de Mariotte 3D-->
+window.EFIR_RETOUR = "premiere/mouvement/Description%20d%27un%20fluide%20au%20repos";
+
+// ====================================================================
+// Ch. 11 · AE3 · Pression et volume d'un gaz : loi de Mariotte (microcontrôleur)
+// ====================================================================
+const PA0 = 101.3, VT = 1, SY_L = .2, SY_MAX = 60; // kPa ; volume du tuyau (mL) ; longueur graduée (m) pour 60 mL
+let plunger13, lcd13, vlab13, S13 = null;
+const fresh13 = () => ({ code: { div: '1', dec: '1', unit: 'hPa' }, up: false, open: true, V: 20, nAir: null, series: 0, pts: [] });
+const P13 = () => S13.nAir == null ? PA0 : S13.nAir / (S13.V + VT); // kPa
+const nz13 = V => Math.sin(V * 7.31) * .25;
+function lcdTxt() {
+  const s = S13; if (!s.up) return ['Pression :', '---'];
+  const hPa = (P13() + (s.nAir == null ? 0 : nz13(s.V))) * 10, div = +s.code.div, v = hPa / div;
+  return ['Pression :', v.toFixed(+s.code.dec) + ' ' + s.code.unit];
+}
+const okCode = () => S13.code.div === '10' && S13.code.dec === '0' && S13.code.unit === 'kPa';
+const C13 = {
+  id: 'p1_ch11_ae3', code: 'AE3', short: 'Loi de Mariotte 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 11 · Activité expérimentale AE3 · Simulation 3D',
+  title: 'Pression et volume d\'un gaz : la loi de Mariotte',
+  problem: 'En montagne, le paquet de chips d\'un randonneur gonfle pendant l\'ascension. Comment varie le volume d\'un gaz lorsque sa pression varie, à température constante ?',
+  mots: `<p><b>Loi de Mariotte</b> : à température constante et pour une quantité de matière de gaz constante, le produit P × V de la pression du gaz par le volume qu'il occupe est constant.<br>
+  <b>Microcontrôleur</b> : carte programmable (Arduino) ; le <b>sketch</b> (programme) lit la tension du capteur, calcule la pression et l'affiche sur l'écran LCD.<br>
+  <b>Volume V</b> : volume total de l'air, c'est-à-dire le volume lu sur la seringue + le volume du tuyau (1 mL).<br>
+  Données : 1 hPa = 10² Pa ; 1 kPa = 10³ Pa = 10 hPa.</p>`,
+  aide: `<p>1. Lis le sketch : dans quelle unité la pression est-elle affichée ? Modifie les lignes 21 et 27 pour un affichage en kPa, et la ligne 26 pour l'afficher sans décimale, puis téléverse.<br>
+  2. Règle la seringue sur un volume (par exemple 20 mL), puis branche-la au capteur : l'air est emprisonné à la pression atmosphérique.<br>
+  3. Pousse ou tire le piston et note au moins 5 couples (V ; P). Calcule P × V.<br>
+  4. Recommence avec une autre quantité d'air (un autre volume de départ).</p>`,
+  views: { ensemble: [[0, .3, .6], [0, .12, 0]] },
+  viewbar: [['Zoom seringue', () => flyTo([-.12, .25, .45], [-.12, .15, 0])], ['Zoom écran LCD', () => flyTo([.22, .22, .38], [.22, .12, 0])]],
+  protocol: [
+    { id: 'sketch', q: 'Q1-2', html: 'Modifier le sketch (lignes 21, 26 et 27) pour afficher la pression en kPa sans décimale, puis le téléverser.' },
+    { id: 'air', q: 'Q3', html: 'Emprisonner de l\'air dans la seringue reliée au capteur.' },
+    { id: 'mesures', q: 'Q3', html: 'Relever la pression pour au moins 5 volumes différents.' },
+    { id: 'quantite', q: 'Q3', html: 'Recommencer avec une autre quantité d\'air emprisonné.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q3-5', html: 'Calculer P × V et répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'aucun produit chimique ; ne pas forcer sur le piston au-delà des graduations',
+  table: { rowTitle: 'À température et quantité d\'air constantes…', rows: [{ label: 'On divise le volume par 2', ans: [0] }, { label: 'On multiplie le volume par 2', ans: [1] }, { label: 'Le produit P × V au cours d\'une série', ans: [2] }, { label: 'Le produit P × V pour une autre quantité d\'air', ans: [3] }],
+    cols: [{ title: 'Observation', options: ['la pression est multipliée par 2', 'la pression est divisée par 2', 'reste constant', 'est constant mais a une autre valeur'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'Dans le sketch d\'origine, la pression est affichée en…', options: ['hPa', 'kPa', 'Pa', 'bar'], ans: 0 },
+    { q: 'Q1', text: 'Pour passer de hPa à kPa, il faut…', options: ['diviser par 10', 'multiplier par 10', 'diviser par 100', 'multiplier par 1 000'], ans: 0 },
+    { q: 'Q3', num: true, text: 'Valeur de P × V pour ta première série (P en kPa, V total en mL) :', unit: 'kPa·mL', get ans() { const p = S13 && S13.pts.find(q => q.serie === 1); return p ? p.P * p.Vt : NaN; }, tol: .03 },
+    { q: 'Q4', text: 'Le paquet de chips gonfle en altitude car…', options: ['la pression extérieure diminue ; le gaz du paquet se détend jusqu\'à une pression plus faible, donc son volume augmente (P × V constant)', 'la température augmente beaucoup', 'des chips se transforment en gaz'], ans: 0 },
+    { q: 'Q5', text: 'Si on double le volume d\'un gaz (T et n constants), sa pression est…', options: ['divisée par 2', 'multipliée par 2', 'inchangée'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['À température et quantité de matière constantes, P × V = constante : la pression d\'un gaz est inversement proportionnelle à son volume (quand V double, P est divisée par 2). La constante dépend de la quantité de gaz.', 'P et V sont proportionnels : quand V augmente, P augmente.', 'La pression d\'un gaz ne dépend pas de son volume.', 'P × V est le même pour toutes les quantités de gaz.'], ans: 0 },
+  build() {
+    const gm = GLASS(); gm.opacity = .3;
+    const sy = new THREE.Group(); sy.position.set(-.12, .06, 0); scene.add(sy);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, SY_L + .02, 32, 1, true), gm); barrel.position.y = (SY_L + .02) / 2; sy.add(barrel);
+    const tip = new THREE.Mesh(new THREE.CylinderGeometry(.004, .008, .02, 16), gm); tip.position.y = -.01; sy.add(tip);
+    for (let v = 0; v <= 60; v += 5) { const t = new THREE.Mesh(new THREE.BoxGeometry(v % 10 ? .006 : .012, .0008, .001), new THREE.MeshBasicMaterial({ color: 0x1d2433 })); t.position.set(-.012, v / SY_MAX * SY_L, .0165); sy.add(t); if (v % 10 === 0) { const l = label(String(v), { size: 20, scale: .0005, bg: 'rgba(255,255,255,0)' }); l.position.set(-.028, v / SY_MAX * SY_L, .017); sy.add(l); } }
+    plunger13 = new THREE.Group(); const head = new THREE.Mesh(new THREE.CylinderGeometry(.0155, .0155, .006, 32), new THREE.MeshStandardMaterial({ color: 0x212121 })); const rod = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, .23, 12), new THREE.MeshStandardMaterial({ color: 0xeceff1 })); rod.position.y = .118; const thumb = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .005, 24), new THREE.MeshStandardMaterial({ color: 0xeceff1 })); thumb.position.y = .235; plunger13.add(head, rod, thumb); sy.add(plunger13); this.sy = sy;
+    const stand = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, .35, 10), new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: .8 })); stand.position.set(-.2, .175, -.03); scene.add(stand);
+    const clamp = new THREE.Mesh(new THREE.BoxGeometry(.08, .012, .012), new THREE.MeshStandardMaterial({ color: 0x546e7a })); clamp.position.set(-.16, .2, -.015); scene.add(clamp);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(.16, .01, .12), new THREE.MeshStandardMaterial({ color: 0x455a64 })); base.position.set(-.16, .005, 0); scene.add(base);
+    vlab13 = label('V = 20 mL', { size: 26, scale: .0008 }); scene.add(vlab13);
+    const sens = new THREE.Mesh(new THREE.BoxGeometry(.04, .025, .03), new THREE.MeshStandardMaterial({ color: 0x1565c0 })); sens.position.set(.03, .02, .02); scene.add(sens);
+    const sl = label('Capteur de pression', { size: 22, scale: .0007 }); sl.position.set(.03, .06, .04); scene.add(sl);
+    this.hose = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-.12, .04, 0), new THREE.Vector3(-.1, .01, .03), new THREE.Vector3(.01, .02, .02)]), 20, .003, 6), new THREE.MeshStandardMaterial({ color: 0x90a4ae, transparent: true, opacity: .8 })); scene.add(this.hose);
+    const board = new THREE.Mesh(new THREE.BoxGeometry(.11, .012, .075), new THREE.MeshStandardMaterial({ color: 0x00796b })); board.position.set(.22, .006, .02); scene.add(board);
+    const bl = label('Microcontrôleur', { size: 22, scale: .0007 }); bl.position.set(.22, .03, .07); scene.add(bl);
+    const lb = new THREE.Mesh(new THREE.BoxGeometry(.12, .05, .012), new THREE.MeshStandardMaterial({ color: 0x1b5e20 })); lb.position.set(.22, .1, -.01); scene.add(lb);
+    const ls = new THREE.Mesh(new THREE.BoxGeometry(.004, .07, .004), new THREE.MeshStandardMaterial({ color: 0x9e9e9e })); ls.position.set(.22, .045, -.012); scene.add(ls);
+    lcd13 = makeScreen(.1, .035, { px: 360, text: ['Pression :', '---'], bg: '#1565c0', fg: '#e3f2fd' }); lcd13.mesh.position.set(.22, .1, -.003); scene.add(lcd13.mesh);
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(.05, .02, .02), new THREE.Vector3(.11, .015, .03), new THREE.Vector3(.17, .012, .02)]), 20, .0015, 6), new THREE.MeshStandardMaterial({ color: 0xc62828 })));
+    // sketch éditable
+    const sel = (k, opts) => h('select', { id: 'sk_' + k, onchange: e => { this.draft[k] = e.target.value; } }, ...opts.map(([v, t]) => h('option', { value: v }, t)));
+    this.draft = { div: '1', dec: '1', unit: 'hPa' };
+    const code = h('div', { class: 'card' }, h('h2', {}, 'Sketch du microcontrôleur (extrait)'),
+      h('pre', { style: 'font-size:13px;line-height:1.55;background:#f7f9fc;border:1px solid var(--line);border-radius:8px;padding:8px;white-space:pre-wrap;margin:0' },
+        '16 void loop() {\n17   float tension = analogRead(BROCHE);\n19   float tension_lue = tension * 5.0 / 1023.0;\n21   float pression = (tension_lue * 760.0 + 200.0)', sel('div', [['1', ' (rien) '], ['10', '/ 10'], ['0.1', '* 10'], ['100', '/ 100']]), ';\n22   lcd.clear();\n24   lcd.setCursor(0, 0); lcd.print("Pression :");\n25   lcd.setCursor(0, 1);\n26   lcd.print(pression, ', sel('dec', [['1', '1'], ['0', '0'], ['2', '2']]), ');\n27   lcd.print(" ', sel('unit', [['hPa', 'hPa'], ['kPa', 'kPa'], ['Pa', 'Pa']]), '");\n28   delay(500);\n29 }'),
+      h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { id: 'up13', onclick: () => act({ t: 'upload', ...this.draft }) }, '⬆ Téléverser le sketch')), h('div', { class: 'note', id: 'sk13' }));
+    sideCard(code);
+    sideCard(chartCard('P en fonction de 1/V', 'chM'));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'mTab13' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  place() { const s = S13; plunger13.position.y = s.V / SY_MAX * SY_L + .003; const p = new THREE.Vector3(); this.sy.getWorldPosition(p); vlab13.position.set(p.x + .06, p.y + s.V / SY_MAX * SY_L, .02); this.vtext !== s.V && (scene.remove(vlab13), vlab13 = label(`V = ${s.V} mL`, { size: 26, scale: .0008 }), vlab13.position.set(p.x + .07, p.y + s.V / SY_MAX * SY_L, .02), scene.add(vlab13), this.vtext = s.V); lcd13.set(lcdTxt()); },
+  resetScene() { S13 = fresh13(); if (!plunger13) return; this.draft = { ...S13.code }; for (const k of ['div', 'dec', 'unit']) { const e = $('#sk_' + k); if (e) e.value = S13.code[k]; } this.vtext = null; this.place(); this.drawData(); if ($('#q13')) this.refreshPanel(); },
+  drawData() {
+    const s = S13, t = $('#mTab13'); if (!t) return;
+    t.innerHTML = '<thead><tr><th>Série</th><th>V lu (mL)</th><th>V total (mL)</th><th>P (kPa)</th><th>P × V (kPa·mL)</th></tr></thead><tbody>' + (s.pts.map(p => `<tr><td>${p.serie}</td><td>${p.V}</td><td>${p.Vt}</td><td>${Math.round(p.P)}</td><td>${(Math.round(p.P) * p.Vt).toLocaleString('fr-FR')}</td></tr>`).join('') || '<tr><td colspan="5">Aucune mesure.</td></tr>') + '</tbody>';
+    const cols = ['#2F5DA8', '#2e7d32', '#E65100']; const curves = [];
+    for (const n of [...new Set(s.pts.map(p => p.serie))]) { const pts = s.pts.filter(p => p.serie === n).map(p => [1 / p.Vt, p.P]); if (pts.length >= 2) { const k = pts.reduce((a, [x, y]) => a + x * y, 0) / pts.reduce((a, [x]) => a + x * x, 0); curves.push({ pts: [[0, 0], [.13, k * .13]], color: cols[(n - 1) % 3] }); } }
+    drawChart($('#chM'), { xmax: .13, ymax: 500, xlabel: '1/V (mL⁻¹)', ylabel: 'P (kPa)', pts: s.pts.map(p => [1 / p.Vt, p.P]), curves, xfmt: x => x.toFixed(3).replace('.', ',') });
+    $('#chMInfo').innerHTML = curves.length ? 'Chaque série donne une droite passant par l\'origine : P est proportionnelle à 1/V.' : 'Note au moins deux mesures d\'une même série.';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('h3', {}, '1. Préparer la seringue (débranchée)'),
+      h('div', { class: 'row' }, B('s1', 'Régler V = 20 mL', { t: 'set', V: 20 }), B('s2', 'Régler V = 30 mL', { t: 'set', V: 30 }), B('s3', 'Régler V = 40 mL', { t: 'set', V: 40 })),
+      h('div', { class: 'row' }, B('s4', '🔗 Brancher la seringue au capteur (air emprisonné)', { t: 'close' }), B('s5', 'Débrancher (nouvelle série)', { t: 'open' })),
+      h('h3', {}, '2. Comprimer / détendre l\'air'),
+      h('div', { class: 'row' }, B('v1', '⬇ Pousser −5 mL', { t: 'dv', d: -5 }), B('v2', '⬇ −1 mL', { t: 'dv', d: -1 }), B('v3', '⬆ Tirer +1 mL', { t: 'dv', d: 1 }), B('v4', '⬆ +5 mL', { t: 'dv', d: 5 })),
+      h('div', { class: 'row' }, B('n1', '✍ Noter (V ; P)', { t: 'note' }), B('n2', 'Effacer mes mesures', { t: 'clear' })),
+      h('div', { id: 'q13', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S13, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#s1,#s2,#s3', s.open); en('#s4', s.open); en('#s5', !s.open);
+    en('#v1', !s.open && s.V - 5 >= 8); en('#v2', !s.open && s.V - 1 >= 8); en('#v3', !s.open && s.V + 1 <= 60); en('#v4', !s.open && s.V + 5 <= 60);
+    en('#n1', !s.open && s.up && !s.pts.some(p => p.serie === s.series && p.V === s.V)); en('#n2', s.pts.length > 0); en('#up13', true);
+    $('#q13').innerHTML = `Volume lu : <b>${s.V} mL</b> (V total = ${s.V + VT} mL) · seringue ${s.open ? 'débranchée' : '<b>branchée</b> (série ' + s.series + ')'} · écran : <b>${s.up ? lcdTxt()[1] : 'programme non téléversé'}</b>`;
+    $('#sk13').innerHTML = s.up ? (okCode() ? '✅ Sketch téléversé : affichage en kPa sans décimale.' : 'Sketch téléversé. Vérifie l\'unité et le nombre de décimales affichés.') : 'Modifie les lignes puis téléverse.';
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S13;
+    if (a.t === 'upload') { s.code = { div: a.div, dec: a.dec, unit: a.unit }; s.up = true; for (const k of ['div', 'dec', 'unit']) { const e = $('#sk_' + k); if (e) e.value = a[k]; } this.draft = { ...s.code }; this.place(); if (okCode()) step('sketch'); say(okCode() ? 'Sketch téléversé : la pression s\'affiche en kPa, sans décimale, comme les volumes.' : `Sketch téléversé : l'écran affiche « ${lcdTxt()[1]} ». ${+a.div === 10 && a.unit === 'kPa' ? 'Unité correcte ; pense au nombre de décimales (ligne 26).' : 'Compare la valeur affichée à la pression atmosphérique (≈ 101 kPa).'}`); return; }
+    if (a.t === 'set') { const V0 = s.V; if (!INSTANT) await tween(.6, p => { s.V = Math.round(V0 + (a.V - V0) * p); this.place(); }); s.V = a.V; this.place(); say(`Piston réglé sur ${a.V} mL (seringue ouverte : air à la pression atmosphérique).`); return; }
+    if (a.t === 'close') { s.open = false; s.nAir = PA0 * (s.V + VT); s.series++; this.place(); step('air'); say(`Seringue branchée : ${s.V + VT} mL d'air emprisonnés à ${PA0.toFixed(1).replace('.', ',')} kPa (série ${s.series}).`); return; }
+    if (a.t === 'open') { s.open = true; s.nAir = null; this.place(); say('Seringue débranchée : l\'air revient à la pression atmosphérique.'); return; }
+    if (a.t === 'dv') { const V0 = s.V, V1 = Math.max(8, Math.min(60, s.V + a.d)); if (!INSTANT) await tween(.5, p => { s.V = Math.round(V0 + (V1 - V0) * p); this.place(); }); s.V = V1; this.place(); say(`V = ${s.V} mL (V total = ${s.V + VT} mL) ; l'écran affiche ${s.up ? lcdTxt()[1] : '---'}.`); return; }
+    if (a.t === 'note') {
+      const P = P13() + nz13(s.V); s.pts.push({ serie: s.series, V: s.V, Vt: s.V + VT, P }); this.drawData();
+      const ser = s.pts.filter(p => p.serie === s.series); if (ser.length >= 5) step('mesures'); if (new Set(s.pts.map(p => p.serie)).size >= 2 && ser.length >= 3) step('quantite');
+      const msg = `Série ${s.series} : V = ${s.V} mL (V total = ${s.V + VT} mL) → P = ${Math.round(P)} kPa ; P × V = ${(Math.round(P) * (s.V + VT)).toLocaleString('fr-FR')} kPa·mL.`; observe(msg); say(msg); return;
+    }
+    if (a.t === 'clear') { s.pts = []; this.drawData(); say('Mesures effacées.'); return; }
+  },
+  async demo() {
+    say('Démonstration : on emprisonne 21 mL d\'air puis on le comprime.');
+    await act({ t: 'set', V: 20 }, { record: false }); await act({ t: 'close' }, { record: false });
+    flyTo([-.12, .25, .45], [-.12, .15, 0]);
+    await act({ t: 'dv', d: -5 }, { record: false }); await wait(800); await act({ t: 'dv', d: -5 }, { record: false }); await wait(800);
+    say('À toi : modifie d\'abord le sketch pour afficher des kPa, puis fais tes mesures.'); await wait(1500);
+  },
+};
+startTP(C13);
+
+</script></body></html>

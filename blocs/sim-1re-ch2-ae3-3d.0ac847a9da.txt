@@ -1,0 +1,349 @@
+<!--efir1re:AE3 · Oxydoréduction du fer 3D-->
+window.EFIR_RETOUR = "premiere/matiere/R%C3%A9actions%20d%27oxydor%C3%A9duction";
+
+// ====================================================================
+// AE3 · Chapitre 2 · Réactions d'oxydoréduction : le fer, le cuivre et l'argent
+// © EFIR · Mme Messaoudi — Tous droits réservés
+// ====================================================================
+const SOLX = {
+  cu: { nom: 'sulfate de cuivre (II)', court: 'Cu²⁺ + SO₄²⁻', col: 0x2f8fe8, op: .55, ions: ['Cu', 'SO4'] },
+  fe: { nom: 'sulfate de fer (II)', court: 'Fe²⁺ + SO₄²⁻', col: 0xcfe6b8, op: .3, ions: ['Fe', 'SO4'] },
+  mel: { nom: 'solution obtenue (fer + Cu²⁺)', court: 'solution obtenue', col: 0xd7ebc5, op: .3, ions: ['Fe', 'SO4'] },
+};
+const REAX = {
+  soude: { nom: 'soude', court: 'soude (HO⁻)', col: 0xf5f5f5 },
+  baryum: { nom: 'chlorure de baryum', court: 'BaCl₂', col: 0xf5f5f5 },
+};
+const PRECX = { Cu: [0x1565c0, 'bleu', 'ions cuivre (II) Cu²⁺'], Fe: [0x4f7a2a, 'vert', 'ions fer (II) Fe²⁺'], SO4: [0xfafafa, 'blanc', 'ions sulfate SO₄²⁻'] };
+const NSX = 6;
+let rackX, tubesX = [], selX = -1, solChoisie = null, erlenX = null, filX = null, agDone = false;
+function grenaille() {
+  const mat = new THREE.MeshStandardMaterial({ color: 0x5b5f66, metalness: .7, roughness: .45 });
+  const n = 26, im = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.0085, 0), mat, n), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), sc = new THREE.Vector3();
+  for (let i = 0; i < n; i++) { const a = rnd(0, 6.28), r = Math.sqrt(Math.random()) * .038; e.set(rnd(0, 3), rnd(0, 3), rnd(0, 3)); q.setFromEuler(e); v.set(Math.cos(a) * r, rnd(0, .012) + r * r * 3, Math.sin(a) * r); const s = rnd(.8, 1.3); sc.set(s, s * .8, s); m.compose(v, q, sc); im.setMatrixAt(i, m); }
+  const g = new THREE.Group(); g.add(im); g.userData.mat = mat; return g;
+}
+SAMPLES.Gr = grenaille;
+function precipCouleur(T, r) { return r === 'baryum' ? PRECX.SO4 : (SOLX[T.s].ions.includes('Cu') && !T.reagi ? PRECX.Cu : PRECX.Fe); }
+
+const AE3 = {
+  id: 'p1_ch02_ae3', code: 'AE3', short: 'Oxydoréduction du fer 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 2 · Activité expérimentale AE3 · Simulation 3D',
+  title: 'Réactions d\'oxydoréduction : le fer, le cuivre et l\'argent',
+  problem: 'Une pointe de spatule de grenaille de fer est plongée dans une solution bleue de sulfate de cuivre II : la solution change de couleur et un dépôt apparaît. Que se passe-t-il, à l\'échelle des entités chimiques, quand du fer métallique est mis en contact avec des ions cuivre II ?',
+  mots: `<p><b>Test à la soude</b> (ions hydroxyde HO⁻) : précipité <b>bleu</b> avec Cu²⁺, <b>vert</b> avec Fe²⁺.<br>
+  <b>Test au chlorure de baryum</b> (ions Ba²⁺) : précipité <b>blanc</b> avec les ions sulfate SO₄²⁻.<br>
+  <b>Réducteur</b> : espèce qui <b>perd</b> (cède) un ou plusieurs électrons. <b>Oxydant</b> : espèce qui <b>gagne</b> (capte) un ou plusieurs électrons.<br>
+  <b>Demi-équation électronique</b> : écriture du gain ou de la perte d'électrons e⁻, par exemple Cu²⁺(aq) + 2 e⁻ = Cu(s).<br>
+  <b>Ion spectateur</b> : ion présent au début et à la fin, qui ne participe pas à la réaction.</p>`,
+  aide: `<p>1. <b>Tests des ions</b> : choisis une solution, verse-la dans un tube, sélectionne le tube puis ajoute le réactif (soude ou chlorure de baryum). Pour l'ion sulfate, prends le sulfate de fer (II), presque incolore : le précipité blanc se voit mieux.<br>
+  2. <b>Fer + ions cuivre (II)</b> : prépare le mélange (le tube est bouché et agité), observe, puis sépare la solution dans deux tubes et teste-les.<br>
+  3. <b>Au bureau du professeur</b> : le fil de cuivre est plongé dans le nitrate d'argent.<br>
+  4. Ouvre les vues microscopiques pour suivre les électrons (en jaune).</p>`,
+  views: { ensemble: [[.35, 1.05, 2.9], [.35, .28, -.05]] },
+  protocol: [
+    { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes.' },
+    { id: 'tests', q: 'Q1-2', html: 'Partie 1 · Tester les ions Cu²⁺ et Fe²⁺ à la soude, puis l\'ion sulfate au chlorure de baryum (sur le sulfate de fer (II)).' },
+    { id: 'fer', q: 'Q5-8', html: 'Partie 2 · Grenaille de fer + 4 mL de sulfate de cuivre (II) : boucher, agiter, observer.' },
+    { id: 'separer', q: 'Q9', html: 'Séparer la solution obtenue dans deux tubes.' },
+    { id: 'testsmel', q: 'Q10-15', html: 'Soude dans un tube, chlorure de baryum dans l\'autre.' },
+    { id: 'micro', q: 'Q17', html: 'Observer en vue microscopique le transfert d\'électrons entre le fer et les ions cuivre (II).' },
+    { id: 'argent', q: 'Q18', html: 'Partie 3 · Au bureau : fil de cuivre dans la solution de nitrate d\'argent.' },
+    { id: 'tableau', q: 'Q2', html: 'Compléter le tableau des tests puis cliquer sur « Vérifier le tableau ».' },
+    { id: 'extra', q: 'Q4 à Q18', html: 'Répondre aux questions : observations, équations, oxydant, réducteur, demi-équations.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion : qu\'est-ce qu\'une réaction d\'oxydoréduction ?' },
+    { id: 'vider', q: 'Q3-16', html: 'Vider les tubes dans le bac de récupération.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  table: {
+    rowTitle: 'Ion ou solution testé(e)',
+    rows: [
+      { label: 'Ion cuivre (II) Cu²⁺', ans: [0, 0] },
+      { label: 'Ion fer (II) Fe²⁺', ans: [0, 1] },
+      { label: 'Ion sulfate SO₄²⁻', ans: [1, 2] },
+      { label: 'Solution obtenue (fer + Cu²⁺), tube A', ans: [0, 1] },
+      { label: 'Solution obtenue (fer + Cu²⁺), tube B', ans: [1, 2] },
+    ],
+    cols: [
+      { title: 'Réactif ajouté', options: ['soude (hydroxyde de sodium)', 'chlorure de baryum'] },
+      { title: 'Couleur du précipité', options: ['bleu', 'vert', 'blanc', 'rouille (orange)'] },
+    ],
+  },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q4', text: 'La couleur bleue de la solution de sulfate de cuivre (II) est due…', options: ['à l\'ion sulfate SO₄²⁻', 'à l\'ion cuivre (II) Cu²⁺ (le sulfate de fer (II) contient aussi SO₄²⁻ et n\'est pas bleu)', 'à l\'eau'], ans: 1 },
+    { q: 'Q7', text: 'Après agitation de la grenaille de fer avec le sulfate de cuivre (II) :', options: ['la solution reste bleue et la grenaille ne change pas', 'la solution devient presque incolore (vert très pâle) et la grenaille se couvre d\'un dépôt rouge cuivre', 'la solution devient rouge et la grenaille blanche'], ans: 1 },
+    { q: 'Q8', text: 'Au cours de la réaction…', options: ['les ions Cu²⁺ ont disparu et du cuivre Cu(s) s\'est déposé sur le fer', 'les ions Fe²⁺ ont disparu et du fer s\'est déposé', 'les ions sulfate ont disparu'], ans: 0 },
+    { q: 'Q12', text: 'L\'ion mis en évidence par la soude, apparu au cours de la réaction, est…', options: ['l\'ion cuivre (II) Cu²⁺', 'l\'ion sulfate SO₄²⁻', 'l\'ion fer (II) Fe²⁺'], ans: 2 },
+    { q: 'Q13', text: 'Ces ions fer (II) ont été formés à partir…', options: ['du fer solide Fe(s) de la grenaille', 'des ions sulfate', 'des ions cuivre (II)'], ans: 0 },
+    { q: 'Q14-15', text: 'Le chlorure de baryum met en évidence…', options: ['des ions sulfate, formés par la réaction', 'des ions sulfate, déjà présents au départ : ion spectateur', 'des ions baryum'], ans: 1 },
+    { q: 'Q17d', text: 'Équation de la réaction entre le fer et les ions cuivre (II) :', options: ['Fe²⁺(aq) + Cu(s) → Fe(s) + Cu²⁺(aq)', 'Fe(s) + Cu²⁺(aq) → Fe²⁺(aq) + Cu(s)', 'Fe(s) + Cu²⁺(aq) → Fe³⁺(aq) + Cu(s)'], ans: 1 },
+    { q: 'Q17e-f', text: 'Transfert d\'électrons :', options: ['en passant de Fe à Fe²⁺, le fer a perdu 2 électrons ; en passant de Cu²⁺ à Cu, l\'ion Cu²⁺ a gagné 2 électrons', 'le fer a gagné 2 électrons et l\'ion Cu²⁺ en a perdu 2', 'le fer a perdu 1 électron et l\'ion Cu²⁺ en a gagné 1'], ans: 0 },
+    { q: 'Q17g', text: 'Dans cette réaction…', options: ['l\'oxydant est le fer, le réducteur est l\'ion cuivre (II)', 'l\'oxydant est l\'ion sulfate', 'l\'oxydant est l\'ion cuivre (II) Cu²⁺, le réducteur est le fer Fe'], ans: 2 },
+    { q: 'Q17h', text: 'Demi-équation électronique concernant les ions cuivre (II) :', options: ['Cu²⁺(aq) + 2 e⁻ = Cu(s)', 'Cu²⁺(aq) = Cu(s) + 2 e⁻', 'Cu²⁺(aq) + e⁻ = Cu(s)'], ans: 0 },
+    { q: 'Q17i', text: 'Demi-équation électronique concernant le fer solide :', options: ['Fe(s) + 2 e⁻ = Fe²⁺(aq)', 'Fe(s) = Fe²⁺(aq) + 2 e⁻', 'Fe(s) = Fe³⁺(aq) + 3 e⁻'], ans: 1 },
+    { q: 'Q18a', text: 'Cuivre + nitrate d\'argent : on observe…', options: ['une solution qui devient bleue et un dépôt gris (argent) sur le cuivre', 'une solution qui reste incolore, sans dépôt', 'un dépôt rouge et une solution verte'], ans: 0 },
+    { q: 'Q18d', text: 'Équation de la réaction entre le cuivre et les ions argent :', options: ['Cu(s) + Ag⁺(aq) → Cu²⁺(aq) + Ag(s)', 'Cu²⁺(aq) + 2 Ag(s) → Cu(s) + 2 Ag⁺(aq)', 'Cu(s) + 2 Ag⁺(aq) → Cu²⁺(aq) + 2 Ag(s)'], ans: 2 },
+    { q: 'Q18e-i', text: 'Oxydant, réducteur et demi-équations :', options: ['réducteur Cu : Cu(s) = Cu²⁺(aq) + 2 e⁻ ; oxydant Ag⁺ : Ag⁺(aq) + e⁻ = Ag(s)', 'réducteur Ag⁺ : Ag⁺(aq) + e⁻ = Ag(s) ; oxydant Cu', 'réducteur Cu : Cu(s) = Cu²⁺(aq) + e⁻ ; oxydant Ag⁺ : Ag⁺(aq) + 2 e⁻ = Ag(s)'], ans: 0 },
+  ],
+  conclusion: {
+    q: 'Qu\'est-ce qu\'une réaction d\'oxydoréduction ?',
+    options: [
+      'C\'est une réaction où les ions sulfate échangent des atomes avec le métal.',
+      'C\'est un transfert d\'électrons : le réducteur (Fe, Cu) cède des électrons à l\'oxydant (Cu²⁺, Ag⁺) qui les capte ; l\'équation s\'obtient en combinant deux demi-équations électroniques, de façon que les électrons s\'éliminent.',
+      'C\'est une réaction qui produit toujours un précipité.',
+      'C\'est un transfert d\'électrons de l\'oxydant vers le réducteur.',
+    ], ans: 1,
+  },
+  viewbar: [
+    ['Zoom sur le tube choisi', () => zoomSelected()],
+    ['🔬 Microscope : fer + Cu²⁺', () => AE3.micro('fer')],
+    ['🔬 Microscope : cuivre + Ag⁺', () => AE3.micro('argent')],
+    ['Bureau du professeur', () => flyTo([2.05, .9, 1.35], [2.05, .25, 0])],
+  ],
+
+  build() {
+    rackX = makeRack(NSX, .26); scene.add(rackX);
+    const coup = makeDish('Grenaille de fer', grenaille()); coup.position.set(-1.45, 0, -.3); scene.add(coup);
+    [['cu', 'Sulfate de cuivre (II)\nCu²⁺ + SO₄²⁻'], ['fe', 'Sulfate de fer (II)\nFe²⁺ + SO₄²⁻']].forEach(([k, t], i) => { const b = makeBottle(t, SOLX[k].col); b.position.set(1.0 + i * .32, 0, -.4); scene.add(b); b.userData.onPick = () => choisirSol(k); LAB.pick.push(b); });
+    const so = makeBottle('Soude\nNa⁺ + HO⁻', 0xf5f5f5, { cap: 0xc62828 }); so.position.set(1.0, 0, .2); scene.add(so);
+    const ba = makeBottle('Chlorure de baryum\nBa²⁺ + 2 Cl⁻', 0xf5f5f5, { cap: 0x6a1b9a }); ba.position.set(1.32, 0, .2); scene.add(ba);
+    // bac de récupération
+    const bid = new THREE.Group(); const bm = new THREE.Mesh(new THREE.BoxGeometry(.32, .38, .22), new THREE.MeshStandardMaterial({ color: 0xffb74d, roughness: .7 }));
+    bm.position.y = .19; bm.castShadow = true; const bc = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .06, 16), new THREE.MeshStandardMaterial({ color: 0x37474f })); bc.position.set(.08, .41, 0);
+    const bl = label('Bac de\nrécupération', { size: 30, scale: .0012 }); bl.position.y = .58; bid.add(bm, bc, bl); bid.position.set(-1.0, 0, -.75); scene.add(bid);
+    // bureau du professeur : plateau, erlenmeyer de nitrate d'argent, flacon brun
+    const bur = new THREE.Mesh(new THREE.BoxGeometry(.85, .05, .7), new THREE.MeshStandardMaterial({ color: 0xd7ccc8, roughness: .8 })); bur.position.set(2.05, .025, 0); bur.receiveShadow = true; scene.add(bur);
+    const bl2 = label('Bureau du professeur', { size: 32, scale: .0012 }); bl2.position.set(2.05, .78, -.25); scene.add(bl2);
+    const ag = makeBottle('Nitrate d\'argent\nAg⁺ + NO₃⁻', 0xf4f6f8, { brown: true }); ag.position.set(2.32, .05, -.15); scene.add(ag);
+    erlenX = makeErlen(125, null); erlenX.group.scale.setScalar(2.6); erlenX.group.position.set(1.9, .05, .08); scene.add(erlenX.group);
+    this.resetScene();
+    this.buildPanel();
+  },
+  resetScene() {
+    tubesX.forEach(T => { if (T) { scene.remove(T.group); const i = LAB.pick.indexOf(T.group); if (i >= 0) LAB.pick.splice(i, 1); } }); tubesX = new Array(NSX).fill(null); selX = -1;
+    if (filX) { scene.remove(filX.g); filX = null; } agDone = false;
+    if (erlenX) { erlenX.setVolume(100); erlenX.setColor(0xf4f6f8, .3); }
+    this.refreshPanel && $('#tselX') && this.refreshPanel();
+  },
+  selected() { return selX >= 0 ? tubesX[selX] : null; },
+  buildPanel() {
+    const box = $('#actions');
+    box.append(
+      h('h3', {}, '1. Tests des ions (partie 1)'),
+      h('div', { class: 'note' }, 'Solution :'), h('div', { class: 'chips', id: 'chS' }, ...['cu', 'fe'].map(k => h('button', { 'data-s': k, onclick: () => choisirSol(k) }, SOLX[k].nom))),
+      h('button', { class: 'go', id: 'bVerser', onclick: verser }, 'Verser 4 mL dans le tube suivant'),
+      h('h3', {}, '2. Fer + ions cuivre (II) (partie 2)'),
+      h('div', { class: 'row' }, h('button', { class: 'go', id: 'bFer', onclick: () => { const slot = tubesX.findIndex(t => !t); if (slot < 0) return say('Le portoir est plein : vide les tubes dans le bac de récupération.'); act({ t: 'fer', slot }); } }, '🔩 Grenaille de fer + 4 mL de sulfate de cuivre (II), boucher, agiter')),
+      h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { id: 'bSep', onclick: separer }, 'Séparer la solution obtenue dans deux tubes')),
+      h('h3', {}, '3. Tester le tube choisi'),
+      h('div', { class: 'tubesel', id: 'tselX' }),
+      h('div', { class: 'row', style: 'margin-top:6px' },
+        h('button', { id: 'bSoude', onclick: () => selX >= 0 && act({ t: 'reactif', r: 'soude', slot: selX }) }, '💧 Quelques gouttes de soude'),
+        h('button', { id: 'bBa', onclick: () => selX >= 0 && act({ t: 'reactif', r: 'baryum', slot: selX }) }, '💧 Quelques gouttes de chlorure de baryum')),
+      h('h3', {}, '4. Au bureau du professeur (partie 3)'),
+      h('div', { class: 'row' }, h('button', { id: 'bAg', onclick: () => act({ t: 'argent' }) }, '🥈 Plonger le fil de cuivre dans le nitrate d\'argent')),
+      h('h3', {}, '5. Ranger'),
+      h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Vider les tubes dans le bac de récupération'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 Vider à l\'évier')));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    $$('#chS button').forEach(b => b.classList.toggle('on', b.dataset.s === solChoisie));
+    const ts = $('#tselX'); if (!ts) return; ts.innerHTML = '';
+    tubesX.forEach((T, k) => { if (!T) return; ts.append(h('button', { class: k === selX ? 'on' : '', onclick: () => selectX(k) }, `Tube ${k + 1} : ${nomTube(T)}`)); });
+    if (!tubesX.some(Boolean)) ts.append(h('span', { class: 'note' }, 'Aucun tube préparé.'));
+    const T = selX >= 0 ? tubesX[selX] : null, testable = T && T.kind !== 'fer' && !T.r;
+    $('#bSoude').disabled = $('#bBa').disabled = BUSY || !testable;
+    $('#bVerser').disabled = $('#bFer').disabled = BUSY;
+    $('#bSep').disabled = BUSY || !tubesX.some(t => t && t.kind === 'fer' && !t.split);
+    $('#bAg').disabled = BUSY || agDone;
+  },
+  refresh() { this.refreshPanel(); },
+
+  async doAction(a) {
+    if (a.t === 'sol' || a.t === 'fer') {
+      const T = makeTube(); T.kind = a.t === 'fer' ? 'fer' : 'sol'; T.s = a.t === 'fer' ? 'cu' : a.s; T.r = null; T.slot = a.slot;
+      T.group.position.set(rackX.userData.slotX(a.slot), .028, 0); scene.add(T.group); tubesX[a.slot] = T;
+      T.group.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      const lb = label(`${a.slot + 1}`, { size: 40, scale: .0011 }); lb.position.y = .82; T.group.add(lb);
+      T.group.userData.onPick = () => selectX(a.slot); LAB.pick.push(T.group);
+      selectX(a.slot, true);
+      if (!INSTANT) { const x = T.group.position.x; flyTo([x + .2, .75, 1.25], [x, .3, 0], .9); }
+      if (T.kind === 'sol') {
+        say(`Tube ${a.slot + 1} : on verse environ 4 mL de ${SOLX[a.s].nom}.`);
+        await pourInto(T, SOLX[a.s].col, .17, SOLX[a.s].op);
+        observe(`Tube ${a.slot + 1} : ${SOLX[a.s].nom}, solution ${a.s === 'cu' ? 'bleue' : 'vert très pâle (presque incolore)'}.`);
+        return;
+      }
+      say(`Tube ${a.slot + 1} : une pointe de spatule de grenaille de fer, puis 4 mL de sulfate de cuivre (II).`);
+      await addSample(T, 'Gr');
+      await pourInto(T, SOLX.cu.col, .17, SOLX.cu.op);
+      T.stopper.visible = true; say('On bouche le tube et on agite vigoureusement…');
+      await shake(T, 1.6); await shake(T, 1.2);
+      const c0 = new THREE.Color(SOLX.cu.col), c1 = new THREE.Color(SOLX.mel.col), s0 = T.sample.userData.mat.color.clone(), s1 = new THREE.Color(0xb5562c);
+      await tween(5, p => { T.liquidMat.color.lerpColors(c0, c1, p); T.liquidMat.opacity = lerp(SOLX.cu.op, SOLX.mel.op, p); T.sample.userData.mat.color.lerpColors(s0, s1, Math.min(1, p * 1.3)); T.sample.userData.mat.metalness = lerp(.7, .2, p); T.sample.userData.mat.roughness = lerp(.45, .9, p); });
+      T.stopper.visible = false; T.reagi = true; T.s = 'mel';
+      const o = `Tube ${a.slot + 1} (fer + sulfate de cuivre (II)) : la solution bleue devient presque incolore (vert très pâle) et la grenaille se couvre d'un dépôt rouge cuivre.`;
+      observe(o); say(o); step('fer');
+      return;
+    }
+    if (a.t === 'separer') {
+      const F = tubesX[a.from]; if (!F || F.split) return false;
+      const libres = []; tubesX.forEach((t, k) => { if (!t && libres.length < 2) libres.push(k); }); if (libres.length < 2) { say('Il faut deux emplacements libres sur le portoir.'); return false; }
+      if (!INSTANT) flyTo([.2, .8, 1.5], [.1, .3, 0], .9);
+      for (const k of libres) {
+        const T = makeTube(); T.kind = 'sol'; T.s = 'mel'; T.r = null; T.slot = k; T.group.position.set(rackX.userData.slotX(k), .028, 0); scene.add(T.group); tubesX[k] = T;
+        const lb = label(`${k + 1}`, { size: 40, scale: .0011 }); lb.position.y = .82; T.group.add(lb); T.group.userData.onPick = () => selectX(k); LAB.pick.push(T.group);
+        const l0 = F.level; await tween(.6, p => F.setLevel(lerp(l0, l0 - .075, p)));
+        await pourInto(T, SOLX.mel.col, .085, SOLX.mel.op);
+      }
+      F.split = true; selectX(libres[0], true);
+      observe(`Solution obtenue séparée dans les tubes ${libres[0] + 1} et ${libres[1] + 1}.`); say(`La solution obtenue est répartie dans les tubes ${libres[0] + 1} et ${libres[1] + 1} : teste l'un à la soude, l'autre au chlorure de baryum.`);
+      step('separer'); return;
+    }
+    if (a.t === 'reactif') {
+      const T = tubesX[a.slot]; if (!T || T.kind === 'fer' || T.r) return false;
+      if (T.s === 'cu' && a.r === 'baryum' && !INSTANT) say('Remarque : la fiche conseille de tester l\'ion sulfate sur le sulfate de fer (II), presque incolore : le précipité blanc se voit mieux.');
+      selectX(a.slot, true);
+      if (!INSTANT) { const x = T.group.position.x; flyTo([x + .2, .75, 1.2], [x, .3, 0], .8); }
+      await dropInto(T, REAX[a.r].col, 4); T.r = a.r;
+      const P = precipCouleur(T, a.r); await precipitate(T, P[0]);
+      const msg = `Tube ${a.slot + 1} (${SOLX[T.s].nom}) + ${REAX[a.r].nom} : précipité ${P[1]}, donc présence d'${P[2]}.`;
+      observe(msg); say(msg);
+      const fait = (s, r) => tubesX.some(t => t && t.s === s && t.r === r);
+      if (fait('cu', 'soude') && fait('fe', 'soude') && (fait('fe', 'baryum') || fait('cu', 'baryum'))) step('tests');
+      if (fait('mel', 'soude') && fait('mel', 'baryum')) step('testsmel');
+      return;
+    }
+    if (a.t === 'argent') {
+      if (agDone) return false;
+      if (!INSTANT) flyTo([2.05, .9, 1.35], [2.0, .25, 0], 1);
+      say('Au bureau : le professeur plonge une tournure de cuivre dans l\'erlenmeyer de nitrate d\'argent.');
+      filX = filCuivre(); filX.g.position.set(1.9, .55, .08); scene.add(filX.g);
+      await tween(.9, p => filX.g.position.y = lerp(.55, .065, p));
+      say('Quelques minutes plus tard…');
+      const c0 = new THREE.Color(0xf4f6f8), c1 = new THREE.Color(0x6fb0ee);
+      await tween(5, p => { erlenX.mat.color.lerpColors(c0, c1, p); erlenX.mat.opacity = lerp(.3, .5, p); filX.pousse(p); });
+      agDone = true;
+      const o = 'Cuivre + nitrate d\'argent : la solution incolore devient bleue (ions Cu²⁺) et un dépôt gris d\'argent, en fines aiguilles, recouvre le fil de cuivre.';
+      observe(o); say(o); step('argent'); return;
+    }
+    if (a.t === 'vider') {
+      if (!tubesX.some(Boolean)) { say('Il n\'y a aucun tube à vider.'); return false; }
+      if (a.where === 'evier') { ST.evier++; say('<b>Interdit !</b> Les solutions d\'ions métalliques, de soude et de chlorure de baryum ne doivent jamais être jetées à l\'évier : c\'est noté dans ton compte rendu. Utilise le bac de récupération.'); observe('Vidage des tubes à l\'évier (interdit).'); }
+      else { ST.bidon++; say('Tubes vidés dans le bac de récupération, puis rincés. Paillasse rangée.'); step('vider'); }
+      await tween(.8, p => tubesX.forEach(T => T && T.setLevel(T.level * (1 - p))));
+      tubesX.forEach(T => { if (T) { scene.remove(T.group); const i = LAB.pick.indexOf(T.group); if (i >= 0) LAB.pick.splice(i, 1); } }); tubesX = new Array(NSX).fill(null); selX = -1;
+      flyTo(...this.views.ensemble);
+      return;
+    }
+  },
+  micro(quoi) {
+    if (!quoi) { const T = this.selected(); quoi = T && T.kind === 'fer' ? 'fer' : agDone ? 'argent' : 'fer'; }
+    if (quoi === 'fer') {
+      if (!tubesX.some(t => t && t.kind === 'fer')) return say('Prépare d\'abord le mélange grenaille de fer + sulfate de cuivre (II) (partie 2).');
+      openMicro({
+        title: 'Vue microscopique · fer + ions cuivre (II)',
+        red: { name: 'Fer métallique Fe(s)', color: 0x5b5f66, ion: 'Fe²⁺', ionColor: 0x8bc34a },
+        ox: { type: 'metal', ion: 'Cu²⁺', ionColor: 0x29b6f6, color: 0xb8673a },
+        caption: `Chaque atome de fer <b>cède 2 électrons</b> (en jaune) : il passe en solution sous forme d'ion Fe²⁺ (c'est le <b>réducteur</b>). Chaque ion Cu²⁺ <b>capte 2 électrons</b> et devient un atome de cuivre qui se dépose sur le fer (c'est l'<b>oxydant</b>).<br>
+        <span class="eq">Fe(s) = Fe²⁺(aq) + 2 e⁻ &nbsp;·&nbsp; Cu²⁺(aq) + 2 e⁻ = Cu(s) &nbsp;⇒&nbsp; Fe(s) + Cu²⁺(aq) → Fe²⁺(aq) + Cu(s)</span>
+        <div class="legend"><span><i style="background:#5b5f66"></i>atome Fe</span><span><i style="background:#29b6f6"></i>ion Cu²⁺</span><span><i style="background:#8bc34a"></i>ion Fe²⁺</span><span><i style="background:#ffeb3b"></i>électron e⁻</span><span>Les ions sulfate (spectateurs) et l'eau ne sont pas représentés.</span></div>`,
+      });
+      step('micro'); return;
+    }
+    if (!agDone) return say('Réalise d\'abord l\'expérience du bureau : fil de cuivre dans le nitrate d\'argent (partie 3).');
+    openMicro({
+      title: 'Vue microscopique · cuivre + ions argent',
+      sim: simArgent,
+      caption: `Chaque atome de cuivre <b>cède 2 électrons</b> et passe en solution sous forme d'ion Cu²⁺ (la solution bleuit). Il faut <b>deux ions Ag⁺</b> pour capter ces 2 électrons : chacun en capte <b>un seul</b> et devient un atome d'argent qui se dépose.<br>
+      <span class="eq">Cu(s) = Cu²⁺(aq) + 2 e⁻ &nbsp;·&nbsp; 2 × [Ag⁺(aq) + e⁻ = Ag(s)] &nbsp;⇒&nbsp; Cu(s) + 2 Ag⁺(aq) → Cu²⁺(aq) + 2 Ag(s)</span>
+      <div class="legend"><span><i style="background:#c9773f"></i>atome Cu</span><span><i style="background:#29b6f6"></i>ion Cu²⁺</span><span><i style="background:#e0e0e0"></i>ion Ag⁺ / atome Ag</span><span><i style="background:#ffeb3b"></i>électron e⁻</span><span>Les ions nitrate (spectateurs) et l'eau ne sont pas représentés.</span></div>`,
+    });
+  },
+  async demo() {
+    flyTo(...this.views.ensemble);
+    say('Démonstration : test des ions cuivre (II) à la soude.'); await wait(1000);
+    choisirSol('cu'); await wait(400);
+    await act({ t: 'sol', s: 'cu', slot: 0 }, { record: false }); await wait(600);
+    await act({ t: 'reactif', r: 'soude', slot: 0 }, { record: false }); await wait(1200);
+    say('Puis la réaction entre le fer et les ions cuivre (II).'); await wait(900);
+    await act({ t: 'fer', slot: 1 }, { record: false }); await wait(1200);
+    await act({ t: 'separer', from: 1 }, { record: false }); await wait(600);
+    await act({ t: 'reactif', r: 'soude', slot: 2 }, { record: false }); await wait(1500);
+    say('À l\'échelle des entités : la vue microscopique montre le transfert des électrons.');
+    this.micro('fer'); await wait(9000); closeMicro();
+  },
+};
+function nomTube(T) { if (T.kind === 'fer') return 'fer + Cu²⁺' + (T.reagi ? ' (après réaction)' : ''); return (T.s === 'mel' ? 'solution obtenue' : SOLX[T.s].court) + (T.r ? ' + ' + REAX[T.r].court : ''); }
+function choisirSol(k) { solChoisie = k; AE3.refreshPanel(); say(`Solution choisie : ${SOLX[k].nom}. Clique sur « Verser 4 mL dans le tube suivant ».`); }
+function selectX(k, silent) {
+  selX = k; tubesX.forEach((T, j) => T && highlight(T, j === k)); AE3.refreshPanel();
+  if (!silent && tubesX[k]) say(`Tube ${k + 1} sélectionné : ${nomTube(tubesX[k])}.`);
+}
+function verser() {
+  if (!solChoisie) return say('Choisis d\'abord une solution : sulfate de cuivre (II) ou sulfate de fer (II).');
+  const slot = tubesX.findIndex(t => !t); if (slot < 0) return say('Le portoir est plein : vide les tubes dans le bac de récupération pour recommencer.');
+  act({ t: 'sol', s: solChoisie, slot });
+}
+function separer() {
+  const from = tubesX.findIndex(t => t && t.kind === 'fer' && !t.split);
+  if (from < 0) return say('Prépare d\'abord le mélange fer + sulfate de cuivre (II).');
+  if (tubesX.filter(t => !t).length < 2) return say('Il faut deux emplacements libres sur le portoir : vide d\'abord les tubes des tests dans le bac de récupération.');
+  act({ t: 'separer', from });
+}
+/* tournure de cuivre qui se couvre d'aiguilles d'argent */
+function filCuivre() {
+  const g = new THREE.Group(), pts = [];
+  for (let k = 0; k <= 60; k++) { const a = k * .45; pts.push(new THREE.Vector3(Math.cos(a) * .045, .01 + k * .0035, Math.sin(a) * .045)); }
+  pts.push(new THREE.Vector3(0, .3, 0), new THREE.Vector3(.01, .55, 0));
+  const mat = new THREE.MeshStandardMaterial({ color: 0xc9773f, metalness: .75, roughness: .35 });
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 160, .0045, 6), mat));
+  const am = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, metalness: .6, roughness: .5 }), N = 90, im = new THREE.InstancedMesh(new THREE.BoxGeometry(.004, .022, .004), am, N), M = new THREE.Object3D(); g.add(im);
+  const pousse = p => { for (let k = 0; k < N; k++) { const q = pts[(k * 7) % 58], a = k * 1.9; M.position.set(q.x + Math.cos(a) * .008, q.y, q.z + Math.sin(a) * .008); M.rotation.set(Math.cos(a), a, Math.sin(a));
+    M.scale.setScalar(p > k / N * .85 ? Math.min(1, p * 1.5) : .001); M.updateMatrix(); im.setMatrixAt(k, M.matrix); } im.instanceMatrix.needsUpdate = true;
+    mat.color.setRGB(lerp(.79, .6, p), lerp(.47, .42, p), lerp(.25, .3, p)); };
+  pousse(0); g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return { g, pousse };
+}
+/* vue microscopique : un atome de cuivre cède 2 électrons à deux ions argent */
+function simArgent(sc) {
+  const S = .5, geoA = new THREE.SphereGeometry(.24, 24, 16), geoI = new THREE.SphereGeometry(.2, 24, 16), geoE = new THREE.SphereGeometry(.06, 12, 8);
+  const mat = c => new THREE.MeshStandardMaterial({ color: c, metalness: .3, roughness: .45 }), matIon = c => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .35, roughness: .4 });
+  const atoms = [], ions = [], box = { x: 3.6, y0: 1.1, y1: 3.9, z: 1.8 }, haut = new Map(); let events = [], tEv = .6;
+  for (let i = -7; i <= 7; i++) for (let k = -3; k <= 3; k++) for (let j = 0; j < 2; j++) { const a = new THREE.Mesh(geoA, mat(0xc9773f)); a.position.set(i * S, -j * S, k * S); sc.add(a); if (!j) { atoms.push(a); a.userData = { i, k }; } haut.set(i + ',' + k, 0); }
+  const lab = label('Cuivre métallique Cu(s)', { size: 40, scale: .007, bg: 'rgba(255,255,255,.9)' }); lab.position.set(-3.2, -.9, 2.2); sc.add(lab);
+  const ajoute = () => { const m = new THREE.Mesh(geoI, matIon(0xe0e0e0)); m.position.set(rnd(-box.x, box.x), rnd(box.y0, box.y1), rnd(-box.z, box.z)); m.add(ionLabel('Ag⁺', '#fff')); m.userData = { v: new THREE.Vector3(rnd(-.3, .3), rnd(-.2, .2), rnd(-.3, .3)) }; sc.add(m); ions.push(m); };
+  for (let n = 0; n < 12; n++) ajoute();
+  const brown = (m, dt) => { const v = m.userData.v; v.add(new THREE.Vector3(rnd(-.6, .6), rnd(-.5, .5), rnd(-.6, .6)).multiplyScalar(dt)); v.clampLength(0, .45); m.position.addScaledVector(v, dt);
+    if (Math.abs(m.position.x) > box.x) v.x *= -1; if (Math.abs(m.position.z) > box.z) v.z *= -1; if (m.position.y < box.y0 || m.position.y > box.y1 + 1.5) v.y *= -1; };
+  const arc = (a, b, p, hgt) => { const m = a.clone().lerp(b, p); m.y += Math.sin(p * Math.PI) * hgt; return m; };
+  function nouveau() {
+    const libres = atoms.filter(a => !a.userData.busy && Math.abs(a.userData.i) < 6 && Math.abs(a.userData.k) < 3); const cand = ions.filter(m => !m.userData.busy);
+    if (!libres.length || cand.length < 2) return; const A = libres[Math.floor(Math.random() * libres.length)]; A.userData.busy = true;
+    cand.sort((a, b) => a.position.distanceTo(A.position) - b.position.distanceTo(A.position)); const I = cand.slice(0, 2); I.forEach(m => m.userData.busy = true);
+    const sites = [-1, 1].map(d => { const ni = THREE.MathUtils.clamp(A.userData.i + d, -7, 7), key = ni + ',' + A.userData.k, hh = haut.get(key) + 1; haut.set(key, hh); return new THREE.Vector3(ni * S, hh * S * .9, A.userData.k * S); });
+    events.push({ t: 0, A, I, p0: I.map(m => m.position.clone()), sites });
+  }
+  function pas(ev, dt) {
+    ev.t += dt; const t = ev.t, A = ev.A;
+    if (t < 1.5) ev.I.forEach((m, k) => m.position.copy(ev.p0[k].clone().lerp(ev.sites[k].clone().add(new THREE.Vector3(0, .9, 0)), ease(t / 1.5))));
+    else if (t < 2.8) { if (!ev.e) ev.e = [0, 1].map(() => { const e = new THREE.Mesh(geoE, new THREE.MeshBasicMaterial({ color: 0xffeb3b })); sc.add(e); return e; });
+      const p = (t - 1.5) / 1.3; ev.e.forEach((e, k) => e.position.copy(arc(A.position, ev.I[k].position, Math.max(0, Math.min(1, p)), .7))); }
+    else if (!ev.fait) { ev.fait = true; ev.e.forEach(e => sc.remove(e)); const c = $('#microCount'); if (c) c.textContent = String((+c.textContent || 0) + 2);
+      A.material = matIon(0x29b6f6); A.add(ionLabel('Cu²⁺')); ev.I.forEach(m => { m.remove(m.children[0]); m.material = mat(0xd5d8de); m.geometry = geoA; ions.splice(ions.indexOf(m), 1); }); ev.I0 = ev.I.map(m => m.position.clone()); }
+    else if (t < 4) { ev.I.forEach((m, k) => m.position.copy(ev.I0[k].clone().lerp(ev.sites[k], ease((t - 2.8) / 1.2)))); A.position.y += dt * .6; }
+    else { atoms.splice(atoms.indexOf(A), 1); A.userData = { v: new THREE.Vector3(rnd(-.3, .3), .25, rnd(-.3, .3)), libre: true }; ev.fin = true; ajoute(); ajoute(); }
+  }
+  const partis = [];
+  return dt => {
+    ions.forEach(m => { if (!m.userData.busy) brown(m, dt); });
+    sc.children.forEach(o => { if (o.userData && o.userData.libre) { if (!partis.includes(o)) partis.push(o); } });
+    partis.forEach(o => brown(o, dt));
+    tEv -= dt; if (tEv < 0 && events.length < 2) { nouveau(); tEv = 2.6; }
+    events.forEach(ev => pas(ev, dt)); events = events.filter(e => !e.fin);
+  };
+}
+startTP(AE3);
+
+</script></body></html>

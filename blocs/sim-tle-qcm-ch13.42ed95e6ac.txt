@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel · QCM Ch. 13 · Mouvement dans un champ de gravitation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Charte EFIR 2026-2027 « React » : bleu marine #1A237E, gris Tailwind, encadrés arrondis, avertissements orange */
+:root {
+  --bg: #F9FAFB; --surface: #ffffff; --surface-2: #F3F4F6; --ink: #1F2937; --muted: #6B7280; --soft: #4B5563; --line: #E5E7EB; --line-2: #D1D5DB;
+  --navy: #1A237E; --navy-soft: #E8EAF6; --ok: #166534; --ok-soft: #ECFDF3; --ko: #B42318; --ko-soft: #FEF3F2;
+  --warn-bg: #FFF7ED; --warn-line: #FED7AA; --warn-ico: #EA580C; --warn-ink: #9A3412; --call-bg: #EFF6FF; --call-line: #DBEAFE; --call-ink: #1E3A8A;
+  --font: "Inter", "Segoe UI", system-ui, sans-serif; --r: 8px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1424; --surface: #161C30; --surface-2: #1D2440; --ink: #E5E7EB; --muted: #9CA3AF; --soft: #C3C8D4; --line: #2A3352; --line-2: #3A4466;
+  --navy: #A5B4FC; --navy-soft: #232B52; --ok: #86EFAC; --ok-soft: #12291D; --ko: #FCA5A5; --ko-soft: #321717;
+  --warn-bg: #2B1E12; --warn-line: #6B3E17; --warn-ico: #FB923C; --warn-ink: #FDBA74; --call-bg: #142040; --call-line: #263E70; --call-ink: #BFD3FF; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0F1424; --surface: #161C30; --surface-2: #1D2440; --ink: #E5E7EB; --muted: #9CA3AF; --soft: #C3C8D4; --line: #2A3352; --line-2: #3A4466;
+  --navy: #A5B4FC; --navy-soft: #232B52; --ok: #86EFAC; --ok-soft: #12291D; --ko: #FCA5A5; --ko-soft: #321717;
+  --warn-bg: #2B1E12; --warn-line: #6B3E17; --warn-ico: #FB923C; --warn-ink: #FDBA74; --call-bg: #142040; --call-line: #263E70; --call-ink: #BFD3FF; color-scheme: dark; }
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5;
+  padding: 18px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 16px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(1.35rem, 3.6vw, 1.8rem); font-weight: 800; color: var(--navy); line-height: 1.2; }
+h2 { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+h2 .pas { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: var(--surface); display: grid; place-items: center; font-size: .85rem; font-weight: 800; }
+p { margin: 0; }
+sub, sup { font-size: .72em; line-height: 0; }
+a.retour { justify-self: start; font-weight: 700; color: var(--navy); text-decoration: none; }
+.haut { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+.type { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .8rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--soft); }
+.type::before { content: ""; width: 5px; height: 15px; border-radius: 3px; background: var(--navy); }
+.type .pastille { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: .78rem; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; }
+.prof { color: var(--muted); font-size: .92rem; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 12px; min-width: 0; }
+.box.hl { background: var(--surface-2); border-color: var(--line-2); }
+.box.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+.box.call { background: var(--call-bg); border-color: var(--call-line); color: var(--call-ink); }
+.titre-box { font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--navy); }
+.warn .titre-box { color: var(--warn-ink); }
+ul.regles { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: .95rem; }
+.champs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+label.ch { display: grid; gap: 4px; font-size: .88rem; font-weight: 600; color: var(--soft); }
+input[type=text], input[type=password] { font: inherit; font-size: 1rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; width: 100%; min-width: 0; }
+.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.mode { font: inherit; text-align: left; cursor: pointer; background: var(--surface); color: var(--ink); border: 1.5px solid var(--line-2); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 4px; }
+.mode b { color: var(--navy); }
+.mode span { font-size: .88rem; color: var(--muted); }
+.mode[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); box-shadow: inset 0 0 0 1px var(--navy); }
+button.btn { font: inherit; font-weight: 700; border-radius: 6px; padding: 9px 16px; cursor: pointer; border: 1.5px solid var(--navy); background: var(--navy); color: var(--surface); }
+button.btn.ghost { background: transparent; color: var(--navy); }
+button.btn.danger { background: transparent; color: var(--ko); border-color: var(--ko); }
+button.btn[disabled] { opacity: .45; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, .opt:focus-within { outline: 3px solid var(--navy); outline-offset: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.msg { font-size: .92rem; min-height: 1.2em; }
+.msg.err { color: var(--ko); font-weight: 600; }
+.msg.ok { color: var(--ok); font-weight: 600; }
+/* barre fixe pendant le QCM */
+.barre { position: sticky; top: 0; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+.barre .prog { flex: 1 1 160px; min-width: 0; display: grid; gap: 4px; font-size: .85rem; color: var(--soft); }
+.barre .tr { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.barre .tr i { display: block; height: 100%; width: 0; background: var(--navy); transition: width .25s; }
+.chrono { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--navy); }
+.chrono.bas { color: var(--ko); }
+/* questions */
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; margin: 0; min-width: 0; }
+.q legend { padding: 0; display: contents; }
+.q .en { display: flex; gap: 10px; align-items: baseline; font-weight: 600; }
+.q .num { flex: none; min-width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: var(--surface); display: inline-grid; place-items: center; font-size: .82rem; font-weight: 800; }
+.q .tq { font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 4px; padding: 1px 6px; justify-self: start; }
+.opts { display: grid; gap: 6px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; cursor: pointer; background: var(--surface); }
+.opt input { margin-top: 4px; accent-color: var(--navy); flex: none; }
+.opt:hover { border-color: var(--navy); }
+.opt.choisi { border-color: var(--navy); background: var(--navy-soft); }
+.opt.juste { border-color: var(--ok); background: var(--ok-soft); }
+.opt.faux { border-color: var(--ko); background: var(--ko-soft); }
+.opt .lettre { font-weight: 800; color: var(--navy); flex: none; }
+.expl { font-size: .92rem; border-left: 3px solid var(--line-2); padding: 4px 0 4px 10px; color: var(--soft); }
+.expl.ok { border-left-color: var(--ok); } .expl.ko { border-left-color: var(--ko); }
+.q.verrou .opt { cursor: default; }
+/* résultat */
+.score { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center; }
+.score .big { font-size: 2.4rem; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; line-height: 1; }
+.tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.tuiles div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: .85rem; color: var(--muted); }
+.tuiles b { display: block; font-size: 1.25rem; color: var(--ink); }
+textarea.code { width: 100%; font: .78rem ui-monospace, Menlo, Consolas, monospace; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px; }
+.foot { color: var(--muted); font-size: .78rem; text-align: center; letter-spacing: .08em; text-transform: uppercase; border-top: 1px solid var(--line); padding-top: 8px; }
+[hidden] { display: none !important; }
+.nuc { display: inline-flex; flex-direction: column; align-items: flex-end; vertical-align: .62em; line-height: 1; font-size: .68em; margin-right: 1px; }
+.nuc sup, .nuc sub { font-size: 1em; line-height: 1; vertical-align: baseline; position: static; }
+/* vecteurs : flèche dessinée en CSS (la flèche combinante U+20D7 s'affiche mal selon les polices) */
+.vec { display: inline-block; position: relative; padding-top: .3em; line-height: 1; }
+.vec::before { content: ""; position: absolute; left: .08em; right: .12em; top: .14em; border-top: 1.4px solid currentColor; }
+.vec::after { content: ""; position: absolute; right: 0; top: calc(.14em + .7px); border-left: .3em solid currentColor; border-top: .14em solid transparent; border-bottom: .14em solid transparent; transform: translateY(-50%); }
+@media (prefers-reduced-motion: reduce) { .barre .tr i { transition: none; } }
+@media print { .barre, .actions, a.retour, #accueil { display: none !important; } body { background: #fff; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="retour" href="#" id="retour">← Retour</a>
+  <div class="haut"><span>Physique-chimie • Mme Messaoudi</span><span>Année 2026-2027</span></div>
+  <h1 id="titre"></h1>
+  <p class="type" id="typeligne"></p>
+  <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+
+  <!-- 1. Avant de commencer -->
+  <section class="box" id="accueil" aria-labelledby="h-acc">
+    <h2 id="h-acc"><span class="pas">1</span>Avant de commencer</h2>
+    <div class="champs">
+      <label class="ch">Nom et prénom<input type="text" id="nom" autocomplete="name" maxlength="60"></label>
+      <label class="ch">Classe<input type="text" id="classe" maxlength="20" placeholder="ex. TS2"></label>
+    </div>
+    <div class="modes" role="group" aria-label="Choix du mode">
+      <button class="mode" type="button" id="m-ent" aria-pressed="false"><b>Entraînement</b><span>Correction après chaque réponse, autant d'essais que vous voulez. Rien n'est envoyé.</span></button>
+      <button class="mode" type="button" id="m-eval" aria-pressed="false"><b>Évaluation</b><span id="m-eval-txt"></span></button>
+    </div>
+    <div class="box warn" id="regles-eval" hidden>
+      <p class="titre-box">⚠ Règles de l'évaluation</p>
+      <ul class="regles" id="regles"></ul>
+    </div>
+    <label class="ch" id="code-l" hidden>Code donné par le professeur<input type="password" id="code" autocomplete="off" maxlength="20"></label>
+    <div class="actions"><button class="btn" type="button" id="go">Commencer le QCM</button></div>
+    <p class="msg" id="msg-acc" role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- 2. Le QCM -->
+  <section id="quiz" hidden aria-labelledby="h-quiz" style="display:grid;gap:12px">
+    <div class="barre"><div class="prog"><span id="prog-t"></span><div class="tr"><i id="prog-i"></i></div></div><span class="chrono" id="chrono" aria-live="off"></span></div>
+    <h2 id="h-quiz"><span class="pas">2</span><span id="h-quiz-t">Répondez aux questions</span></h2>
+    <div id="questions" style="display:grid;gap:12px"></div>
+    <div class="box hl">
+      <div class="actions"><button class="btn" type="button" id="fin">Terminer et voir mon résultat</button><button class="btn ghost" type="button" id="recommencer" hidden>Recommencer l'entraînement</button></div>
+      <p class="msg" id="msg-fin" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- 3. Résultat -->
+  <section class="box" id="resultat" hidden aria-labelledby="h-res">
+    <h2 id="h-res"><span class="pas">3</span>Mon résultat</h2>
+    <div class="score"><span class="big" id="r-note"></span><p id="r-phrase"></p></div>
+    <div class="tuiles" id="r-tuiles"></div>
+    <div class="box call"><p id="r-envoi">Préparation de votre bilan PDF…</p></div>
+    <div class="actions">
+      <button class="btn" type="button" id="crpdf">⬇ Télécharger mon compte rendu (PDF)</button>
+      <button class="btn ghost" type="button" id="renvoi">📄 Télécharger mon bilan</button>
+      <button class="btn ghost" type="button" id="voircorr">Voir la correction détaillée</button>
+      <button class="btn ghost" type="button" id="sentrainer">S'entraîner à nouveau</button>
+    </div>
+    <p class="msg" id="crnote" role="status" aria-live="polite"></p>
+    <div id="zone-code" hidden style="display:grid;gap:6px"><p class="prof">Si le PDF ne se télécharge pas, copiez ce code et collez-le dans le devoir Google Classroom (commentaire privé).</p>
+      <textarea class="code" id="code-suivi" rows="3" readonly></textarea><div class="actions"><button class="btn ghost" type="button" id="copier">Copier le code</button></div></div>
+  </section>
+
+  <p class="foot">EFIR · Physique-chimie • Mme Messaoudi · <span id="foot-niv"></span> · Année 2026-2027</p>
+</div>
+
+<script>
+/* Banque de questions écrite à partir des flashcards du chapitre (la première proposition est la bonne ; l'ordre est mélangé à l'affichage) */
+window.QCM = {
+ "id": "tle-qcm-ch13",
+ "fichier": "QCM_Tle_Ch13",
+ "titre": "QCM d'évaluation · Mouvement dans un champ de gravitation (Terminale, ch. 13)",
+ "court": "QCM Ch. 13 · Mouvement dans un champ de gravitation",
+ "niveau": "Terminale spécialité",
+ "chapitre": 13,
+ "retour": "terminale/mouvement",
+ "code": "CH13",
+ "questions": [
+  {
+   "id": "fgrav",
+   "type": "Cours",
+   "q": "La valeur de la force d'interaction gravitationnelle entre deux objets A et B s'écrit :",
+   "r": [
+    "<i>F</i> = <i>G</i> × <i>m</i><sub>A</sub> <i>m</i><sub>B</sub> / <i>d</i><sup>2</sup>",
+    "<i>F</i> = <i>G</i> × <i>m</i><sub>A</sub> <i>m</i><sub>B</sub> / <i>d</i>",
+    "<i>F</i> = <i>G</i> × <i>d</i><sup>2</sup> / (<i>m</i><sub>A</sub> <i>m</i><sub>B</sub>)",
+    "<i>F</i> = <i>m</i><sub>A</sub> <i>m</i><sub>B</sub> × <i>g</i> / <i>d</i><sup>2</sup>"
+   ],
+   "x": "<i>G</i> = 6,67 × 10<sup>−11</sup> N·m<sup>2</sup>·kg<sup>−2</sup>, masses en kg, distance <i>d</i> en m."
+  },
+  {
+   "id": "kepler1",
+   "type": "Cours",
+   "q": "Première loi de Kepler : dans le référentiel héliocentrique, la trajectoire d'une planète est…",
+   "r": [
+    "une ellipse dont le Soleil occupe un des foyers",
+    "un cercle dont le Soleil occupe le centre, pour toutes les planètes",
+    "une ellipse dont le Soleil occupe le centre",
+    "une parabole dont le Soleil occupe le foyer"
+   ],
+   "x": "Loi des orbites : ellipse, le centre du Soleil étant l'un des foyers."
+  },
+  {
+   "id": "kepler2",
+   "type": "Cours",
+   "q": "Deuxième loi de Kepler (loi des aires) :",
+   "r": [
+    "le segment Soleil-planète balaie des aires égales pendant des durées égales",
+    "la vitesse d'une planète est la même sur toute son orbite elliptique",
+    "toutes les planètes ont la même période",
+    "le segment Soleil-planète balaie des aires proportionnelles à la distance au Soleil"
+   ],
+   "x": "Conséquence : sur une ellipse, la planète va plus vite près du Soleil."
+  },
+  {
+   "id": "kepler3",
+   "type": "Cours",
+   "q": "Troisième loi de Kepler (<i>T</i> : période, <i>a</i> : demi-grand axe) :",
+   "r": [
+    "<i>T</i><sup>2</sup> / <i>a</i><sup>3</sup> = constante",
+    "<i>T</i><sup>3</sup> / <i>a</i><sup>2</sup> = constante",
+    "<i>T</i> / <i>a</i> = constante",
+    "<i>T</i><sup>2</sup> × <i>a</i><sup>3</sup> = constante"
+   ],
+   "x": "Le carré de la période est proportionnel au cube du demi-grand axe ; la constante ne dépend que de l'astre attracteur."
+  },
+  {
+   "id": "frenet",
+   "type": "Cours",
+   "q": "Pour un mouvement circulaire <b>uniforme</b> de rayon <i>R</i>, le vecteur accélération s'écrit :",
+   "r": [
+    "<i>a</i>⃗ = (<i>v</i><sup>2</sup>/<i>R</i>) <i>u</i>⃗<sub>n</sub>",
+    "<i>a</i>⃗ = (d<i>v</i>/d<i>t</i>) <i>u</i>⃗<sub>t</sub>",
+    "<i>a</i>⃗ = (<i>v</i><sup>2</sup>/<i>R</i>) <i>u</i>⃗<sub>t</sub>",
+    "<i>a</i>⃗ = 0⃗"
+   ],
+   "x": "Uniforme : d<i>v</i>/d<i>t</i> = 0, il ne reste que la composante normale <i>v</i><sup>2</sup>/<i>R</i>."
+  },
+  {
+   "id": "centripete",
+   "type": "Cours",
+   "q": "Dans un mouvement circulaire uniforme, le vecteur accélération est :",
+   "r": [
+    "radial et centripète",
+    "tangent à la trajectoire",
+    "radial et dirigé vers l'extérieur du cercle",
+    "nul"
+   ],
+   "x": "Il est porté par le rayon (radial) et orienté vers le centre (centripète)."
+  },
+  {
+   "id": "acc-planete",
+   "type": "Savoir-faire",
+   "q": "Une planète de masse <i>M</i><sub>p</sub> décrit une orbite circulaire de rayon <i>R</i> autour du Soleil (masse <i>M</i><sub>S</sub>). Son accélération est :",
+   "r": [
+    "<i>a</i>⃗ = <i>G M</i><sub>S</sub> / <i>R</i><sup>2</sup> <i>u</i>⃗<sub>n</sub>",
+    "<i>a</i>⃗ = <i>G M</i><sub>p</sub> / <i>R</i><sup>2</sup> <i>u</i>⃗<sub>n</sub>",
+    "<i>a</i>⃗ = <i>G M</i><sub>S</sub> <i>M</i><sub>p</sub> / <i>R</i><sup>2</sup> <i>u</i>⃗<sub>n</sub>",
+    "<i>a</i>⃗ = <i>G M</i><sub>S</sub> / <i>R</i> <i>u</i>⃗<sub>t</sub>"
+   ],
+   "x": "Deuxième loi de Newton : <i>M</i><sub>p</sub> <i>a</i>⃗ = <i>G M</i><sub>p</sub> <i>M</i><sub>S</sub> / <i>R</i><sup>2</sup> <i>u</i>⃗<sub>n</sub>, donc <i>a</i>⃗ = <i>G M</i><sub>S</sub>/<i>R</i><sup>2</sup> <i>u</i>⃗<sub>n</sub>. La masse de la planète n'intervient pas."
+  },
+  {
+   "id": "uniforme",
+   "type": "Savoir-faire",
+   "q": "Pourquoi le mouvement circulaire d'une planète autour du Soleil est-il uniforme ?",
+   "r": [
+    "Car l'accélération n'a pas de composante tangentielle : d<i>v</i>/d<i>t</i> = 0",
+    "Car la force gravitationnelle est nulle",
+    "Car la planète n'est soumise à aucune force",
+    "Car la trajectoire est une ellipse"
+   ],
+   "x": "<i>a</i>⃗ = <i>G M</i><sub>S</sub>/<i>R</i><sup>2</sup> <i>u</i>⃗<sub>n</sub> : la composante selon <i>u</i>⃗<sub>t</sub>, d<i>v</i>/d<i>t</i>, est nulle donc <i>v</i> est constante."
+  },
+  {
+   "id": "v-orbite",
+   "type": "Savoir-faire",
+   "q": "La vitesse d'une planète en orbite circulaire de rayon <i>R</i> autour du Soleil vaut :",
+   "r": [
+    "<i>v</i> = √(<i>G M</i><sub>S</sub> / <i>R</i>)",
+    "<i>v</i> = √(<i>G M</i><sub>S</sub> × <i>R</i>)",
+    "<i>v</i> = <i>G M</i><sub>S</sub> / <i>R</i><sup>2</sup>",
+    "<i>v</i> = √(<i>G M</i><sub>p</sub> / <i>R</i>)"
+   ],
+   "x": "<i>v</i><sup>2</sup>/<i>R</i> = <i>G M</i><sub>S</sub>/<i>R</i><sup>2</sup>, donc <i>v</i> = √(<i>G M</i><sub>S</sub>/<i>R</i>)."
+  },
+  {
+   "id": "periode",
+   "type": "Savoir-faire",
+   "q": "La période de révolution d'une planète en orbite circulaire est :",
+   "r": [
+    "<i>T</i> = 2π<i>R</i> / <i>v</i> = 2π √(<i>R</i><sup>3</sup> / (<i>G M</i><sub>S</sub>))",
+    "<i>T</i> = <i>v</i> / (2π<i>R</i>)",
+    "<i>T</i> = 2π<i>R</i> × <i>v</i>",
+    "<i>T</i> = 2π √(<i>G M</i><sub>S</sub> / <i>R</i><sup>3</sup>)"
+   ],
+   "x": "La planète parcourt le périmètre 2π<i>R</i> à vitesse constante : <i>T</i> = 2π<i>R</i>/<i>v</i>."
+  },
+  {
+   "id": "k3-retrouve",
+   "type": "Savoir-faire",
+   "q": "À partir de <i>T</i> = 2π√(<i>R</i><sup>3</sup>/(<i>GM</i>)), on retrouve la troisième loi de Kepler :",
+   "r": [
+    "<i>T</i><sup>2</sup> / <i>R</i><sup>3</sup> = 4π<sup>2</sup> / (<i>G M</i>)",
+    "<i>T</i><sup>2</sup> / <i>R</i><sup>3</sup> = <i>G M</i> / (4π<sup>2</sup>)",
+    "<i>T</i> / <i>R</i> = 2π / (<i>G M</i>)",
+    "<i>T</i><sup>2</sup> × <i>R</i><sup>3</sup> = 4π<sup>2</sup> <i>G M</i>"
+   ],
+   "x": "En élevant au carré : <i>T</i><sup>2</sup> = 4π<sup>2</sup><i>R</i><sup>3</sup>/(<i>GM</i>), d'où <i>T</i><sup>2</sup>/<i>R</i><sup>3</sup> = 4π<sup>2</sup>/(<i>GM</i>) = constante."
+  },
+  {
+   "id": "k2-cercle",
+   "type": "Savoir-faire",
+   "q": "Sur une orbite circulaire, la deuxième loi de Kepler permet de montrer que :",
+   "r": [
+    "la vitesse de l'astre est constante",
+    "la vitesse de l'astre augmente près du Soleil",
+    "la période dépend de la masse de l'astre",
+    "l'accélération est nulle"
+   ],
+   "x": "Aires égales en durées égales ⇒ arcs de cercle égaux en durées égales ⇒ vitesse constante."
+  },
+  {
+   "id": "geo",
+   "type": "Cours",
+   "q": "Un satellite géostationnaire est un satellite qui…",
+   "r": [
+    "reste toujours au-dessus du même point de la surface de la Terre",
+    "est immobile dans le référentiel géocentrique",
+    "tourne autour de la Terre en passant au-dessus des pôles",
+    "a une période de révolution de 12 h"
+   ],
+   "x": "Il tourne dans le même sens que la Terre avec une période égale à celle de sa rotation (environ 24 h)."
+  },
+  {
+   "id": "geo-plan",
+   "type": "Cours",
+   "q": "Dans quel plan doit se trouver l'orbite d'un satellite géostationnaire ?",
+   "r": [
+    "Le plan de l'équateur terrestre",
+    "Un plan passant par les pôles",
+    "Le plan de l'orbite de la Lune",
+    "N'importe quel plan passant par le centre de la Terre"
+   ],
+   "x": "Il doit avoir le même axe de rotation que la Terre : son orbite est dans le plan équatorial."
+  },
+  {
+   "id": "kepler-calc",
+   "type": "Savoir-faire",
+   "q": "Deux satellites orbitent autour de la même planète. Le premier : <i>R</i><sub>1</sub> = 1,0 × 10<sup>3</sup> km et <i>T</i><sub>1</sub> = 15 jours. Le second a <i>T</i><sub>2</sub> = 24 jours. Son rayon d'orbite est environ :",
+   "r": [
+    "1,4 × 10<sup>3</sup> km",
+    "1,6 × 10<sup>3</sup> km",
+    "2,0 × 10<sup>3</sup> km",
+    "0,73 × 10<sup>3</sup> km"
+   ],
+   "x": "<i>T</i><sub>1</sub><sup>2</sup>/<i>R</i><sub>1</sub><sup>3</sup> = <i>T</i><sub>2</sub><sup>2</sup>/<i>R</i><sub>2</sub><sup>3</sup> donc <i>R</i><sub>2</sub> = <i>R</i><sub>1</sub> (<i>T</i><sub>2</sub>/<i>T</i><sub>1</sub>)<sup>2/3</sup> ≈ 1,37 × 10<sup>3</sup> km."
+  },
+  {
+   "id": "masse-sat",
+   "type": "Savoir-faire",
+   "q": "Deux satellites de masses différentes sont sur la même orbite circulaire. Leurs vitesses sont :",
+   "r": [
+    "égales",
+    "plus grande pour le satellite le plus lourd",
+    "plus grande pour le satellite le plus léger",
+    "proportionnelles à leurs masses"
+   ],
+   "x": "<i>v</i> = √(<i>G M</i>/<i>R</i>) ne dépend que de la masse de l'astre attracteur et du rayon."
+  }
+ ]
+};
+</script>
+<script>
+/* ===== Réglages de l'évaluation (modifiables par le professeur) ===== */
+const REGLAGES = {
+  duree: 25,              /* minutes ; 0 = pas de minuteur */
+  tentatives: 1,          /* nombre de tentatives en mode évaluation, par élève et par navigateur */
+  code: "",  /* code à donner en classe pour lancer l'évaluation ("" = pas de code) */
+  correction: true,       /* true : l'élève voit la correction détaillée après l'envoi */
+  nbQuestions: 0          /* 0 = toutes les questions ; sinon tirage au sort de n questions parmi la banque */
+};
+/* ===== Moteur du QCM ===== */
+(function () {
+const VEC = h => String(h).replace(/(<i>[^<]*<\/i>|[A-Za-z0-9]+)\u20D7/g, '<span class="vec">$1</span>');
+window.QCM.questions.forEach(q => { q.q = VEC(q.q); q.r = q.r.map(VEC); q.x = VEC(q.x); });
+const Q = window.QCM, $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const CLE = "efir-qcm-" + Q.id, fr = (x, d = 1) => Number(x).toFixed(d).replace(".", ",").replace(/,0$/, "");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const sansBalise = h => { const d = document.createElement("div"); d.innerHTML = h; d.querySelectorAll(".nuc").forEach(n => n.replaceWith("(" + n.querySelector("sup").textContent + ";" + n.querySelector("sub").textContent + ")")); d.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); return d.textContent.replace(/\s+/g, " ").trim(); };
+const melange = l => { const a = l.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const LET = "ABCD";
+
+/* état sauvegardé : { tentatives: [...résultats], cours: { mode, nom, classe, ordre, opts, rep, t0, sorties } } */
+let E = { tentatives: [], cours: null };
+try { const o = JSON.parse(localStorage.getItem(CLE)); if (o && Array.isArray(o.tentatives)) E = o; } catch (e) {}
+const sauve = () => { try { localStorage.setItem(CLE, JSON.stringify(E)); } catch (e) {} };
+
+/* en-tête */
+document.title = "Labo virtuel · " + Q.court;
+$("#titre").textContent = Q.titre.replace(/ \(.*\)$/, "");
+$("#typeligne").innerHTML = `QCM d'évaluation <span style="color:var(--line-2)">•</span> Chapitre ${Q.chapitre}<span class="pastille">${Q.questions.length} questions · issues des flashcards</span>`;
+$("#foot-niv").textContent = Q.niveau;
+$("#retour").addEventListener("click", e => { e.preventDefault(); try { parent.location.hash = Q.retour; } catch (x) { location.hash = ""; } });
+const nbQ = REGLAGES.nbQuestions > 0 ? Math.min(REGLAGES.nbQuestions, Q.questions.length) : Q.questions.length;
+$("#m-eval-txt").textContent = `${nbQ} questions${REGLAGES.duree ? ", " + REGLAGES.duree + " min" : ""}, ${REGLAGES.tentatives} tentative${REGLAGES.tentatives > 1 ? "s" : ""}. Note dans votre bilan PDF, à déposer sur Classroom.`;
+$("#regles").innerHTML = [
+  `${nbQ} questions, une seule bonne réponse par question ; les questions et les propositions sont dans un ordre différent pour chaque élève.`,
+  REGLAGES.duree ? `Durée : ${REGLAGES.duree} minutes. À la fin du temps, l'évaluation se termine automatiquement.` : "",
+  `${REGLAGES.tentatives} tentative${REGLAGES.tentatives > 1 ? "s" : ""} seulement. Une réponse non cochée compte 0.`,
+  "Restez sur cette page : chaque sortie (autre onglet, autre application) est notée dans votre bilan.",
+  "À la fin, téléchargez votre bilan PDF et déposez-le dans le devoir Google Classroom."].filter(Boolean).map(t => `<li>${t}</li>`).join("");
+
+let mode = "";
+function choisirMode(m) { mode = m; $("#m-ent").setAttribute("aria-pressed", m === "ent"); $("#m-eval").setAttribute("aria-pressed", m === "eval");
+  $("#regles-eval").hidden = m !== "eval"; $("#code-l").hidden = m !== "eval" || !REGLAGES.code; $("#msg-acc").textContent = ""; $("#msg-acc").className = "msg"; }
+$("#m-ent").onclick = () => choisirMode("ent"); $("#m-eval").onclick = () => choisirMode("eval");
+const dit = (el, t, c) => { el.textContent = t; el.className = "msg" + (c ? " " + c : ""); };
+const evalFaites = () => E.tentatives.filter(t => t.mode === "eval").length;
+
+$("#go").onclick = () => {
+  const nom = $("#nom").value.trim(), cl = $("#classe").value.trim(), m = $("#msg-acc");
+  if (!mode) return dit(m, "Choisissez d'abord un mode : Entraînement ou Évaluation.", "err");
+  if (mode === "eval") {
+    if (!nom) { $("#nom").focus(); return dit(m, "Écrivez votre nom et prénom.", "err"); }
+    if (!cl) { $("#classe").focus(); return dit(m, "Écrivez votre classe.", "err"); }
+    if (evalFaites() >= REGLAGES.tentatives) return dit(m, "Vous avez déjà utilisé votre tentative d'évaluation. Votre résultat est affiché plus bas.", "err");
+    if (REGLAGES.code && $("#code").value.trim().toUpperCase() !== REGLAGES.code.toUpperCase()) { $("#code").focus(); return dit(m, "Code incorrect : demandez-le à votre professeur.", "err"); }
+  }
+  const choix = melange(Q.questions.map((_, i) => i)).slice(0, mode === "eval" ? nbQ : Q.questions.length);
+  E.cours = { mode, nom, classe: cl, ordre: choix, opts: choix.map(() => melange([0, 1, 2, 3])), rep: choix.map(() => null), t0: Date.now(), sorties: 0, essais: choix.map(() => 0) };
+  sauve(); lancer();
+};
+
+/* affichage des questions */
+let minuteur = 0;
+function lancer() {
+  const C = E.cours; $("#accueil").hidden = true; $("#resultat").hidden = true; $("#quiz").hidden = false;
+  $("#h-quiz-t").textContent = C.mode === "eval" ? `Évaluation · ${C.nom} (${C.classe})` : "Entraînement : correction immédiate";
+  $("#fin").hidden = C.mode !== "eval"; $("#recommencer").hidden = C.mode === "eval";
+  $("#questions").innerHTML = C.ordre.map((qi, k) => { const q = Q.questions[qi];
+    return `<fieldset class="q" id="q${k}"><legend><span class="tq">${esc(q.type)}</span><span class="en"><span class="num">${k + 1}</span><span>${q.q}</span></span></legend>
+      <div class="opts">${C.opts[k].map((o, j) => `<label class="opt"><input type="radio" name="r${k}" value="${o}"><span class="lettre">${LET[j]}</span><span>${q.r[o]}</span></label>`).join("")}</div>
+      <p class="expl" hidden></p></fieldset>`; }).join("");
+  C.ordre.forEach((_, k) => { const fs = $("#q" + k);
+    fs.querySelectorAll("input").forEach(inp => inp.addEventListener("change", () => repondre(k, +inp.value)));
+    if (C.rep[k] != null) { const inp = fs.querySelector(`input[value="${C.rep[k]}"]`); if (inp) inp.checked = true; marquer(k); } });
+  progres();
+  clearInterval(minuteur);
+  if (C.mode === "eval" && REGLAGES.duree) { const tic = () => { const reste = C.t0 + REGLAGES.duree * 60000 - Date.now();
+      if (reste <= 0) { clearInterval(minuteur); $("#chrono").textContent = "0:00"; terminer(true); return; }
+      const s = Math.ceil(reste / 1000); $("#chrono").textContent = `⏱ ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; $("#chrono").classList.toggle("bas", s <= 120); };
+    tic(); minuteur = setInterval(tic, 1000); } else $("#chrono").textContent = C.mode === "eval" ? "" : "Mode entraînement";
+}
+function repondre(k, o) { const C = E.cours; if (!C) return;
+  if (C.mode === "ent" && C.rep[k] === 0) return; /* déjà juste : verrouillée */
+  C.rep[k] = o; C.essais[k]++; sauve(); marquer(k); progres(); }
+function marquer(k) { const C = E.cours, fs = $("#q" + k), q = Q.questions[C.ordre[k]];
+  fs.querySelectorAll(".opt").forEach(l => { const v = +l.querySelector("input").value; l.classList.toggle("choisi", v === C.rep[k]); l.classList.remove("juste", "faux"); });
+  if (C.mode !== "ent" || C.rep[k] == null) return;
+  const lab = fs.querySelector(`input[value="${C.rep[k]}"]`).closest(".opt"), ok = C.rep[k] === 0, ex = fs.querySelector(".expl");
+  lab.classList.add(ok ? "juste" : "faux"); ex.hidden = false; ex.className = "expl " + (ok ? "ok" : "ko");
+  ex.innerHTML = ok ? `<b>✓ Juste.</b> ${q.x}` : "<b>✗ Pas tout à fait.</b> Relisez la flashcard et essayez une autre proposition.";
+  if (ok) { fs.classList.add("verrou"); fs.querySelectorAll("input").forEach(i => i.disabled = true); } }
+function progres() { const C = E.cours, n = C.rep.filter(r => r != null).length, t = C.ordre.length;
+  const j = C.mode === "ent" ? C.rep.filter(r => r === 0).length : 0;
+  $("#prog-t").textContent = C.mode === "ent" ? `${j} / ${t} questions réussies` : `${n} / ${t} questions répondues`;
+  $("#prog-i").style.width = (100 * (C.mode === "ent" ? j : n) / t) + "%"; }
+$("#recommencer").onclick = () => { E.cours = null; sauve(); $("#quiz").hidden = true; $("#accueil").hidden = false; choisirMode("ent"); };
+
+/* sorties de page pendant l'évaluation */
+let horsPage = false;
+const sortie = () => { const C = E.cours; if (!C || C.mode !== "eval" || horsPage) return; horsPage = true; C.sorties++; sauve(); };
+document.addEventListener("visibilitychange", () => { if (document.hidden) sortie(); else horsPage = false; });
+
+/* fin de l'évaluation */
+let confirme = false;
+$("#fin").onclick = () => { const C = E.cours, vides = C.rep.filter(r => r == null).length;
+  if (vides && !confirme) { confirme = true; dit($("#msg-fin"), `Il reste ${vides} question${vides > 1 ? "s" : ""} sans réponse. Cliquez de nouveau pour terminer quand même.`, "err"); setTimeout(() => { confirme = false; }, 6000); return; }
+  terminer(false); };
+function terminer(auto) {
+  const C = E.cours; if (!C || C.mode !== "eval") return; clearInterval(minuteur);
+  const det = C.ordre.map((qi, k) => { const q = Q.questions[qi], r = C.rep[k];
+    return { id: q.id, type: q.type, q: q.q, ok: r === 0, rep: r == null ? null : q.r[r], lettre: r == null ? "–" : LET[C.opts[k].indexOf(r)], bonne: q.r[0], bonneL: LET[C.opts[k].indexOf(0)], x: q.x }; });
+  const justes = det.filter(d => d.ok).length, note = Math.round(justes / det.length * 20 * 2) / 2;
+  const res = { mode: "eval", nom: C.nom, classe: C.classe, t0: C.t0, t1: Date.now(), justes, n: det.length, note, sorties: C.sorties, auto, det,
+    repondues: C.rep.filter(r => r != null).length };
+  E.tentatives.push(res); E.cours = null; sauve(); afficherResultat(res, true);
+}
+
+/* résultat, envoi au professeur (bilan PDF + code TPEFIR1 lu par l'Espace professeur) */
+function codeSuivi(r) {
+  const parts = ["Cours", "Savoir-faire"].map(t => { const l = r.det.filter(d => d.type === t); return [t, l.filter(d => d.ok).length, l.length]; }).filter(p => p[2]);
+  const err = []; if (r.sorties) err.push(`a quitté la page du QCM ${r.sorties} fois`); if (r.auto) err.push("n'a pas terminé dans le temps (fin automatique)");
+  if (r.repondues < r.n) err.push(`a laissé ${r.n - r.repondues} question${r.n - r.repondues > 1 ? "s" : ""} sans réponse`);
+  const o = { v: 1, tp: Q.fichier, titre: Q.titre, eleve: r.nom, classe: r.classe, t0: r.t0, t1: r.t1, note: r.note, av: Math.round(r.repondues / r.n * 100) / 100,
+    parties: parts, erreurs: err, conc: `QCM : ${r.justes} réponses justes sur ${r.n}.`,
+    j: r.det.map((d, k) => [r.t1 - (r.det.length - k) * 1000, "q", d.id, sansBalise(d.q).slice(0, 90), d.ok ? 1 : 0, d.rep == null ? "Pas de réponse" : (d.ok ? "Juste : " : "Faux : ") + sansBalise(d.rep).slice(0, 140)]) };
+  return { code: "TPEFIR1:" + btoa(unescape(encodeURIComponent(JSON.stringify(o)))), err };
+}
+async function envoyer(r) {
+  const zone = $("#r-envoi"), { code, err } = codeSuivi(r); $("#code-suivi").value = code;
+  let base = ""; try { base = window.top.location.origin; } catch (e) { base = location.origin; }
+  if (false) { zone.textContent = "Envoi automatique impossible hors du site en ligne : copiez le code ci-dessous et envoyez-le à votre professeur."; $("#zone-code").hidden = false; return false; }
+  const champs = { eleve: r.nom, classe: r.classe, tp: Q.titre, note: fr(r.note) + " / 20", avancement: Math.round(r.repondues / r.n * 100) + " %",
+    erreurs: err.length ? err.map(x => "L'élève " + x).join(" | ") : "aucune", reponses_fausses: String(r.n - r.justes), temps: Math.max(1, Math.round((r.t1 - r.t0) / 60000)) + " min",
+    detail: r.det.map((d, k) => `${k + 1}. ${d.ok ? "juste" : "faux"} · ${sansBalise(d.q).slice(0, 70)} · réponse : ${d.rep == null ? "aucune" : sansBalise(d.rep)}`).join("\n"),
+    conclusion: `QCM : ${r.justes} / ${r.n} réponses justes${r.sorties ? ` · ${r.sorties} sortie(s) de page` : ""}`, date: new Date(r.t1).toLocaleString("fr-FR"), code };
+  zone.textContent = "Préparation de votre bilan PDF…";
+  try { const x = await (window.EFIR_BILAN || window.top.EFIR_BILAN)(champs);
+    if (!x.ok) throw new Error(x.status);
+    r.envoye = Date.now(); sauve(); zone.textContent = `✓ Bilan PDF téléchargé (${fr(r.note)} / 20) : déposez-le dans le devoir Google Classroom.`; return true; }
+  catch (e) { zone.textContent = "Le PDF n'a pas pu être créé : cliquez de nouveau sur « Télécharger mon bilan » ou copiez le code ci-dessous dans le devoir Classroom."; $("#zone-code").hidden = false; return false; }
+}
+let courant = null;
+function afficherResultat(r, envoiAuto) {
+  courant = r; $("#accueil").hidden = true; $("#quiz").hidden = true; $("#resultat").hidden = false;
+  $("#r-note").textContent = fr(r.note) + " / 20";
+  $("#r-phrase").innerHTML = `<b>${esc(r.nom)}</b> (${esc(r.classe)}) · ${r.justes} réponse${r.justes > 1 ? "s" : ""} juste${r.justes > 1 ? "s" : ""} sur ${r.n}.` + (r.auto ? "<br>Temps écoulé : l'évaluation s'est terminée automatiquement." : "");
+  const parts = ["Cours", "Savoir-faire"].map(t => { const l = r.det.filter(d => d.type === t); return l.length ? `<div><b>${l.filter(d => d.ok).length} / ${l.length}</b>Questions de ${t.toLowerCase()}</div>` : ""; }).join("");
+  $("#r-tuiles").innerHTML = parts + `<div><b>${Math.max(1, Math.round((r.t1 - r.t0) / 60000))} min</b>Durée</div><div><b>${r.sorties}</b>Sortie${r.sorties > 1 ? "s" : ""} de page</div>`;
+  $("#voircorr").hidden = !REGLAGES.correction;
+  /* questions affichées en lecture seule */
+  $("#fin").hidden = true; $("#recommencer").hidden = true; $("#msg-fin").textContent = ""; $("#chrono").textContent = "Terminé"; $("#chrono").classList.remove("bas");
+  $("#h-quiz-t").textContent = `Évaluation terminée · ${r.nom}`;
+  $("#quiz").querySelector(".barre").hidden = true;
+  $("#questions").hidden = true;
+  $("#r-envoi").textContent = r.envoye ? `✓ Bilan PDF téléchargé le ${new Date(r.envoye).toLocaleString("fr-FR")} : déposez-le dans le devoir Google Classroom.` : "Cliquez sur « Télécharger mon bilan », puis déposez le PDF dans le devoir Google Classroom.";
+  $("#resultat").scrollIntoView({ block: "start" });
+}
+$("#sentrainer").onclick = () => { $("#resultat").hidden = true; $("#quiz").hidden = true; $("#fin").closest(".box").hidden = false; $("#questions").hidden = false; $("#quiz").querySelector(".barre").hidden = false; $("#accueil").hidden = false; choisirMode("ent"); $("#accueil").scrollIntoView({ block: "start" }); };
+$("#renvoi").onclick = () => courant && envoyer(courant);
+$("#copier").onclick = () => { const ta = $("#code-suivi"); ta.select(); try { navigator.clipboard.writeText(ta.value).then(() => dit($("#crnote"), "✓ Code copié : collez-le dans le devoir Google Classroom.", "ok")); } catch (e) { document.execCommand("copy"); } };
+$("#voircorr").onclick = () => { const r = courant; if (!r) return;
+  $("#quiz").hidden = false; $("#fin").closest(".box").hidden = true; $("#questions").hidden = false; $("#h-quiz-t").textContent = "Correction détaillée";
+  $("#questions").innerHTML = r.det.map((d, k) => `<fieldset class="q verrou"><legend><span class="tq">${esc(d.type)}</span><span class="en"><span class="num">${k + 1}</span><span>${d.q}</span></span></legend>
+    <div class="opts">${d.rep == null ? '<p class="opt faux">Pas de réponse.</p>' : `<p class="opt ${d.ok ? "juste" : "faux"}"><span class="lettre">${d.ok ? "✓" : "✗"}</span><span>Votre réponse : ${d.rep}</span></p>`}
+    ${d.ok ? "" : `<p class="opt juste"><span class="lettre">✓</span><span>Bonne réponse : ${d.bonne}</span></p>`}</div><p class="expl ${d.ok ? "ok" : "ko"}">${d.x}</p></fieldset>`).join("");
+  $("#questions").scrollIntoView({ block: "start" }); };
+
+/* ---------- compte rendu PDF (jsPDF 2.5.1, chargé à la demande) ---------- */
+const W1252 = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
+const SUP = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁺": "+", "⁻": "-", "−": "-", "→": "->", "✓": "(juste)", "✗": "(faux)", "≤": "<=", "≥": ">=", "≈": "~", "≠": "!=", "α": "alpha", "Δ": "Delta ", "Σ": "somme ", "ℓ": "l", "×": "x", "⃗": "", "⇄": "<=>", "⇔": "<=>", "√": "racine", "π": "pi", "ρ": "rho", "λ": "lambda", "σ": "sigma", "τ": "tau", "θ": "theta", "γ": "gamma", "χ": "khi", "Π": "Pi", "Φ": "Phi", "ν": "nu", "δ": "delta", "η": "eta", "ω": "omega", "β": "beta", "′": "'", "∞": "infini", "⊕": "(+)", "⊖": "(-)", "≠": "!=", "∈": "dans", "⏱": "", "⚠": "", " ": " ", " ": " " };
+const txt = s => [...String(s).replace(/\s+/g, " ").trim()].map(c => SUP[c] != null ? SUP[c] : c).join("").split("").filter(c => c.charCodeAt(0) < 256 || W1252.includes(c)).join("").replace(/ {2,}/g, " ").trim();
+const plat = h => { const d = document.createElement("div"); d.innerHTML = h; d.querySelectorAll(".nuc").forEach(n => n.replaceWith("(" + n.querySelector("sup").textContent + ";" + n.querySelector("sub").textContent + ")")); d.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); return d.textContent; };
+function chargerJsPDF() { if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = () => window.jspdf ? ok(window.jspdf) : ko(); s.onerror = ko; document.head.appendChild(s); }); }
+function faitPDF(r) {
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" }), X = 16, Lg = 178, BAS = 280; let y = 16;
+  const NAVY = [26, 35, 126], INK = [31, 41, 55], GRIS = [107, 114, 128], VERT = [22, 101, 52], ROUGE = [180, 35, 24];
+  const place = h => { if (y + h > BAS) { doc.addPage(); y = 16; } };
+  const ligne = (t, o = {}) => { doc.setFont("helvetica", o.b ? "bold" : "normal"); doc.setFontSize(o.s || 10); doc.setTextColor(...(o.c || INK));
+    const lh = (o.s || 10) * .43, ls = doc.splitTextToSize(txt(t), Lg - (o.ind || 0)); ls.forEach(l => { place(lh); doc.text(l, X + (o.ind || 0), y); y += lh; }); y += o.ap == null ? 1 : o.ap; };
+  doc.setFillColor(...NAVY); doc.rect(0, 0, 210, 7, "F");
+  ligne("PHYSIQUE-CHIMIE - MME MESSAOUDI · ANNÉE 2026-2027", { s: 7.5, c: GRIS, ap: 2 });
+  ligne(Q.titre, { b: 1, s: 15, c: NAVY, ap: 1.5 });
+  ligne(`QCM D'ÉVALUATION · CHAPITRE ${Q.chapitre} · ${Q.niveau.toUpperCase()}`, { b: 1, s: 8.5, c: GRIS, ap: 3 });
+  ligne(`Élève : ${r.nom}   ·   Classe : ${r.classe}   ·   ${new Date(r.t1).toLocaleString("fr-FR")}`, { b: 1, s: 10.5, ap: 1.5 });
+  ligne(`Note : ${fr(r.note)} / 20   (${r.justes} réponses justes sur ${r.n})`, { b: 1, s: 13, c: NAVY, ap: 1.5 });
+  const parts = ["Cours", "Savoir-faire"].map(t => { const l = r.det.filter(d => d.type === t); return l.length ? `${t} : ${l.filter(d => d.ok).length} / ${l.length}` : ""; }).filter(Boolean).join("   ·   ");
+  ligne(`${parts}   ·   Durée : ${Math.max(1, Math.round((r.t1 - r.t0) / 60000))} min   ·   Sorties de page : ${r.sorties}${r.auto ? "   ·   Fin automatique (temps écoulé)" : ""}`, { s: 9, c: GRIS, ap: 3 });
+  doc.setDrawColor(229, 231, 235); doc.setLineWidth(.5); doc.line(X, y, X + Lg, y); y += 5;
+  r.det.forEach((d, k) => { place(18);
+    ligne(`${k + 1}. ${plat(d.q)}`, { b: 1, s: 9.8, ap: .8 });
+    ligne(d.rep == null ? "Votre réponse : aucune (faux)" : `Votre réponse (${d.lettre}) : ${plat(d.rep)}  ${d.ok ? "(juste)" : "(faux)"}`, { s: 9.4, ind: 4, c: d.ok ? VERT : ROUGE, ap: .6 });
+    if (!d.ok && REGLAGES.correction) ligne(`Bonne réponse (${d.bonneL}) : ${plat(d.bonne)}`, { s: 9.4, ind: 4, c: VERT, ap: .6 });
+    y += 2.2; });
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) { doc.setPage(p); doc.setDrawColor(229, 231, 235); doc.line(X, 285, X + Lg, 285); doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(...GRIS);
+    doc.text(txt("EFIR · PHYSIQUE-CHIMIE - MME MESSAOUDI"), X, 289); doc.text(txt(`${Q.niveau.toUpperCase()} · ${r.nom}`), 105, 289, { align: "center" }); doc.text(`${p} / ${n}`, X + Lg, 289, { align: "right" }); }
+  const nomF = r.nom.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "") || "eleve";
+  doc.save(`${Q.fichier}_compte_rendu_${nomF}.pdf`);
+}
+$("#crpdf").onclick = () => { const r = courant, note = $("#crnote"); if (!r) return; $("#crpdf").disabled = true; dit(note, "Préparation du PDF…");
+  chargerJsPDF().then(() => { faitPDF(r); dit(note, "✓ PDF téléchargé : déposez-le dans votre devoir Google Classroom (Ajouter > Fichier, puis Rendre).", "ok"); })
+    .catch(() => { dit(note, "Le PDF n'a pas pu être préparé (connexion ?). Utilisez Imprimer > Enregistrer au format PDF.", "err"); $("#voircorr").click(); window.print(); })
+    .finally(() => { $("#crpdf").disabled = false; }); };
+
+/* reprise après rechargement */
+const der = E.tentatives.filter(t => t.mode === "eval").slice(-1)[0];
+if (E.cours) { $("#nom").value = E.cours.nom; $("#classe").value = E.cours.classe; lancer(); }
+else if (der && evalFaites() >= REGLAGES.tentatives) { $("#nom").value = der.nom; $("#classe").value = der.classe; afficherResultat(der, false); }
+})();
+</script>
+</body>
+</html>

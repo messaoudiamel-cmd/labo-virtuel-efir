@@ -1,0 +1,202 @@
+<!--efir1re:AE1 · Électrisation 3D-->
+window.EFIR_RETOUR = "premiere/mouvement/Interactions%20fondamentales%20et%20notion%20de%20champ";
+
+// ====================================================================
+// Ch. 10 · AE1 · Électrisation et charges électriques
+// ====================================================================
+const PIV = new THREE.Vector3(-.05, .56, 0), LEN = .32, RS = .03, YS = PIV.y - LEN;
+const ZOOM10 = [[.04, .36, .62], [0, .25, 0]];
+const DIST = { loin: .12, proche: .055 };
+let pend10, sph10, rods10 = {}, laine10, det10, led10, marks10, S10 = null, SHOWQ = true;
+const fresh10 = () => ({ rod: 'pvc', q: { pvc: 0, verre: 0, laine: 0, sphere: 0 }, near: null, theta: 0, seen: {}, detT: false, detS: false });
+const sgn = q => q > 0 ? '+' : q < 0 ? '−' : '0';
+const objName = o => o === 'laine' ? 'le tissu en laine' : o === 'pvc' ? 'la tige en PVC' : 'la tige en verre';
+function force10(o, d) { // > 0 : répulsion ; < 0 : attraction
+  const qo = S10.q[o], qs = S10.q.sphere; if (!qo) return 0;
+  if (!qs) return -8.64e-5 * qo * qo / (d * d * d);
+  return .00288 * qs * qo / (d * d);
+}
+function theta10(o, d) { // angle (rad) ; positif = la sphère s'écarte de l'objet (vers −x)
+  const F = force10(o, d); let th = Math.atan(F);
+  const maxAtt = Math.asin(Math.min(.99, (d - RS - .012) / LEN)); if (th < -maxAtt) th = -maxAtt;
+  return th;
+}
+function placePend(th) { pend10.rotation.z = -th; S10.theta = th; }
+function sphPos() { return new THREE.Vector3(PIV.x - LEN * Math.sin(S10.theta), PIV.y - LEN * Math.cos(S10.theta), 0); }
+function makeSigns(n, sign) { const g = new THREE.Group(); for (let i = 0; i < n; i++) { const l = label(sign > 0 ? '+' : '−', { size: 54, scale: .00042, color: sign > 0 ? '#c62828' : '#1565c0', bg: 'rgba(255,255,255,.85)', depthTest: false }); g.add(l); } return g; }
+function drawMarks() {
+  if (!marks10) return; marks10.clear(); if (!SHOWQ) return;
+  const add = (n, sign, pos) => { const g = makeSigns(n, sign); g.children.forEach((l, i) => l.position.copy(pos(i, n))); marks10.add(g); };
+  const sp = sphPos();
+  if (S10.q.sphere) add(4, S10.q.sphere, (i, n) => new THREE.Vector3(sp.x + RS * 1.45 * Math.cos(i / n * 6.283 + .4), sp.y + RS * 1.45 * Math.sin(i / n * 6.283 + .4), .035));
+  else if (S10.near && S10.q[S10.near.o]) { const s = Math.sign(S10.q[S10.near.o]); add(2, -s, i => new THREE.Vector3(sp.x + RS * .6, sp.y + (i - .5) * .03, RS + .01)); add(2, s, i => new THREE.Vector3(sp.x - RS * .6, sp.y + (i - .5) * .03, RS + .01)); }
+  for (const k of ['pvc', 'verre']) { const r = rods10[k]; if (!S10.q[k] || !r.visible) continue; const p = new THREE.Vector3(); r.getWorldPosition(p); const dir = new THREE.Vector3(1, 0, 0).applyQuaternion(r.getWorldQuaternion(new THREE.Quaternion())); add(3, S10.q[k], i => p.clone().addScaledVector(dir, -.12 + i * .045).add(new THREE.Vector3(0, .018, .02))); }
+  if (S10.q.laine) { const p = new THREE.Vector3(); laine10.getWorldPosition(p); add(3, S10.q.laine, i => p.clone().add(new THREE.Vector3(-.04 + i * .04, .025, .03))); }
+}
+const ROD_HOME = { pvc: new THREE.Vector3(.3, .012, .22), verre: new THREE.Vector3(.3, .012, .3) };
+function rodTipAt(r, d) { return new THREE.Vector3(PIV.x + d + .15, YS, 0); }
+async function moveTo(obj, p1, dur = .7) { const p0 = obj.position.clone(); if (INSTANT) { obj.position.copy(p1); return; } await tween(dur, p => { obj.position.lerpVectors(p0, p1, ease(p)); drawMarks(); }); }
+async function swingTo(th1, dur = .9) { const th0 = S10.theta; if (INSTANT) { placePend(th1); drawMarks(); return; } await tween(dur, p => { placePend(th0 + (th1 - th0) * ease(p)); drawMarks(); }); }
+async function retract() {
+  if (!S10.near) return; const o = S10.near.o; S10.near = null;
+  const obj = o === 'laine' ? laine10 : rods10[o];
+  await swingTo(0, .6);
+  await moveTo(obj, o === 'laine' ? laine10.home : ROD_HOME[o]); drawMarks();
+}
+const C10 = {
+  id: 'p1_ch10_ae1', code: 'AE1', short: 'Électrisation 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 10 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Électrisation et charges électriques',
+  problem: 'Comment électriser un objet de trois façons différentes ? De quels paramètres l\'interaction électrostatique dépend-elle ?',
+  mots: `<p><b>Électrisation par frottement</b> : on arrache ou on dépose des électrons sur un objet en le frottant.<br>
+  <b>Électrisation par contact</b> : des électrons passent d'un corps chargé à un autre quand ils se touchent ; les deux corps portent alors des charges de <b>même signe</b>.<br>
+  <b>Électrisation par influence</b> : à l'approche d'un corps chargé, les électrons d'un matériau se déplacent, sans contact ; le matériau reste globalement neutre.<br>
+  <b>Détecteur de charges</b> : son voyant s'allume quand on approche un objet chargé (il n'indique pas le signe).<br>
+  Données : le PVC frotté avec la laine se charge négativement ; le verre frotté avec la laine se charge positivement.</p>`,
+  aide: `<p>1. Vérifie au détecteur que la tige et la sphère sont neutres, frotte la tige avec la laine, puis teste-la.<br>
+  2. Approche la tige chargée (de loin) de la sphère neutre : que se passe-t-il ?<br>
+  3. Touche la sphère avec la tige chargée, puis vérifie la sphère au détecteur.<br>
+  4. Approche de la sphère chargée un objet de même signe, puis un objet de signe opposé (la laine, ou la tige en verre frottée).<br>
+  5. Compare l'effet d'un même objet « de loin » et « de près ».<br>
+  Le bouton « Montrer les charges » affiche le modèle (signes + et −) ; le détecteur, lui, ne donne pas le signe.</p>`,
+  views: { ensemble: [[0, .6, 1.05], [0, .24, 0]] },
+  viewbar: [['Zoom pendule', () => flyTo(...ZOOM10)], ['Zoom détecteur', () => flyTo([-.4, .3, .65], [-.42, .12, .2])]],
+  protocol: [
+    { id: 'frott', q: 'Q1', html: 'Électriser une tige <b>par frottement</b> avec la laine et le vérifier au détecteur de charges.' },
+    { id: 'influence', q: 'Q1', html: 'Approcher la tige chargée de la sphère neutre : électrisation <b>par influence</b>.' },
+    { id: 'contact', q: 'Q1', html: 'Électriser la sphère <b>par contact</b> avec la tige chargée, puis la vérifier au détecteur.' },
+    { id: 'signe', q: 'Q2', html: 'Approcher de la sphère chargée un objet de même signe, puis un objet de signe opposé.' },
+    { id: 'distance', q: 'Q2', html: 'Comparer l\'effet d\'un même objet chargé approché de loin, puis de près.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q3-5', html: 'Répondre aux questions d\'interprétation.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'aucun produit chimique ; manipulation sans danger',
+  table: { rowTitle: 'Expérience', rows: [
+    { label: 'Tige frottée approchée de la sphère neutre (sans contact)', ans: [2, 0] },
+    { label: 'Sphère touchée par la tige chargée, puis tige réapprochée', ans: [1, 1] },
+    { label: 'Laine (frottée) approchée de la sphère chargée par la tige en PVC', ans: [0, 0] },
+    { label: 'Tige non frottée approchée de la sphère neutre', ans: [3, 2] }],
+    cols: [{ title: 'Électrisation mise en jeu', options: ['frottement', 'contact', 'influence', 'aucune'] }, { title: 'La sphère est…', options: ['attirée', 'repoussée', 'immobile'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'Quelle particule est responsable de l\'électrisation ?', options: ['l\'électron', 'le proton', 'le neutron', 'l\'atome entier'], ans: 0 },
+    { q: 'Q1', text: 'En frottant le PVC avec la laine, le PVC se charge négativement car…', options: ['la laine dépose des électrons sur le PVC', 'la laine arrache des électrons au PVC', 'le PVC gagne des protons'], ans: 0 },
+    { q: 'Q2', text: 'Deux corps portant des charges de même signe…', options: ['se repoussent', 's\'attirent', 'n\'ont aucune action l\'un sur l\'autre'], ans: 0 },
+    { q: 'Q2', text: 'Quand la distance entre les corps chargés diminue, l\'interaction électrostatique…', options: ['augmente', 'diminue', 'ne change pas'], ans: 0 },
+    { q: 'Q4', text: 'Quand on enlève un pull-over, les cheveux « se dressent » car…', options: ['ils sont électrisés par frottement avec des charges de même signe et se repoussent', 'ils portent des charges opposées et s\'attirent', 'ils perdent leur masse'], ans: 0 },
+    { q: 'Q3', text: 'Le schéma d\'une sphère neutre avec des charges + d\'un côté et − de l\'autre, près d\'une tige chargée, montre une électrisation…', options: ['par influence (répartition dissymétrique, sphère globalement neutre)', 'par contact', 'par frottement'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['On électrise un objet par frottement, par contact ou par influence (déplacement d\'électrons). L\'interaction électrostatique dépend du signe des charges (même signe : répulsion ; signes opposés : attraction) et de la distance (plus forte quand la distance diminue).', 'L\'interaction électrostatique est toujours attractive et ne dépend pas de la distance.', 'L\'électrisation est due au déplacement des protons.', 'Seul le frottement permet d\'électriser un objet.'], ans: 0 },
+  build() {
+    const met = new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: .8, roughness: .3 });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(.24, .015, .16), new THREE.MeshStandardMaterial({ color: 0x455a64 })); base.position.set(-.2, .0075, 0); scene.add(base);
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .62, 10), met); rod.position.set(-.27, .31, 0); scene.add(rod);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, .23, 10), met); arm.rotation.z = Math.PI / 2; arm.position.set(-.16, PIV.y, 0); scene.add(arm);
+    pend10 = new THREE.Group(); pend10.position.copy(PIV); scene.add(pend10);
+    const fil = new THREE.Mesh(new THREE.CylinderGeometry(.0007, .0007, LEN - RS, 4), new THREE.MeshBasicMaterial({ color: 0x333333 })); fil.position.y = -(LEN - RS) / 2; pend10.add(fil);
+    sph10 = new THREE.Mesh(new THREE.SphereGeometry(RS, 32, 20), new THREE.MeshStandardMaterial({ color: 0xd8dde3, metalness: .45, roughness: .3, emissive: 0x30363d })); sph10.position.y = -LEN; pend10.add(sph10);
+    const sl = label('Sphère métallisée\n(pendule électrostatique)', { size: 24, scale: .0007 }); sl.position.set(PIV.x, YS - .08, 0); scene.add(sl);
+    const mkRod = (col, op, nm) => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .3, 20), new THREE.MeshPhysicalMaterial({ color: col, transparent: op < 1, opacity: op, roughness: .3, clearcoat: .6 })); m.rotation.z = Math.PI / 2; g.add(m); const l = label(nm, { size: 24, scale: .0009 }); l.position.set(.11, .03, 0); g.add(l); return g; };
+    rods10.pvc = mkRod(0x546e7a, 1, 'Tige en PVC'); rods10.verre = mkRod(0xd7f0ff, .45, 'Tige en verre');
+    for (const k of ['pvc', 'verre']) { rods10[k].home = ROD_HOME[k]; rods10[k].position.copy(ROD_HOME[k]); scene.add(rods10[k]); }
+    laine10 = new THREE.Group(); const lm = new THREE.Mesh(new THREE.BoxGeometry(.14, .012, .1), new THREE.MeshStandardMaterial({ color: 0xc62828, roughness: 1 })); laine10.add(lm);
+    const ll = label('Tissu en laine', { size: 24, scale: .0009 }); ll.position.set(0, .04, 0); laine10.add(ll); laine10.home = new THREE.Vector3(.55, .006, .2); laine10.position.copy(laine10.home); scene.add(laine10);
+    det10 = new THREE.Group(); const db = new THREE.Mesh(new THREE.BoxGeometry(.1, .05, .07), new THREE.MeshStandardMaterial({ color: 0x1e88e5 })); db.position.y = .025; det10.add(db);
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(.002, .002, .15, 6), met); ant.position.set(.03, .125, 0); det10.add(ant);
+    led10 = new THREE.Mesh(new THREE.SphereGeometry(.008, 16, 10), new THREE.MeshStandardMaterial({ color: 0x5d4037, emissive: 0x000000 })); led10.position.set(-.025, .052, .02); det10.add(led10);
+    const dl = label('Détecteur de charges', { size: 24, scale: .0009 }); dl.position.set(0, .23, 0); det10.add(dl);
+    det10.home = new THREE.Vector3(-.5, 0, .2); det10.position.copy(det10.home); scene.add(det10);
+    marks10 = new THREE.Group(); scene.add(marks10);
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene() { S10 = fresh10(); if (!pend10) return; placePend(0); for (const k of ['pvc', 'verre']) rods10[k].position.copy(ROD_HOME[k]); laine10.position.copy(laine10.home); det10.position.copy(det10.home); led10.material.emissive.setHex(0); drawMarks(); if ($('#q10')) this.refreshPanel(); },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, h('span', {}, 'Tige utilisée :'), B('r1', 'Tige en PVC', { t: 'rod', k: 'pvc' }), B('r2', 'Tige en verre', { t: 'rod', k: 'verre' }),
+        h('label', { style: 'margin-left:8px' }, h('input', { type: 'checkbox', id: 'showq', checked: true, onchange: e => { SHOWQ = e.target.checked; drawMarks(); } }), ' Montrer les charges (modèle)')),
+      h('h3', {}, '1. Électriser et tester'),
+      h('div', { class: 'row' }, B('e1', '🧶 Frotter la tige avec la laine', { t: 'rub' }), B('e2', 'Tester la tige au détecteur', { t: 'detect', o: 'tige' }), B('e3', 'Tester la sphère au détecteur', { t: 'detect', o: 'sphere' }), B('e4', 'Tester la laine au détecteur', { t: 'detect', o: 'laine' })),
+      h('h3', {}, '2. Approcher de la sphère'),
+      h('div', { class: 'row' }, B('a1', 'Approcher la tige (de loin)', { t: 'app', o: 'tige', d: 'loin' }), B('a2', 'Approcher la tige (de près)', { t: 'app', o: 'tige', d: 'proche' }), B('a3', 'Approcher la laine (de loin)', { t: 'app', o: 'laine', d: 'loin' }), B('a4', 'Approcher la laine (de près)', { t: 'app', o: 'laine', d: 'proche' })),
+      h('div', { class: 'row' }, B('c1', '👉 Toucher la sphère avec la tige', { t: 'touch' }), B('c0', 'Éloigner l\'objet', { t: 'away' })),
+      h('h3', {}, '3. Décharger'),
+      h('div', { class: 'row' }, B('d1', 'Décharger la sphère (la toucher avec le doigt)', { t: 'dis', o: 'sphere' }), B('d2', 'Décharger la tige et la laine', { t: 'dis', o: 'tiges' })),
+      h('div', { id: 'q10', class: 'note', style: 'margin-top:8px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S10, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#r1', !s.near && s.rod !== 'pvc'); en('#r2', !s.near && s.rod !== 'verre');
+    en('#e1,#e2,#e3,#e4,#d1,#d2', !s.near); en('#a1,#a2,#a3,#a4', true); en('#c1', !s.near || s.near.o !== 'laine'); en('#c0', !!s.near);
+    $$('#r1,#r2').forEach(b => b.classList.toggle('on', b.id === (s.rod === 'pvc' ? 'r1' : 'r2')));
+    $('#q10').innerHTML = `Tige utilisée : <b>${s.rod === 'pvc' ? 'PVC' : 'verre'}</b>` + (s.near ? ` · objet approché : <b>${objName(s.near.o === 'tige' ? s.rod : s.near.o)}</b> (${s.near.d === 'loin' ? 'de loin' : 'de près'})` : '');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S10;
+    if (a.t === 'rod') { s.rod = a.k; say(`Tu prends ${objName(a.k)}.`); return; }
+    if (a.t === 'rub') {
+      const r = rods10[s.rod]; const p0 = r.position.clone(), c = laine10.home.clone().add(new THREE.Vector3(0, .02, 0));
+      await moveTo(r, c, .5); if (!INSTANT) await tween(1.4, p => { r.position.x = c.x + Math.sin(p * 6 * Math.PI) * .05; });
+      s.q[s.rod] = s.rod === 'pvc' ? -1 : 1; s.q.laine = -s.q[s.rod];
+      await moveTo(r, p0, .5); drawMarks();
+      say(`Tige frottée avec la laine. ${SHOWQ ? `Modèle : ${s.rod === 'pvc' ? 'la laine a déposé des électrons sur le PVC (tige −, laine +)' : 'la laine a arraché des électrons au verre (tige +, laine −)'}.` : 'Teste-la au détecteur.'}`);
+      return;
+    }
+    if (a.t === 'detect') {
+      const o = a.o === 'tige' ? s.rod : a.o, q = s.q[o];
+      let target; if (o === 'sphere') target = new THREE.Vector3(PIV.x + .08, YS - .12, 0); else { const p = (o === 'laine' ? laine10 : rods10[o]).position; target = new THREE.Vector3(p.x - .08, 0, p.z - .02); }
+      await moveTo(det10, target, .7); led10.material.emissive.setHex(q ? 0xff3d00 : 0); led10.material.color.setHex(q ? 0xff7043 : 0x5d4037);
+      const nm = o === 'sphere' ? 'la sphère' : objName(o);
+      const msg = `Détecteur approché de ${nm} : le voyant ${q ? 's\'allume (objet chargé)' : 'reste éteint (objet neutre)'}.`; say(msg);
+      observe(msg); if (!INSTANT) await wait(1200);
+      led10.material.emissive.setHex(0); led10.material.color.setHex(0x5d4037); await moveTo(det10, det10.home, .6);
+      if (q && (o === 'pvc' || o === 'verre')) step('frott');
+      if (q && o === 'sphere' && s.seen.touched) step('contact');
+      return;
+    }
+    if (a.t === 'app') {
+      if (s.near) await retract();
+      const o = a.o === 'tige' ? s.rod : 'laine', d = DIST[a.d];
+      if (o === 'laine') { const r = laine10; await moveTo(r, new THREE.Vector3(PIV.x + d + .07, YS, 0)); }
+      else await moveTo(rods10[o], rodTipAt(rods10[o], d));
+      s.near = { o, d: a.d }; if (!INSTANT) flyTo(...ZOOM10);
+      const qo = s.q[o], qs = s.q.sphere, th = theta10(o, d); await swingTo(th);
+      const raw = Math.atan(force10(o, d)), deg = Math.abs(th * 180 / Math.PI), rdeg = Math.abs(raw * 180 / Math.PI), how = rdeg < .5 ? 'reste immobile' : (th > 0 ? 'est repoussée' : 'est attirée') + (rdeg > 12 ? ' fortement' + (raw < th - .01 ? ' (elle vient presque toucher l\'objet)' : '') : ' faiblement');
+      const qd = qo ? (o === 'laine' ? 'chargé' : 'chargée') + (qo > 0 ? ' +' : ' −') : 'neutre';
+      const msg = `${objName(o)[0].toUpperCase() + objName(o).slice(1)} (${qd}) approché${o === 'laine' ? '' : 'e'} ${a.d === 'loin' ? 'de loin' : 'de près'} de la sphère ${qs ? (qs > 0 ? 'chargée +' : 'chargée −') : 'neutre'} : la sphère ${how}${raw < th - .01 || rdeg < .5 ? '' : ` (déviation ≈ ${deg.toFixed(0)}°)`}.`;
+      observe(msg); say(msg);
+      if (qo && !qs && th < 0) step('influence');
+      if (qo && qs) { if (qo * qs > 0) { s.seen.rep = true; s.seen['rep_' + o + a.d] = true; } else s.seen.att = true; if (s.seen.rep && s.seen.att) step('signe'); if (s.seen['rep_' + o + 'loin'] && s.seen['rep_' + o + 'proche']) step('distance'); }
+      return;
+    }
+    if (a.t === 'away') { await retract(); say('Objet éloigné : la sphère revient à la verticale.'); return; }
+    if (a.t === 'touch') {
+      if (s.near) await retract();
+      const r = rods10[s.rod]; if (!INSTANT) flyTo(...ZOOM10); await moveTo(r, rodTipAt(r, .055)); s.near = { o: s.rod, d: 'proche' };
+      await swingTo(theta10(s.rod, .055), .5);
+      await moveTo(r, rodTipAt(r, RS + .001), .4); await swingTo(0, .3);
+      const q = s.q[s.rod]; if (q) { s.q.sphere = Math.sign(q) * .5; s.q[s.rod] = q * .8; s.seen.touched = true; }
+      drawMarks(); const th = theta10(s.rod, .055); await swingTo(th, .6);
+      const msg = q ? `Contact entre ${objName(s.rod)} chargée et la sphère : des électrons sont transférés ; la sphère est maintenant chargée ${q > 0 ? 'positivement' : 'négativement'} (même signe que la tige) et elle est aussitôt repoussée.` : `La tige n'est pas chargée : le contact ne change rien.`;
+      observe(msg); say(msg); return;
+    }
+    if (a.t === 'dis') {
+      if (a.o === 'sphere') { s.q.sphere = 0; s.seen.touched = false; say('Sphère déchargée (reliée à la Terre par le doigt) : elle est de nouveau neutre.'); }
+      else { s.q.pvc = 0; s.q.verre = 0; s.q.laine = 0; say('Tiges et laine déchargées (passées sous l\'eau puis séchées).'); }
+      drawMarks(); return;
+    }
+  },
+  async demo() {
+    say('Démonstration : électrisation par frottement puis par influence.');
+    await act({ t: 'detect', o: 'tige' }, { record: false }); await act({ t: 'rub' }, { record: false }); await act({ t: 'detect', o: 'tige' }, { record: false });
+    await act({ t: 'app', o: 'tige', d: 'loin' }, { record: false }); await wait(1200); await act({ t: 'away' }, { record: false });
+    say('À toi : électrise la sphère par contact et étudie le rôle du signe et de la distance.'); await wait(1200);
+  },
+};
+startTP(C10);
+
+</script></body></html>

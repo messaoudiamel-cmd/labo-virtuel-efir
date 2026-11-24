@@ -1,0 +1,121 @@
+<!--efir1re:AE2 · Synthèse de l'éthanoate de benzyle 3D-->
+window.EFIR_RETOUR = "premiere/matiere/Synth%C3%A8se";
+
+// ====================================================================
+// Ch. 8 · AE2 · Synthèse d'un liquide : l'éthanoate de benzyle (note de jasmin)
+// ====================================================================
+const N_ALC = 1.04 * 10.0 / 108.1, N_ANH = 1.08 * 8.0 / 102.1, MMAX82 = N_ANH * 150.2;
+let RF82, SF82, ccm82, cuveE, bal82, S82 = null, M82LAST = null;
+const fresh82 = () => ({ reac: false, eau: false, t: 0, cool: false, amp: false, shaken: false, phase: null, sec: false, evap: false, m: null, ccm: 0 });
+const C82 = {
+  id: 'p1_ch08_ae2', code: 'AE2', short: 'Synthèse de l\'éthanoate de benzyle 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 8 · Activité expérimentale AE2 · Simulation 3D',
+  title: 'Synthèse d\'un liquide : l\'éthanoate de benzyle, note de tête du jasmin',
+  problem: 'Comment synthétiser au laboratoire l\'éthanoate de benzyle, l\'isoler, calculer le rendement et montrer qu\'il est présent dans l\'huile essentielle de jasmin ?',
+  mots: `<p>Équation : <span class="eq">C₇H₈O(ℓ) + C₄H₆O₃(ℓ) → C₉H₁₀O₂(ℓ) + C₂H₄O₂(ℓ)</span> (alcool benzylique + anhydride éthanoïque → éthanoate de benzyle + acide éthanoïque).<br>
+  Données : alcool benzylique M = 108,1 g·mol⁻¹, ρ = 1,04 g·mL⁻¹ ; anhydride éthanoïque M = 102,1 g·mol⁻¹, ρ = 1,08 g·mL⁻¹ ; éthanoate de benzyle M = 150,2 g·mol⁻¹, ρ = 1,05 g·mL⁻¹ ;
+  cyclohexane ρ = 0,78 g·mL⁻¹, T<sub>éb</sub> = 81 °C (très peu soluble dans l'eau salée). L'ester est beaucoup plus soluble dans le cyclohexane que dans l'eau salée ; l'acide éthanoïque et l'anhydride, l'inverse.<br>
+  <b>Extraction liquide-liquide</b> dans une ampoule à décanter ; <b>séchage</b> par un sel anhydre ; <b>CCM</b> : comparaison des rapports frontaux.</p>`,
+  aide: `<p>Quantités de cette simulation : 10,0 mL d'alcool benzylique et 8,0 mL d'anhydride éthanoïque (introduit en défaut).<br>
+  Après le reflux et le refroidissement, verse le mélange dans l'ampoule avec 30 mL d'eau salée et 20 mL de cyclohexane, agite en dégazant, laisse décanter. Garde la bonne phase, sèche-la, évapore le cyclohexane et pèse l'ester. Termine par la CCM.</p>`,
+  views: { ensemble: [[0, 1.05, 2.2], [.2, .3, 0]] },
+  viewbar: [['Zoom ballon', () => flyTo([.1, .45, .6], [0, .24, 0])], ['Zoom ampoule', () => flyTo([.6, .45, .6], [.55, .3, 0])], ['Zoom CCM', () => flyTo([1.0, .32, .62], [1.0, .1, .1])]],
+  protocol: [
+    { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes (travail sous la hotte).' },
+    { id: 'reflux', q: 'Q2', html: 'Introduire les réactifs, ouvrir l\'eau du réfrigérant et chauffer à reflux.' },
+    { id: 'extraction', q: 'Q2', html: 'Refroidir, verser dans l\'ampoule à décanter avec l\'eau salée et le cyclohexane, agiter et décanter.' },
+    { id: 'phase', q: 'Q2', html: 'Récupérer la phase organique, la sécher puis évaporer le cyclohexane.' },
+    { id: 'pesee', q: 'Q2', html: 'Peser l\'ester obtenu.' },
+    { id: 'ccm', q: 'Q3', html: 'Réaliser la CCM : huile de jasmin, ester synthétisé, alcool benzylique.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', html: 'Calculer le rendement et exploiter la CCM.' },
+    { id: 'conclusion', q: 'Q4', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'vider', html: 'Phase aqueuse et solvant dans le bidon de récupération.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  table: { rowTitle: 'Dans l\'ampoule', rows: [{ label: 'Phase supérieure', ans: [0, 0] }, { label: 'Phase inférieure', ans: [1, 1] }],
+    cols: [{ title: 'Solvant', options: ['cyclohexane (ρ = 0,78 g·mL⁻¹)', 'eau salée (ρ > 1 g·mL⁻¹)'] }, { title: 'Contient surtout', options: ['l\'éthanoate de benzyle (et l\'alcool restant)', 'l\'acide éthanoïque et les ions'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { num: true, text: 'Quantité d\'alcool benzylique : n =', unit: 'mol', ans: N_ALC, tol: .03 },
+    { num: true, text: 'Quantité d\'anhydride éthanoïque : n =', unit: 'mol', ans: N_ANH, tol: .03 },
+    { num: true, text: 'Masse maximale d\'ester : m<sub>max</sub> =', unit: 'g', ans: MMAX82, tol: .03 },
+    { num: true, text: 'Rendement de ta synthèse : η =', unit: '%', get ans() { return M82LAST ? 100 * M82LAST / MMAX82 : NaN; }, tol: .03 },
+    { text: 'Pourquoi la phase organique est-elle au-dessus ?', options: ['Le cyclohexane est moins dense que l\'eau salée', 'L\'ester est un gaz', 'Elle est plus colorée'], ans: 0 },
+    { q: 'Q3', text: 'D\'après la CCM, l\'huile de jasmin contient-elle de l\'éthanoate de benzyle ?', options: ['Non', 'Oui : une de ses taches est au même rapport frontal que l\'ester synthétisé', 'On ne peut pas savoir'], ans: 1 },
+    { q: 'Q3', num: true, text: 'Rapport frontal de l\'ester : R<sub>f</sub> =', unit: '', ans: .62, tol: .06 },
+  ],
+  conclusion: { q: 'Q4 · Étapes de la synthèse d\'une espèce chimique liquide :', options: ['Transformation (reflux) → isolement (extraction liquide-liquide, séchage, évaporation du solvant) → caractérisation (CCM) → purification (distillation) si nécessaire.', 'Distillation → reflux → filtration sous vide.', 'Il suffit de filtrer le mélange réactionnel.', 'On pèse directement le mélange réactionnel.'], ans: 0 },
+  build() {
+    RF82 = makeReflux(); scene.add(RF82.group);
+    SF82 = makeSepFunnel(); SF82.group.position.set(.55, 0, 0); scene.add(SF82.group);
+    const be = makeVessel({ cap: 100, r: .05, hgt: .1, label: null }); be.group.position.set(.55, 0, .02); scene.add(be.group);
+    bal82 = makeBalance(); bal82.group.position.set(-.7, 0, .3); scene.add(bal82.group);
+    [['Alcool benzylique', -.95, -.35, 0x6a1b9a], ['Anhydride éthanoïque ⚠', -.6, -.45, 0xc62828], ['Eau salée', .25, -.45, 0x1565c0], ['Cyclohexane ⚠', .55, -.5, 0xf9a825], ['Sulfate de magnésium\nanhydre', .85, -.45, 0x455a64]].forEach(([t, x, z, c]) => { const b = makeBottle(t, 0xf5f5f5, { cap: c }); b.scale.setScalar(.75); b.position.set(x, 0, z); scene.add(b); });
+    cuveE = new THREE.Group(); const cg = new THREE.Mesh(new THREE.BoxGeometry(.14, .17, .06), Object.assign(GLASS(), { opacity: .25 })); cg.position.y = .085; cg.renderOrder = 3; cuveE.add(cg);
+    const el = new THREE.Mesh(new THREE.BoxGeometry(.13, .015, .055), new THREE.MeshStandardMaterial({ color: 0xe3f2fd, transparent: true, opacity: .5 })); el.position.y = .01; cuveE.add(el);
+    ccm82 = makeCCM([{ name: 'J', spots: [.62, .34, .12] }, { name: 'E', spots: [.62] }, { name: 'A', spots: [.34] }]); ccm82.mesh.position.set(0, .085, 0); cuveE.add(ccm82.mesh);
+    const cl = label('Cuve à chromatographie\nJ : jasmin · E : ester · A : alcool', { size: 26, scale: .001 }); cl.position.y = .25; cuveE.add(cl);
+    cuveE.position.set(1.0, 0, .15); scene.add(cuveE);
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene() { S82 = fresh82(); if (!RF82) return; RF82.setLevel(0); RF82.setWater(false); RF82.setHeat(false); RF82.solidMat.opacity = 0; RF82.setColor(0xfff8e1, .45); SF82.set(0, 0, 0xffffff, 0xffffff); ccm82.draw(0, false); bal82.mass = 0; bal82.show(); if ($('#e1')) this.refreshPanel(); },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act(a) }, t);
+    $('#actions').append(
+      h('h3', {}, '1. Transformation'), h('div', { class: 'row' }, B('e1', 'Introduire 10,0 mL d\'alcool et 8,0 mL d\'anhydride', { t: 'reac' }), B('e2', '💧 Ouvrir l\'eau du réfrigérant', { t: 'eau' })),
+      h('div', { class: 'row', style: 'margin-top:6px' }, h('span', {}, 'Reflux :'), ...[5, 10, 20, 30].map(m => h('button', { 'data-r': m, onclick: () => act({ t: 'reflux', min: m }) }, m + ' min')), B('e3', 'Refroidir', { t: 'cool' })),
+      h('h3', {}, '2. Isolement'), h('div', { class: 'row' }, B('e4', 'Verser dans l\'ampoule + 30 mL eau salée + 20 mL cyclohexane', { t: 'amp' }), B('e5', 'Boucher, agiter, dégazer, décanter', { t: 'shake' })),
+      h('div', { class: 'row', style: 'margin-top:6px' }, h('span', {}, 'Garder :'), h('button', { 'data-p': 'haut', onclick: () => act({ t: 'phase', p: 'haut' }) }, 'la phase supérieure'), h('button', { 'data-p': 'bas', onclick: () => act({ t: 'phase', p: 'bas' }) }, 'la phase inférieure')),
+      h('div', { class: 'row', style: 'margin-top:6px' }, B('e6', 'Sécher (sulfate de magnésium anhydre) et filtrer', { t: 'sec' }), B('e7', 'Évaporer le cyclohexane', { t: 'evap' }), B('e8', 'Peser l\'ester', { t: 'pesee' })),
+      h('h3', {}, '3. Caractérisation'), h('div', { class: 'row' }, B('e9', 'Déposer, éluer la plaque de CCM', { t: 'eluer' }), B('e10', 'Révéler sous lampe UV', { t: 'uv' })),
+      h('div', { id: 'r82', class: 'note', style: 'margin-top:6px' }),
+      h('h3', {}, 'Ranger'), h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Phase aqueuse et solvant dans le bidon'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 À l\'évier')));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S82, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#e1', !s.reac); en('#e2', !s.eau); en('[data-r]', s.reac && !s.t); en('#e3', s.t && !s.cool); en('#e4', s.cool && !s.amp); en('#e5', s.amp && !s.shaken);
+    en('[data-p]', s.shaken && !s.phase); en('#e6', s.phase && !s.sec); en('#e7', s.sec && !s.evap); en('#e8', s.evap && s.m == null); en('#e9', s.ccm === 0); en('#e10', s.ccm === 1);
+    $('#r82').innerHTML = s.m != null ? `Masse d'ester obtenue : <b>${s.m.toFixed(2).replace('.', ',')} g</b>` : '';
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S82;
+    if (a.t === 'reac') { await tween(1.2, p => RF82.setLevel(.38 * p)); s.reac = true; say('10,0 mL d\'alcool benzylique et 8,0 mL d\'anhydride éthanoïque dans le ballon, avec quelques grains de pierre ponce.'); return; }
+    if (a.t === 'eau') { RF82.setWater(true); s.eau = true; say('L\'eau circule dans le réfrigérant.'); return; }
+    if (a.t === 'reflux') {
+      if (!s.eau) { say('<b>Attention :</b> ouvre d\'abord l\'eau du réfrigérant !'); return false; }
+      s.t = a.min; RF82.setHeat(true); if (!INSTANT) flyTo([.1, .45, .6], [0, .24, 0]);
+      await tween(a.min * .2, p => {}); RF82.setHeat(false); observe(`Chauffage à reflux pendant ${a.min} min : ébullition douce, les vapeurs se condensent dans le réfrigérant et retombent dans le ballon.`); step('reflux'); return;
+    }
+    if (a.t === 'cool') { s.cool = true; say('Le ballon est refroidi (eau froide) pour éviter les dégagements de vapeurs.'); return; }
+    if (a.t === 'amp') { s.amp = true; if (!INSTANT) flyTo([.6, .45, .6], [.55, .3, 0]); await tween(1.2, p => { RF82.setLevel(.38 * (1 - p)); SF82.set(0, .2 * p, 0xe3f2fd, 0xfff8e1, true); }); say('Mélange, eau salée et cyclohexane dans l\'ampoule : on ne voit pas encore deux phases nettes.'); return; }
+    if (a.t === 'shake') {
+      s.shaken = true; const g = SF82.group, r0 = g.rotation.z;
+      await tween(1.6, p => g.rotation.z = r0 + Math.sin(p * 25) * .25 * (1 - p)); g.rotation.z = r0;
+      await tween(1.5, p => SF82.set(.12, .2, 0x90caf9, 0xffd54f, false));
+      observe('Après agitation et décantation : deux phases séparées, une phase supérieure (organique) et une phase inférieure (aqueuse).'); say('Deux phases se sont séparées. Quelle phase faut-il garder ?'); step('extraction'); return;
+    }
+    if (a.t === 'phase') {
+      s.phase = a.p; await tween(1, p => SF82.set(.12 * (1 - p), .2 - .12 * p, 0x90caf9, 0xffd54f, false));
+      if (a.p === 'haut') { say('Phase inférieure (aqueuse) écoulée par le robinet ; on garde la phase supérieure, organique.'); observe('Phase organique (supérieure) récupérée.'); }
+      else { say('<b>Oups :</b> tu as gardé la phase aqueuse ; l\'ester est resté dans la phase organique, jetée !'); observe('Erreur : phase aqueuse (inférieure) gardée au lieu de la phase organique.'); }
+      return;
+    }
+    if (a.t === 'sec') { s.sec = true; say('Le sulfate de magnésium anhydre fixe les traces d\'eau : la phase organique trouble devient limpide. On filtre.'); observe('Séchage : la phase organique devient limpide.'); return; }
+    if (a.t === 'evap') { s.evap = true; say('Le cyclohexane (T<sub>éb</sub> = 81 °C) est évaporé ; il reste l\'ester (T<sub>éb</sub> = 212 °C).'); step('phase'); return; }
+    if (a.t === 'pesee') {
+      let m = s.phase === 'haut' ? MMAX82 * .8 * (1 - Math.exp(-s.t / 8)) - .35 : .15; m = Math.max(0, +m.toFixed(2)); s.m = m; M82LAST = m;
+      await tween(1, p => { bal82.mass = m * p; bal82.show(); });
+      observe(`Masse d'éthanoate de benzyle obtenue : ${m.toFixed(2).replace('.', ',')} g (reflux ${s.t} min).`); say('Ester pesé : calcule le rendement.'); step('pesee'); return;
+    }
+    if (a.t === 'eluer') { s.ccm = 1; if (!INSTANT) flyTo([1.0, .32, .62], [1.0, .1, .1]); await tween(3, p => ccm82.draw(p, false)); say('L\'éluant est monté jusqu\'au front. Les taches sont invisibles à l\'œil nu : révèle-les sous UV.'); return; }
+    if (a.t === 'uv') { s.ccm = 2; ccm82.draw(1, true); observe('CCM révélée sous UV : l\'huile de jasmin (J) présente une tache au même niveau que l\'ester synthétisé (E), R<sub>f</sub> ≈ 0,62 ; l\'alcool benzylique (A) monte moins haut (R<sub>f</sub> ≈ 0,34).'); say('Compare les taches : mesure les rapports frontaux.'); step('ccm'); return; }
+    if (a.t === 'vider') { if (!s.amp) { say('Rien à vider.'); return false; } if (a.where === 'evier') { ST.evier++; observe('Solvant / phase aqueuse jetés à l\'évier (interdit).'); say('<b>Interdit !</b> Le cyclohexane et les phases aqueuses acides vont dans les bidons de récupération.'); } else { ST.bidon++; step('vider'); say('Phases versées dans les bidons de récupération.'); } this.resetScene(); return; }
+  },
+  async demo() { say('Démonstration : montage à reflux.'); for (const t of ['reac', 'eau']) await act({ t }, { record: false }); await act({ t: 'reflux', min: 5 }, { record: false }); await act({ t: 'cool' }, { record: false }); await act({ t: 'amp' }, { record: false }); await act({ t: 'shake' }, { record: false }); await wait(1200); },
+};
+startTP(C82);
+
+</script></body></html>

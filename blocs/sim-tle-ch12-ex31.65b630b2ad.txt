@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel · Trajectoire d'une particule chargée</title>
+<style id="efir-colonnes">.wrap{grid-template-columns:minmax(0,1fr)}.wrap>*{min-width:0}canvas{max-width:100%}table{min-width:0;max-width:100%}th,td{overflow-wrap:anywhere}</style></head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Paillasse : en-tête de fiche, puis deux colonnes (tubes à gauche, flacons et carnet à droite), une seule colonne sur téléphone */
+:root {
+  --bg: #eef2f5;          /* carrelage de paillasse, gris bleuté */
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #15212d;
+  --muted: #576776;
+  --line: #d3dce4;
+  --navy: #003366;        /* bleu marine EFIR */
+  --navy-soft: #e3ecf6;
+  --red: #b42318;         /* sécurité, interdit */
+  --red-soft: #fdecea;
+  --green: #2f6f45;       /* vérifié */
+  --green-soft: #e7f3eb;
+  --amber: #8c6d1f;
+  --amber-soft: #fbf3df;
+  --glass: rgba(120, 150, 175, .55);
+  --glass-fill: rgba(255, 255, 255, .55);
+  --water: rgba(170, 205, 230, .38);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+    --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+    --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+    --water: rgba(150, 190, 225, .28); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+  --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+  --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+  --water: rgba(150, 190, 225, .28); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; color: var(--navy); }
+h1 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); line-height: 1.15; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+sub, sup { font-size: .7em; line-height: 0; }
+.kicker { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+header.fiche { display: grid; gap: 10px; }
+.pb { border: 1.5px solid var(--red); background: var(--surface); border-radius: var(--radius); padding: 10px 14px; font-weight: 700; }
+.pb span { color: var(--red); }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .92rem; padding: 0; margin: 0; list-style: none; }
+.steps li b { color: var(--ink); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: .88rem; }
+
+/* sécurité */
+.epi { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .92rem; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--green); background: var(--green-soft); color: var(--green); font-weight: 700; }
+.chip:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+
+/* porte-tubes */
+.rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px 6px; }
+.tube { font: inherit; background: none; border: 2px solid transparent; border-radius: 10px; padding: 4px 2px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; color: var(--ink); }
+.tube[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); }
+.tube svg { width: 52px; height: 178px; overflow: visible; }
+.tube .lab { font-size: .72rem; line-height: 1.15; text-align: center; min-height: 2.3em; color: var(--muted); }
+.tube .num { font-weight: 700; font-size: .8rem; }
+.glass { fill: var(--glass-fill); stroke: var(--glass); stroke-width: 2; }
+.drop { animation: fall .55s ease-in forwards; }
+@keyframes fall { from { transform: translateY(-34px); opacity: 1; } to { transform: translateY(var(--dy, 120px)); opacity: .2; } }
+.ppt circle { transition: fill 9s linear, opacity .9s ease, transform 2.2s ease-in; }
+@media (prefers-reduced-motion: reduce) { .drop { animation: none; opacity: 0; } .ppt circle { transition: none; } }
+.bench-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sel-info { flex: 1 1 220px; min-width: 0; font-size: .92rem; }
+
+/* flacons */
+.bottles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bottle { font: inherit; text-align: left; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 8px 10px; cursor: pointer; display: grid; gap: 4px; }
+.bottle:hover { border-color: var(--navy); }
+.bottle .nm { font-weight: 700; line-height: 1.2; }
+.bottle .io { font-size: .85rem; color: var(--muted); }
+.bottle .act { font-size: .78rem; color: var(--navy); font-weight: 700; }
+.bottle.reagent { background: var(--navy-soft); }
+.bottle[disabled] { opacity: .45; cursor: not-allowed; }
+.pic { display: flex; gap: 4px; }
+.pic img { width: 30px; height: 30px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--glass); vertical-align: -1px; margin-right: 4px; }
+
+button.btn { font: inherit; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1.5px solid var(--navy); background: var(--navy); color: var(--surface); }
+button.btn.ghost { background: transparent; color: var(--navy); }
+button.btn.warn { border-color: var(--red); color: var(--red); background: transparent; }
+button.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* messages */
+.toast { border-radius: 8px; padding: 9px 12px; font-size: .95rem; border: 1px solid var(--line); background: var(--surface-2); }
+.toast.err { border-color: var(--red); background: var(--red-soft); }
+.toast.ok { border-color: var(--green); background: var(--green-soft); }
+.toast.info { border-color: var(--amber); background: var(--amber-soft); }
+
+/* carnet */
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.log li { font-size: .92rem; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.log li.pos { border-left-color: var(--navy); }
+.log li:empty { display: none; }
+.log .t { color: var(--muted); font-size: .8rem; }
+
+/* tableaux */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 640px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; vertical-align: middle; }
+thead th, tbody th { background: var(--navy-soft); color: var(--navy); font-weight: 700; }
+tbody th { text-align: left; }
+td select { font: inherit; font-size: .88rem; width: 100%; min-width: 0; padding: 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+td.good select { border-color: var(--green); background: var(--green-soft); }
+td.bad select { border-color: var(--red); background: var(--red-soft); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.foot { color: var(--muted); font-size: .82rem; text-align: center; }
+details summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+
+/* animation et guide (version 3e) */
+.guide { display: flex; gap: 12px; align-items: center; background: var(--navy); color: var(--surface); border-radius: var(--radius); padding: 12px 14px; font-size: 1.05rem; }
+.guide b { color: inherit; }
+.guide .gn { flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--surface); color: var(--navy); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; }
+.next { box-shadow: 0 0 0 3px var(--amber); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--amber) 35%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .next { animation: none; } }
+.bench { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 520px) { .bench { grid-template-columns: minmax(0, 1fr); } .stage svg { max-height: 260px; } }
+.stage { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; display: grid; gap: 6px; justify-items: center; }
+.stage svg { width: 100%; max-width: 200px; height: auto; overflow: hidden; }
+.stage .caption { font-size: .95rem; text-align: center; min-height: 4.5em; }
+.stlbl { font: 700 15px var(--font-body); fill: var(--ink); }
+.mots summary { font-size: 1rem; }
+.mots dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 0; }
+.mots dt { font-weight: 700; color: var(--navy); }
+.mots dd { margin: 0; }
+@media (max-width: 520px) { .mots dl { grid-template-columns: 1fr; } .mots dd { margin-bottom: 6px; } }
+.tube .lab { font-size: .78rem; }
+.bottle .act { font-size: .88rem; }
+
+/* version 2 : actions rapides et compte rendu */
+.quick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.quick:empty { display: none; }
+.qbtn { font-size: .9rem; padding: 6px 10px; }
+.crform { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.crform label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+.crform input { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; width: 100%; }
+.crform label:first-child { flex: 1 1 220px; } .crform label:nth-child(2) { flex: 0 1 120px; }
+.cr { border: 1.5px solid var(--navy); border-radius: var(--radius); padding: 14px; background: var(--surface); display: grid; gap: 8px; }
+.cr h3, .cr h4 { margin: 4px 0 0; color: var(--navy); font-family: var(--font-display); }
+.cr ol, .cr ul { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.cr table { min-width: 0; font-size: .88rem; } .cr td, .cr th { text-align: left; }
+.cr .t { display: none; } .cr[hidden] { display: none; }
+.codebox { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.codebox input { font: inherit; width: 9em; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-transform: uppercase; }
+
+/* version 3 : question ion utile, mode économe */
+.ask { display: grid; gap: 8px; max-width: 260px; font-size: .92rem; text-align: center; }
+.ask .toast { text-align: left; }
+body.eco *, body.eco *::before, body.eco *::after { animation: none !important; transition: none !important; }
+#effacer { font-size: .85rem; padding: 4px 10px; margin-left: 6px; }
+
+/* version 4 : manipulations pilotées par l'élève */
+.vol { font-size: .92rem; align-self: center; }
+#verser { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.askbox:empty { display: none; }
+.askbox .ask { max-width: 280px; }
+.stage svg { overflow: visible; }
+
+.qtitle { width: 100%; text-align: center; font-size: .92rem; margin: 2px 0 0; }
+.quick .qbtn.next { font-size: .95rem; }
+.prof { margin: -4px 0 0; color: var(--navy); font-size: 1rem; }
+
+/* protocole de la fiche */
+.proto { border: 1.5px solid var(--navy); border-radius: var(--radius); background: var(--surface); padding: 10px 12px; }
+.proto summary { font-weight: 700; color: var(--navy); cursor: pointer; }
+.proto ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.proto li { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 1.4em; gap: 8px; align-items: start; font-size: .92rem; padding: 6px 8px; border-radius: 8px; }
+.proto li.partie { display: block; grid-template-columns: none; font-family: var(--font-display); font-weight: 700; color: var(--navy); padding: 6px 0 0; font-size: .95rem; }
+.proto .q { font-weight: 700; color: var(--muted); font-size: .8rem; padding-top: 2px; }
+.proto .st { font-weight: 700; color: var(--green); text-align: center; }
+.proto li.cur { background: var(--amber-soft); outline: 1.5px solid var(--amber); }
+.proto li.cur .st { color: var(--amber); }
+.proto li.fait .tx { color: var(--muted); }
+.proto li.fait { background: var(--green-soft); }
+.proto ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.proto ul li { display: block; padding: 0; font-size: .88rem; background: none; outline: none; }
+.proto ul li.fait { color: var(--green); background: none; }
+
+#prototout { margin-top: 8px; }
+.proto:not(.tout) #proto > li:not(.cur) { display: none; }
+.proto li { grid-template-columns: 4.2em minmax(0, 1fr) 1.4em; }
+.extract{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center}.extract svg{width:120px;height:120px}
+</style>
+<style>
+/* Compléments propres à la simulation « Trajectoire d'une particule chargée » (Terminale, chapitre 12, ex. 31 p. 256) */
+.scene { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
+.scene canvas { width: 100%; height: auto; display: block; aspect-ratio: 16 / 10; touch-action: manipulation; }
+.reglages { display: grid; gap: 10px; }
+.reglage { display: grid; grid-template-columns: 8.5em minmax(0, 1fr) 8.8em; gap: 10px; align-items: center; font-size: .95rem; }
+.reglage label { font-weight: 700; }
+.reglage output { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); text-align: right; }
+.reglage input[type=range] { width: 100%; accent-color: var(--navy); }
+@media (max-width: 520px) { .reglage { grid-template-columns: minmax(0, 1fr) auto; } .reglage input[type=range] { grid-column: 1 / -1; grid-row: 2; } }
+.particules { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
+.calc div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .9rem; }
+.calc b { display: block; font-variant-numeric: tabular-nums; color: var(--navy); font-size: 1rem; }
+.legende { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .86rem; color: var(--muted); }
+.legende span::before { content: ""; display: inline-block; width: 18px; height: 3px; border-radius: 2px; background: var(--c); vertical-align: middle; margin-right: 6px; }
+.question { border: 1.5px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--surface); }
+.question h3 { font-size: 1rem; }
+.question select, .question input[type=text] { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.question select.ok, .question input.ok { border-color: var(--green); background: var(--green-soft); }
+.question select.ko, .question input.ko { border-color: var(--red); background: var(--red-soft); }
+.question .pouce { font-size: .88rem; }
+.question .pouce summary { font-size: .9rem; color: var(--amber); }
+.question.verrou { opacity: .6; }
+.grid > .wrap, .question { min-width: 0; }
+.question select { width: 100%; }
+.question label select { display: block; margin-top: 4px; }
+.essais table { min-width: 560px; }
+.essais td.hit { color: var(--red); font-weight: 700; }
+.essais td.out { color: var(--green); font-weight: 700; }
+</style>
+<div class="wrap">
+  <header class="fiche">
+    <a class="retour" href="#" onclick="parent.location.hash='terminale/mouvement/Mouvement%20dans%20un%20champ%20uniforme';return false" style="display:inline-block;margin:0 0 8px;font-weight:700;color:#1f6fd1;text-decoration:none">← Retour au chapitre</a>
+    <p class="kicker">EFIR · Terminale spécialité · Chapitre 12 · Exercice 31 p. 256 · simulation numérique</p>
+    <h1>Trajectoire d'une particule chargée dans un condensateur plan</h1>
+    <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+    <p class="pb"><span>Problématique :</span> de quoi dépend la trajectoire d'une particule chargée dans un champ électrique uniforme ?</p>
+    <details class="panel mots"><summary>📖 Mots utiles</summary><dl>
+      <dt>Champ électrique</dt><dd>Entre les armatures d'un condensateur plan, le champ <b>E⃗</b> est uniforme ; sa valeur est E = U / d (U : tension en V, d : distance entre les armatures en m). E⃗ va de l'armature + vers l'armature −.</dd>
+      <dt>Force électrique</dt><dd>F⃗ = q E⃗. Si q &gt; 0, F⃗ a le sens de E⃗ ; si q &lt; 0, F⃗ est de sens opposé. Le poids est négligeable devant F⃗.</dd>
+      <dt>Deuxième loi de Newton</dt><dd>m a⃗ = q E⃗, donc a<sub>x</sub> = 0 et a<sub>y</sub> = qE / m (champ vertical, vers le haut).</dd>
+      <dt>Équations horaires</dt><dd>x(t) = v<sub>0</sub> cos α × t ; y(t) = ½ (qE / m) t<sup>2</sup> + v<sub>0</sub> sin α × t.</dd>
+      <dt>Trajectoire</dt><dd>y = qE / (2m (v<sub>0</sub> cos α)<sup>2</sup>) × x<sup>2</sup> + tan α × x : c'est une parabole. Le coefficient de x<sup>2</sup> fixe la courbure.</dd>
+      <dt>Données</dt><dd>e = 1,6 × 10<sup>−19</sup> C ; m<sub>e</sub> = 9,1 × 10<sup>−31</sup> kg (électron, positon) ; m<sub>p</sub> = 1,7 × 10<sup>−27</sup> kg (proton). Armatures de longueur L = 10 cm.</dd>
+    </dl></details>
+    <details class="panel mots" id="aide"><summary>❓ Aide</summary><dl>
+      <dt>Lancer une particule</dt><dd>1. Choisir la particule. 2. Régler U, d, v<sub>0</sub> et α avec les curseurs (ou les flèches du clavier). 3. Cliquer sur <b>▶ Lancer</b>. La trajectoire reste affichée : on peut comparer jusqu'à 4 lancers.</dd>
+      <dt>Comparer</dt><dd>Pour étudier l'effet d'une grandeur, on ne change <b>qu'une seule</b> grandeur entre deux lancers, les autres restent identiques.</dd>
+      <dt>Courbe de l'équation</dt><dd>La case « Superposer l'équation y(x) » trace en pointillés la parabole de la question 4 : elle doit se superposer au lancer.</dd>
+      <dt>Écrire un nombre</dt><dd>Un angle s'écrit 27 ou 26,5 (en degrés).</dd>
+    </dl></details>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-cond">
+      <header><h2 id="h-cond">Le condensateur</h2><span class="row-actions"><button class="btn" id="demo" type="button">▶ Voir une démonstration</button><button class="btn ghost" id="reset" type="button">Tout remettre à zéro</button><button class="btn ghost" id="aidebtn" type="button">❓ Aide</button><button class="btn ghost" id="ecobtn" type="button" aria-pressed="false">🐢 Mode économe</button></span></header>
+      <details class="proto" open><summary>📋 Étapes à suivre (exercice 31) <span class="hint" id="protocount"></span></summary><ol id="proto"></ol><button class="btn ghost qbtn" id="prototout" type="button">Voir toutes les étapes</button></details>
+      <figure class="scene"><canvas id="cv" width="960" height="600" role="img" aria-label="Condensateur plan vu de côté : deux armatures horizontales, le champ électrique vertical, et la trajectoire des particules lancées depuis le point O"></canvas></figure>
+      <div class="legende" id="legende"></div>
+      <div class="particules" role="group" aria-label="Particule">
+        <span class="hint">Particule :</span>
+        <button class="chip" type="button" data-part="electron" aria-pressed="true">Électron (q = −e)</button>
+        <button class="chip" type="button" data-part="positon" aria-pressed="false">Positon (q = +e)</button>
+        <button class="chip" type="button" data-part="proton" aria-pressed="false">Proton (q = +e)</button>
+      </div>
+      <div class="reglages">
+        <div class="reglage"><label for="rU">Tension U</label><input type="range" id="rU" min="0.5" max="3" step="0.1" value="1"><output id="oU"></output></div>
+        <div class="reglage"><label for="rd">Distance d</label><input type="range" id="rd" min="4" max="10" step="0.5" value="10"><output id="od"></output></div>
+        <div class="reglage"><label for="rv">Vitesse v<sub>0</sub></label><input type="range" id="rv" min="1" max="3" step="0.1" value="2"><output id="ov"></output></div>
+        <div class="reglage"><label for="ra">Angle α</label><input type="range" id="ra" min="-90" max="90" step="0.5" value="0"><output id="oa"></output></div>
+      </div>
+      <div class="calc" aria-live="polite">
+        <div>Champ E = U / d<b id="cE"></b></div>
+        <div>Accélération a<sub>y</sub> = qE / m<b id="cA"></b></div>
+        <div>Coefficient de x<sup>2</sup><b id="cK"></b></div>
+      </div>
+      <div class="row-actions">
+        <button class="btn" id="lancer" type="button">▶ Lancer</button>
+        <button class="btn ghost" id="effacertr" type="button">Effacer les trajectoires</button>
+        <label class="hint"><input type="checkbox" id="theo"> Superposer l'équation y(x) (question 4)</label>
+      </div>
+      <p class="toast info" id="msg" role="status" aria-live="polite">Choisissez une particule, réglez les curseurs, puis cliquez sur « Lancer ».</p>
+    </section>
+
+    <div class="wrap" style="gap:18px">
+      <section class="panel" aria-labelledby="h-q">
+        <header><h2 id="h-q">Questions de l'exercice 31</h2><span class="hint">répondre dans l'ordre</span></header>
+
+        <div class="question" id="b1">
+          <h3>1. Quelles grandeurs faut-il modifier pour faire varier la valeur du champ E ?</h3>
+          <p class="hint">Bougez le curseur de U, puis celui de d, en regardant la case « Champ E ».</p>
+          <select id="q1" data-save><option value="">…</option><option>la vitesse v0</option><option>la tension U seulement</option><option>la tension U ou la distance d</option><option>l'angle α</option></select>
+          <details class="pouce"><summary>💡 Coup de pouce</summary><p>E = U / d : quelles lettres apparaissent dans cette formule ?</p></details>
+        </div>
+
+        <div class="question" id="b2a">
+          <h3>2.a. Électron, α = 0°, E = 1,0 × 10<sup>4</sup> V·m<sup>−1</sup> : que devient la trajectoire quand v<sub>0</sub> augmente ?</h3>
+          <p class="hint">Réglez U = 1,0 kV et d = 10 cm, puis lancez l'électron avec deux vitesses différentes (par exemple 1,0 puis 3,0 × 10<sup>7</sup> m·s<sup>−1</sup>).</p>
+          <select id="q2a" data-save><option value="">…</option><option>elle est plus incurvée</option><option>elle est moins incurvée</option><option>elle ne change pas</option></select>
+          <details class="pouce"><summary>💡 Coup de pouce</summary><p>Plus l'électron va vite, moins il passe de temps entre les armatures : la force a moins de temps pour le dévier.</p></details>
+        </div>
+
+        <div class="question" id="b2b">
+          <h3>2.b. Électron, α = 0°, même v<sub>0</sub> : que devient la trajectoire quand E diminue ?</h3>
+          <p class="hint">Gardez la même vitesse et lancez l'électron avec deux valeurs de E différentes (changez U).</p>
+          <select id="q2b" data-save><option value="">…</option><option>elle est plus incurvée</option><option>elle est moins incurvée</option><option>elle ne change pas</option></select>
+          <details class="pouce"><summary>💡 Coup de pouce</summary><p>F = |q| × E : si E diminue, la force diminue.</p></details>
+        </div>
+
+        <div class="question" id="b3">
+          <h3>3. Quelle est l'influence du signe de la charge sur la trajectoire ?</h3>
+          <p class="hint">Avec les mêmes réglages, lancez un électron puis un positon.</p>
+          <select id="q3" data-save><option value="">…</option><option>le signe de q change la vitesse de sortie seulement</option><option>le signe de q fixe le sens de la déviation</option><option>le signe de q n'a aucune influence</option></select>
+          <details class="pouce"><summary>💡 Coup de pouce</summary><p>F⃗ = q E⃗ : que devient le sens de F⃗ quand q change de signe ?</p></details>
+        </div>
+
+        <div class="question" id="b4">
+          <h3>4. Ces observations sont-elles en accord avec y = qE x<sup>2</sup> / (2m (v<sub>0</sub> cos α)<sup>2</sup>) + tan α × x ?</h3>
+          <p class="hint">Cochez « Superposer l'équation y(x) » et faites un lancer : les pointillés doivent recouvrir la trajectoire. Regardez aussi la case « Coefficient de x<sup>2</sup> ».</p>
+          <label>Quand v<sub>0</sub> augmente, le coefficient de x<sup>2</sup> : <select id="q4a" data-save><option value="">…</option><option>augmente</option><option>diminue</option><option>ne change pas</option></select></label>
+          <label>Quand E diminue, le coefficient de x<sup>2</sup> : <select id="q4b" data-save><option value="">…</option><option>augmente</option><option>diminue</option><option>ne change pas</option></select></label>
+          <label>Le signe du coefficient de x<sup>2</sup> est celui de : <select id="q4c" data-save><option value="">…</option><option>v0</option><option>q</option><option>α</option></select></label>
+          <details class="pouce"><summary>💡 Coup de pouce</summary><p>v<sub>0</sub> est au dénominateur, E au numérateur. Une valeur au carré est toujours positive.</p></details>
+        </div>
+
+        <div class="row-actions"><button class="btn" id="check1" type="button">Vérifier mes réponses 1 à 4</button></div>
+        <p class="toast" id="out1" role="status" aria-live="polite" hidden></p>
+
+        <span class="codebox" style="display:none"><label for="code">☎ Appel : faites vérifier vos réponses 1 à 4 par le professeur. Il vous donne un code pour débloquer la question 5.</label><input id="code" type="text" autocomplete="off" spellcheck="false" aria-describedby="codemsg"><button class="btn ghost" id="appel" type="button">Valider le code</button><span class="hint" id="codemsg" role="status" aria-live="polite"></span></span>
+
+        <div class="question verrou" id="b5">
+          <h3>5. Proton, v<sub>0</sub> = 2,0 × 10<sup>7</sup> m·s<sup>−1</sup>, E = 2,0 × 10<sup>4</sup> V·m<sup>−1</sup> : quel angle α faut-il pour atteindre l'armature supérieure ?</h3>
+          <p class="hint">Réglez U = 2,0 kV et d = 10 cm. Augmentez α petit à petit (0,5° par 0,5°) jusqu'à ce que le proton touche l'armature du haut. Notez le plus petit angle qui fonctionne.</p>
+          <label>Angle minimal α ≈ <input type="text" id="q5" data-save inputmode="decimal" size="6"> °</label>
+          <details class="pouce"><summary>💡 Coup de pouce</summary><p>Le proton est environ 1 800 fois plus lourd que l'électron : il est très peu dévié. Il monte surtout grâce à l'angle. Pour monter de 5 cm sur 10 cm, il faut tan α ≈ 0,5.</p></details>
+          <div class="row-actions"><button class="btn" id="check5" type="button">Vérifier la question 5</button></div>
+          <p class="toast" id="out5" role="status" aria-live="polite" hidden></p>
+        </div>
+      </section>
+
+      <section class="panel essais" aria-labelledby="h-ess">
+        <header><h2 id="h-ess">Mes lancers</h2><span class="hint" id="nbess"></span></header>
+        <div class="tablewrap"><table><thead><tr><th>n°</th><th>Particule</th><th>E (V·m⁻¹)</th><th>v<sub>0</sub> (m·s⁻¹)</th><th>α</th><th>Résultat</th></tr></thead><tbody id="ess"></tbody></table></div>
+        <p class="hint" id="essvide">Aucun lancer pour l'instant.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="h-conc">
+    <header><h2 id="h-conc">Bilan · Réponse à la problématique</h2></header>
+    <p>La trajectoire d'une particule chargée dans un champ uniforme :</p>
+    <div class="checks" id="concl"></div>
+    <label for="maconc" style="display:block;margin:14px 0 6px"><b>Ma conclusion rédigée</b> : répondez à la problématique en deux ou trois phrases, en citant les grandeurs qui changent la courbure et celle qui fixe le sens de la déviation.</label><textarea id="maconc" data-save rows="3" style="width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);resize:vertical" placeholder="Exemple : La trajectoire est une parabole. Elle est d'autant plus incurvée que …"></textarea>
+    <div class="row-actions"><button class="btn" id="check2" type="button">Vérifier ma conclusion</button></div>
+    <p class="toast" id="out2" role="status" aria-live="polite" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-cr">
+    <header><h2 id="h-cr">Mon compte rendu</h2></header>
+    <p class="hint">À la fin de l'activité, écrivez votre nom puis cliquez sur le bouton : le résumé de votre travail apparaît (lancers, réponses, conclusion). Cliquez sur <b>Télécharger mon compte rendu (PDF)</b>, puis déposez ce fichier dans votre devoir Google Classroom (Ajouter &gt; Fichier, puis Rendre).</p>
+    <div class="crform">
+      <label>Nom et prénom<input id="crnom" data-save type="text" autocomplete="name"></label>
+      <label>Classe<input id="crclasse" data-save type="text" placeholder="Tle…"></label>
+      <button class="btn ghost" id="crbtn" type="button">Afficher mon compte rendu</button><button class="btn" id="crpdf" type="button">⬇ Télécharger mon compte rendu (PDF)</button>
+    </div>
+    <div class="cr" id="cr" hidden></div>
+    <div class="row-actions"><span class="hint" id="crnote" role="status" aria-live="polite"></span></div>
+    <p class="hint">Votre travail est enregistré automatiquement dans ce navigateur : si vous fermez la page, vous le retrouverez en la rouvrant. <button class="btn warn" id="effacer" type="button">Effacer mon travail</button></p>
+  </section>
+
+  <p class="foot">Simulation d'après l'exercice 31 p. 256 du manuel Hachette Terminale spécialité · Mme Messaoudi · EFIR 2026-2027. Le mouvement est calculé pas à pas avec la deuxième loi de Newton (poids négligé, champ vertical vers le haut, armatures de 10 cm).</p>
+</div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const KEY = "efir-tle-ch12-ex31-v1";
+let REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+try { if (localStorage.getItem("efir-eco") === "1") REDUCED = true; } catch (e) {}
+
+/* ---------- physique ---------- */
+const e0 = 1.6e-19, me = 9.1e-31, mp = 1.7e-27, L = 0.10;
+const PART = { electron: { nom: "électron", q: -e0, m: me }, positon: { nom: "positon", q: e0, m: me }, proton: { nom: "proton", q: e0, m: mp } };
+const S = { part: "electron", essais: [], appel: true, vuU: false, vud: false, theoVu: false, traces: [] };
+const COUL = ["#1f6fd1", "#c0392b", "#2f8f4e", "#c77700"];
+function reg() { const U = +$("#rU").value * 1000, d = +$("#rd").value / 100, v0 = +$("#rv").value * 1e7, a = +$("#ra").value; return { U, d, E: U / d, v0, a }; }
+function fr(x, n = 2) {
+  if (x === 0) return "0";
+  const ex = Math.floor(Math.log10(Math.abs(x))), m = x / 10 ** ex;
+  let ms = m.toFixed(n - 1).replace(".", ",");
+  if (ms.replace("-", "").startsWith("10")) return fr(x * 1.0000001, n);
+  return ex === 0 ? ms : `${ms} × 10<sup>${ex < 0 ? "−" + -ex : ex}</sup>`;
+}
+const num = x => String(x).replace(".", ",");
+/* intégration pas à pas (deuxième loi de Newton) */
+function simuler(p, r) {
+  const P = PART[p], ay = P.q * r.E / P.m, al = r.a * Math.PI / 180, h = r.d / 2;
+  let x = 0, y = 0, vx = r.v0 * Math.cos(al), vy = r.v0 * Math.sin(al), t = 0;
+  const dt = (L / r.v0) / 600, pts = [[0, 0]];
+  let fin = "sortie";
+  for (let k = 0; k < 200000; k++) {
+    x += vx * dt; y += vy * dt + 0.5 * ay * dt * dt; vy += ay * dt; t += dt;
+    if (y >= h) { y = h; fin = "haut"; pts.push([x, y]); break; }
+    if (y <= -h) { y = -h; fin = "bas"; pts.push([x, y]); break; }
+    if (x >= L) { fin = "sortie"; pts.push([x, y]); break; }
+    if (x < -0.002) { fin = "recul"; pts.push([x, y]); break; }
+    if (k % 3 === 0) pts.push([x, y]);
+  }
+  return { pts, fin, x, y, t, ay };
+}
+const coef = (p, r) => { const P = PART[p], al = r.a * Math.PI / 180; return P.q * r.E / (2 * P.m * (r.v0 * Math.cos(al)) ** 2); };
+
+/* ---------- dessin ---------- */
+const cv = $("#cv"), ctx = cv.getContext("2d");
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SC = 5300, X0 = (960 - 0.11 * SC) / 2 - 10, YM = 300; /* même échelle sur x et y : les angles sont respectés */
+const px = x => X0 + x * SC, py = y => YM - y * SC;
+function fleche(x0, y0, x1, y1, c, w = 3) {
+  ctx.strokeStyle = c; ctx.fillStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  const a = Math.atan2(y1 - y0, x1 - x0); ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - 14 * Math.cos(a - .4), y1 - 14 * Math.sin(a - .4)); ctx.lineTo(x1 - 14 * Math.cos(a + .4), y1 - 14 * Math.sin(a + .4)); ctx.closePath(); ctx.fill();
+}
+function dessiner(anim) {
+  const r = reg(), h = r.d / 2, ink = css("--ink"), mut = css("--muted"), red = css("--red"), nav = css("--navy");
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = css("--surface-2"); ctx.fillRect(0, 0, cv.width, cv.height);
+  /* armatures */
+  ctx.fillStyle = ink; ctx.fillRect(px(0), py(h) - 9, px(L) - px(0), 9); ctx.fillRect(px(0), py(-h), px(L) - px(0), 9);
+  ctx.font = "700 24px " + css("--font-body"); ctx.textBaseline = "middle";
+  ctx.fillStyle = css("--navy"); ctx.fillText("−", px(L) + 12, py(h) - 4); ctx.fillStyle = red; ctx.fillText("+", px(L) + 12, py(-h) + 5);
+  /* axes */
+  ctx.strokeStyle = mut; ctx.lineWidth = 1; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(px(0), py(0)); ctx.lineTo(px(0.108), py(0)); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = mut; ctx.font = "22px " + css("--font-body"); ctx.fillText("O", px(0) - 26, py(0)); ctx.fillText("x", px(0.108) + 6, py(0));
+  for (let k = 0; k <= 10; k += 2) { ctx.fillText(k + " cm", px(k / 100) - 20, py(-h) + 28); }
+  /* champ E : de + (bas) vers − (haut) */
+  fleche(px(0.116), py(-0.02), px(0.116), py(0.02), red, 3); ctx.fillStyle = red; ctx.font = "italic 700 22px " + css("--font-body"); ctx.fillText("E", px(0.116) + 10, py(0.005));
+  ctx.fillStyle = mut; ctx.font = "22px " + css("--font-body"); ctx.fillText(`d = ${num(r.d * 100)} cm`, px(0.003), py(h) - 24);
+  /* vitesse initiale */
+  const al = r.a * Math.PI / 180; fleche(px(0), py(0), px(0) + 90 * Math.cos(al), py(0) - 90 * Math.sin(al), css("--green"), 4);
+  /* traces */
+  S.traces.forEach((tr, i) => { if (anim && i === S.traces.length - 1) return; trace(tr, tr.pts.length); });
+  if ($("#theo").checked && S.traces.length) {
+    const tr = S.traces[S.traces.length - 1], k = coef(tr.part, tr.r), ta = Math.tan(tr.r.a * Math.PI / 180), hh = tr.r.d / 2;
+    ctx.strokeStyle = ink; ctx.lineWidth = 2; ctx.setLineDash([3, 7]); ctx.beginPath(); let go = true;
+    for (let i = 0; i <= 400 && go; i++) { const x = L * i / 400, y = k * x * x + ta * x; if (Math.abs(y) > hh) go = false; i ? ctx.lineTo(px(x), py(Math.max(-hh, Math.min(hh, y)))) : ctx.moveTo(px(x), py(y)); }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+function trace(tr, n) {
+  ctx.strokeStyle = tr.c; ctx.lineWidth = 3.5; ctx.beginPath();
+  tr.pts.slice(0, n).forEach(([x, y], i) => i ? ctx.lineTo(px(x), py(y)) : ctx.moveTo(px(x), py(y))); ctx.stroke();
+  const [x, y] = tr.pts[Math.max(0, Math.min(n, tr.pts.length) - 1)];
+  ctx.fillStyle = tr.c; ctx.beginPath(); ctx.arc(px(x), py(y), 7, 0, 7); ctx.fill();
+}
+function legende() {
+  $("#legende").innerHTML = S.traces.map(t => `<span style="--c:${t.c}">${PART[t.part].nom}, E = ${fr(t.r.E)} V·m⁻¹, v<sub>0</sub> = ${fr(t.r.v0)} m·s⁻¹, α = ${num(t.r.a)}°</span>`).join("");
+}
+
+/* ---------- interface ---------- */
+function say(t, k = "info") { const m = $("#msg"); m.className = "toast " + k; m.innerHTML = t; }
+function maj() {
+  const r = reg(), P = PART[S.part];
+  $("#oU").innerHTML = `${num(r.U / 1000)} kV`; $("#od").innerHTML = `${num(r.d * 100)} cm`;
+  $("#ov").innerHTML = `${fr(r.v0)} m·s⁻¹`; $("#oa").innerHTML = `${num(r.a)}°`;
+  $("#cE").innerHTML = `${fr(r.E)} V·m⁻¹`; $("#cA").innerHTML = `${fr(P.q * r.E / P.m)} m·s⁻²`;
+  $("#cK").innerHTML = Math.abs(r.a) >= 89.9 ? "non défini (α = ±90°)" : `${fr(coef(S.part, r))} m⁻¹`;
+  if (!anime) dessiner(false);
+}
+$("#rU").addEventListener("input", () => { S.vuU = true; maj(); });
+$("#rd").addEventListener("input", () => { S.vud = true; maj(); });
+["#rv", "#ra"].forEach(s => $(s).addEventListener("input", maj));
+$("#theo").addEventListener("change", () => { if ($("#theo").checked) S.theoVu = true; dessiner(false); });
+$$("[data-part]").forEach(b => b.addEventListener("click", () => { S.part = b.dataset.part; $$("[data-part]").forEach(x => x.setAttribute("aria-pressed", x === b)); maj(); }));
+
+let anime = false;
+const RES = { haut: "touche l'armature du haut", bas: "touche l'armature du bas", sortie: "sort du condensateur", recul: "repart en arrière" };
+function lancer() {
+  if (anime) return;
+  const r = reg();
+  if (Math.abs(r.a) >= 89.9) { say("Avec α = ±90°, la particule part à la verticale : choisissez un angle entre −89,5° et 89,5°.", "err"); return; }
+  const s = simuler(S.part, r), tr = { part: S.part, r, pts: s.pts, c: COUL[S.essais.length % 4], fin: s.fin, y: s.y, x: s.x };
+  S.traces.push(tr); if (S.traces.length > 4) S.traces.shift();
+  const es = { n: S.essais.length + 1, part: S.part, E: r.E, v0: r.v0, a: r.a, U: r.U, d: r.d, fin: s.fin, x: s.x, y: s.y };
+  S.essais.push(es); tableEssais(); legende();
+  const fin = () => {
+    anime = false; dessiner(false);
+    const P = PART[S.part], ou = s.fin === "sortie" ? `en y = ${num((s.y * 100).toFixed(1))} cm` : `en x = ${num((s.x * 100).toFixed(1))} cm`;
+    say(`Lancer n° ${es.n} : ${P.nom === "électron" ? "l'" : "le "}${P.nom} ${RES[s.fin]} ${ou}.`, s.fin === "sortie" ? "ok" : "info");
+  };
+  if (REDUCED) { fin(); return; }
+  anime = true; const t0 = performance.now(), D = 1400;
+  (function pas(t) { const k = Math.min(1, (t - t0) / D); dessiner(true); trace(tr, Math.max(1, Math.round(k * tr.pts.length))); if (k < 1) requestAnimationFrame(pas); else fin(); })(t0);
+}
+$("#lancer").addEventListener("click", lancer);
+$("#effacertr").addEventListener("click", () => { S.traces = []; legende(); dessiner(false); say("Trajectoires effacées. Le tableau « Mes lancers » garde tous vos essais."); });
+function tableEssais() {
+  $("#ess").innerHTML = S.essais.slice().reverse().map(e => `<tr><td>${e.n}</td><td>${PART[e.part].nom}</td><td>${fr(e.E)}</td><td>${fr(e.v0)}</td><td>${num(e.a)}°</td><td class="${e.fin === "sortie" ? "out" : "hit"}">${RES[e.fin]}</td></tr>`).join("");
+  $("#essvide").hidden = S.essais.length > 0; $("#nbess").textContent = S.essais.length ? S.essais.length + " lancer" + (S.essais.length > 1 ? "s" : "") : "";
+}
+
+/* ---------- conditions des étapes ---------- */
+const proche = (a, b, t = 0.02) => Math.abs(a - b) <= t * Math.abs(b);
+const ess = f => S.essais.filter(f);
+const distincts = (l, k) => new Set(l.map(e => e[k].toPrecision(3))).size;
+const fait2a = () => distincts(ess(e => e.part === "electron" && e.a === 0 && proche(e.E, 1e4)), "v0") >= 2;
+const fait2b = () => { const l = ess(e => e.part === "electron" && e.a === 0); return [...new Set(l.map(e => e.v0.toPrecision(3)))].some(v => distincts(l.filter(e => e.v0.toPrecision(3) === v), "E") >= 2); };
+const fait3 = () => { const l = ess(e => e.part === "electron"), m = ess(e => e.part === "positon"); return l.some(a => m.some(b => proche(a.E, b.E) && proche(a.v0, b.v0) && a.a === b.a)); };
+const fait5 = () => ess(e => e.part === "proton" && proche(e.v0, 2e7) && proche(e.E, 2e4) && e.fin === "haut").length > 0;
+const REP = { q1: "la tension U ou la distance d", q2a: "elle est moins incurvée", q2b: "elle est moins incurvée", q3: "le signe de q fixe le sens de la déviation", q4a: "diminue", q4b: "diminue", q4c: "q" };
+const juste = id => $("#" + id).value === REP[id];
+const lire = s => parseFloat(String(s).replace(",", ".").replace(/[^0-9.\-]/g, ""));
+const ALPHA = (() => { const q = e0, m = mp, E = 2e4, v0 = 2e7, h = 0.05; let lo = 0, hi = 60; for (let i = 0; i < 60; i++) { const a = (lo + hi) / 2, al = a * Math.PI / 180, y = q * E / (2 * m * (v0 * Math.cos(al)) ** 2) * L * L + Math.tan(al) * L; if (y >= h) hi = a; else lo = a; } return hi; })();
+const juste5 = () => { const a = lire($("#q5").value); return isFinite(a) && a >= 26 && a <= 28; };
+
+function corrige(ids, out) {
+  let n = 0; ids.forEach(id => { const el = $("#" + id); el.classList.remove("ok", "ko"); if (el.value) { el.classList.add(juste(id) ? "ok" : "ko"); if (juste(id)) n++; } });
+  return n;
+}
+$("#check1").addEventListener("click", () => {
+  const ids = ["q1", "q2a", "q2b", "q3", "q4a", "q4b", "q4c"], n = corrige(ids), o = $("#out1"); o.hidden = false;
+  const manque = []; if (!(S.vuU && S.vud)) manque.push("bouger les curseurs U et d (Q1)"); if (!fait2a()) manque.push("deux lancers d'électron à α = 0° et E = 1,0 × 10<sup>4</sup> V·m<sup>−1</sup> avec deux v<sub>0</sub> différentes (Q2.a)");
+  if (!fait2b()) manque.push("deux lancers d'électron à α = 0°, même v<sub>0</sub>, deux E différents (Q2.b)"); if (!fait3()) manque.push("un électron et un positon avec les mêmes réglages (Q3)");
+  if (n === ids.length && !manque.length) { o.className = "toast ok"; o.innerHTML = "✓ Toutes vos réponses sont justes et appuyées sur vos lancers. Appelez le professeur pour débloquer la question 5."; }
+  else { o.className = "toast " + (n === ids.length ? "info" : "err"); o.innerHTML = `${n} réponse${n > 1 ? "s" : ""} juste${n > 1 ? "s" : ""} sur ${ids.length}.` + (n < ids.length ? " Les cases rouges sont à revoir : ouvrez le 💡 Coup de pouce." : "") + (manque.length ? `<br>Il vous manque des lancers pour justifier : ${manque.join(" ; ")}.` : ""); }
+});
+function majAppel() { $("#b5").classList.toggle("verrou", !S.appel); $("#q5").disabled = $("#check5").disabled = !S.appel; if (S.appel) { $("#code").disabled = $("#appel").disabled = true; $("#codemsg").textContent = "✓ Réponses vérifiées : la question 5 est débloquée."; } }
+$("#appel").addEventListener("click", () => {
+  if ($("#code").value.trim().toUpperCase() === "EFIR") { S.appel = true; majAppel(); } else { $("#codemsg").textContent = "Code incorrect : demandez-le au professeur après vérification de vos réponses."; }
+});
+$("#check5").addEventListener("click", () => {
+  const o = $("#out5"), el = $("#q5"); o.hidden = false; el.classList.remove("ok", "ko");
+  if (!fait5()) { o.className = "toast err"; o.innerHTML = "Faites d'abord un lancer de proton qui touche l'armature du haut avec v<sub>0</sub> = 2,0 × 10<sup>7</sup> m·s<sup>−1</sup> et E = 2,0 × 10<sup>4</sup> V·m<sup>−1</sup> (U = 2,0 kV, d = 10 cm)."; return; }
+  if (juste5()) { el.classList.add("ok"); o.className = "toast ok"; o.innerHTML = `✓ Oui : à partir de α ≈ 27° (le calcul donne ${num(ALPHA.toFixed(1))}°), le proton atteint l'armature supérieure. Vérification avec l'équation : y(L) = 0,051 m ≥ 0,050 m pour α = 27°.`; }
+  else { el.classList.add("ko"); o.className = "toast err"; o.innerHTML = "Pas tout à fait : cherchez le plus petit angle pour lequel le proton touche encore l'armature du haut (essayez de 25° à 30°, par pas de 0,5°)."; }
+});
+
+/* ---------- conclusion ---------- */
+const CONCL = [["vitesse", "ne dépend que de la vitesse initiale"], ["bonne", "est une parabole, d'autant plus incurvée que E est grand et v<sub>0</sub> petite ; le signe de q fixe le sens de la déviation"], ["masse", "est une droite qui dépend seulement de la masse"]];
+let choix = "";
+CONCL.forEach(([id, h]) => { const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.id = "cc-" + id; b.setAttribute("aria-pressed", "false"); b.innerHTML = h;
+  b.addEventListener("click", () => { choix = id; $$("#concl .chip").forEach(x => x.setAttribute("aria-pressed", x === b)); }); $("#concl").appendChild(b); });
+$("#check2").addEventListener("click", () => {
+  const o = $("#out2"); o.hidden = false; const mc = $("#maconc").value.trim();
+  if (!choix) { o.className = "toast err"; o.textContent = "Choisissez d'abord une proposition."; return; }
+  if (choix !== "bonne") { o.className = "toast err"; o.innerHTML = "Ce n'est pas cohérent avec vos lancers : relisez vos réponses aux questions 2 et 3."; return; }
+  o.className = mc.length > 20 ? "toast ok" : "toast info";
+  o.innerHTML = "✓ Bonne réponse. La courbure dépend de qE / (m v<sub>0</sub><sup>2</sup>) : elle augmente avec E et diminue avec v<sub>0</sub> et m ; le signe de q donne le sens de la déviation." + (mc.length > 20 ? "" : "<br>Rédigez maintenant votre conclusion dans la case ci-dessus.");
+});
+
+/* ---------- démonstration ---------- */
+const wait = ms => new Promise(r => setTimeout(r, REDUCED ? 60 : ms));
+function regle(id, v) { const a = S.vuU, b = S.vud, el = $("#" + id); el.value = v; el.dispatchEvent(new Event("input")); S.vuU = a; S.vud = b; }
+$("#demo").addEventListener("click", async () => {
+  const b = $("#demo"); b.disabled = true;
+  try {
+    $("[data-part=electron]").click(); say("Démonstration : un électron, α = 0°, U = 1,0 kV et d = 10 cm, donc E = 1,0 × 10<sup>4</sup> V·m<sup>−1</sup>.");
+    regle("rU", 1); regle("rd", 10); regle("ra", 0); regle("rv", 1); await wait(1500);
+    lancer(); await wait(2600);
+    say("On ne change qu'une grandeur : la vitesse v<sub>0</sub> passe à 3,0 × 10<sup>7</sup> m·s<sup>−1</sup>."); regle("rv", 3); await wait(1500);
+    lancer(); await wait(2600);
+    say("Démonstration terminée : comparez les deux trajectoires et répondez à la question 2.a. À vous de faire les autres lancers !", "ok");
+  } finally { b.disabled = false; }
+});
+$("#reset").addEventListener("click", () => { regle("rU", 1); regle("rd", 10); regle("rv", 2); regle("ra", 0); $("[data-part=electron]").click(); S.traces = []; legende(); $("#theo").checked = false; dessiner(false); say("Réglages remis à zéro. Vos lancers et vos réponses sont conservés."); });
+
+/* ---------- compte rendu ---------- */
+const esc = x => String(x).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+const LIB = { q1: "Q1 grandeurs qui modifient E", q2a: "Q2.a v0 augmente", q2b: "Q2.b E diminue", q3: "Q3 signe de q", q4a: "Q4 v0 augmente : coefficient de x²", q4b: "Q4 E diminue : coefficient de x²", q4c: "Q4 signe du coefficient" };
+function build() {
+  const nom = $("#crnom").value.trim() || "(nom non renseigné)", cl = $("#crclasse").value.trim() || "…";
+  const d = new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
+  const lanc = S.essais.map(e => `<li>${PART[e.part].nom}, E = ${fr(e.E)} V·m<sup>−1</sup>, v<sub>0</sub> = ${fr(e.v0)} m·s<sup>−1</sup>, α = ${num(e.a)}° : ${RES[e.fin]}</li>`).join("") || "<li>Aucun lancer.</li>";
+  const rows = Object.keys(LIB).map(id => { const v = $("#" + id).value; return [LIB[id], v, !v ? "–" : juste(id) ? "✓" : "✗"]; });
+  const v5 = $("#q5").value; rows.push(["Q5 angle minimal pour le proton (°)", v5, !v5 ? "–" : juste5() ? "✓" : "✗"]);
+  const ok = rows.filter(r => r[2] === "✓").length;
+  const tab = rows.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1] ? esc(r[1]) : "<i>vide</i>"}</td><td>${r[2]}</td></tr>`).join("");
+  const cc = CONCL.find(c => c[0] === choix), mc = $("#maconc").value.trim();
+  const just = [["Q1 curseurs U et d utilisés", S.vuU && S.vud], ["Q2.a lancers comparés", fait2a()], ["Q2.b lancers comparés", fait2b()], ["Q3 électron et positon comparés", fait3()], ["Q4 équation superposée", S.theoVu], ["Q5 proton sur l'armature du haut", fait5()]];
+  return { nom, html: `<h3>Tle · Ch. 12 · Exercice 31 p. 256 · Trajectoire d'une particule chargée</h3>
+<p><b>Élève :</b> ${esc(nom)} · <b>Classe :</b> ${esc(cl)} · <b>Date :</b> ${d}</p>
+<h4>Mes lancers (${S.essais.length})</h4><ol>${lanc}</ol>
+<h4>Démarche</h4><ul>${just.map(([t, v]) => `<li>${t} : ${v ? "oui" : "non"}</li>`).join("")}</ul>
+<h4>Réponses : ${ok} juste${ok > 1 ? "s" : ""} sur ${rows.length}</h4>
+<table><thead><tr><th>Question</th><th>Réponse</th><th></th></tr></thead><tbody>${tab}</tbody></table>
+<h4>Conclusion</h4><p>${S.appel ? "Réponses 1 à 4 vérifiées par le professeur (appel). " : "Appel au professeur non fait. "}${cc ? "La trajectoire " + cc[1].replace(/<[^>]+>/g, "") + (cc[0] === "bonne" ? " → ✓" : " → ✗ à revoir.") : "Aucune réponse choisie."}</p>
+<h4>Ma conclusion rédigée</h4><p>${mc ? esc(mc).replace(/\n/g, "<br>") : "<i>non rédigée</i>"}</p>` };
+}
+const box = $("#cr"), crnote = $("#crnote");
+$("#crbtn").addEventListener("click", () => { const r = build(); box.innerHTML = r.html; box.hidden = false; box.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); crnote.textContent = "Cliquez sur « Télécharger mon compte rendu (PDF) », puis déposez le fichier dans votre devoir Google Classroom."; });
+const W1252 = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
+const SUP = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁺": "+", "⁻": "-", "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9", "−": "-", "→": "->", "✓": "(juste)", "✗": "(faux)", "≤": "<=", "≥": ">=", "≈": "~", "α": "alpha", "√": "racine ", "×": "x", "⃗": "", " ": " ", " ": " " };
+const txt = s => [...String(s).replace(/\s+/g, " ").trim()].map(c => SUP[c] != null ? SUP[c] : c).join("").split("").filter(c => c.charCodeAt(0) < 256 || W1252.includes(c)).join("").replace(/ {2,}/g, " ").trim();
+const plat = node => { const c = node.cloneNode(true); c.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); c.querySelectorAll("sub").forEach(s => s.replaceWith(s.textContent)); return c.textContent; };
+function chargerJsPDF() {
+  if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = () => window.jspdf ? ok(window.jspdf) : ko(); s.onerror = ko; document.head.appendChild(s); });
+}
+function faitPDF(r) {
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" });
+  const X = 18, Lg = 174, BAS = 282; let y = 18;
+  const place = h => { if (y + h > BAS) { doc.addPage(); y = 18; } };
+  const ligne = (t, o = {}) => { doc.setFont("helvetica", o.b ? "bold" : "normal"); doc.setFontSize(o.s || 10.5); doc.setTextColor(...(o.c || [21, 33, 45]));
+    const lh = (o.s || 10.5) * .45, ls = doc.splitTextToSize(txt(t), Lg - (o.ind || 0)); ls.forEach(l => { place(lh); doc.text(l, X + (o.ind || 0), y); y += lh; }); y += o.ap || 1.2; };
+  doc.setFillColor(0, 51, 102); doc.rect(0, 0, 210, 8, "F");
+  const tmp = document.createElement("div"); tmp.innerHTML = r.html;
+  [...tmp.children].forEach(e => {
+    const tag = e.tagName;
+    if (tag === "H3") ligne(plat(e), { b: 1, s: 15, c: [0, 51, 102], ap: 2 });
+    else if (tag === "H4") { y += 2.5; ligne(plat(e), { b: 1, s: 12, c: [0, 51, 102], ap: 1.5 }); }
+    else if (tag === "P") ligne(plat(e));
+    else if (tag === "OL" || tag === "UL") [...e.children].forEach((li, k) => ligne((tag === "OL" ? (k + 1) + ". " : "- ") + plat(li), { ind: 2, ap: 1.6 }));
+    else if (tag === "TABLE") [...e.querySelectorAll("tbody tr")].forEach(tr => { const c = [...tr.children].map(td => plat(td).trim()); ligne(`${c[0]} : ${c[1]} ${c[2] === "–" ? "" : c[2]}`, { ind: 2, s: 10, ap: .8 }); });
+  });
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) { doc.setPage(p); doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(87, 103, 118); doc.text(txt(`Tle Ch. 12 Exercice 31 · Trajectoire d'une particule chargée · ${r.nom} · page ${p}/${n}`), X, 290); }
+  const nomF = (r.nom === "(nom non renseigné)" ? "eleve" : r.nom).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  doc.save(`Tle_Ch12_Ex31_compte_rendu_${nomF || "eleve"}.pdf`);
+}
+$("#crpdf").addEventListener("click", () => {
+  if (!$("#crnom").value.trim()) { crnote.textContent = "Écrivez d'abord votre nom et prénom."; $("#crnom").focus(); return; }
+  const r = build(); box.innerHTML = r.html; box.hidden = false; crnote.textContent = "Préparation du PDF…"; $("#crpdf").disabled = true;
+  chargerJsPDF().then(() => { faitPDF(r); crnote.textContent = "✓ PDF téléchargé : déposez-le dans votre devoir Google Classroom (Ajouter > Fichier, puis Rendre)."; })
+    .catch(() => { crnote.textContent = "Le PDF n'a pas pu être préparé (connexion ?). Utilisez Imprimer > Enregistrer au format PDF."; window.print(); })
+    .finally(() => { $("#crpdf").disabled = false; });
+});
+
+/* ---------- Aide et Mode économe ---------- */
+(function () {
+  const aide = $("#aidebtn"), bx = $("#aide"), eco = $("#ecobtn");
+  aide.addEventListener("click", () => { bx.open = true; bx.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); bx.querySelector("summary").focus(); });
+  const show = () => { eco.setAttribute("aria-pressed", REDUCED); document.body.classList.toggle("eco", REDUCED); eco.textContent = REDUCED ? "🐢 Mode économe : activé" : "🐢 Mode économe"; };
+  eco.addEventListener("click", () => { REDUCED = !REDUCED; try { localStorage.setItem("efir-eco", REDUCED ? "1" : "0"); } catch (e) {} show(); });
+  show();
+})();
+
+/* ---------- sauvegarde automatique ---------- */
+(function () {
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify({ v: 1, essais: S.essais, appel: S.appel, vuU: S.vuU, vud: S.vud, theoVu: S.theoVu, choix,
+      champs: Object.fromEntries($$("[data-save]").map(e => [e.id, e.value])) })); } catch (e) {}
+  }
+  let t = 0; const later = () => { clearTimeout(t); t = setTimeout(save, 400); };
+  ["change", "click", "input"].forEach(ev => document.addEventListener(ev, later)); setInterval(save, 5000);
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (d && d.v === 1) {
+      (d.essais || []).forEach(x => S.essais.push(x)); S.appel = true; S.vuU = !!d.vuU; S.vud = !!d.vud; S.theoVu = !!d.theoVu;
+      for (const id in d.champs || {}) { const e = document.getElementById(id); if (e) e.value = d.champs[id]; }
+      if (d.choix) { const b = $("#cc-" + d.choix); if (b) b.click(); }
+      if (S.essais.length) say("Votre travail précédent a été retrouvé (lancers et réponses).", "ok");
+    }
+  } catch (e) {}
+  $("#effacer").addEventListener("click", () => {
+    const eff = $("#effacer");
+    if (!eff.dataset.sure) { eff.dataset.sure = "1"; eff.textContent = "Cliquez encore pour tout effacer"; setTimeout(() => { delete eff.dataset.sure; eff.textContent = "Effacer mon travail"; }, 4000); return; }
+    try { localStorage.removeItem(KEY); } catch (e) {} location.reload();
+  });
+})();
+
+function Protocole(etapes) {
+  const ol = $("#proto");
+  function rendu() {
+    const etats = etapes.map(e => { const sous = (e.sous || []).map(x => !!x.ok()); return { ok: e.sous ? sous.every(Boolean) : !!e.ok(), sous }; });
+    const courant = etats.findIndex(x => !x.ok);
+    ol.innerHTML = etapes.map((e, k) => {
+      const st = etats[k], cls = st.ok ? "fait" : k === courant ? "cur" : "";
+      const sous = e.sous ? `<ul>${e.sous.map((x, j) => `<li class="${st.sous[j] ? "fait" : ""}">${st.sous[j] ? "✓" : "○"} ${x.html}</li>`).join("")}</ul>` : "";
+      const part = e.partie ? `<li class="partie">${e.partie}</li>` : "";
+      return `${part}<li class="${cls}"><span class="q">${e.q}</span><span class="tx">${e.html}${sous}</span><span class="st" aria-label="${st.ok ? "fait" : "à faire"}">${st.ok ? "✓" : k === courant ? "➜" : ""}</span></li>`;
+    }).join("");
+    const c = $("#protocount"); if (c) c.textContent = `${etats.filter(x => x.ok).length}/${etapes.length} étapes`;
+  }
+  const bx = ol.closest(".proto"), bt = $("#prototout");
+  if (bt) bt.addEventListener("click", () => { bx.classList.toggle("tout"); bt.textContent = bx.classList.contains("tout") ? "Voir seulement l'étape en cours" : "Voir toutes les étapes"; });
+  let t = 0; const plusTard = () => { clearTimeout(t); t = setTimeout(rendu, 250); };
+  ["click", "change", "pointerup", "input"].forEach(ev => document.addEventListener(ev, plusTard));
+  setInterval(rendu, 1500); rendu();
+}
+Protocole([
+  { partie: "Le champ électrique", q: "Q1", html: "Bouger les curseurs <b>U</b> puis <b>d</b> et regarder la valeur de E. Répondre à la question 1.", sous: [
+    { html: "curseur U utilisé", ok: () => S.vuU }, { html: "curseur d utilisé", ok: () => S.vud }, { html: "question 1 juste", ok: () => juste("q1") } ] },
+  { partie: "Influence des paramètres (électron, α = 0°)", q: "Q2.a", html: "E = 1,0 × 10<sup>4</sup> V·m<sup>−1</sup> (U = 1,0 kV, d = 10 cm) : lancer l'électron avec <b>deux vitesses</b> différentes.", sous: [
+    { html: "deux lancers comparés", ok: fait2a }, { html: "question 2.a juste", ok: () => juste("q2a") } ] },
+  { q: "Q2.b", html: "Même vitesse : lancer l'électron avec <b>deux valeurs de E</b> (changer U).", sous: [
+    { html: "deux lancers comparés", ok: fait2b }, { html: "question 2.b juste", ok: () => juste("q2b") } ] },
+  { q: "Q3", html: "Mêmes réglages : lancer un <b>électron</b> puis un <b>positon</b>.", sous: [
+    { html: "électron et positon comparés", ok: fait3 }, { html: "question 3 juste", ok: () => juste("q3") } ] },
+  { partie: "L'équation de la trajectoire", q: "Q4", html: "Cocher « Superposer l'équation y(x) », faire un lancer, puis répondre aux trois listes de la question 4.", sous: [
+    { html: "équation superposée", ok: () => S.theoVu && S.traces.length > 0 }, { html: "question 4 juste", ok: () => juste("q4a") && juste("q4b") && juste("q4c") } ] },
+  { q: "☎ Appel", html: "Faire vérifier les réponses 1 à 4 par le professeur et entrer le <b>code</b>.", ok: () => S.appel },
+  { partie: "Le défi du proton", q: "Q5", html: "Proton, U = 2,0 kV, d = 10 cm, v<sub>0</sub> = 2,0 × 10<sup>7</sup> m·s<sup>−1</sup> : trouver le plus petit angle α qui fait toucher l'armature du haut.", sous: [
+    { html: "le proton touche l'armature du haut", ok: fait5 }, { html: "angle minimal juste", ok: juste5 } ] },
+  { partie: "Fin de séance", q: "Bilan", html: "Répondre à la problématique, rédiger sa conclusion, puis télécharger le compte rendu.", ok: () => choix === "bonne" && $("#maconc").value.trim().length > 20 }
+]);
+
+tableEssais(); majAppel(); maj();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => dessiner(false));
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style id="charte-efir-2026">
+/* Code couleur « prune » du labo virtuel (accueil retenu le 06/11/2026), version claire pour les pages de TP */
+:root:root:root {
+  --bg: #FAF7FC; --surface: #ffffff; --surface-2: #F6F0F9; --ink: #1F1630; --muted: #6B5B78; --line: #E7DDEE;
+  --navy: #4A2C5A; --navy-soft: #F3E8F7; --blue: #4A2C5A; --line-2: #D9CBE3; --soft: #5B4A68;
+  --call-bg: #F6F0F9; --call-line: #E7DDEE; --call-ink: #4A2C5A;
+  --font-display: "Inter", "Segoe UI", system-ui, sans-serif; --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:root:root:not([data-theme="light"]) {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; } }
+:root:root:root[data-theme="dark"] {
+  --bg: #0A0410; --surface: #1A0B2E; --surface-2: #241238; --ink: #F3EEF7; --muted: #C9BBD6; --line: #3A2550;
+  --navy: #F4B4C1; --navy-soft: #2D1640; --blue: #F4B4C1; --line-2: #4A2F63; --soft: #D9CCE4; --call-bg: #241238; --call-line: #3A2550; --call-ink: #F4B4C1; }
+body, button, input, select, textarea { font-family: var(--font-body); }
+body { font-family: var(--font-body); }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -.01em; }
+a.retour { color: var(--navy) !important; }
+</style>
+</body>
+</html>

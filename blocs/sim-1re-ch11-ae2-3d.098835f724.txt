@@ -1,0 +1,136 @@
+<!--efir1re:AE2 · Pression dans un liquide 3D-->
+window.EFIR_RETOUR = "premiere/mouvement/Description%20d%27un%20fluide%20au%20repos";
+
+// ====================================================================
+// Ch. 11 · AE2 · Pression dans un liquide (loi fondamentale de la statique des fluides)
+// ====================================================================
+const PATM = 101500, GG = 9.81, TUBE_H = .62, WAT = .55, TY = .0;
+const LIQ = { eau: { nom: 'eau', rho: 1000, col: 0x81d4fa }, sale: { nom: 'eau salée', rho: 1100, col: 0xb2dfdb } };
+let cane12, sens12, water12, S12 = null;
+const fresh12 = () => ({ liq: 'eau', h: 0, in: false, pts: [] });
+const nz12 = h => Math.sin(h * 91.7 + 3.1) * 25; // ± 25 Pa
+const pAt = (h, liq) => PATM + LIQ[liq].rho * GG * h + (h > 0 ? nz12(h) : 0);
+const fm = (v, n = 2) => v.toFixed(n).replace('.', ',');
+const C12 = {
+  id: 'p1_ch11_ae2', code: 'AE2', short: 'Pression dans un liquide 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 11 · Activité expérimentale AE2 · Simulation 3D',
+  title: 'Pression dans un liquide',
+  problem: 'Un profondimètre de plongée mesure une pression pour en déduire une profondeur. Quelle est la relation entre la différence de pression de l\'eau et la différence de profondeur ?',
+  mots: `<p><b>Coordonnée verticale z</b> : mesurée sur un axe vertical orienté vers le haut, nulle à la surface de l'eau ; sous la surface, z est négative.<br>
+  <b>Capteur de pression</b> : il mesure la pression à l'extrémité de la canne de verre plongée dans l'eau ; il affiche la pression en <b>hectopascal</b> (1 hPa = 10² Pa).<br>
+  <b>Profondeur</b> : distance entre la surface libre de l'eau et le ménisque dans la canne.<br>
+  Données : ρ<sub>eau</sub> = 1,00 × 10³ kg·m⁻³ ; g = 9,81 N·kg⁻¹. Dans la mer, la pression de l'eau s'ajoute à celle de l'air et augmente de 10⁵ Pa tous les 10 m.</p>`,
+  aide: `<p>1. Mesure d'abord la pression à la surface (z = 0) : c'est la pression de l'air.<br>
+  2. Enfonce la canne par paliers (5 ou 10 cm) et note chaque mesure ; convertis les hPa en Pa.<br>
+  3. Pour deux points A et B, calcule P<sub>B</sub> − P<sub>A</sub> et z<sub>A</sub> − z<sub>B</sub> ; le graphique trace P − P<sub>surface</sub> en fonction de la profondeur.<br>
+  4. Compare le coefficient directeur au produit ρ<sub>eau</sub> × g.</p>`,
+  views: { ensemble: [[0, .55, 1.25], [0, .32, 0]] },
+  viewbar: [['Zoom canne et règle', () => flyTo([.1, .35, .7], [0, .3, 0])], ['Zoom capteur', () => flyTo([.32, .3, .5], [.3, .2, 0])]],
+  protocol: [
+    { id: 'surface', q: 'Q1', html: 'Mesurer la pression à la surface de l\'eau (z = 0).' },
+    { id: 'mesures', q: 'Q1', html: 'Mesurer la pression pour au moins 6 profondeurs différentes, de 0 à 50 cm.' },
+    { id: 'graphe', q: 'Q2', html: 'Tracer P<sub>B</sub> − P<sub>A</sub> en fonction de z<sub>A</sub> − z<sub>B</sub> et vérifier la proportionnalité.' },
+    { id: 'tableau', html: 'Compléter le tableau (unités) puis le vérifier.' },
+    { id: 'extra', q: 'Q3-5', html: 'Comparer le coefficient à ρ × g et exploiter la loi.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'eau du robinet ; essuyer l\'eau renversée (risque de glissade et appareils électriques)',
+  table: { rowTitle: 'Terme de la loi P<sub>B</sub> − P<sub>A</sub> = ρ × g × (z<sub>A</sub> − z<sub>B</sub>)', rows: [{ label: 'P<sub>B</sub> − P<sub>A</sub>', ans: [0, 0] }, { label: 'z<sub>A</sub> − z<sub>B</sub>', ans: [1, 1] }, { label: 'ρ', ans: [2, 2] }, { label: 'g', ans: [3, 3] }],
+    cols: [{ title: 'Signification', options: ['différence de pression entre B et A', 'différence de coordonnées verticales (axe vers le haut)', 'masse volumique du liquide', 'intensité de la pesanteur'] }, { title: 'Unité', options: ['Pa', 'm', 'kg·m⁻³', 'N·kg⁻¹'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', num: true, text: 'Une pression de 1 024,8 hPa vaut, en pascal :', unit: 'Pa', ans: 102480, tol: .002 },
+    { q: 'Q2', text: 'La courbe P<sub>B</sub> − P<sub>A</sub> = f(z<sub>A</sub> − z<sub>B</sub>) est…', options: ['une droite passant par l\'origine : il y a proportionnalité', 'une droite qui ne passe pas par l\'origine', 'une courbe qui s\'aplatit'], ans: 0 },
+    { q: 'Q3', num: true, text: 'Coefficient de proportionnalité mesuré (coefficient directeur) :', unit: 'Pa·m⁻¹', get ans() { return C12.slope || NaN; }, tol: .03 },
+    { q: 'Q3', num: true, text: 'Produit ρ<sub>eau</sub> × g =', unit: 'N·m⁻³ (ou Pa·m⁻¹)', ans: 9810, tol: .01 },
+    { q: 'Q4', num: true, text: 'Différence de pression entre la surface et 10 m de profondeur : ΔP =', unit: 'Pa', ans: 9.81e4, tol: .03 },
+    { q: 'Q4', text: 'Ce résultat est-il en accord avec « la pression augmente de 10⁵ Pa tous les 10 m » ?', options: ['oui, 9,8 × 10⁴ Pa ≈ 10⁵ Pa', 'non, il faudrait 10⁶ Pa', 'non, la pression diminue avec la profondeur'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Dans un liquide au repos, la différence de pression entre deux points est proportionnelle à la différence de leurs coordonnées verticales : P_B − P_A = ρ × g × (z_A − z_B) ; le coefficient mesuré (≈ 9,8 × 10³ Pa·m⁻¹) est égal à ρ_eau × g.', 'La pression dans l\'eau est la même à toutes les profondeurs.', 'La pression diminue quand on descend dans l\'eau.', 'La différence de pression ne dépend que de la forme du récipient.'], ans: 0 },
+  build() {
+    const gm = GLASS(); gm.opacity = .22;
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, TUBE_H, 40, 1, true), gm); tube.position.set(0, TY + TUBE_H / 2 + .015, 0); scene.add(tube);
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(.06, .07, .015, 32), new THREE.MeshStandardMaterial({ color: 0x455a64 })); foot.position.set(0, .0075, 0); scene.add(foot);
+    water12 = new THREE.Mesh(new THREE.CylinderGeometry(.033, .033, WAT, 40), new THREE.MeshStandardMaterial({ color: 0x81d4fa, transparent: true, opacity: .4, depthWrite: false })); water12.position.set(0, .015 + WAT / 2, 0); scene.add(water12);
+    const cv = document.createElement('canvas'); cv.width = 128; cv.height = 1400; const c = cv.getContext('2d'); c.fillStyle = '#fffde7'; c.fillRect(0, 0, 128, 1400); c.fillStyle = '#1d2433'; c.font = '600 34px Inter, Arial'; c.textAlign = 'left';
+    for (let cm = 0; cm <= 55; cm++) { const y = 20 + cm * 24; c.fillRect(0, y - 1, cm % 5 ? 30 : (cm % 10 ? 48 : 64), cm % 10 ? 2 : 4); if (cm % 10 === 0) c.fillText(cm, 70, y + 12); }
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+    const ruler = new THREE.Mesh(new THREE.PlaneGeometry(.04, .5833), new THREE.MeshStandardMaterial({ map: tx })); // 1400 px ↔ 0,5833 m (24 px/cm)
+    ruler.position.set(-.06, .015 + WAT - (.5833 / 2 - 20 / 2400), .0); scene.add(ruler);
+    const rlab = label('Profondeur (cm)', { size: 22, scale: .0007 }); rlab.position.set(-.1, .015 + WAT + .05, 0); scene.add(rlab);
+    cane12 = new THREE.Group(); const cm = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, .7, 12, 1, true), gm); cm.position.y = .35; cane12.add(cm);
+    const men = new THREE.Mesh(new THREE.CylinderGeometry(.0035, .0035, .012, 12), new THREE.MeshStandardMaterial({ color: 0x4fc3f7 })); men.position.y = .006; cane12.add(men);
+    const cl = label('Canne de verre', { size: 22, scale: .0007 }); cl.position.set(.06, .55, 0); cane12.add(cl);
+    cane12.position.set(.012, 0, 0); scene.add(cane12);
+    const sb = new THREE.Mesh(new THREE.BoxGeometry(.12, .08, .06), new THREE.MeshStandardMaterial({ color: 0x37474f })); sb.position.set(.3, .2, 0); scene.add(sb);
+    const st = new THREE.Mesh(new THREE.BoxGeometry(.03, .16, .03), new THREE.MeshStandardMaterial({ color: 0x546e7a })); st.position.set(.3, .08, 0); scene.add(st);
+    sens12 = makeScreen(.1, .04, { px: 320, text: '----', bg: '#0f2a1a', fg: '#7CFC9A' }); sens12.mesh.position.set(.3, .205, .031); scene.add(sens12.mesh);
+    const sl = label('Capteur de pression', { size: 24, scale: .0008 }); sl.position.set(.3, .28, 0); scene.add(sl);
+    this.hose = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0x8d6e63 })); scene.add(this.hose);
+    sideCard(chartCard('P − P(surface) en fonction de la profondeur', 'chP'));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'pTab' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  placeCane() { const s = S12; const top = .015 + WAT; cane12.position.y = s.in ? top - s.h : top + .08; const a = new THREE.Vector3(.012, cane12.position.y + .7, 0), b = new THREE.Vector3(.24, .2, 0); this.hose.geometry.dispose(); this.hose.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([a, new THREE.Vector3(.1, a.y + .05, 0), new THREE.Vector3(.22, .3, 0), b]), 30, .003, 6); sens12.set(s.in ? fm(pAt(s.h, s.liq) / 100, 1) + ' hPa' : (Math.round(PATM / 10) / 10).toFixed(1).replace('.', ',') + ' hPa'); },
+  resetScene() { S12 = fresh12(); C12.slope = null; if (!cane12) return; water12.material.color.setHex(LIQ.eau.col); this.placeCane(); this.drawData(); if ($('#q12')) this.refreshPanel(); },
+  drawData() {
+    const s = S12, t = $('#pTab'); if (!t) return;
+    t.innerHTML = '<thead><tr><th>Liquide</th><th>Profondeur (m)</th><th>z (m)</th><th>P affichée (hPa)</th><th>P (Pa)</th></tr></thead><tbody>' + (s.pts.map(p => `<tr><td>${LIQ[p.liq].nom}</td><td>${fm(p.h)}</td><td>${p.h ? '−' + fm(p.h) : '0'}</td><td>${fm(p.P / 100, 1)}</td><td>${Math.round(p.P / 10) * 10}</td></tr>`).join('') || '<tr><td colspan="5">Aucune mesure.</td></tr>') + '</tbody>';
+    const series = {}; for (const p of s.pts) (series[p.liq] = series[p.liq] || []).push(p);
+    let k = null, info = [];
+    const curves = [];
+    for (const [lq, arr] of Object.entries(series)) { const s0 = arr.find(p => p.h === 0); if (!s0) continue; const pts = arr.filter(p => p.h > 0).map(p => [p.h, p.P - s0.P]); if (pts.length < 2) continue;
+      const kk = pts.reduce((a, [x, y]) => a + x * y, 0) / pts.reduce((a, [x]) => a + x * x, 0); if (lq === 'eau') k = kk; info.push(`${LIQ[lq].nom} : P − P(surface) = ${Math.round(kk)} × profondeur (Pa·m⁻¹)`); curves.push({ pts: [[0, 0], [.5, kk * .5]], color: lq === 'eau' ? '#C62828' : '#2e7d32' }); }
+    const all = s.pts.map(p => { const s0 = s.pts.find(q => q.liq === p.liq && q.h === 0); return s0 && p.h > 0 ? [p.h, p.P - s0.P] : null; }).filter(Boolean);
+    drawChart($('#chP'), { xmax: .5, ymax: 6000, xlabel: 'z_A − z_B = profondeur (m)', ylabel: 'P_B − P_A (Pa)', pts: all, curves, xfmt: x => x.toFixed(2).replace('.', ','), yfmt: y => Math.round(y) });
+    C12.slope = k; $('#chPInfo').innerHTML = info.length ? info.join('<br>') : 'Mesure la pression à la surface puis à au moins deux profondeurs.';
+    if (k && series.eau.filter(p => p.h > 0).length >= 4) step('graphe');
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, h('span', {}, 'Liquide :'), B('l1', 'Eau', { t: 'liq', k: 'eau' }), B('l2', 'Eau salée (prolongement)', { t: 'liq', k: 'sale' })),
+      h('h3', {}, '1. Placer la canne'),
+      h('div', { class: 'row' }, B('c1', 'Placer la canne à la surface (z = 0)', { t: 'in' }), B('c2', 'Sortir la canne', { t: 'out' })),
+      h('h3', {}, '2. Enfoncer / remonter'),
+      h('div', { class: 'row' }, B('d1', '⬇ +10 cm', { t: 'dz', d: .1 }), B('d2', '⬇ +5 cm', { t: 'dz', d: .05 }), B('d3', '⬇ +1 cm', { t: 'dz', d: .01 }), B('d4', '⬆ −5 cm', { t: 'dz', d: -.05 }), B('d5', '⬆ −1 cm', { t: 'dz', d: -.01 })),
+      h('div', { class: 'row' }, B('n1', '✍ Noter la mesure', { t: 'note' }), B('n2', 'Effacer mes mesures', { t: 'clear' })),
+      h('div', { id: 'q12', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S12, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#l1', !s.in && s.liq !== 'eau'); en('#l2', !s.in && s.liq !== 'sale'); en('#c1', !s.in); en('#c2', s.in);
+    en('#d1', s.in && s.h <= .4 + 1e-9); en('#d2', s.in && s.h <= .45 + 1e-9); en('#d3', s.in && s.h <= .49 + 1e-9); en('#d4', s.in && s.h >= .05 - 1e-9); en('#d5', s.in && s.h >= .01 - 1e-9);
+    en('#n1', s.in && !s.pts.some(p => p.liq === s.liq && Math.abs(p.h - s.h) < 1e-6)); en('#n2', s.pts.length > 0);
+    $('#q12').innerHTML = `Liquide : <b>${LIQ[s.liq].nom}</b> · ` + (s.in ? `profondeur du ménisque : <b>${fm(s.h * 100, 0)} cm</b> (z = ${s.h ? '−' + fm(s.h) : '0'} m) · capteur : <b>${fm(pAt(s.h, s.liq) / 100, 1)} hPa</b>` : 'canne hors de l\'eau');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S12;
+    if (a.t === 'liq') { s.liq = a.k; water12.material.color.setHex(LIQ[a.k].col); say(a.k === 'sale' ? 'Tube rempli d\'eau salée (ρ = 1,10 × 10³ kg·m⁻³) : compare le coefficient obtenu.' : 'Tube rempli d\'eau.'); return; }
+    if (a.t === 'in') { s.in = true; s.h = 0; if (!INSTANT) { const y0 = cane12.position.y; await tween(.6, p => { cane12.position.y = y0 - .08 * p; }); } this.placeCane(); say('Canne placée : son extrémité affleure la surface (z = 0). Le capteur mesure la pression de l\'air.'); return; }
+    if (a.t === 'out') { s.in = false; s.h = 0; this.placeCane(); say('Canne sortie de l\'eau.'); return; }
+    if (a.t === 'dz') {
+      const h0 = s.h, h1 = Math.min(.5, Math.max(0, +(s.h + a.d).toFixed(2)));
+      if (INSTANT) s.h = h1; else await tween(.5, p => { s.h = h0 + (h1 - h0) * p; this.placeCane(); });
+      s.h = h1; this.placeCane(); say(`Profondeur : ${fm(h1 * 100, 0)} cm ; le capteur affiche ${fm(pAt(h1, s.liq) / 100, 1)} hPa.`); return;
+    }
+    if (a.t === 'note') {
+      const P = pAt(s.h, s.liq); s.pts.push({ liq: s.liq, h: s.h, P }); s.pts.sort((x, y) => (x.liq > y.liq ? 1 : x.liq < y.liq ? -1 : x.h - y.h)); this.drawData();
+      if (s.h === 0 && s.liq === 'eau') step('surface');
+      if (s.pts.filter(p => p.liq === 'eau').length >= 6 && s.pts.some(p => p.liq === 'eau' && p.h >= .4)) step('mesures');
+      const msg = `${LIQ[s.liq].nom} : profondeur ${fm(s.h * 100, 0)} cm (z = ${s.h ? '−' + fm(s.h) : '0'} m) → P = ${fm(P / 100, 1)} hPa = ${Math.round(P / 10) * 10} Pa.`; observe(msg); say('Mesure notée. ' + msg); return;
+    }
+    if (a.t === 'clear') { s.pts = []; this.drawData(); say('Mesures effacées.'); return; }
+  },
+  async demo() {
+    say('Démonstration : mesure à la surface puis à 10 cm.');
+    await act({ t: 'in' }, { record: false }); await wait(700); await act({ t: 'dz', d: .1 }, { record: false }); await wait(900); await act({ t: 'dz', d: .1 }, { record: false });
+    say('À toi : note la pression à la surface puis tous les 5 ou 10 cm.'); await wait(1500);
+  },
+};
+startTP(C12);
+
+</script></body></html>

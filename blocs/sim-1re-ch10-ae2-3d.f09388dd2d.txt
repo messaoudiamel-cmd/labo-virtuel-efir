@@ -1,0 +1,182 @@
+<!--efir1re:AE2 · Cartographie d'un champ 3D-->
+window.EFIR_RETOUR = "premiere/mouvement/Interactions%20fondamentales%20et%20notion%20de%20champ";
+
+// ====================================================================
+// Ch. 10 · AE2 · La clé des champs : cartographier un champ électrostatique
+// ====================================================================
+// Repère de la cuve (cm) : X de −12 à 12, Z de −8 à 8. Plaque P en X = −5, plaque N en X = +5, longueur 10 cm (|Z| ≤ 5).
+// Pour l'élève : x = distance à la plaque N (x = 5 − X), y = Z.
+const UPN = 5.0, DPN = 10, GX = 48, GZ = 32, H10 = .5, CM = .01;
+let POT = null, cuve10, probe10, volt10, gen10, arrows10, lines10, S20 = null;
+const fresh20 = () => ({ gen: false, volt: false, M: null, pts: [], vec: false, lines: false });
+function solvePot() {
+  const V = new Float32Array((GX + 1) * (GZ + 1)), fix = new Int8Array(V.length), I = (i, j) => j * (GX + 1) + i;
+  for (let j = 0; j <= GZ; j++) { const Z = -8 + j * H10; if (Math.abs(Z) <= 5) { fix[I(14, j)] = 1; V[I(14, j)] = UPN; fix[I(34, j)] = 1; V[I(34, j)] = 0; } }
+  for (let i = 0; i < V.length; i++) if (!fix[i]) V[i] = UPN / 2;
+  for (let it = 0; it < 1800; it++) for (let j = 0; j <= GZ; j++) for (let i = 0; i <= GX; i++) {
+    const k = I(i, j); if (fix[k]) continue;
+    const l = V[I(i > 0 ? i - 1 : 1, j)], r = V[I(i < GX ? i + 1 : GX - 1, j)], d = V[I(i, j > 0 ? j - 1 : 1)], u = V[I(i, j < GZ ? j + 1 : GZ - 1)];
+    V[k] += 1.9 * ((l + r + d + u) / 4 - V[k]);
+  }
+  return V;
+}
+function potAt(X, Z) {
+  const fx = Math.min(GX - 1e-6, Math.max(0, (X + 12) / H10)), fz = Math.min(GZ - 1e-6, Math.max(0, (Z + 8) / H10)), i = Math.floor(fx), j = Math.floor(fz), a = fx - i, b = fz - j, I = (i, j) => j * (GX + 1) + i;
+  return POT[I(i, j)] * (1 - a) * (1 - b) + POT[I(i + 1, j)] * a * (1 - b) + POT[I(i, j + 1)] * (1 - a) * b + POT[I(i + 1, j + 1)] * a * b;
+}
+function fieldAt(X, Z) { const e = .25; return [-(potAt(X + e, Z) - potAt(X - e, Z)) / (2 * e) * 100, -(potAt(X, Z + e) - potAt(X, Z - e)) / (2 * e) * 100]; } // V/m
+const noise10 = (x, y) => (Math.sin(x * 12.9898 + y * 78.233) * 43758.5453 % 1) * .02;
+function readU(x, y) { const X = 5 - x, Z = y; if (Math.abs(X - 5) < .01 && Math.abs(Z) <= 5) return 0; return Math.max(0, Math.min(UPN, potAt(X, Z) + (Math.abs(X) < 5 && Math.abs(Z) < 5 ? noise10(x, y) : 0))); }
+const inside = p => p.x > 0 && p.x < DPN && Math.abs(p.y) <= 4;
+const W3 = (X, Z, h = 0) => new THREE.Vector3(X * CM, .032 + h, Z * CM);
+const fr = (v, n = 1) => v.toFixed(n).replace('.', ',');
+function wire(pts, col) { return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 40, .0018, 6), new THREE.MeshStandardMaterial({ color: col })); }
+const C20 = {
+  id: 'p1_ch10_ae2', code: 'AE2', short: 'Cartographie d\'un champ 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 10 · Activité expérimentale AE2 · Simulation 3D',
+  title: 'La clé des champs : cartographier un champ électrostatique',
+  problem: 'Quel est l\'intérêt de cartographier un champ ? Comment cartographier le champ électrostatique entre les armatures d\'un condensateur plan ?',
+  mots: `<p><b>Champ vectoriel</b> : caractérisé en chaque point par une direction, un sens et une valeur ; on le représente par un vecteur.<br>
+  <b>Cartographier un champ</b> : donner en différents points de l'espace sa direction, son sens et sa valeur.<br>
+  <b>Ligne de champ</b> : ligne tangente au champ en chacun de ses points, orientée dans le sens du champ.<br>
+  <b>Condensateur plan</b> : deux armatures planes et parallèles P (+) et N (−) séparées d'une distance d. Entre les armatures, E est perpendiculaire aux armatures et orienté de P vers N.<br>
+  Valeur du champ en un point M situé à la distance x de N : <b>E = U<sub>MN</sub> / x</b> (E en V·m⁻¹, U<sub>MN</sub> en V, x en m).</p>`,
+  aide: `<p>1. Règle le générateur sur U<sub>PN</sub> = 5,0 V et branche le voltmètre (COM sur la plaque N, sonde en M).<br>
+  2. Clique sur la feuille quadrillée (ou saisis x et y) pour placer la sonde, puis note la mesure.<br>
+  3. Mesure au moins 6 points entre les plaques, à des distances x différentes et sur au moins deux lignes y différentes.<br>
+  4. Fais aussi une mesure en dehors des plaques.<br>
+  5. Trace les vecteurs champ en tes points, puis observe les lignes de champ.</p>`,
+  views: { ensemble: [[0, .38, .48], [0, .02, .02]] },
+  viewbar: [['Vue de dessus (cuve)', () => flyTo([0, .42, .05], [0, .03, 0])], ['Zoom voltmètre', () => flyTo([.25, .2, .45], [.25, .08, .15])]],
+  protocol: [
+    { id: 'montage', q: 'Q1', html: 'Régler le générateur sur U<sub>PN</sub> = 5,0 V et brancher le voltmètre (COM sur N).' },
+    { id: 'mesures', q: 'Q1', html: 'Mesurer U<sub>MN</sub> en au moins 6 points entre les plaques (x différents).' },
+    { id: 'uniforme', q: 'Q1', html: 'Faire des mesures sur au moins deux lignes y différentes.' },
+    { id: 'hors', q: 'Q1', html: 'Faire au moins une mesure en dehors de l\'espace entre les plaques.' },
+    { id: 'vecteurs', q: 'Q1', html: 'Tracer les vecteurs champ et les lignes de champ.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q1-2', html: 'Calculer E et répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'solution très faiblement conductrice ; tension de 5 V sans danger ; ne pas toucher les plaques avec les mains mouillées',
+  table: { rowTitle: 'Zone', rows: [{ label: 'Entre les armatures', ans: [0, 0, 0, 0] }, { label: 'En dehors des armatures', ans: [1, 2, 1, 1] }],
+    cols: [{ title: 'Direction de E', options: ['perpendiculaire aux armatures', 'variable d\'un point à l\'autre'] }, { title: 'Sens de E', options: ['de P vers N', 'de N vers P', 'variable (lignes courbées)'] }, { title: 'Valeur de E', options: ['constante ≈ 50 V·m⁻¹', 'variable, plus faible', 'nulle partout'] }, { title: 'Le champ est…', options: ['uniforme', 'non uniforme'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', num: true, text: 'Valeur du champ entre les armatures, déduite de tes mesures : E =', unit: 'V·m⁻¹', ans: 50, tol: .08 },
+    { q: 'Q1', num: true, text: 'Calcule U<sub>PN</sub> / d avec d = 10 cm : U<sub>PN</sub> / d =', unit: 'V·m⁻¹', ans: 50, tol: .02 },
+    { q: 'Q1', text: 'Entre les armatures, le vecteur champ électrostatique est orienté…', options: ['de l\'armature P (+) vers l\'armature N (−)', 'de N vers P', 'parallèlement aux armatures'], ans: 0 },
+    { q: 'Q2a', text: 'Pour cartographier le champ des vitesses du vent, on…', options: ['mesure en de nombreux points la direction, le sens et la valeur de la vitesse du vent et on la représente par des vecteurs', 'mesure seulement la température', 'trace une seule flèche pour toute la côte'], ans: 0 },
+    { q: 'Q2b', text: 'Intérêt d\'une carte de champ de vent pour un kitesurfeur :', options: ['connaître direction, sens et force du vent près du spot avant d\'y aller', 'connaître la profondeur de l\'eau', 'aucun intérêt'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Cartographier un champ, c\'est donner en de nombreux points sa direction, son sens et sa valeur. Entre les armatures d\'un condensateur plan, E est perpendiculaire aux armatures, orienté de P vers N, de valeur constante E = U_PN/d ≈ 50 V·m⁻¹ : le champ est uniforme ; il ne l\'est plus en dehors.', 'Le champ entre les armatures est plus fort près de la plaque N.', 'Le champ est orienté de N vers P et sa valeur dépend de x.', 'Le champ est uniforme partout, même en dehors des armatures.'], ans: 0 },
+  build() {
+    POT = solvePot();
+    const g = new THREE.Group(); scene.add(g); cuve10 = g;
+    const cv = document.createElement('canvas'); cv.width = 1200; cv.height = 800; const c = cv.getContext('2d'), s = 50;
+    c.fillStyle = '#fbfcff'; c.fillRect(0, 0, 1200, 800); c.strokeStyle = '#b8c4e0'; c.lineWidth = 2;
+    for (let i = 0; i <= 24; i++) { c.beginPath(); c.moveTo(i * s, 0); c.lineTo(i * s, 800); c.stroke(); } for (let j = 0; j <= 16; j++) { c.beginPath(); c.moveTo(0, j * s); c.lineTo(1200, j * s); c.stroke(); }
+    c.fillStyle = '#5b6475'; c.font = '600 22px Inter, Arial'; c.textAlign = 'center';
+    for (let x = 0; x <= 10; x += 2) c.fillText('x=' + x, (17 - x) * s, 790);
+    c.strokeStyle = '#1A237E'; c.lineWidth = 3; c.setLineDash([10, 8]); c.beginPath(); c.moveTo(0, 400); c.lineTo(1200, 400); c.stroke(); c.setLineDash([]); c.textAlign = 'left'; c.fillText('y = 0', 8, 390);
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+    const sheet = new THREE.Mesh(new THREE.PlaneGeometry(.24, .16), new THREE.MeshStandardMaterial({ map: tx, roughness: .9 })); sheet.rotation.x = -Math.PI / 2; sheet.position.y = .002; g.add(sheet);
+    const gm = GLASS(); gm.opacity = .25; const tray = new THREE.Mesh(new THREE.BoxGeometry(.244, .035, .164), gm); tray.position.y = .0195; g.add(tray);
+    const liq = new THREE.Mesh(new THREE.BoxGeometry(.24, .022, .16), new THREE.MeshStandardMaterial({ color: 0x81d4fa, transparent: true, opacity: .28, depthWrite: false })); liq.position.y = .013; g.add(liq);
+    const pick = new THREE.Mesh(new THREE.PlaneGeometry(.24, .16), new THREE.MeshBasicMaterial({ visible: false })); pick.rotation.x = -Math.PI / 2; pick.position.y = .025; g.add(pick);
+    pick.userData.onPick = hit => { if (!hit) return; const X = hit.point.x / CM, Z = hit.point.z / CM; const x = Math.round((5 - X) * 2) / 2, y = Math.round(Z * 2) / 2; if ($('#mx')) { $('#mx').value = fr(x); $('#my').value = fr(y); } act({ t: 'probe', x, y }); };
+    LAB.pick.push(pick);
+    const cu = new THREE.MeshStandardMaterial({ color: 0xc77b30, metalness: .8, roughness: .35 });
+    for (const [X, nm, col] of [[-5, 'P (+)', '#c62828'], [5, 'N (−)', '#1d2433']]) { const pl = new THREE.Mesh(new THREE.BoxGeometry(.003, .04, .1), cu); pl.position.set(X * CM, .022, 0); g.add(pl); const l = label(nm, { size: 34, scale: .0005, color: col }); l.position.set(X * CM, .05, -.1); g.add(l); }
+    gen10 = makeScreen(.07, .025, { px: 260, text: '0,0 V', bg: '#102030', fg: '#7CFC9A' });
+    const gb = new THREE.Mesh(new THREE.BoxGeometry(.16, .07, .1), new THREE.MeshStandardMaterial({ color: 0x37474f })); gb.position.set(-.27, .035, -.08); scene.add(gb); gen10.mesh.position.set(-.27, .05, -.029); scene.add(gen10.mesh);
+    const gl = label('Générateur', { size: 24, scale: .0007 }); gl.position.set(-.27, .1, -.08); scene.add(gl);
+    volt10 = makeScreen(.07, .028, { px: 260, text: '----', bg: '#0f2a1a', fg: '#7CFC9A' });
+    const vb = new THREE.Mesh(new THREE.BoxGeometry(.11, .045, .15), new THREE.MeshStandardMaterial({ color: 0xffca28 })); vb.position.set(.25, .0225, .12); scene.add(vb); volt10.mesh.rotation.x = -Math.PI / 2; volt10.mesh.position.set(.25, .0455, .1); scene.add(volt10.mesh);
+    const vl = label('Voltmètre', { size: 24, scale: .0007 }); vl.position.set(.25, .07, .2); scene.add(vl);
+    this.wGen = new THREE.Group(); this.wGen.add(wire([[-.22, .05, -.04], [-.12, .08, -.04], [-.05, .045, -.03]], 0xc62828), wire([[-.21, .05, -.05], [0, .12, -.09], [.05, .045, -.03]], 0x212121)); scene.add(this.wGen);
+    this.wVolt = new THREE.Group(); this.wVolt.add(wire([[.22, .045, .07], [.12, .09, .02], [.05, .045, .03]], 0x212121)); scene.add(this.wVolt);
+    probe10 = new THREE.Group(); const pin = new THREE.Mesh(new THREE.CylinderGeometry(.0012, .0012, .05, 8), new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: .9 })); pin.position.y = .025; const hd = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, .05, 12), new THREE.MeshStandardMaterial({ color: 0xc62828 })); hd.position.y = .075; probe10.add(pin, hd);
+    const ml = label('M', { size: 30, scale: .0006 }); ml.position.set(.012, .06, 0); probe10.add(ml); probe10.home = new THREE.Vector3(.3, 0, -.05); probe10.position.copy(probe10.home); scene.add(probe10);
+    this.wProbe = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0xc62828 })); scene.add(this.wProbe); this.updWire();
+    arrows10 = new THREE.Group(); lines10 = new THREE.Group(); g.add(arrows10, lines10);
+    const card = h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'mTab' })));
+    sideCard(chartCard('U_MN en fonction de x (entre les armatures)', 'chU')); sideCard(card);
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene() { S20 = fresh20(); if (!probe10) return; probe10.position.copy(probe10.home); this.updWire(); this.wGen.visible = false; this.wVolt.visible = false; this.wProbe.visible = false; gen10.set('0,0 V'); volt10.set('----'); arrows10.clear(); lines10.clear(); this.drawData(); if ($('#mx')) this.refreshPanel(); },
+  drawData() {
+    const tb = $('#mTab'); if (!tb) return;
+    tb.innerHTML = '<thead><tr><th>Point</th><th>x (cm)</th><th>y (cm)</th><th>U<sub>MN</sub> (V)</th><th>E = U<sub>MN</sub>/x (V·m⁻¹)</th></tr></thead><tbody>' + S20.pts.map((p, i) => `<tr><td>M${i + 1}</td><td>${fr(p.x)}</td><td>${fr(p.y)}</td><td>${p.U.toFixed(2).replace('.', ',')}</td><td>${inside(p) ? Math.round(p.U / (p.x / 100)) : '— (hors des armatures)'}</td></tr>`).join('') + '</tbody>';
+    const pts = S20.pts.filter(inside).map(p => [p.x, p.U]);
+    const k = drawChart($('#chU'), { xmax: 10, ymax: 6, xlabel: 'x (cm)', ylabel: 'U_MN (V)', pts, fit: pts.length >= 2 });
+    $('#chUInfo').innerHTML = k ? `Droite passant par l'origine : U<sub>MN</sub> = ${k.toFixed(3).replace('.', ',')} × x (x en cm), soit E ≈ <b>${Math.round(k * 100)} V·m⁻¹</b>.` : 'Mesure des points entre les armatures pour tracer la courbe.';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act(typeof a === 'function' ? a() : { ...a }) }, t);
+    $('#actions').append(
+      h('h3', {}, '1. Montage'),
+      h('div', { class: 'row' }, B('m1', 'Régler le générateur : U_PN = 5,0 V', { t: 'gen' }), B('m2', 'Brancher le voltmètre (COM sur N, sonde en M)', { t: 'volt' })),
+      h('h3', {}, '2. Mesures (clique sur la feuille quadrillée ou saisis la position)'),
+      h('div', { class: 'row' }, h('label', {}, 'x = ', h('input', { id: 'mx', type: 'text', value: '5', style: 'width:60px' }), ' cm'), h('label', {}, 'y = ', h('input', { id: 'my', type: 'text', value: '0', style: 'width:60px' }), ' cm'),
+        B('m3', 'Placer la sonde en M', () => ({ t: 'probe', x: Math.round(numVal($('#mx').value) * 2) / 2, y: Math.round(numVal($('#my').value) * 2) / 2 })), B('m4', '✍ Noter la mesure', { t: 'note' })),
+      h('h3', {}, '3. Cartographie'),
+      h('div', { class: 'row' }, B('m5', 'Tracer les vecteurs champ en mes points', { t: 'vec' }), B('m6', 'Afficher les lignes de champ (graines de semoule)', { t: 'lines' }), B('m7', 'Effacer mes mesures', { t: 'clear' })),
+      h('div', { id: 'r20', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S20, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#m1', !s.gen); en('#m2', !s.volt); en('#m3', s.volt); en('#m4', s.gen && s.volt && s.M && !s.pts.some(p => p.x === s.M.x && p.y === s.M.y)); en('#m5', s.pts.length >= 2); en('#m6', s.gen); en('#m7', s.pts.length > 0);
+    $('#r20').innerHTML = s.M ? `Sonde en M : x = ${fr(s.M.x)} cm de N, y = ${fr(s.M.y)} cm` + (s.gen && s.volt ? ` → U<sub>MN</sub> = <b>${s.M.U.toFixed(2).replace('.', ',')} V</b>` : '') : 'Sonde non placée.';
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S20;
+    if (a.t === 'gen') { this.wGen.visible = true; if (!INSTANT) await tween(.8, p => gen10.set(fr(UPN * p) + ' V')); gen10.set('5,0 V'); s.gen = true; say('Générateur réglé : U<sub>PN</sub> = 5,0 V entre les armatures (d = 10 cm).'); if (s.volt) step('montage'); this.showV(); return; }
+    if (a.t === 'volt') { this.wVolt.visible = true; this.wProbe.visible = true; s.volt = true; volt10.set('0,00 V'); say('Voltmètre branché : borne COM reliée à la plaque N, borne V reliée à la sonde.'); if (s.gen) step('montage'); this.showV(); return; }
+    if (a.t === 'probe') {
+      if (!isFinite(a.x) || !isFinite(a.y)) { say('Position invalide.'); return false; }
+      const X = Math.max(-11.5, Math.min(11.5, 5 - a.x)), Z = Math.max(-7.5, Math.min(7.5, a.y)); const x = 5 - X, y = Z;
+      s.M = { x, y, U: +readU(x, y).toFixed(2) };
+      const p1 = W3(X, Z, -.03); if (INSTANT) probe10.position.copy(p1); else { const p0 = probe10.position.clone(); await tween(.5, p => { probe10.position.lerpVectors(p0, p1, ease(p)); this.updWire(); }); } this.updWire();
+      this.showV(); say(`Sonde placée en M (x = ${fr(x)} cm ; y = ${fr(y)} cm).` + (s.gen && s.volt ? ` U<sub>MN</sub> = ${s.M.U.toFixed(2).replace('.', ',')} V.` : ' Fais d\'abord le montage.')); return;
+    }
+    if (a.t === 'note') {
+      const p = { ...s.M }; s.pts.push(p); this.drawData();
+      const ins = s.pts.filter(inside); if (new Set(ins.map(q => q.x)).size >= 6) step('mesures'); if (new Set(ins.map(q => q.y)).size >= 2 && ins.length >= 4) step('uniforme'); if (s.pts.some(q => !inside(q))) step('hors');
+      if (s.vec) this.drawVec();
+      say(`Mesure notée : M${s.pts.length} (x = ${fr(p.x)} cm ; y = ${fr(p.y)} cm) : U<sub>MN</sub> = ${p.U.toFixed(2).replace('.', ',')} V` + (inside(p) ? `, E = ${Math.round(p.U / (p.x / 100))} V·m⁻¹.` : ' (en dehors des armatures).'));
+      return;
+    }
+    if (a.t === 'vec') { s.vec = true; this.drawVec(); say('Vecteurs champ tracés en tes points (longueur proportionnelle à E ; 1 cm ↔ 25 V·m⁻¹).'); if (s.lines) step('vecteurs'); if (!INSTANT) flyTo([0, .42, .05], [0, .03, 0]); return; }
+    if (a.t === 'lines') { s.lines = true; this.drawLines(); say('Les graines de semoule s\'alignent le long des lignes de champ (en pratique il faut une tension élevée, par exemple une machine de Wimshurst). Les lignes sont droites et parallèles entre les armatures, courbées sur les bords.'); if (s.vec) step('vecteurs'); if (!INSTANT) flyTo([0, .42, .05], [0, .03, 0]); return; }
+    if (a.t === 'clear') { s.pts = []; s.vec = false; arrows10.clear(); this.drawData(); say('Mesures effacées.'); return; }
+  },
+  updWire() { const t = probe10.position.clone().add(new THREE.Vector3(0, .1, 0)); const a = new THREE.Vector3(.27, .045, .09); const m = a.clone().lerp(t, .5).add(new THREE.Vector3(0, .07, 0)); this.wProbe.geometry.dispose(); this.wProbe.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([a, m, t]), 30, .0018, 6); },
+  showV() { const s = S20; volt10.set(s.volt && s.gen && s.M ? s.M.U.toFixed(2).replace('.', ',') + ' V' : s.volt ? '0,00 V' : '----'); },
+  drawVec() {
+    arrows10.clear();
+    for (const p of S20.pts) { const X = 5 - p.x, Z = p.y, [ex, ez] = fieldAt(X, Z), E = Math.hypot(ex, ez); if (E < 1) { const d = new THREE.Mesh(new THREE.SphereGeometry(.0018, 8, 6), new THREE.MeshBasicMaterial({ color: 0x2e7d32 })); d.position.copy(W3(X, Z, .002)); arrows10.add(d); continue; }
+      const L = E / 25 * CM; arrows10.add(new THREE.ArrowHelper(new THREE.Vector3(ex, 0, ez).normalize(), W3(X, Z, .002), L, 0x2e7d32, Math.min(.006, L * .4), .004)); }
+  },
+  drawLines() {
+    lines10.clear(); const mat = new THREE.LineBasicMaterial({ color: 0xd84315 });
+    const seeds = []; for (let z = -4.5; z <= 4.5; z += 1) seeds.push([-4.9, z, 1]); for (const z of [-5.2, 5.2]) seeds.push([-5, z, 1]); for (const z of [-4, -2, 0, 2, 4]) seeds.push([-5.1, z, -1]);
+    for (const z of [-3, 0, 3]) seeds.push([5.1, z, -1]);
+    for (const [X0, Z0, dir] of seeds) { let X = X0, Z = Z0; const pts = [W3(X, Z, .003)];
+      for (let n = 0; n < 400; n++) { const [ex, ez] = fieldAt(X, Z), E = Math.hypot(ex, ez); if (E < .8) break; X += dir * ex / E * .15; Z += dir * ez / E * .15; if (Math.abs(X) > 11.8 || Math.abs(Z) > 7.8) break; pts.push(W3(X, Z, .003)); if (Math.abs(X - 5) < .1 && Math.abs(Z) <= 5 || Math.abs(X + 5) < .1 && Math.abs(Z) <= 5) break; }
+      if (pts.length > 2) lines10.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat)); }
+  },
+  async demo() {
+    say('Démonstration : montage et première mesure.');
+    await act({ t: 'gen' }, { record: false }); await act({ t: 'volt' }, { record: false });
+    flyTo([0, .42, .05], [0, .03, 0]);
+    for (const x of [2, 5, 8]) { await act({ t: 'probe', x, y: 0 }, { record: false }); await wait(900); }
+    say('À toi : mesure U_MN en de nombreux points et note-les.'); await wait(1200);
+  },
+};
+startTP(C20);
+
+</script></body></html>

@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel 3D · Mesures et incertitudes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Paillasse : en-tête de fiche, puis deux colonnes (tubes à gauche, flacons et carnet à droite), une seule colonne sur téléphone */
+:root {
+  --bg: #eef2f5;          /* carrelage de paillasse, gris bleuté */
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #15212d;
+  --muted: #576776;
+  --line: #d3dce4;
+  --navy: #003366;        /* bleu marine EFIR */
+  --navy-soft: #e3ecf6;
+  --red: #b42318;         /* sécurité, interdit */
+  --red-soft: #fdecea;
+  --green: #2f6f45;       /* vérifié */
+  --green-soft: #e7f3eb;
+  --amber: #8c6d1f;
+  --amber-soft: #fbf3df;
+  --glass: rgba(120, 150, 175, .55);
+  --glass-fill: rgba(255, 255, 255, .55);
+  --water: rgba(170, 205, 230, .38);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+    --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+    --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+    --water: rgba(150, 190, 225, .28); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1720; --surface: #17222e; --surface-2: #1d2a38; --ink: #e5ecf2; --muted: #9aaab9; --line: #2b3a49;
+  --navy: #8bb8e8; --navy-soft: #1b2d42; --red: #ff8a7a; --red-soft: #3a1d1b; --green: #7fd09a; --green-soft: #183026;
+  --amber: #e5c46e; --amber-soft: #33291a; --glass: rgba(170, 200, 225, .55); --glass-fill: rgba(255, 255, 255, .06);
+  --water: rgba(150, 190, 225, .28); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; color: var(--navy); }
+h1 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); line-height: 1.15; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+sub, sup { font-size: .7em; line-height: 0; }
+.kicker { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+header.fiche { display: grid; gap: 10px; }
+.pb { border: 1.5px solid var(--red); background: var(--surface); border-radius: var(--radius); padding: 10px 14px; font-weight: 700; }
+.pb span { color: var(--red); }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .92rem; padding: 0; margin: 0; list-style: none; }
+.steps li b { color: var(--ink); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: .88rem; }
+
+/* sécurité */
+.epi { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .92rem; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--green); background: var(--green-soft); color: var(--green); font-weight: 700; }
+.chip:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+
+/* porte-tubes */
+.rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 8px 6px; }
+.tube { font: inherit; background: none; border: 2px solid transparent; border-radius: 10px; padding: 4px 2px 2px; cursor: pointer; display: grid; justify-items: center; gap: 2px; color: var(--ink); }
+.tube[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); }
+.tube svg { width: 52px; height: 178px; overflow: visible; }
+.tube .lab { font-size: .72rem; line-height: 1.15; text-align: center; min-height: 2.3em; color: var(--muted); }
+.tube .num { font-weight: 700; font-size: .8rem; }
+.glass { fill: var(--glass-fill); stroke: var(--glass); stroke-width: 2; }
+.drop { animation: fall .55s ease-in forwards; }
+@keyframes fall { from { transform: translateY(-34px); opacity: 1; } to { transform: translateY(var(--dy, 120px)); opacity: .2; } }
+.ppt circle { transition: fill 9s linear, opacity .9s ease, transform 2.2s ease-in; }
+@media (prefers-reduced-motion: reduce) { .drop { animation: none; opacity: 0; } .ppt circle { transition: none; } }
+.bench-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sel-info { flex: 1 1 220px; min-width: 0; font-size: .92rem; }
+
+/* flacons */
+.bottles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.bottle { font: inherit; text-align: left; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 8px 10px; cursor: pointer; display: grid; gap: 4px; }
+.bottle:hover { border-color: var(--navy); }
+.bottle .nm { font-weight: 700; line-height: 1.2; }
+.bottle .io { font-size: .85rem; color: var(--muted); }
+.bottle .act { font-size: .78rem; color: var(--navy); font-weight: 700; }
+.bottle.reagent { background: var(--navy-soft); }
+.bottle[disabled] { opacity: .45; cursor: not-allowed; }
+.pic { display: flex; gap: 4px; }
+.pic img { width: 30px; height: 30px; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--glass); vertical-align: -1px; margin-right: 4px; }
+
+button.btn { font: inherit; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1.5px solid var(--navy); background: var(--navy); color: var(--surface); }
+button.btn.ghost { background: transparent; color: var(--navy); }
+button.btn.warn { border-color: var(--red); color: var(--red); background: transparent; }
+button.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* messages */
+.toast { border-radius: 8px; padding: 9px 12px; font-size: .95rem; border: 1px solid var(--line); background: var(--surface-2); }
+.toast.err { border-color: var(--red); background: var(--red-soft); }
+.toast.ok { border-color: var(--green); background: var(--green-soft); }
+.toast.info { border-color: var(--amber); background: var(--amber-soft); }
+
+/* carnet */
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
+.log li { font-size: .92rem; border-left: 3px solid var(--line); padding: 2px 0 2px 10px; }
+.log li.pos { border-left-color: var(--navy); }
+.log li:empty { display: none; }
+.log .t { color: var(--muted); font-size: .8rem; }
+
+/* tableaux */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 640px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; vertical-align: middle; }
+thead th, tbody th { background: var(--navy-soft); color: var(--navy); font-weight: 700; }
+tbody th { text-align: left; }
+td select { font: inherit; font-size: .88rem; width: 100%; min-width: 0; padding: 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+td.good select { border-color: var(--green); background: var(--green-soft); }
+td.bad select { border-color: var(--red); background: var(--red-soft); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.foot { color: var(--muted); font-size: .82rem; text-align: center; }
+details summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+
+/* animation et guide (version 3e) */
+.guide { display: flex; gap: 12px; align-items: center; background: var(--navy); color: var(--surface); border-radius: var(--radius); padding: 12px 14px; font-size: 1.05rem; }
+.guide b { color: inherit; }
+.guide .gn { flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--surface); color: var(--navy); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; }
+.next { box-shadow: 0 0 0 3px var(--amber); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--amber) 35%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .next { animation: none; } }
+.bench { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 520px) { .bench { grid-template-columns: minmax(0, 1fr); } .stage svg { max-height: 260px; } }
+.stage { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; display: grid; gap: 6px; justify-items: center; }
+.stage svg { width: 100%; max-width: 200px; height: auto; overflow: hidden; }
+.stage .caption { font-size: .95rem; text-align: center; min-height: 4.5em; }
+.stlbl { font: 700 15px var(--font-body); fill: var(--ink); }
+.mots summary { font-size: 1rem; }
+.mots dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 0; }
+.mots dt { font-weight: 700; color: var(--navy); }
+.mots dd { margin: 0; }
+@media (max-width: 520px) { .mots dl { grid-template-columns: 1fr; } .mots dd { margin-bottom: 6px; } }
+.tube .lab { font-size: .78rem; }
+.bottle .act { font-size: .88rem; }
+
+/* version 2 : actions rapides et compte rendu */
+.quick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.quick:empty { display: none; }
+.qbtn { font-size: .9rem; padding: 6px 10px; }
+.crform { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.crform label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+.crform input { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; width: 100%; }
+.crform label:first-child { flex: 1 1 220px; } .crform label:nth-child(2) { flex: 0 1 120px; }
+.cr { border: 1.5px solid var(--navy); border-radius: var(--radius); padding: 14px; background: var(--surface); display: grid; gap: 8px; }
+.cr h3, .cr h4 { margin: 4px 0 0; color: var(--navy); font-family: var(--font-display); }
+.cr ol, .cr ul { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.cr table { min-width: 0; font-size: .88rem; } .cr td, .cr th { text-align: left; }
+.cr .t { display: none; } .cr[hidden] { display: none; }
+.codebox { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.codebox input { font: inherit; width: 9em; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-transform: uppercase; }
+
+/* version 3 : question ion utile, mode économe */
+.ask { display: grid; gap: 8px; max-width: 260px; font-size: .92rem; text-align: center; }
+.ask .toast { text-align: left; }
+body.eco *, body.eco *::before, body.eco *::after { animation: none !important; transition: none !important; }
+#effacer { font-size: .85rem; padding: 4px 10px; margin-left: 6px; }
+
+/* version 4 : manipulations pilotées par l'élève */
+.vol { font-size: .92rem; align-self: center; }
+#verser { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.askbox:empty { display: none; }
+.askbox .ask { max-width: 280px; }
+.stage svg { overflow: visible; }
+
+.qtitle { width: 100%; text-align: center; font-size: .92rem; margin: 2px 0 0; }
+.quick .qbtn.next { font-size: .95rem; }
+.prof { margin: -4px 0 0; color: var(--navy); font-size: 1rem; }
+
+/* protocole de la fiche */
+.proto { border: 1.5px solid var(--navy); border-radius: var(--radius); background: var(--surface); padding: 10px 12px; }
+.proto summary { font-weight: 700; color: var(--navy); cursor: pointer; }
+.proto ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.proto li { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 1.4em; gap: 8px; align-items: start; font-size: .92rem; padding: 6px 8px; border-radius: 8px; }
+.proto li.partie { display: block; grid-template-columns: none; font-family: var(--font-display); font-weight: 700; color: var(--navy); padding: 6px 0 0; font-size: .95rem; }
+.proto .q { font-weight: 700; color: var(--muted); font-size: .8rem; padding-top: 2px; }
+.proto .st { font-weight: 700; color: var(--green); text-align: center; }
+.proto li.cur { background: var(--amber-soft); outline: 1.5px solid var(--amber); }
+.proto li.cur .st { color: var(--amber); }
+.proto li.fait .tx { color: var(--muted); }
+.proto li.fait { background: var(--green-soft); }
+.proto ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.proto ul li { display: block; padding: 0; font-size: .88rem; background: none; outline: none; }
+.proto ul li.fait { color: var(--green); background: none; }
+
+#prototout { margin-top: 8px; }
+.proto:not(.tout) #proto > li:not(.cur) { display: none; }
+.proto li { grid-template-columns: 4.2em minmax(0, 1fr) 1.4em; }
+.extract{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center}.extract svg{width:120px;height:120px}
+
+/* ===== Compléments communs aux simulations 3D (Terminale) ===== */
+.scene3d { margin: 0; position: relative; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.scene3d canvas.c3d { width: 100%; aspect-ratio: 16 / 10; display: block; touch-action: none; cursor: grab; }
+.scene3d canvas.c3d:active { cursor: grabbing; }
+.scene3d .vues { position: absolute; top: 8px; left: 8px; display: flex; flex-wrap: wrap; gap: 4px; max-width: calc(100% - 16px); }
+.scene3d .vues button, .scene3d .zoom button { font: inherit; font-size: .78rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--navy); cursor: pointer; }
+.scene3d .vues button[aria-pressed="true"] { background: var(--navy); color: var(--surface); border-color: var(--navy); }
+.scene3d .zoom { position: absolute; right: 8px; bottom: 8px; display: grid; gap: 4px; }
+.scene3d .zoom button { width: 2rem; height: 2rem; padding: 0; font-size: 1.1rem; }
+.scene3d .hud { position: absolute; left: 8px; bottom: 8px; font-size: .8rem; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-variant-numeric: tabular-nums; max-width: calc(100% - 64px); }
+.scene3d .hud:empty { display: none; }
+.scene3d .astuce { position: absolute; right: 8px; top: 8px; font-size: .72rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 80%, transparent); border-radius: 6px; padding: 2px 6px; }
+@media (max-width: 520px) { .scene3d canvas.c3d { aspect-ratio: 4 / 3.6; } .scene3d .astuce { display: none; } }
+.nogl { padding: 30px 16px; text-align: center; color: var(--red); font-weight: 700; }
+.reglages { display: grid; gap: 10px; }
+.reglage { display: grid; grid-template-columns: 9em minmax(0, 1fr) 7.6em; gap: 10px; align-items: center; font-size: .95rem; }
+.reglage label { font-weight: 700; }
+.reglage output { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); text-align: right; }
+.reglage input[type=range] { width: 100%; accent-color: var(--navy); }
+@media (max-width: 520px) { .reglage { grid-template-columns: minmax(0, 1fr) auto; } .reglage input[type=range] { grid-column: 1 / -1; grid-row: 2; } }
+.calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
+.calc div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .88rem; }
+.calc b { display: block; font-variant-numeric: tabular-nums; color: var(--navy); font-size: 1rem; }
+.question { border: 1.5px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--surface); min-width: 0; }
+.question h3 { font-size: 1rem; }
+.question .tag { font-size: .72rem; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 6px; vertical-align: 2px; }
+.question select, .question input[type=text] { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.question select { width: 100%; }
+.question label { display: block; }
+.question label select { display: block; margin-top: 4px; }
+.question select.ok, .question input.ok { border-color: var(--green); background: var(--green-soft); }
+.question select.ko, .question input.ko { border-color: var(--red); background: var(--red-soft); }
+.question .pouce summary { font-size: .9rem; color: var(--amber); }
+.question .pouce { font-size: .88rem; }
+.question.verrou { opacity: .55; pointer-events: none; }
+.onglets { display: flex; flex-wrap: wrap; gap: 6px; }
+.onglets button { font: inherit; font-size: .88rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+.onglets button[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); color: var(--navy); }
+.graphe { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
+.graphe canvas { width: 100%; height: auto; aspect-ratio: 16 / 10; display: block; }
+.code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .84rem; background: #fffbe8; color: #2b2b2b; border: 1px solid #e8d9a0; border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: pre; line-height: 1.45; margin: 0; }
+.code .n { color: #9a8b55; user-select: none; }
+.code .c { color: #2f7d4a; }
+.code .k { color: #b22a7a; }
+.code .trou { background: #fff; border: 1.5px dashed #c77700; border-radius: 4px; padding: 0 6px; }
+.tablewrap.pointage { max-height: 230px; overflow: auto; }
+.tablewrap.pointage table { min-width: 420px; font-size: .84rem; }
+.tablewrap.pointage td { font-variant-numeric: tabular-nums; padding: 3px 6px; }
+.tablewrap.pointage tr.vu td { background: var(--amber-soft); }
+.badge3d { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; color: var(--surface); background: var(--navy); border-radius: 4px; padding: 1px 6px; vertical-align: 3px; }
+#maconc { width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cr[hidden] { display: none; }
+/* gabarit pédagogique : situation et modèle, prédiction, énergie, python, piège du bac */
+.parcours { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; list-style: none; counter-reset: et; font-size: .9rem; }
+.parcours li { counter-increment: et; color: var(--muted); }
+.parcours li::before { content: counter(et, decimal-leading-zero) " "; font-weight: 700; color: var(--navy); }
+.parcours li b { color: var(--ink); }
+.modele { border: 1.5px solid var(--amber); background: var(--amber-soft); border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 4px; font-size: .95rem; }
+.modele h3 { font-size: .95rem; color: var(--amber); }
+.modele ul { margin: 0; padding-left: 1.2em; }
+.predire { border: 2px solid var(--navy); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--navy-soft); }
+.predire h3 { font-size: 1rem; }
+.predire .chip { text-align: left; }
+.energies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; height: 150px; padding: 6px 10px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.energies .barre { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.energies .barre .j { position: relative; }
+.energies .barre .j i { position: absolute; bottom: 0; left: 15%; right: 15%; border-radius: 4px 4px 0 0; height: 0; background: var(--c); }
+.energies .barre b { color: var(--navy); }
+.piege { border: 1.5px solid #c77700; background: #fff4e0; color: #4a3200; border-radius: var(--radius); padding: 10px 14px; display: grid; gap: 6px; }
+.piege h3 { color: #a05a00; font-size: 1rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .piege { background: #33291a; color: #f3e2c0; } }
+.legende3d { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .84rem; color: var(--muted); }
+.legende3d span::before { content: ""; display: inline-block; width: 16px; height: 4px; border-radius: 2px; background: var(--c); vertical-align: middle; margin-right: 5px; }
+
+.ecran { font-family: ui-monospace, Consolas, monospace; background: #0d1f14; color: #7dffb0; border-radius: 8px; padding: 6px 12px; font-size: 1.2rem; font-weight: 700; display: inline-block; min-width: 7em; text-align: right; }
+.etape-h { font-weight: 700; margin: 6px 0 2px; color: var(--navy); }
+.hold { touch-action: none; user-select: none; -webkit-user-select: none; }
+.lecture { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); min-height: 1.4em; margin: 6px 0 0; }
+.fits { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.fits label { font-size: .9rem; color: var(--muted); }
+.fits select, .reglage select { font: inherit; width: 100%; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.doc { font-size: .9rem; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface-2); margin: 6px 0; }
+table.data { width: 100%; border-collapse: collapse; font-size: .86rem; margin: 6px 0; }
+table.data th, table.data td { border: 1px solid var(--line); padding: 4px 6px; text-align: center; }
+table.data th { background: var(--surface-2); }
+
+</style>
+<script src="lib/three-r128.min.js"></script>
+<style id="efir-colonnes">.wrap{grid-template-columns:minmax(0,1fr)}.wrap>*{min-width:0}canvas{max-width:100%}table{min-width:0;max-width:100%}th,td{overflow-wrap:anywhere}</style></head>
+<body>
+<div class="wrap">
+  <header class="fiche">
+    <a class="retour" href="#" onclick="parent.location.hash='terminale/matiere/Transformations%20acide-base';return false" style="display:inline-block;margin:0 0 8px;font-weight:700;color:#1f6fd1;text-decoration:none">← Retour au chapitre</a>
+    <p class="kicker">EFIR · Terminale spécialité · Chapitre 1 · Méthode : mesures et incertitudes (programme du lycée, épreuve du bac) · Simulation 3D <span class="badge3d">3D</span></p>
+    <h1>Mesures et incertitudes : évaluer, écrire et comparer un résultat</h1>
+    <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+    <p class="pb"><span>Problématique :</span> quelle confiance accorder à une mesure, et comment l'écrire pour qu'un autre puisse la comparer ?</p>
+    <ol class="parcours"><li><b>Répéter</b> une mesure : incertitude-type de type A</li><li><b>Lire</b> un instrument : incertitude-type de type B</li><li><b>Combiner</b> : incertitude d'une grandeur calculée (formule fournie)</li><li><b>Écrire</b> le résultat avec le bon nombre de chiffres</li><li><b>Comparer</b> à une valeur de référence : le z-score</li></ol>
+    <details class="panel mots" open><summary>📖 Documents et données</summary>
+<div class="doc"><b>Pourquoi une incertitude ?</b> Quand on mesure plusieurs fois la même grandeur, on n'obtient pas toujours la même valeur : c'est la <b>variabilité</b> de la mesure. On ne donne donc jamais une valeur seule, mais une valeur et son <b>incertitude-type u</b>, qui indique la dispersion des valeurs qu'on peut raisonnablement attribuer à la grandeur.</div>
+<div class="doc"><b>Type A (mesures répétées).</b> Pour N mesures indépendantes x<sub>1</sub>, …, x<sub>N</sub> : on retient la moyenne x̄ et <b>u(x) = σ<sub>n−1</sub> / √N</b>, où σ<sub>n−1</sub> est l'écart-type expérimental (calculatrice : σx<sub>n−1</sub> ou s ; tableur : ECARTYPE.STANDARD).</div>
+<div class="doc"><b>Type B (un seul mesurage).</b> Lecture sur une graduation : <b>u = 1 graduation / √12</b>. Tolérance ou précision ± a indiquée par le fabricant (verrerie, appareil) : <b>u = a / √3</b>.</div>
+<div class="doc"><b>Grandeur calculée.</b> L'incertitude-type se calcule avec une <b>formule fournie</b> par l'énoncé, par exemple pour G = x × y / z : u(G)/G = √[(u(x)/x)² + (u(y)/y)² + (u(z)/z)²].</div>
+<div class="doc"><b>Écriture du résultat.</b> u s'arrondit <b>par excès</b> à un chiffre significatif (deux au plus) ; la valeur s'arrête à la <b>même décimale</b> que u. On écrit G = valeur unité ; u(G) = … unité.</div>
+<div class="doc"><b>Comparaison à une référence.</b> <b>z = |G<sub>mes</sub> − G<sub>réf</sub>| / u(G)</b>, calculé avec les valeurs non arrondies. Si z ≤ 2, le résultat est compatible avec la référence ; sinon, on cherche une cause (erreur systématique, protocole, incertitude sous-estimée).</div>
+</details>
+    <details class="panel mots" id="aide"><summary>❓ Aide</summary><dl><dt>Chiffres significatifs</dt><dd>Les zéros à gauche ne comptent pas : 0,0508 a 3 chiffres significatifs. Pour l'arrondir par excès à 1 chiffre : 0,06.</dd>
+<dt>Puissances de dix</dt><dd>Écrivez valeur et incertitude avec la même puissance de dix : c = 4,2 × 10<sup>3</sup> J·kg<sup>−1</sup>·°C<sup>−1</sup> ; u(c) = 0,1 × 10<sup>3</sup> J·kg<sup>−1</sup>·°C<sup>−1</sup>.</dd>
+<dt>Valeur aberrante</dt><dd>Une valeur très éloignée des autres, due à une erreur de manipulation identifiée, peut être écartée avant le calcul, en le signalant.</dd>
+<dt>Outil</dt><dd>La <a href="#" onclick="parent.location.hash='outil/calculatrice';return false">calculatrice scientifique</a> du labo calcule aussi une incertitude-type et un z-score.</dd></dl></details>
+  </header>
+  <div id="pap-partie-1"></div><div id="pap-partie-2"></div><div id="pap-partie-3"></div>
+
+  <section class="panel inc-panel" aria-labelledby="h-calc">
+    <header><h2 id="h-calc">🧮 Calculateur d'incertitude</h2><span class="hint">vos propres mesures</span></header>
+    <p class="inc-p">Entrez vos valeurs mesurées (séparées par des espaces ou des points-virgules, virgule décimale acceptée). Le calculateur donne la moyenne, σ<sub>n−1</sub>, u = σ<sub>n−1</sub> / √N, l'écriture du résultat et, si vous donnez une référence, le z-score.</p>
+    <div class="inc-grille">
+      <label>Mesures<input id="inc-val" type="text" inputmode="decimal" value="1,912 ; 1,894 ; 1,925 ; 1,903 ; 1,887 ; 1,918 ; 1,906 ; 1,898"></label>
+      <label>Unité<input id="inc-unite" type="text" value="s"></label>
+      <label>Valeur de référence (facultatif)<input id="inc-ref" type="text" inputmode="decimal" value=""></label>
+    </div>
+    <div class="row-actions"><button class="btn" id="inc-go" type="button">Calculer</button></div>
+    <div id="inc-out" class="inc-out" aria-live="polite"></div>
+    <h3 class="inc-h3">Un seul mesurage (type B)</h3>
+    <div class="inc-grille">
+      <label>Type<select id="inc-b-type"><option value="12">lecture sur une graduation : u = graduation / √12</option><option value="3">tolérance ou précision ± a : u = a / √3</option></select></label>
+      <label>Graduation ou a<input id="inc-b-a" type="text" inputmode="decimal" value="0,1"></label>
+    </div>
+    <div class="row-actions"><button class="btn ghost" id="inc-b-go" type="button">Calculer u</button></div>
+    <div id="inc-b-out" class="inc-out" aria-live="polite"></div>
+  </section>
+
+  <section class="panel inc-panel" aria-labelledby="h-memo">
+    <header><h2 id="h-memo">📌 Mémo pour le bac</h2></header>
+    <table class="inc-tab"><thead><tr><th>Situation</th><th>Incertitude-type</th></tr></thead><tbody>
+      <tr><td>N mesures répétées</td><td>u = σ<sub>n−1</sub> / √N (type A)</td></tr>
+      <tr><td>Lecture sur une graduation</td><td>u = 1 graduation / √12 (type B)</td></tr>
+      <tr><td>Tolérance ou précision ± a</td><td>u = a / √3 (type B)</td></tr>
+      <tr><td>Grandeur calculée</td><td>formule fournie par l'énoncé</td></tr>
+      <tr><td>Comparaison à une référence</td><td>z = |G − G<sub>réf</sub>| / u(G) ; compatible si z ≤ 2</td></tr>
+    </tbody></table>
+    <p class="inc-p"><b>Erreurs fréquentes :</b> donner σ<sub>n−1</sub> au lieu de σ<sub>n−1</sub> / √N ; recopier tous les chiffres de la calculatrice ; arrondir u par défaut ; écrire la valeur et u avec des décimales différentes ; conclure « le résultat est faux » dès que z ≠ 0.</p>
+  </section>
+  <p class="foot">Méthode d'après le programme de physique-chimie du lycée (mesure et incertitudes, 2<sup>de</sup> à Terminale) et les exigences de l'épreuve écrite et de l'ECE du bac · Mme Messaoudi · EFIR 2026-2027.</p>
+</div>
+<style>
+.inc-panel { margin-top: 18px; min-width: 0; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
+.inc-panel header { flex-wrap: wrap; gap: 6px; }
+.inc-grille input, .inc-grille select { width: 100%; box-sizing: border-box; }
+.inc-p { margin: 8px 0 12px; line-height: 1.55; }
+.inc-grille { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr) minmax(0,1.4fr); gap: 12px; margin: 8px 0; }
+.inc-grille label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+.inc-grille input, .inc-grille select { font: inherit; font-weight: 400; padding: 10px 12px; border-radius: 10px; border: 1.5px solid #E9D5FF; background: #fff; color: #1F1630; min-width: 0; }
+.inc-out { margin-top: 10px; line-height: 1.6; }
+.inc-out .res { display: inline-block; background: #F3E8FF; border: 1.5px solid #E9D5FF; border-radius: 12px; padding: 8px 14px; font-weight: 700; color: #4A148C; margin: 4px 0; }
+.inc-out .ok { color: #1b5e20; font-weight: 700; } .inc-out .ko { color: #b71c1c; font-weight: 700; }
+.inc-h3 { margin: 18px 0 4px; color: #4A148C; }
+.inc-tab { width: 100%; border-collapse: collapse; margin: 6px 0 4px; }
+.inc-tab th, .inc-tab td { border: 1px solid #E9D5FF; padding: 8px 10px; text-align: left; vertical-align: top; }
+.inc-tab th { background: #F3E8FF; color: #4A148C; }
+@media (max-width: 700px) { .inc-grille { grid-template-columns: minmax(0,1fr); } .inc-tab th, .inc-tab td { padding: 6px; } }
+</style>
+<script>
+(function () {
+  const $ = s => document.querySelector(s), fr = x => String(x).replace(".", ",");
+  const nombres = t => (t || "").replace(/;/g, " ").split(/\s+/).map(v => v.trim().replace(",", ".")).filter(v => v !== "").map(Number);
+  /* arrondi par excès de u à un chiffre significatif, et nombre de décimales correspondant */
+  function arrondiU(u) { if (!(u > 0)) return { u: 0, d: 0 }; const p = Math.floor(Math.log10(u)), q = Math.pow(10, p); let r = Math.ceil(u / q - 1e-9) * q; if (r >= 10 * q) { r = 10 * q; }
+    const d = Math.max(0, -Math.floor(Math.log10(r))); return { u: r, d }; }
+  function calcule() {
+    const X = nombres($("#inc-val").value), U = $("#inc-unite").value.trim(), out = $("#inc-out"), sp = U ? " " + U : "";
+    if (X.length < 2 || X.some(isNaN)) { out.innerHTML = '<span class="ko">Entrez au moins deux nombres.</span>'; return; }
+    const N = X.length, m = X.reduce((a, b) => a + b, 0) / N, s = Math.sqrt(X.reduce((a, b) => a + (b - m) ** 2, 0) / (N - 1)), u = s / Math.sqrt(N), A = arrondiU(u);
+    let h = `N = ${N} ; moyenne = ${fr(+m.toPrecision(8))}${sp} ; σ<sub>n−1</sub> = ${fr(+s.toPrecision(4))}${sp} ; u = σ<sub>n−1</sub> / √N = ${fr(+u.toPrecision(4))}${sp}<br>`;
+    h += `<span class="res">Résultat : ${fr(m.toFixed(A.d))}${sp} ; u = ${fr(A.u.toFixed(A.d))}${sp}</span>`;
+    const r = nombres($("#inc-ref").value)[0];
+    if (r !== undefined && !isNaN(r)) { const z = u > 0 ? Math.abs(m - r) / u : Infinity;
+      h += `<br>z = |${fr(+m.toPrecision(6))} − ${fr(r)}| / ${fr(+u.toPrecision(3))} = ${fr(z.toFixed(2))} : ` + (z <= 2 ? '<span class="ok">z ≤ 2, résultat compatible avec la référence.</span>' : '<span class="ko">z > 2, résultat non compatible : cherchez une erreur systématique.</span>'); }
+    out.innerHTML = h; }
+  function calculeB() { const a = nombres($("#inc-b-a").value)[0], k = +$("#inc-b-type").value, out = $("#inc-b-out");
+    if (!(a > 0)) { out.innerHTML = '<span class="ko">Entrez une valeur positive.</span>'; return; }
+    const u = a / Math.sqrt(k), A = arrondiU(u); out.innerHTML = `u = ${fr(a)} / √${k} = ${fr(+u.toPrecision(3))} <span class="res">u ≈ ${fr(A.u.toFixed(A.d))} (arrondie par excès)</span>`; }
+  $("#inc-go").addEventListener("click", calcule); $("#inc-b-go").addEventListener("click", calculeB);
+})();
+</script>
+</body>
+</html>

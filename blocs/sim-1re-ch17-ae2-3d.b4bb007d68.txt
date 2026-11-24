@@ -1,0 +1,163 @@
+<!--efir1re:AE2 · Perception des couleurs 3D-->
+window.EFIR_RETOUR = "premiere/ondes/Couleurs";
+
+// ====================================================================
+// Ch. 17 · AE2 · Perception des couleurs (tâche complexe)
+// ====================================================================
+// ====================================================================
+// Module commun : lumières colorées, filtres, spectres (Ch. 17)
+// bandes : B 400-500 nm, G 500-570, Y 570-600, R 600-750
+// ====================================================================
+const BANDS17 = { B: [400, 500], G: [500, 570], Y: [570, 600], R: [600, 720] };
+const LIGHTS17 = {
+  blanche: { nom: 'lumière blanche', b: 'BGYR' }, rouge: { nom: 'filtre rouge', b: 'R' }, verte: { nom: 'filtre vert', b: 'G' }, bleue: { nom: 'filtre bleu', b: 'B' },
+  magenta: { nom: 'filtre magenta', b: 'BR' }, cyan: { nom: 'filtre cyan', b: 'BG' }, jaune: { nom: 'filtre jaune', b: 'GYR' }, sodium: { nom: 'lampe à vapeur de sodium', b: 'Y', line: 589 },
+};
+const sig17 = x => 1 / (1 + Math.exp(-x));
+function specVal17(key, l) {
+  const L = LIGHTS17[key]; if (L.line) return Math.exp(-(((l - L.line) / 3) ** 2));
+  const lamp = .35 + .65 * (l - 380) / 400; let t = 0;
+  for (const k of L.b) { const [a, b] = BANDS17[k]; t += sig17((l - a + (k === 'B' ? 25 : 0)) / 7) * sig17((b - l + (k === 'R' ? 60 : 0)) / 7); } t = Math.min(1, t);
+  return lamp * (key === 'blanche' ? 1 : .05 + .9 * t);
+}
+function wl2rgb17(l) {
+  let r = 0, g = 0, b = 0;
+  if (l < 440) { r = -(l - 440) / 60; b = 1; } else if (l < 490) { g = (l - 440) / 50; b = 1; } else if (l < 510) { g = 1; b = -(l - 510) / 20; } else if (l < 580) { r = (l - 510) / 70; g = 1; } else if (l < 645) { r = 1; g = -(l - 645) / 65; } else r = 1;
+  const f = l < 420 ? .3 + .7 * (l - 380) / 40 : l > 700 ? .3 + .7 * (780 - l) / 80 : 1;
+  return `rgb(${Math.round(255 * r * f)},${Math.round(255 * g * f)},${Math.round(255 * b * f)})`;
+}
+function drawSpectrum17(cv, key, title) {
+  const W = cv.width = cv.clientWidth * 2 || 600, H = cv.height = Math.round(W * .5), c = cv.getContext('2d');
+  const L = 70, Bm = 56, T = 40, pw = W - L - 20, ph = H - Bm - T, X = l => L + pw * (l - 380) / 400, Y = v => T + ph * (1 - v);
+  c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
+  c.strokeStyle = '#e3e8f0'; c.font = '20px Inter, Arial'; c.fillStyle = '#5b6475'; c.textAlign = 'center';
+  for (let l = 400; l <= 750; l += 50) { c.beginPath(); c.moveTo(X(l), T); c.lineTo(X(l), T + ph); c.stroke(); c.fillText(l, X(l), T + ph + 24); }
+  c.fillStyle = '#1A237E'; c.font = '600 21px Inter, Arial'; c.fillText('λ (nm)', L + pw / 2, H - 8); c.textAlign = 'left'; c.fillText(title || '', L, 26);
+  c.save(); c.translate(22, T + ph / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('Intensité relative', 0, 0); c.restore();
+  if (key) { const mx = Math.max(...Array.from({ length: 401 }, (_, i) => specVal17(key, 380 + i))); for (let l = 380; l < 780; l++) { const v = specVal17(key, l) / mx; c.fillStyle = wl2rgb17(l); c.fillRect(X(l), Y(v), X(l + 1) - X(l) + .5, T + ph - Y(v)); }
+    c.strokeStyle = '#1d2433'; c.lineWidth = 2.5; c.beginPath(); for (let l = 380; l <= 780; l++) { const v = specVal17(key, l) / mx; l === 380 ? c.moveTo(X(l), Y(v)) : c.lineTo(X(l), Y(v)); } c.stroke(); }
+  c.strokeStyle = '#1d2433'; c.lineWidth = 2; c.beginPath(); c.moveTo(L, T); c.lineTo(L, T + ph); c.lineTo(L + pw, T + ph); c.stroke();
+}
+// couleur perçue d'un ensemble de bandes
+function rgbOf17(b) { let r = 0, g = 0, bl = 0; if (b.includes('R')) r = 1; if (b.includes('G')) g = 1; if (b.includes('B')) bl = 1; if (b.includes('Y')) { r = 1; g = Math.max(g, .82); } return [r, g, bl]; }
+function nameOf17(b) {
+  if (!b) return 'noir'; const [r, g, bl] = rgbOf17(b);
+  if (r && g >= .8 && bl) return 'blanc'; if (r && g >= .8) return 'jaune'; if (r && bl) return 'magenta'; if (g && bl) return 'cyan'; if (r) return 'rouge'; if (g) return 'vert'; if (bl) return 'bleu'; return 'noir';
+}
+const hex17 = ([r, g, b], k = 1) => '#' + [r, g, b].map(v => Math.round(Math.min(1, v * k) * 255).toString(16).padStart(2, '0')).join('');
+const inter17 = (a, b) => [...a].filter(x => b.includes(x)).join('');
+
+const OBJ29 = { rouge: { b: 'R', nom: 'voiture rouge' }, vert: { b: 'G', nom: 'voiture verte' }, bleu: { b: 'B', nom: 'voiture bleue' }, jaune: { b: 'GYR', nom: 'voiture jaune' } };
+const L29 = ['blanche', 'rouge', 'verte', 'bleue', 'magenta', 'cyan', 'jaune', 'sodium'];
+let cars29 = {}, cone29, bulb29, S29 = null;
+const fresh29 = () => ({ light: 'blanche', specs: [], notes: {} });
+const lname29 = k => k === 'blanche' ? 'lumière blanche' : k === 'sodium' ? 'lampe à vapeur de sodium' : 'lumière blanche + ' + LIGHTS17[k].nom;
+const C29 = {
+  id: 'p1_ch17_ae2', code: 'AE2', short: 'Perception des couleurs 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 17 · Activité expérimentale AE2 · Simulation 3D',
+  title: 'Perception des couleurs',
+  problem: 'La nuit, sous l\'éclairage orangé d\'une lampe à vapeur de sodium, une voiture rouge paraît noire. De quels paramètres dépend la couleur perçue d\'un objet ?',
+  mots: `<p><b>Diffusion</b> : l'objet renvoie dans toutes les directions une partie de la lumière qu'il reçoit ; c'est cette lumière diffusée qui entre dans l'œil.<br>
+  <b>Absorption</b> : la lumière qui n'est ni diffusée ni transmise est absorbée par l'objet.<br>
+  <b>Spectre</b> d'une lumière : intensité lumineuse relative des radiations qui la composent, en fonction de leur longueur d'onde.<br>
+  Les pigments d'une voiture rouge diffusent les radiations rouges et absorbent les autres. La lampe à vapeur de sodium émet une lumière quasi monochromatique (λ = 589 nm).</p>`,
+  aide: `<p>1. Analyse d'abord les lumières : enregistre le spectre de chaque lumière (lampe blanche avec ou sans filtre, lampe à vapeur de sodium).<br>
+  2. Éclaire les voitures avec chacune de ces lumières et note la couleur perçue de chaque voiture.<br>
+  3. Compare : la couleur perçue dépend-elle seulement de l'objet ?</p>`,
+  views: { ensemble: [[0, .32, .62], [0, .07, -.05]] },
+  viewbar: [['Zoom voitures', () => flyTo([0, .16, .3], [0, .04, -.05])]],
+  protocol: [
+    { id: 'spectres', q: 'Q1', html: 'Enregistrer le spectre d\'au moins quatre lumières, dont celle de la lampe à vapeur de sodium.' },
+    { id: 'objets', q: 'Q1', html: 'Éclairer les voitures avec au moins quatre lumières différentes et noter les couleurs perçues.' },
+    { id: 'sodium', q: 'Q2', html: 'Éclairer les voitures avec la lampe à vapeur de sodium et noter les couleurs perçues.' },
+    { id: 'tableau', q: 'Q1', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q2-3', html: 'Répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'aucun produit chimique ; la lampe à vapeur de sodium chauffe beaucoup : ne pas la toucher',
+  table: { rowTitle: 'Objet et lumière qui l\'éclaire', rows: [
+    { label: 'Voiture rouge en lumière verte', ans: [4] }, { label: 'Voiture rouge en lumière magenta', ans: [0] }, { label: 'Voiture verte en lumière cyan', ans: [1] }, { label: 'Voiture bleue en lumière jaune', ans: [4] },
+    { label: 'Voiture jaune en lumière magenta', ans: [0] }, { label: 'Voiture jaune sous la lampe à sodium', ans: [3] }, { label: 'Voiture rouge sous la lampe à sodium', ans: [4] }],
+    cols: [{ title: 'Couleur perçue', options: ['rouge', 'vert', 'bleu', 'jaune', 'noir'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q2', text: 'Sous la lampe à vapeur de sodium, la voiture rouge paraît noire car…', options: ['la lampe n\'émet que des radiations jaunes (589 nm) ; la peinture rouge ne diffuse que le rouge : elle absorbe tout et ne renvoie rien vers l\'œil', 'la lampe est trop peu lumineuse', 'la peinture change de composition la nuit'], ans: 0 },
+    { q: 'Q1', text: 'Une voiture verte en lumière blanche…', options: ['diffuse les radiations vertes et absorbe les autres', 'absorbe le vert et diffuse les autres', 'émet de la lumière verte'], ans: 0 },
+    { q: 'Q1', text: 'La voiture jaune paraît rouge en lumière magenta car…', options: ['la lumière magenta contient du rouge et du bleu ; la peinture jaune diffuse le rouge (et le vert) mais absorbe le bleu', 'le jaune et le magenta se mélangent en rouge comme des peintures', 'la lumière magenta est rouge'], ans: 0 },
+    { q: 'Q3', text: 'Un objet blanc éclairé en lumière rouge paraît…', options: ['rouge', 'blanc', 'noir', 'cyan'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['La couleur perçue d\'un objet dépend des radiations qu\'il peut diffuser (ses pigments) et des radiations qui composent la lumière qui l\'éclaire : l\'objet ne renvoie que les radiations à la fois présentes dans la lumière incidente et diffusées par ses pigments ; les autres sont absorbées.', 'La couleur d\'un objet ne dépend que de sa peinture.', 'Un objet coloré émet sa propre lumière.', 'La couleur perçue d\'un objet ne dépend que de la lumière qui l\'éclaire.'], ans: 0 },
+  build() {
+    const M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, ...o });
+    const booth = new THREE.Group(); scene.add(booth);
+    const fl = new THREE.Mesh(new THREE.BoxGeometry(.6, .01, .34), M(0x2b2f36)); fl.position.set(0, .005, -.05); booth.add(fl);
+    const bk = new THREE.Mesh(new THREE.BoxGeometry(.6, .3, .01), M(0x1d2026)); bk.position.set(0, .15, -.22); booth.add(bk);
+    for (const x of [-.3, .3]) { const sd = new THREE.Mesh(new THREE.BoxGeometry(.01, .3, .34), M(0x1d2026)); sd.position.set(x, .15, -.05); booth.add(sd); }
+    const top = new THREE.Mesh(new THREE.BoxGeometry(.6, .01, .34), M(0x1d2026)); top.position.set(0, .3, -.05); booth.add(top);
+    bulb29 = new THREE.Mesh(new THREE.CylinderGeometry(.03, .04, .03, 24), new THREE.MeshBasicMaterial({ color: 0xffffff })); bulb29.position.set(0, .282, -.05); scene.add(bulb29);
+    cone29 = new THREE.Mesh(new THREE.ConeGeometry(.28, .26, 40, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .07, side: THREE.DoubleSide, depthWrite: false })); cone29.position.set(0, .15, -.05); scene.add(cone29);
+    const ll = label('Lampe (avec filtre ou à vapeur de sodium)', { size: 20, scale: .0006 }); ll.position.set(0, .34, -.05); scene.add(ll);
+    Object.entries(OBJ29).forEach(([k, o], i) => {
+      const g = new THREE.Group(); const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .45, metalness: .1 });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(.1, .025, .045), mat); body.position.y = .022; g.add(body);
+      const cab = new THREE.Mesh(new THREE.BoxGeometry(.05, .02, .04), mat); cab.position.set(-.008, .044, 0); g.add(cab);
+      const win = new THREE.Mesh(new THREE.BoxGeometry(.051, .012, .041), M(0x111418)); win.position.set(-.008, .046, 0); g.add(win);
+      for (const [x, z] of [[-.032, .023], [.032, .023], [-.032, -.023], [.032, -.023]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.011, .011, .008, 16), M(0x111111)); w.rotation.x = Math.PI / 2; w.position.set(x, .011, z); g.add(w); }
+      g.position.set(-.21 + i * .14, .01, -.03); g.rotation.y = .5; scene.add(g); cars29[k] = mat;
+      const l = label(o.nom.replace('voiture ', 'Voiture\n'), { size: 18, scale: .0005 }); l.position.set(-.21 + i * .14, .1, .02); scene.add(l);
+    });
+    const cv = h('canvas', { id: 'spec29', style: 'width:100%;display:block;border:1px solid var(--line);border-radius:8px' });
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Spectre de la lumière qui éclaire les voitures'), cv, h('div', { class: 'note', id: 'spec29i' })));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Couleurs perçues (mes relevés)'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'cTab29' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  seen(k, l = S29.light) { return inter17(OBJ29[k].b, LIGHTS17[l].b); },
+  place() {
+    const s = S29, lb = LIGHTS17[s.light].b, lc = hex17(rgbOf17(lb));
+    bulb29.material.color.set(lc); cone29.material.color.set(lc);
+    for (const k in cars29) { const d = this.seen(k); cars29[k].color.set(d ? hex17(rgbOf17(d), .9) : 0x0a0a0a); }
+  },
+  drawData() {
+    const s = S29; if (!$('#spec29')) return;
+    drawSpectrum17($('#spec29'), s.light, lname29(s.light)[0].toUpperCase() + lname29(s.light).slice(1));
+    $('#spec29i').innerHTML = `Spectres enregistrés : ${s.specs.length ? s.specs.map(lname29).join(' ; ') : 'aucun (clique sur « Enregistrer le spectre »)'}.`;
+    const ls = L29.filter(l => s.notes[l]);
+    $('#cTab29').innerHTML = '<thead><tr><th>Lumière</th>' + Object.keys(OBJ29).map(k => `<th>${OBJ29[k].nom}</th>`).join('') + '</tr></thead><tbody>' + (ls.map(l => `<tr><td>${lname29(l)}</td>${Object.keys(OBJ29).map(k => `<td>${nameOf17(this.seen(k, l))}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="5">Aucun relevé.</td></tr>') + '</tbody>';
+  },
+  resetScene() { S29 = fresh29(); if (!bulb29) return; this.place(); this.drawData(); if ($('#q29')) this.refreshPanel(); },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    const lab = { blanche: 'Sans filtre', rouge: 'Filtre rouge', verte: 'Filtre vert', bleue: 'Filtre bleu', magenta: 'Filtre magenta', cyan: 'Filtre cyan', jaune: 'Filtre jaune', sodium: '🟠 Lampe à sodium' };
+    $('#actions').append(
+      h('h3', {}, '1. Choisir la lumière'),
+      h('div', { class: 'row' }, ...L29.map(l => B('l_' + l, lab[l], { t: 'light', l }))),
+      h('h3', {}, '2. Analyser et observer'),
+      h('div', { class: 'row' }, B('sp29', '📈 Enregistrer le spectre de cette lumière', { t: 'spec' }), B('no29', '✍ Noter les couleurs perçues des voitures', { t: 'note' })),
+      h('div', { id: 'q29', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S29, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    L29.forEach(l => en('#l_' + l, s.light !== l)); en('#sp29', !s.specs.includes(s.light)); en('#no29', !s.notes[s.light]);
+    $('#q29').innerHTML = `Éclairage : <b>${lname29(s.light)}</b> (lumière ${s.light === 'sodium' ? 'jaune-orangé' : nameOf17(LIGHTS17[s.light].b)})`;
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S29;
+    if (a.t === 'light') { s.light = a.l; this.place(); this.drawData(); say(`Les voitures sont éclairées par : ${lname29(a.l)}. Observe leur couleur.`); return; }
+    if (a.t === 'spec') { s.specs.push(s.light); this.drawData(); if (s.specs.length >= 4 && s.specs.includes('sodium')) step('spectres'); const nm = { B: 'bleues', G: 'vertes', Y: 'jaunes', R: 'rouges' }; const msg = s.light === 'sodium' ? 'Spectre de la lampe à vapeur de sodium : une raie unique, jaune-orangé, à 589 nm.' : `Spectre (${lname29(s.light)}) : radiations ${[...LIGHTS17[s.light].b].map(x => nm[x]).join(', ')}.`; observe(msg); say(msg); return; }
+    if (a.t === 'note') {
+      s.notes[s.light] = true; this.drawData(); if (Object.keys(s.notes).length >= 4) step('objets'); if (s.notes.sodium) step('sodium');
+      const msg = `${lname29(s.light)[0].toUpperCase() + lname29(s.light).slice(1)} : ` + Object.keys(OBJ29).map(k => `${OBJ29[k].nom} perçue ${({ vert: 'verte', bleu: 'bleue', noir: 'noire', blanc: 'blanche' })[nameOf17(this.seen(k))] || nameOf17(this.seen(k))}`).join(' ; ') + '.'; observe(msg); say(msg); return;
+    }
+  },
+  async demo() {
+    say('Démonstration : les voitures en lumière blanche, puis sous la lampe à vapeur de sodium.');
+    await wait(1500); await act({ t: 'light', l: 'sodium' }, { record: false }); await wait(2000); await act({ t: 'light', l: 'blanche' }, { record: false });
+    say('À toi : analyse les lumières puis observe les voitures sous chacune d\'elles.'); await wait(1200);
+  },
+};
+startTP(C29);
+
+</script></body></html>

@@ -1,0 +1,180 @@
+<!--efir1re:AE3 · Appareil photo et œil 3D-->
+window.EFIR_RETOUR = "premiere/ondes/Lentilles%20minces%20convergentes";
+
+// ====================================================================
+// Ch. 16 · AE3 · L'appareil photographique et l'œil (tâche complexe)
+// ====================================================================
+// ====================================================================
+// Module commun : banc d'optique (objet « F » éclairé, lentille, écran, rayons)
+// positions en cm le long du banc (0 → 120), hauteurs en cm
+// ====================================================================
+const AXY = .15, BX = p => (p - 60) / 100, LD16 = 4; // hauteur de l'axe (m) ; conversion cm → m ; diamètre utile de la lentille (cm)
+function conj(obj, lens, f) { // renvoie {xA, xAp, g, real}
+  const xA = obj - lens, inv = 1 / f + 1 / xA;
+  if (Math.abs(inv) < 1e-9) return { xA, xAp: Infinity, g: Infinity, real: false };
+  const xAp = 1 / inv; return { xA, xAp, g: xAp / xA, real: xAp > 0 };
+}
+function drawF(c, cx, cy, hpx, flip, col) {
+  c.save(); c.translate(cx, cy); if (flip) c.rotate(Math.PI); c.fillStyle = col;
+  const w = hpx * .62, t = hpx * .2; c.fillRect(-w / 2, -hpx / 2, t, hpx); c.fillRect(-w / 2, -hpx / 2, w, t * .9); c.fillRect(-w / 2, -hpx * .06, w * .75, t * .85); c.restore();
+}
+function makeOptBench(o = {}) {
+  const M = (c, x = {}) => new THREE.MeshStandardMaterial({ color: c, ...x });
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(1.26, .02, .06), M(0x78909c, { metalness: .6, roughness: .4 })); rail.position.set(0, .01, 0); scene.add(rail);
+  for (let c = 0; c <= 120; c++) { const big = c % 10 === 0, mid = c % 5 === 0; const t = new THREE.Mesh(new THREE.BoxGeometry(.0012, .001, big ? .018 : mid ? .012 : .007), new THREE.MeshBasicMaterial({ color: 0x1d2433 })); t.position.set(BX(c), .0206, .03 - (big ? .009 : mid ? .006 : .0035)); scene.add(t); if (big) { const l = label(String(c), { size: 18, scale: .0005, bg: 'rgba(255,255,255,0)' }); l.position.set(BX(c), .03, .042); scene.add(l); } }
+  const rider = (col = 0x455a64, top = AXY - .03) => { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(.03, .02, .07), M(col)); b.position.y = .03; g.add(b); const r = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, top - .04, 10), M(0xb0bec5, { metalness: .8 })); r.position.y = .04 + (top - .04) / 2; g.add(r); const ix = new THREE.Mesh(new THREE.BoxGeometry(.002, .021, .004), M(0xd50000)); ix.position.set(0, .03, .036); g.add(ix); scene.add(g); return g; };
+  // source + objet
+  const objG = rider(); const lamp = new THREE.Mesh(new THREE.BoxGeometry(.08, .08, .08), M(0x263238)); lamp.position.set(-.045, AXY, 0); objG.add(lamp);
+  const ocv = document.createElement('canvas'); ocv.width = ocv.height = 128; const oc = ocv.getContext('2d'); oc.fillStyle = '#1b1b1b'; oc.fillRect(0, 0, 128, 128); drawF(oc, 64, 64, 64, false, '#fff8d0');
+  const otx = new THREE.CanvasTexture(ocv); otx.colorSpace = THREE.SRGBColorSpace; const oplate = new THREE.Mesh(new THREE.PlaneGeometry(.04, .04), new THREE.MeshBasicMaterial({ map: otx })); oplate.rotation.y = Math.PI / 2; oplate.position.set(-.004, AXY, 0); objG.add(oplate);
+  const ol = label(o.objLabel || 'Source + objet « F »', { size: 20, scale: .0006 }); ol.position.set(-.03, AXY + .07, 0); objG.add(ol);
+  // lentille
+  const lensG = rider(); const ring = new THREE.Mesh(new THREE.TorusGeometry(.026, .003, 8, 40), M(0x37474f)); ring.rotation.y = Math.PI / 2; ring.position.y = AXY; lensG.add(ring);
+  const lm = GLASS(); lm.opacity = .35; lm.color.set(0xb3e5fc); const lens = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), lm); lens.scale.set(.005, .025, .025); lens.position.y = AXY; lensG.add(lens);
+  let lensLab = null; const setLensLabel = t => { if (lensLab) lensG.remove(lensLab); lensLab = label(t, { size: 20, scale: .0006 }); lensLab.position.set(0, AXY + .05, 0); lensG.add(lensLab); };
+  // écran
+  const scrG = rider(0x455a64, AXY - .07); const frame = new THREE.Mesh(new THREE.BoxGeometry(.006, .15, .15), M(0x37474f)); frame.position.y = AXY; scrG.add(frame);
+  const scv = document.createElement('canvas'); scv.width = scv.height = 384; const sc = scv.getContext('2d'); const stx = new THREE.CanvasTexture(scv); stx.colorSpace = THREE.SRGBColorSpace;
+  const splane = new THREE.Mesh(new THREE.PlaneGeometry(.13, .13), new THREE.MeshBasicMaterial({ map: stx })); splane.rotation.y = -Math.PI / 2; splane.position.set(-.0035, AXY, 0); scrG.add(splane);
+  const sl = label(o.scrLabel || 'Écran', { size: 20, scale: .0006 }); sl.position.set(0, AXY + .095, 0); scrG.add(sl);
+  // rayons
+  const rays = new THREE.Group(); scene.add(rays);
+  const P = (x, y) => new THREE.Vector3(BX(x), AXY + y / 100, 0);
+  const seg = (pts, col, dashed) => { const g = new THREE.BufferGeometry().setFromPoints(pts.map(([x, y]) => P(x, y))); const l = new THREE.Line(g, dashed ? new THREE.LineDashedMaterial({ color: col, dashSize: .006, gapSize: .004 }) : new THREE.LineBasicMaterial({ color: col })); if (dashed) l.computeLineDistances(); rays.add(l); };
+  const dot = (x, col, txt) => { const m = new THREE.Mesh(new THREE.SphereGeometry(.0025, 10, 8), new THREE.MeshBasicMaterial({ color: col })); m.position.copy(P(x, 0)); rays.add(m); const l = label(txt, { size: 18, scale: .0004, bg: 'rgba(255,255,255,.8)' }); l.position.copy(P(x, -1.2)); rays.add(l); };
+  const B = {
+    lamp, objG, lensG, scrG, setLensLabel, screenCanvas: scv,
+    update(st) { // st = {obj, lens, scr (ou null), f, yB, rays, noScreen}
+      objG.visible = !st.hideObj; if (!st.hideObj) objG.position.x = BX(st.obj); lensG.position.x = BX(st.lens); scrG.visible = st.scr != null; if (st.scr != null) scrG.position.x = BX(st.scr);
+      const r = conj(st.obj, st.lens, st.f); B.last = r;
+      // écran
+      sc.fillStyle = '#6b7380'; sc.fillRect(0, 0, 384, 384); const pxcm = 384 / 13;
+      if (st.scr != null && st.scr > st.lens) {
+        const d = st.scr - st.lens; let blur, gs;
+        if (r.real && isFinite(r.xAp)) { blur = LD16 * Math.abs(d - r.xAp) / r.xAp; gs = r.g * d / r.xAp; } else { const xv = isFinite(r.xAp) ? r.xAp : -1e6; blur = LD16 * (d - xv) / Math.abs(xv); gs = r.g * (d - xv) / Math.abs(xv) * (isFinite(r.xAp) ? 1 : 0); }
+        const hcm = Math.abs(gs) * st.yB, bpx = blur * pxcm;
+        const spot = Math.min(13, blur + hcm); sc.save(); sc.globalAlpha = Math.min(.5, .25 + 4 / (1 + spot * spot)); const gr = sc.createRadialGradient(192, 192, 0, 192, 192, Math.max(8, spot * pxcm / 2)); gr.addColorStop(0, '#fffde7'); gr.addColorStop(1, 'rgba(255,253,231,0)'); sc.fillStyle = gr; sc.fillRect(0, 0, 384, 384); sc.restore();
+        if (hcm * pxcm > 2 && blur < 6) { sc.save(); sc.filter = `blur(${Math.min(40, bpx * .45).toFixed(1)}px)`; sc.globalAlpha = Math.max(.15, 1 / (1 + blur * .8)); drawF(sc, 192, 192, hcm * pxcm, gs < 0, '#fffde7'); sc.restore(); }
+        B.blur = blur; B.gs = gs;
+      } else { B.blur = Infinity; B.gs = 0; }
+      sc.strokeStyle = 'rgba(255,255,255,.35)'; sc.lineWidth = 1; for (let k = -6; k <= 6; k++) { sc.beginPath(); sc.moveTo(192 + k * pxcm, 186); sc.lineTo(192 + k * pxcm, 198); sc.stroke(); sc.beginPath(); sc.moveTo(186, 192 + k * pxcm); sc.lineTo(198, 192 + k * pxcm); sc.stroke(); }
+      sc.beginPath(); sc.moveTo(192, 0); sc.lineTo(192, 384); sc.moveTo(0, 192); sc.lineTo(384, 192); sc.stroke(); stx.needsUpdate = true;
+      // rayons
+      while (rays.children.length) { const c = rays.children.pop(); c.geometry && c.geometry.dispose(); }
+      rays.visible = !!st.rays && !st.hideObj; if (!rays.visible) return r;
+      const L = st.lens, f = st.f, yB = st.yB, xe = st.scr != null && st.scr > L ? st.scr : L + 45, col = 0xff9800;
+      seg([[st.obj, 0], [xe, 0]], 0x90a4ae);
+      const yAt = (x0, y0, x1, y1, x) => y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+      seg([[st.obj, yB], [L, yB], [xe, yAt(L, yB, L + f, 0, xe)]], col); // parallèle → passe par F'
+      seg([[st.obj, yB], [xe, yAt(st.obj, yB, L, 0, xe)]], col); // passe par O
+      if (Math.abs(st.obj - (L - f)) > .5 && st.obj < L - f) { const y3 = yAt(st.obj, yB, L - f, 0, L); seg([[st.obj, yB], [L, y3], [xe, y3]], 0xffc107); }
+      if (!r.real && isFinite(r.xAp)) { const xi = L + r.xAp, yi = r.g * yB; seg([[L, yB], [xi, yi]], col, true); seg([[L, 0], [xi, yi]], col, true); seg([[xi, 0], [xi, yi]], 0x2e7d32, true); }
+      dot(L - f, 0x1d2433, 'F'); dot(L + f, 0x1d2433, 'F\'');
+      return r;
+    },
+  };
+  B.card = (title = 'Écran vu de face (graduations : 1 cm)') => { scv.style.cssText = 'width:100%;max-width:340px;display:block;margin:auto;border-radius:6px'; return h('div', { class: 'card' }, h('h2', {}, title), scv); };
+  B.sideView = (a, b) => { const m = (a + b) / 2, w = Math.max(.4, (b - a) / 100 * 1.7); return flyTo([BX(m), AXY + .03, w], [BX(m), AXY, 0]); };
+  return B;
+}
+
+const SCR27 = 100, LENS0_27 = 88, YB27 = 2.0, FPH27 = 10.0;
+const SUJ27 = { loin: { pos: 28, nom: 'éloigné' }, mi: { pos: 52, nom: 'à mi-distance' }, pres: { pos: 58, nom: 'proche' } };
+const FS27 = [8.6, 9, 10, 12.5];
+let OB27, S27 = null;
+const fresh27 = () => ({ mode: 'photo', suj: 'loin', lens: LENS0_27, f: FPH27, need: false, done: {} });
+const f27 = (x, k) => (Math.abs(x) < 5e-13 ? 0 : x).toFixed(k).replace('.', ',');
+const C27 = {
+  id: 'p1_ch16_ae3', code: 'AE3', short: 'Appareil photo et œil 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 16 · Activité expérimentale AE3 · Simulation 3D',
+  title: 'L\'appareil photographique et l\'œil',
+  problem: 'Un appareil photographique et un œil forment une image nette d\'objets proches ou lointains. Comment réalisent-ils la mise au point, sachant qu\'ils peuvent tous deux être modélisés par une lentille convergente et un écran ?',
+  mots: `<p><b>Modèle</b> : l'objectif de l'appareil (ou le cristallin de l'œil) est modélisé par une lentille mince convergente ; le capteur (ou la rétine) par un écran.<br>
+  <b>Appareil photographique</b> : la distance focale de l'objectif est <b>fixe</b> (f' = ${f27(FPH27, 1)} cm ici) ; l'objectif peut avancer ou reculer.<br>
+  <b>Œil</b> : la distance cristallin-rétine est <b>fixe</b> ; les muscles ciliaires modifient la courbure du cristallin, donc sa distance focale (accommodation).<br>
+  <b>Mise au point</b> : réglage qui permet d'obtenir une image nette sur l'écran.</p>`,
+  aide: `<p>1. Mode appareil photo : avec le sujet éloigné, l'image est nette. Rapproche le sujet : l'image devient floue. Que peux-tu modifier pour la rendre nette ?<br>
+  2. Mode œil : la lentille et l'écran ne peuvent pas bouger. Rapproche le sujet, puis choisis une autre lentille pour retrouver une image nette.<br>
+  3. Compare les deux méthodes de mise au point.</p>`,
+  views: { ensemble: [[.05, .45, .9], [.05, .08, 0]] },
+  viewbar: [['Vue de côté (rayons)', () => OB27.sideView(SUJ27[S27.suj].pos - 3, SCR27)], ['Zoom lentille-écran', () => flyTo([BX(94), AXY + .06, .32], [BX(94), AXY, 0])]],
+  protocol: [
+    { id: 'photo_flou', q: 'Q1', html: 'Appareil photo : rapprocher le sujet et constater que l\'image devient floue.' },
+    { id: 'photo_map', q: 'Q1', html: 'Appareil photo : retrouver une image nette (mise au point).' },
+    { id: 'oeil_flou', q: 'Q1', html: 'Œil : rapprocher le sujet et constater que l\'image devient floue.' },
+    { id: 'oeil_map', q: 'Q1', html: 'Œil : retrouver une image nette (accommodation).' },
+    { id: 'tableau', q: 'Q1', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q2-3', html: 'Répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'aucun produit chimique ; ne pas regarder directement la lampe',
+  table: { rowTitle: 'Système', rows: [{ label: 'Appareil photographique', ans: [0, 0] }, { label: 'Œil', ans: [1, 1] }],
+    cols: [{ title: 'Paramètre fixe', options: ['la distance focale de l\'objectif', 'la distance cristallin-rétine'] }, { title: 'Paramètre modifié lors de la mise au point', options: ['la distance objectif-capteur (on déplace l\'objectif)', 'la distance focale du cristallin (sa courbure)'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'Lors de la mise au point, on cherche à…', options: ['obtenir une image nette sur le capteur (ou la rétine)', 'obtenir une image plus lumineuse', 'agrandir l\'objet'], ans: 0 },
+    { q: 'Q1', text: 'Quand le sujet se rapproche, l\'objectif de l\'appareil photo doit…', options: ['s\'éloigner du capteur', 'se rapprocher du capteur', 'rester immobile'], ans: 0 },
+    { q: 'Q1', text: 'Quand l\'objet se rapproche, le cristallin doit devenir…', options: ['plus convergent : sa distance focale diminue', 'moins convergent : sa distance focale augmente', 'plat'], ans: 0 },
+    { q: 'Q1', num: true, text: 'Œil modèle : cristallin-rétine = 12 cm, objet à 24 cm du cristallin. Calcule la distance focale nécessaire :', unit: 'cm', ans: 8, tol: .02 },
+    { q: 'Q2', text: 'Dans un smartphone, la mise au point se fait en modifiant la distance focale d\'une lentille liquide. Ce fonctionnement ressemble à…', options: ['celui de l\'œil', 'celui de l\'appareil photo classique', 'aucun des deux'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Pour obtenir une image nette sur l\'écran, on peut modifier la distance lentille-écran (appareil photographique, distance focale fixe) ou la distance focale de la lentille (œil, distance cristallin-rétine fixe : c\'est l\'accommodation).', 'L\'œil fait la mise au point en déplaçant la rétine.', 'L\'appareil photo fait la mise au point en changeant de lentille.', 'La mise au point ne dépend pas de la distance de l\'objet.'], ans: 0 },
+  build() {
+    OB27 = makeOptBench({ objLabel: 'Sujet (objet « F »)', scrLabel: 'Capteur' });
+    sideCard(OB27.card('Capteur / rétine vu de face'));
+    this.resetScene(); this.buildPanel();
+  },
+  sharp() { const s = S27, r = conj(SUJ27[s.suj].pos, s.lens, s.f); return r.real && Math.abs(SCR27 - s.lens - r.xAp) <= r.xAp / 40; },
+  place() {
+    const s = S27; OB27.update({ obj: SUJ27[s.suj].pos, lens: s.lens, scr: SCR27, f: s.f, yB: YB27, rays: s.rays });
+    const ph = s.mode === 'photo'; OB27.setLensLabel(ph ? `Objectif f' = ${f27(s.f, 1)} cm` : `Cristallin f' = ${f27(s.f, 1)} cm`);
+    if (this.scrMode !== s.mode) { this.scrMode = s.mode; const sg = OB27.scrG, old = sg.children.find(c => c.isSprite); if (old) sg.remove(old); const l = label(ph ? 'Capteur' : 'Rétine', { size: 20, scale: .0006 }); l.position.set(0, AXY + .095, 0); sg.add(l); }
+  },
+  resetScene() { S27 = fresh27(); if (!OB27) return; this.scrMode = null; this.place(); if ($('#q27')) this.refreshPanel(); },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, B('m1', '📷 Modèle de l\'appareil photo', { t: 'mode', m: 'photo' }), B('m2', '👁 Modèle de l\'œil', { t: 'mode', m: 'oeil' })),
+      h('h3', {}, 'Sujet'),
+      h('div', { class: 'row' }, ...Object.entries(SUJ27).map(([k, o]) => B('s_' + k, 'Sujet ' + o.nom, { t: 'suj', k }))),
+      h('h3', {}, 'Objectif (appareil photo)'),
+      h('div', { class: 'row' }, B('l1', '◀ vers le sujet −1', { t: 'mv', d: -1 }), B('l2', '◀ −0,2', { t: 'mv', d: -.2 }), B('l3', '+0,2 ▶', { t: 'mv', d: .2 }), B('l4', 'vers le capteur +1 ▶', { t: 'mv', d: 1 })),
+      h('h3', {}, 'Cristallin (œil) : choisir la lentille'),
+      h('div', { class: 'row' }, ...FS27.map((f, i) => B('f' + i, `f' = ${f27(f, 1)} cm`, { t: 'lens', f }))),
+      h('div', { class: 'row' }, B('r27', '〽 Afficher / masquer les rayons', { t: 'rays' })),
+      h('div', { id: 'q27', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S27, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok), ph = s.mode === 'photo';
+    en('#m1', !ph); en('#m2', ph); Object.keys(SUJ27).forEach(k => en('#s_' + k, s.suj !== k));
+    en('#l1,#l2', ph && s.lens - 1 >= 70); en('#l3,#l4', ph && s.lens + 1 <= 97); FS27.forEach((f, i) => en('#f' + i, !ph && s.f !== f)); en('#r27', true);
+    $('#q27').innerHTML = `${ph ? 'Appareil photo' : 'Œil'} · sujet ${SUJ27[s.suj].nom} (${f27(s.lens - SUJ27[s.suj].pos, 1)} cm de la lentille) · lentille-écran : <b>${f27(SCR27 - s.lens, 1)} cm</b> · f' = <b>${f27(s.f, 1)} cm</b> · image ${this.sharp() ? '<b style="color:#2e7d32">nette</b>' : '<b style="color:#c62828">floue</b>'}`;
+  },
+  refresh() { this.refreshPanel(); },
+  check(msg) {
+    const s = S27, sh = this.sharp(), m = s.mode === 'photo' ? 'photo' : 'oeil';
+    if (!sh && s.suj !== 'loin') { s.need = true; step(m + '_flou'); }
+    if (sh && s.need) { s.need = false; step(m + '_map'); msg += s.mode === 'photo' ? ' Mise au point réussie en déplaçant l\'objectif.' : ' Mise au point réussie en changeant la distance focale (accommodation).'; }
+    msg += sh ? ' L\'image est nette.' : ' L\'image est floue.'; observe(msg); say(msg);
+  },
+  async doAction(a) {
+    const s = S27;
+    if (a.t === 'mode') { s.mode = a.m; s.suj = 'loin'; s.lens = LENS0_27; s.f = FPH27; s.need = false; this.place(); say(a.m === 'photo' ? 'Modèle de l\'appareil photo : objectif de distance focale fixe, qui peut se déplacer. Sujet éloigné : image nette.' : 'Modèle de l\'œil : cristallin et rétine fixes ; on peut changer la lentille (accommodation). Sujet éloigné : image nette.'); return; }
+    if (a.t === 'suj') { s.suj = a.k; this.place(); this.check(`Sujet ${SUJ27[a.k].nom}, à ${f27(s.lens - SUJ27[a.k].pos, 1)} cm de la lentille.`); return; }
+    if (a.t === 'mv') { const v0 = s.lens, v1 = Math.round((v0 + a.d) * 10) / 10; if (!INSTANT) await tween(.25, p => { s.lens = v0 + (v1 - v0) * p; this.place(); }); s.lens = v1; this.place(); if (this.sharp() && s.need) this.check(`Objectif à ${f27(SCR27 - s.lens, 1)} cm du capteur.`); return; }
+    if (a.t === 'lens') { s.f = a.f; this.place(); this.check(`Cristallin de distance focale ${f27(a.f, 1)} cm.`); return; }
+    if (a.t === 'rays') { s.rays = !s.rays; this.place(); if (!INSTANT && s.rays) OB27.sideView(SUJ27[s.suj].pos - 3, SCR27); say(s.rays ? 'Rayons affichés : l\'image est nette quand les rayons se rejoignent sur l\'écran.' : 'Rayons masqués.'); return; }
+  },
+  async demo() {
+    say('Démonstration : le sujet se rapproche ; l\'image sur le capteur devient floue.');
+    await act({ t: 'rays' }, { record: false }); await wait(1200);
+    await act({ t: 'suj', k: 'mi' }, { record: false }); await wait(1800);
+    await act({ t: 'suj', k: 'loin' }, { record: false }); await act({ t: 'rays' }, { record: false });
+    say('À toi : retrouve une image nette, d\'abord avec l\'appareil photo, puis avec l\'œil.'); await wait(1500);
+  },
+};
+startTP(C27);
+
+</script></body></html>

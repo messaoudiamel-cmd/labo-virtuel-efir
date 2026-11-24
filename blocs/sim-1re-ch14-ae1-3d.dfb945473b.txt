@@ -1,0 +1,173 @@
+<!--efir1re:AD1 · Lancer franc et théorème de l'énergie cinétique 3D-->
+window.EFIR_RETOUR = "premiere/energie/Aspects%20%C3%A9nerg%C3%A9tiques%20des%20ph%C3%A9nom%C3%A8nes%20m%C3%A9caniques";
+
+// ====================================================================
+// Ch. 14 · Activité 1 (documentaire, manuel Hachette p. 257) · Le théorème de l'énergie cinétique
+// Doc. A : chronophotographie d'un tir en cloche (m = 0,624 kg ; A, B, C)
+// Doc. B : lancer franc (D : z = 2,53 m, v = 6,90 m/s ; E à la verticale du panier : v = 6,25 m/s)
+// ====================================================================
+// ====================================================================
+// Module commun : pointage vidéo simulé et énergies (Ec, Ep, Em)
+// ====================================================================
+const GG14 = 9.81;
+// données brutes [{t, x, y}] → ajoute v (dérivée centrée, comme un logiciel de pointage) et les énergies
+function energize(raw, m) {
+  return raw.map((p, i) => {
+    const a = raw[Math.max(0, i - 1)], b = raw[Math.min(raw.length - 1, i + 1)], dt = b.t - a.t;
+    const v = Math.hypot(b.x - a.x, b.y - a.y) / dt;
+    const Ec = .5 * m * v * v, Ep = m * GG14 * p.y; return { ...p, v, Ec, Ep, Em: Ec + Ep };
+  }).slice(1, -1);
+}
+function energyChart(cv, data, o = {}) {
+  if (!data.length) { drawChart(cv, { xmax: o.tmax || 2, ymax: o.ymax || .1, xlabel: 't (s)', ylabel: 'Énergie (J)', pts: [] }); return; }
+  const tmax = o.tmax || Math.ceil(data[data.length - 1].t * 5) / 5, ymax = o.ymax || Math.max(...data.map(d => d.Em)) * 1.25;
+  drawChart(cv, { xmax: tmax, ymax, xlabel: 't (s)', ylabel: 'Énergie (J)', pts: [], curves: [{ pts: data.map(d => [d.t, d.Ec]), color: '#E65100' }, { pts: data.map(d => [d.t, d.Ep]), color: '#2F5DA8' }, { pts: data.map(d => [d.t, d.Em]), color: '#2e7d32' }], xfmt: x => x.toFixed(2).replace('.', ','), yfmt: y => y.toPrecision(2).replace('.', ',') });
+}
+const LEG14 = '<span style="color:#E65100">■ ℰc</span> &nbsp; <span style="color:#2F5DA8">■ ℰp</span> &nbsp; <span style="color:#2e7d32">■ ℰm = ℰc + ℰp</span>';
+function energyTable(data, n = 3) {
+  const f = (v, k) => v.toFixed(k).replace('.', ',');
+  return '<thead><tr><th>t (s)</th><th>x (m)</th><th>y (m)</th><th>v (m·s⁻¹)</th><th>ℰc (J)</th><th>ℰp (J)</th><th>ℰm (J)</th></tr></thead><tbody>' + data.map(d => `<tr><td>${f(d.t, 2)}</td><td>${f(d.x, 3)}</td><td>${f(d.y, 3)}</td><td>${f(d.v, 3)}</td><td>${f(d.Ec, n)}</td><td>${f(d.Ep, n)}</td><td>${f(d.Em, n)}</td></tr>`).join('') + '</tbody>';
+}
+
+const MBAL = .624, RBAL = .12, HPAN = 3.05;
+// Doc. A : tir en cloche. Parabole passant par A (z = 2,3 m, v = 5,9 m/s) ; B est le sommet (z = 3,0 m).
+const VXA = Math.sqrt(5.9 ** 2 - 2 * GG14 * .7), VZA = Math.sqrt(2 * GG14 * .7);
+const tirA = t => ({ x: VXA * t, z: 2.3 + VZA * t - GG14 * t * t / 2, v: Math.hypot(VXA, VZA - GG14 * t) });
+const T_B = VZA / GG14, T_C = T_B + Math.sqrt(2 * .3 / GG14), T_FINA = T_C + .12;
+const PTS_A = { A: { t: 0, z: 2.3, v: 5.9 }, B: { t: T_B, z: 3.0, v: 4.6 }, C: { t: T_C, z: 2.7, v: 5.2 } };
+// Doc. B : lancer franc. D (z = 2,53 m ; v = 6,90 m/s), angle de tir 52° ; E à la verticale du panier.
+const ANG = 52 * Math.PI / 180, VXD = 6.9 * Math.cos(ANG), VZD = 6.9 * Math.sin(ANG), XD = -4.34;
+const tirD = t => ({ x: XD + VXD * t, z: 2.53 + VZD * t - GG14 * t * t / 2, v: Math.hypot(VXD, VZD - GG14 * t) });
+const T_E = (VZD + Math.sqrt(VZD * VZD - 2 * GG14 * (2.96 - 2.53))) / GG14;
+let ball1, dots1, lab1 = [], S1 = null;
+const fresh1 = () => ({ chrono: false, mesures: false, franc: false });
+const f1 = (v, n = 2) => v.toFixed(n).replace('.', ',');
+const C1 = {
+  id: 'p1_ch14_ae1', code: 'AD1', short: 'Théorème de l\'énergie cinétique 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 14 · Activité documentaire AD1 · Simulation 3D',
+  title: 'Le théorème de l\'énergie cinétique : le lancer franc',
+  problem: 'Pour réussir un lancer franc, un basketteur ajuste la hauteur de lancer, l\'angle de tir et l\'énergie cinétique communiquée au ballon. Que permet l\'exploitation du théorème de l\'énergie cinétique ?',
+  mots: `<p><b>Travail du poids</b> d'un système de masse m entre A et B : W<sub>A→B</sub>(P⃗) = m × g × (z<sub>A</sub> − z<sub>B</sub>), avec z l'altitude sur un axe vertical orienté vers le haut.<br>
+  <b>Théorème de l'énergie cinétique</b> : la variation de l'énergie cinétique d'un système entre A et B est égale à la somme des travaux des forces appliquées entre A et B : Δℰ<sub>c</sub> = ℰ<sub>c</sub>(B) − ℰ<sub>c</sub>(A) = Σ W<sub>A→B</sub>(F⃗).<br>
+  Ballon de basket : m = 0,624 kg, assimilé à un point matériel ; g = 9,81 N·kg⁻¹ ; le cercle du panier est à 3,05 m du sol.</p>`,
+  aide: `<p>1. Affiche la chronophotographie du tir en cloche (doc. A) et relève z et v aux positions A, B et C.<br>
+  2. Calcule Δℰ<sub>c</sub> = ½ m (v<sub>B</sub>² − v<sub>A</sub>²) et W(P⃗) = m g (z<sub>A</sub> − z<sub>B</sub>) entre A et B, puis entre B et C et entre A et C.<br>
+  3. Compare : si Δℰ<sub>c</sub> = W(P⃗), le poids est la seule force qui travaille : l'action de l'air est négligeable.<br>
+  4. Lancer franc (doc. B) : applique le théorème entre D et E pour calculer z<sub>E</sub>, puis compare avec 3,05 m.</p>`,
+  views: { ensemble: [[-1.2, 2.4, 7.2], [-1.0, 2.1, 0]] },
+  viewbar: [['Zoom tir en cloche', () => flyTo([1.4, 2.7, 4.2], [1.4, 2.6, 0])], ['Zoom panier', () => flyTo([.4, 3.0, 2.6], [0, 3.0, 0])]],
+  protocol: [
+    { id: 'chrono', q: 'Q1', html: 'Afficher la chronophotographie du tir en cloche (doc. A).' },
+    { id: 'mesures', q: 'Q1', html: 'Relever l\'altitude z et la vitesse v aux positions A, B et C.' },
+    { id: 'tableau', q: 'Q1', html: 'Comparer Δℰ<sub>c</sub> et W(P⃗) entre A et B, B et C, A et C (tableau).' },
+    { id: 'franc', q: 'Q2', html: 'Observer le lancer franc (doc. B) et relever z et v en D et en E.' },
+    { id: 'extra', q: 'Q1-3', html: 'Calculer, conclure sur le lancer franc et répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'activité documentaire : aucune manipulation dangereuse',
+  table: { rowTitle: 'Entre les positions', rows: [{ label: 'A et B', ans: [0, 0] }, { label: 'B et C', ans: [1, 1] }, { label: 'A et C', ans: [2, 2] }],
+    cols: [{ title: 'Δℰc = ½ m (v₂² − v₁²)', options: ['≈ −4,3 J', '≈ +1,8 J', '≈ −2,4 J', '≈ +4,3 J'] }, { title: 'W(P⃗) = m g (z₁ − z₂)', options: ['≈ −4,3 J', '≈ +1,8 J', '≈ −2,4 J', '≈ +4,3 J'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', num: true, text: 'Entre A et B : Δℰ<sub>c</sub> = ½ × 0,624 × (4,6² − 5,9²) =', unit: 'J', ans: .5 * .624 * (4.6 ** 2 - 5.9 ** 2), tol: .04 },
+    { q: 'Q1', num: true, text: 'Entre A et B : W<sub>A→B</sub>(P⃗) = 0,624 × 9,81 × (2,3 − 3,0) =', unit: 'J', ans: .624 * 9.81 * (2.3 - 3.0), tol: .04 },
+    { q: 'Q1', text: 'On trouve Δℰ<sub>c</sub> = W(P⃗) sur chaque intervalle. On peut en conclure que…', options: ['le poids est la seule force qui travaille : l\'action de l\'air sur le ballon est négligeable', 'l\'action de l\'air est très importante', 'l\'énergie cinétique du ballon reste constante'], ans: 0 },
+    { q: 'Q2', text: 'Entre D et E, le théorème de l\'énergie cinétique s\'écrit…', options: ['½ m v<sub>E</sub>² − ½ m v<sub>D</sub>² = m g (z<sub>D</sub> − z<sub>E</sub>)', '½ m v<sub>E</sub>² + ½ m v<sub>D</sub>² = m g (z<sub>D</sub> + z<sub>E</sub>)', 'v<sub>E</sub> − v<sub>D</sub> = g (z<sub>D</sub> − z<sub>E</sub>)'], ans: 0 },
+    { q: 'Q2', num: true, text: 'Altitude du ballon à la verticale du panier : z<sub>E</sub> = z<sub>D</sub> − (v<sub>E</sub>² − v<sub>D</sub>²) / (2 g) =', unit: 'm', ans: 2.53 - (6.25 ** 2 - 6.9 ** 2) / (2 * 9.81), tol: .015 },
+    { q: 'Q2', text: 'Le lancer franc est-il réussi ?', options: ['Non : z<sub>E</sub> ≈ 2,96 m est inférieure à 3,05 m, le ballon passe sous le cercle', 'Oui : le ballon passe au-dessus du cercle', 'On ne peut pas savoir sans la masse du ballon'], ans: 0 },
+    { q: 'Q3', text: 'Connaissant la vitesse en une position d\'altitude connue, le théorème de l\'énergie cinétique permet de calculer…', options: ['l\'altitude en une autre position où la vitesse est connue, ou la vitesse en une autre position d\'altitude connue', 'seulement la masse du système', 'la durée du mouvement'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Le théorème de l\'énergie cinétique, Δℰc = Σ W(F⃗), permet de vérifier quelles forces travaillent (ici le poids seul) et de prévoir une altitude ou une vitesse : le lancer franc étudié n\'est pas réussi (z<sub>E</sub> ≈ 2,96 m < 3,05 m).', 'Le théorème de l\'énergie cinétique montre que la vitesse du ballon reste constante.', 'Le travail du poids est toujours positif, donc l\'énergie cinétique augmente toujours.', 'Le lancer franc est réussi car v<sub>E</sub> est positive.'], ans: 0 },
+  build() {
+    const sol = new THREE.Mesh(new THREE.BoxGeometry(12, .04, 5), new THREE.MeshStandardMaterial({ color: 0xc8925a, roughness: .7 })); sol.position.set(-1.2, -.02, 0); scene.add(sol);
+    const ligne = new THREE.Mesh(new THREE.BoxGeometry(.05, .005, 3.6), new THREE.MeshBasicMaterial({ color: 0xffffff })); ligne.position.set(XD + .12, .003, 0); scene.add(ligne);
+    const met = new THREE.MeshStandardMaterial({ color: 0x546e7a, metalness: .6, roughness: .4 });
+    const poteau = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 3.4, 16), met); poteau.position.set(1.6, 1.7, -.3); scene.add(poteau);
+    const bras = new THREE.Mesh(new THREE.BoxGeometry(1.2, .08, .08), met); bras.position.set(1.0, 3.35, -.3); scene.add(bras);
+    const planche = new THREE.Mesh(new THREE.BoxGeometry(.04, 1.05, 1.8), new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: .55, roughness: .1 })); planche.position.set(.38, 3.4, 0); scene.add(planche);
+    const cadre = new THREE.Mesh(new THREE.BoxGeometry(.045, .45, .59), new THREE.MeshBasicMaterial({ color: 0xd84315, wireframe: true })); cadre.position.set(.37, 3.25, 0); scene.add(cadre);
+    const cercle = new THREE.Mesh(new THREE.TorusGeometry(.225, .012, 10, 40), new THREE.MeshStandardMaterial({ color: 0xe65100, metalness: .4 })); cercle.rotation.x = Math.PI / 2; cercle.position.set(.13, HPAN, 0); scene.add(cercle);
+    const filet = new THREE.Mesh(new THREE.CylinderGeometry(.225, .15, .4, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: .6 })); filet.position.set(.13, HPAN - .2, 0); scene.add(filet);
+    const lp = label('Cercle à 3,05 m', { size: 22, scale: .0016 }); lp.position.set(.2, HPAN + .55, .2); scene.add(lp);
+    // repère : règle verticale graduée tous les 0,5 m (z en m)
+    const cv = document.createElement('canvas'); cv.width = 64; cv.height = 1024; const c = cv.getContext('2d'); c.fillStyle = '#fffde7'; c.fillRect(0, 0, 64, 1024); c.fillStyle = '#1d2433'; c.font = '600 22px Inter';
+    for (let k = 0; k <= 35; k++) { const y = 1024 - 8 - k * 28.6; c.fillRect(0, y, k % 5 ? 14 : 30, k % 5 ? 2 : 4); if (k % 5 === 0) c.fillText(String(k / 10).replace('.', ','), 30, y + 8); }
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; const reg = new THREE.Mesh(new THREE.PlaneGeometry(.18, 3.6), new THREE.MeshStandardMaterial({ map: tx })); reg.position.set(-5.4, 1.8, -.5); scene.add(reg);
+    const zl = label('z (m)', { size: 22, scale: .0016 }); zl.position.set(-5.4, 3.8, -.5); scene.add(zl);
+    // joueur stylisé (silhouette simple)
+    const peau = new THREE.MeshStandardMaterial({ color: 0x6d4c41 }), maillot = new THREE.MeshStandardMaterial({ color: 0x4a148c });
+    const j = new THREE.Group(); const corps = new THREE.Mesh(new THREE.CapsuleGeometry(.2, .6, 6, 12), maillot); corps.position.y = 1.35; const tete = new THREE.Mesh(new THREE.SphereGeometry(.13, 16, 12), peau); tete.position.y = 1.95;
+    const jambes = new THREE.Mesh(new THREE.CapsuleGeometry(.11, .7, 6, 10), new THREE.MeshStandardMaterial({ color: 0x263238 })); jambes.position.y = .5; const bra = new THREE.Mesh(new THREE.CapsuleGeometry(.06, .55, 4, 8), peau); bra.position.set(.1, 2.1, 0); bra.rotation.z = -.35;
+    j.add(corps, tete, jambes, bra); j.position.set(XD - .25, 0, 0); scene.add(j);
+    ball1 = new THREE.Mesh(new THREE.SphereGeometry(RBAL, 24, 16), new THREE.MeshStandardMaterial({ color: 0xef6c00, roughness: .6 })); scene.add(ball1);
+    dots1 = new THREE.Group(); scene.add(dots1);
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Trajectoire z = f(x)'), h('canvas', { id: 'chZ1', style: 'width:100%;display:block;border:1px solid var(--line);border-radius:8px' }), h('div', { class: 'note', id: 'chZ1Info' })));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Relevés'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'pTab1' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  place(p) { ball1.position.set(p.x, p.z, 0); },
+  clearLabels() { lab1.forEach(l => scene.remove(l)); lab1 = []; },
+  addLabel(txt, x, z, col) { const l = label(txt, { size: 26, scale: .0018, color: col || '#4a148c' }); l.position.set(x, z + .32, .2); scene.add(l); lab1.push(l); },
+  resetScene() { S1 = fresh1(); if (!ball1) return; dots1.clear(); this.clearLabels(); this.place({ x: XD + .1, z: 2.53 }); this.drawData(); if ($('#q1p')) this.refreshPanel(); },
+  drawData() {
+    const s = S1; if (!$('#pTab1')) return;
+    const rows = [];
+    if (s.mesures) Object.entries(PTS_A).forEach(([k, p]) => rows.push(`<tr><td>${k} (tir en cloche)</td><td>${f1(p.z, 1)}</td><td>${f1(p.v, 1)}</td></tr>`));
+    if (s.franc) rows.push(`<tr><td>D (lancer franc)</td><td>2,53</td><td>6,90</td></tr><tr><td>E (verticale du panier)</td><td>?</td><td>6,25</td></tr>`);
+    $('#pTab1').innerHTML = rows.length ? '<thead><tr><th>Position</th><th>z (m)</th><th>v (m·s⁻¹)</th></tr></thead><tbody>' + rows.join('') + '</tbody>' : '<tbody><tr><td>Aucun relevé.</td></tr></tbody>';
+    const curves = [], marks = [];
+    if (s.chrono) { const pts = []; for (let t = 0; t <= T_FINA + 1e-9; t += .01) { const p = tirA(t); pts.push([p.x, p.z]); } curves.push({ pts, color: '#2F5DA8' }); }
+    if (s.mesures) Object.values(PTS_A).forEach(p => marks.push([tirA(p.t).x, p.z, '#4a148c']));
+    if (s.franc) { const pts = []; for (let t = 0; t <= T_E + 1e-9; t += .01) { const p = tirD(t); pts.push([p.x - XD, p.z]); } curves.push({ pts, color: '#E65100' }); }
+    drawChart($('#chZ1'), { xmax: s.franc ? 5 : 3.5, ymax: 4, xlabel: s.franc ? 'x (m), origine : point de départ' : 'x (m)', ylabel: 'z (m)', pts: [], curves, marks, xfmt: x => f1(x, 1), yfmt: y => f1(y, 1) });
+    $('#chZ1Info').innerHTML = (s.chrono ? '<span style="color:#2F5DA8">■ tir en cloche (doc. A)</span> ' : '') + (s.franc ? '<span style="color:#E65100">■ lancer franc (doc. B)</span>' : '') || 'Affiche la chronophotographie du tir en cloche.';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, B('b1', '📷 Chronophotographie du tir en cloche (doc. A)', { t: 'chrono' })),
+      h('div', { class: 'row' }, B('b2', '📏 Relever z et v en A, B et C', { t: 'mesures' })),
+      h('div', { class: 'row' }, B('b3', '🏀 Observer le lancer franc (doc. B)', { t: 'franc' })),
+      h('div', { id: 'q1p', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S1, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#b1', true); en('#b2', s.chrono && !s.mesures); en('#b3', s.mesures);
+    $('#q1p').innerHTML = 'Ballon : m = 0,624 kg · ' + (s.franc ? 'lancer franc observé' : s.mesures ? 'relevés A, B, C faits : complète le tableau, puis observe le lancer franc' : s.chrono ? 'chronophotographie affichée : relève z et v' : 'commence par le doc. A');
+  },
+  refresh() { this.refreshPanel(); },
+  addDot(x, z, col) { const d = new THREE.Mesh(new THREE.SphereGeometry(.035, 10, 8), new THREE.MeshBasicMaterial({ color: col })); d.position.set(x, z, 0); dots1.add(d); },
+  async doAction(a) {
+    const s = S1;
+    if (a.t === 'chrono') {
+      s.chrono = true; s.mesures = false; s.franc = false; dots1.clear(); this.clearLabels();
+      const n = Math.round(T_FINA / .06);
+      if (!INSTANT) { flyTo([1.4, 2.7, 4.2], [1.4, 2.6, 0]); let k = 0; await tween(T_FINA * 3, p => { const t = p * T_FINA; this.place(tirA(t)); while (k * .06 <= t && k <= n) { const q = tirA(k * .06); this.addDot(q.x, q.z, 0x1A237E); k++; } }); }
+      else for (let k = 0; k <= n; k++) { const q = tirA(k * .06); this.addDot(q.x, q.z, 0x1A237E); }
+      this.place(tirA(T_FINA)); this.drawData(); step('chrono');
+      say('Chronophotographie : une position toutes les 60 ms. Le ballon monte, passe par un sommet puis redescend.'); return;
+    }
+    if (a.t === 'mesures') {
+      if (!s.chrono) return false; s.mesures = true;
+      Object.entries(PTS_A).forEach(([k, p]) => { const q = tirA(p.t); this.addLabel(`${k} : z = ${f1(p.z, 1)} m ; v = ${f1(p.v, 1)} m/s`, q.x, q.z, '#4a148c'); this.addDot(q.x, q.z, 0xc2185b); });
+      this.drawData(); step('mesures');
+      const msg = 'Relevés (doc. A) : A (2,3 m ; 5,9 m·s⁻¹), B (3,0 m ; 4,6 m·s⁻¹), C (2,7 m ; 5,2 m·s⁻¹).'; observe(msg); say(msg); return;
+    }
+    if (a.t === 'franc') {
+      if (!s.mesures) return false; s.franc = true;
+      const zr = HPAN - RBAL * .2;
+      if (!INSTANT) { flyTo([-1.2, 2.4, 7.2], [-1.0, 2.1, 0]); let k = 0; await tween(T_E * 2.6, p => { const t = p * T_E; this.place(tirD(t)); while (k * .08 <= t) { const q = tirD(k * .08); this.addDot(q.x, q.z, 0xE65100); k++; } });
+        const pE = tirD(T_E); await tween(1, p => this.place({ x: pE.x - .9 * p, z: pE.z + .6 * p - 2.4 * p * p * 1.3 })); }
+      const D = tirD(0), E = tirD(T_E); this.addLabel('D : z = 2,53 m ; v = 6,90 m/s', D.x + .2, D.z, '#bf360c'); this.addLabel('E : v = 6,25 m/s ; z = ?', E.x - .6, E.z + .1, '#bf360c');
+      this.place({ x: -.9, z: RBAL }); this.drawData(); step('franc');
+      const msg = 'Lancer franc : le ballon heurte l\'avant du cercle et ressort. En D : z = 2,53 m, v = 6,90 m·s⁻¹ ; à la verticale du panier (E) : v = 6,25 m·s⁻¹.'; observe(msg); say(msg + ' Calcule z<sub>E</sub>.'); void zr; return;
+    }
+  },
+  async demo() { say('Démonstration : chronophotographie du tir en cloche.'); await act({ t: 'chrono' }, { record: false }); await act({ t: 'mesures' }, { record: false }); await wait(1500); say('À toi : complète le tableau en calculant Δℰc et W(P⃗).'); await wait(1200); },
+};
+startTP(C1);
+
+
+</script></body></html>

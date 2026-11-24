@@ -1,0 +1,1626 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel 3D · Titrer avec les sondes du labo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<script src="lib/three-r128.min.js"></script>
+<style>
+:root{--fond:#F8F6FA;--fond2:#E9E4F0;--prune:#4A148C;--prune-h:#380E6B;--p100:#F3E8FF;--p200:#E9D5FF;--encre:#1F1630;--doux:#5B4B6E;--rose:#C2185B;--lav:#5E35B1;--vert:#2E7D32;--vert-f:#E8F5E9;--orange:#E65100;--blanc:#fff}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:16px/1.5 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--encre);background:linear-gradient(180deg,var(--fond),var(--fond2)) fixed;min-height:100vh}
+.wrap{max-width:1280px;margin:0 auto;padding:14px 16px 40px}
+a.retour{display:inline-block;margin:0 0 8px;font-weight:700;color:var(--prune);text-decoration:none}
+a.retour:hover{text-decoration:underline}
+.tete{background:#fff;border:1px solid var(--p200);border-radius:18px;padding:16px 20px;box-shadow:0 4px 18px rgba(74,20,140,.06)}
+.kicker{margin:0 0 4px;color:var(--doux);font-size:14px;font-weight:700;letter-spacing:.01em}
+.badge3d{display:inline-block;background:var(--prune);color:#fff;border-radius:6px;padding:0 6px;font-size:13px;margin-left:4px}
+h1{margin:2px 0 4px;font-size:clamp(21px,2.6vw,28px);line-height:1.2;color:var(--prune)}
+.prof{margin:0 0 10px;color:var(--doux);font-size:14px}
+.pb{margin:0;border:2px solid #C62828;border-radius:12px;padding:10px 14px;background:#FFF5F5;font-size:16px}
+.pb span{font-weight:700;color:#C62828}
+.materiel{margin:10px 0 0;font-size:14px;color:var(--doux)}
+.parties{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px}
+.parties button{flex:1 1 200px;min-height:48px;border:1px solid var(--p200);background:#fff;color:var(--prune);border-radius:14px;padding:8px 12px;font:700 15px/1.25 inherit;cursor:pointer;text-align:left;display:flex;gap:10px;align-items:center}
+.parties button .n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--p100);font-size:14px}
+.parties button[aria-selected=true]{background:var(--prune);color:#fff;border-color:var(--prune)}
+.parties button[aria-selected=true] .n{background:rgba(255,255,255,.2)}
+.parties button.fait .n{background:var(--vert);color:#fff}
+.parties button:hover:not([aria-selected=true]){background:var(--p100)}
+.assistant{background:#fff;border:1px solid var(--p200);border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(74,20,140,.08)}
+.a-tete{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 18px;border-bottom:1px solid var(--p100);background:linear-gradient(90deg,#fff,var(--fond))}
+.a-tete h2{margin:0;font-size:19px;color:var(--prune);line-height:1.25}
+.a-notion{margin:2px 0 0;font-size:14px;color:var(--doux)}
+.a-compteur{flex:none;background:var(--p100);color:var(--prune);border:1px solid var(--p200);border-radius:999px;padding:4px 12px;font-weight:700;font-size:14px;white-space:nowrap}
+.a-corps{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);min-height:520px;align-items:start}
+.scene{position:sticky;top:8px;height:min(78vh,620px);min-height:480px;background:linear-gradient(180deg,var(--fond),var(--fond2));touch-action:none;overflow:hidden}
+.scene canvas{display:block;width:100%!important;height:100%!important;outline:none;cursor:grab}
+.scene canvas:active{cursor:grabbing}
+.badge-tourner{position:absolute;left:12px;top:12px;background:rgba(74,20,140,.88);color:#fff;border-radius:999px;padding:5px 12px;font-size:14px;font-weight:700;pointer-events:none;z-index:2}
+.scene-outils{position:absolute;right:10px;top:10px;display:flex;gap:6px;z-index:2}
+.scene-outils button,.mini{min-height:36px;border:1px solid var(--p200);background:rgba(255,255,255,.92);color:var(--prune);border-radius:10px;padding:4px 10px;font:700 14px inherit;cursor:pointer}
+.scene-outils button:hover,.mini:hover{background:var(--p100)}
+.scene-msg{position:absolute;left:12px;right:12px;bottom:12px;z-index:2;background:rgba(255,255,255,.95);border:1px solid var(--p200);border-left:4px solid var(--rose);border-radius:12px;padding:8px 12px;font-size:14px;display:none}
+.scene-msg.on{display:block}
+.vue2d{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:14px;gap:8px}
+.vue2d.on{display:flex}
+.vue2d svg{width:100%;max-width:560px;height:auto}
+.vue2d p{margin:0;font-size:14px;color:var(--doux);text-align:center}
+.etape{padding:16px 18px;display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--p100);min-width:0}
+.e-num{display:flex;align-items:center;gap:10px}
+.e-num b{flex:none;width:36px;height:36px;border-radius:50%;background:var(--prune);color:#fff;display:grid;place-items:center;font-size:16px}
+.e-num h3{margin:0;font-size:18px;line-height:1.25}
+.e-desc{font-size:15px;line-height:1.55}
+.e-desc p{margin:0 0 8px}
+.e-desc ul{margin:0 0 8px;padding-left:20px}
+.e-desc .note{background:var(--fond);border:1px solid var(--p200);border-radius:10px;padding:8px 10px;font-size:14px}
+.e-desc .attention{background:#FFF8E1;border:1px solid #FFE082;border-radius:10px;padding:8px 10px;font-size:14px}
+.e-desc .formule{font-weight:700;color:var(--prune)}
+.btn{min-height:46px;border:0;border-radius:12px;background:var(--prune);color:#fff;font:700 16px inherit;padding:10px 16px;cursor:pointer;transition:background .15s}
+.btn:hover:not(:disabled){background:var(--prune-h)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sec{background:#fff;color:var(--prune);border:1px solid var(--p200)}
+.btn.sec:hover:not(:disabled){background:var(--p100)}
+.btn.vert{background:var(--vert)}
+.btn.vert:hover:not(:disabled){background:#1B5E20}
+.actions{display:flex;flex-direction:column;gap:8px}
+.actions .btn{width:100%;text-align:left}
+.actions .btn.fait{background:var(--vert-f);color:var(--vert);border:1px solid #A5D6A7}
+.choix{display:flex;flex-wrap:wrap;gap:8px}
+.choix button{flex:1 1 120px;min-height:44px;border:2px solid var(--p200);background:#fff;border-radius:12px;font:700 15px inherit;color:var(--encre);cursor:pointer;padding:6px 10px}
+.choix button:hover{border-color:var(--prune)}
+.choix button.ok{border-color:var(--vert);background:var(--vert-f)}
+.choix button.ko{border-color:#C62828;background:#FFEBEE}
+.retour-msg{font-size:14px;border-radius:10px;padding:8px 10px;display:none}
+.retour-msg.on{display:block}
+.retour-msg.ko{background:#FFEBEE;border:1px solid #EF9A9A;color:#8E1B1B}
+.retour-msg.info{background:var(--fond);border:1px solid var(--p200)}
+.valide{display:none;align-items:center;gap:8px;background:var(--vert-f);border:1px solid #A5D6A7;color:var(--vert);border-radius:12px;padding:10px 12px;font-weight:700}
+.valide.on{display:flex}
+.nav-et{display:flex;justify-content:space-between;gap:10px;margin-top:auto;padding-top:8px}
+.nav-et .btn{flex:1}
+.saisie{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:15px}
+.saisie input,.saisie select{min-height:42px;border:1px solid var(--p200);border-radius:10px;padding:6px 10px;font:16px inherit;width:130px;background:#fff;color:var(--encre)}
+.verser{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.verser .btn{padding:8px 6px;font-size:15px;text-align:center}
+.lecture{display:flex;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--doux)}
+.lecture b{color:var(--encre)}
+/* ---------- écran du logiciel ---------- */
+.ga{margin-top:14px;background:#fff;border:1px solid var(--p200);border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(74,20,140,.08)}
+.ga-titre{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 14px;background:#2A1546;color:#fff;font-size:14px}
+.ga-titre b{font-size:15px}
+.ga-titre .pts{display:flex;gap:6px}.ga-titre .pts i{width:11px;height:11px;border-radius:50%;background:#F48FB1;display:block}.ga-titre .pts i+i{background:#D1C4E9}.ga-titre .pts i+i+i{background:#9575CD}
+.ga-barre{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--p100);background:var(--fond)}
+.ga-barre .sep{flex:1}
+.ga-btn{min-height:40px;border:1px solid var(--p200);background:#fff;color:var(--prune);border-radius:10px;padding:4px 12px;font:700 14px inherit;cursor:pointer;white-space:nowrap}
+.ga-btn:hover:not(:disabled){background:var(--p100)}
+.ga-btn:disabled{opacity:.45;cursor:not-allowed}
+.ga-btn.on{background:var(--prune);color:#fff;border-color:var(--prune)}
+.ga-collecter{background:var(--vert);color:#fff;border-color:var(--vert);min-width:130px}
+.ga-collecter:hover:not(:disabled){background:#1B5E20!important}
+.ga-collecter.stop{background:#C62828;border-color:#C62828}
+.ga-collecter.stop:hover{background:#8E1B1B!important}
+.ga-garder{background:#1565C0;color:#fff;border-color:#1565C0}
+.ga-garder:hover:not(:disabled){background:#0D47A1!important}
+.ga-menu{position:relative}
+.ga-menu .liste{position:absolute;z-index:20;top:44px;left:0;min-width:270px;background:#fff;border:1px solid var(--p200);border-radius:12px;box-shadow:0 10px 30px rgba(42,21,70,.18);padding:6px;display:none}
+.ga-menu .liste.on{display:block}
+.ga-menu .liste button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 10px;border-radius:8px;font:15px inherit;color:var(--encre);cursor:pointer;min-height:40px}
+.ga-menu .liste button:hover{background:var(--p100)}
+.ga-menu .liste button.on::before{content:"✓ ";color:var(--vert);font-weight:700}
+.ga-capteurs{display:flex;flex-wrap:wrap;gap:10px;padding:10px 12px}
+.capteur{flex:1 1 220px;border:1px solid var(--p200);border-radius:14px;padding:8px 12px;display:flex;align-items:center;gap:12px;min-height:76px}
+.capteur.ph{border-left:6px solid var(--rose)}.capteur.cond{border-left:6px solid var(--lav)}
+.capteur .nom{font-size:13px;color:var(--doux);font-weight:700;line-height:1.3}
+.capteur .val{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.capteur.ph .val{color:var(--rose)}.capteur.cond .val{color:var(--lav)}
+.capteur .unite{font-size:15px;color:var(--doux);margin-left:4px;font-weight:700}
+.capteur .etat{margin-left:auto;text-align:right;font-size:12px;color:var(--doux);line-height:1.35}
+.capteur .voyant{display:inline-block;width:10px;height:10px;border-radius:50%;background:#FFA000;margin-right:4px;vertical-align:middle}
+.capteur .voyant.st{background:#43A047}
+.capteur.absent{opacity:.5}
+.capteur.absent .val{color:#999}
+.capteur .hors{color:#C62828;font-weight:700}
+.ga-zone{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:0;border-top:1px solid var(--p100)}
+.ga-zone.sans-tab{grid-template-columns:minmax(0,1fr)}
+.ga-zone.sans-tab .ga-tab{display:none}
+.ga-graphes{display:grid;grid-template-columns:1fr;gap:8px;padding:10px}
+.ga-graphes.deux{grid-template-columns:1fr 1fr}
+.graphe{position:relative;border:1px solid var(--p100);border-radius:12px;background:#fff;min-height:290px}
+.graphe canvas{display:block;width:100%;height:300px;touch-action:none;cursor:crosshair}
+.ga-tab{border-left:1px solid var(--p100);max-height:340px;overflow:auto;font-size:14px}
+.ga-tab table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.ga-tab th{position:sticky;top:0;background:var(--fond);color:var(--prune);font-size:13px;padding:6px 4px;border-bottom:1px solid var(--p200);text-align:right}
+.ga-tab td{padding:4px;text-align:right;border-bottom:1px solid #f1ecf6}
+.ga-tab tr.inst td{color:#E65100}
+.ga-tab .vide{padding:14px;color:var(--doux);text-align:center}
+.ga-analyse{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+.ga-res{display:flex;flex-wrap:wrap;gap:8px}
+.ga-res .boite{border:1px solid var(--p200);border-radius:12px;padding:8px 12px;background:var(--fond);font-size:14px;line-height:1.45}
+.ga-res .boite b{color:var(--prune)}
+.ga-reglage{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:14px;padding:8px 12px;border:1px dashed var(--p200);border-radius:12px}
+.ga-reglage input[type=range]{width:200px;accent-color:var(--prune)}
+.ga-pied{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;padding:7px 12px;background:var(--fond);border-top:1px solid var(--p100);font-size:13px;color:var(--doux)}
+.dlg{position:fixed;inset:0;z-index:50;background:rgba(31,22,48,.45);display:none;align-items:center;justify-content:center;padding:16px}
+.dlg.on{display:flex}
+.dlg>div{background:#fff;border-radius:18px;max-width:560px;width:100%;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:calc(100vh - 32px);overflow:auto}
+.dlg h4{margin:0 0 8px;color:var(--prune);font-size:18px}
+.dlg .ligne{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.dlg canvas{border:1px solid var(--p200);border-radius:12px;background:#fbfaff;width:150px;height:260px}
+.dlg .droite{flex:1;min-width:200px;display:flex;flex-direction:column;gap:10px;font-size:15px}
+.dlg input{min-height:46px;border:2px solid var(--p200);border-radius:12px;padding:6px 12px;font:20px inherit;width:100%}
+.dlg .bts{display:flex;gap:8px}
+.dlg .bts .btn{flex:1}
+.docs{margin-top:14px;background:#fff;border:1px solid var(--p200);border-radius:16px;padding:10px 16px}
+.docs summary{cursor:pointer;font-weight:700;color:var(--prune);min-height:36px;display:flex;align-items:center}
+.docs table{border-collapse:collapse;font-size:14px;margin:6px 0}
+.docs td,.docs th{border:1px solid var(--p200);padding:4px 8px;text-align:left}
+.securite{margin-top:14px;background:#FFF8E1;border:1px solid #FFE082;border-left:6px solid #F9A825;border-radius:14px;padding:10px 16px;font-size:15px}
+.securite h3{margin:0 0 4px;font-size:16px;color:#8D5B00}
+.securite ul{margin:0;padding-left:20px}
+.explo-grille{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:14px}
+.explo-grille label{display:flex;flex-direction:column;gap:3px;font-weight:700;color:var(--doux)}
+.explo-grille select,.explo-grille input[type=number]{min-height:40px;border:1px solid var(--p200);border-radius:10px;padding:4px 8px;font:15px inherit;color:var(--encre);background:#fff}
+.explo-grille .plein{grid-column:1/-1}
+.case{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;font-weight:400!important;color:var(--encre)!important}
+.case input{width:20px;height:20px;accent-color:var(--prune)}
+.defis{display:flex;flex-direction:column;gap:8px}
+.defi{border:1px solid var(--p200);border-radius:12px;padding:8px 12px;font-size:14px;background:var(--fond)}
+.defi b{color:var(--prune)}
+.defi .bts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.defi .bts .mini{min-height:34px}
+.defi .rep{display:none;margin-top:6px;border-top:1px dashed var(--p200);padding-top:6px}
+.defi .rep.on{display:block}
+.cr{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cr input{min-height:42px;border:1px solid var(--p200);border-radius:10px;padding:6px 10px;font:15px inherit;flex:1 1 160px}
+@media (max-width:900px){
+  .a-corps{grid-template-columns:1fr}
+  .scene{position:relative;top:0;min-height:340px;height:56vh;max-height:460px}
+  .etape{border-left:0;border-top:1px solid var(--p100)}
+  .ga-zone{grid-template-columns:1fr}
+  .ga-tab{border-left:0;border-top:1px solid var(--p100);max-height:240px}
+  .ga-graphes.deux{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .wrap{padding:10px 10px 30px}
+  .tete{padding:12px 14px}
+  .a-tete{padding:10px 12px}
+  .etape{padding:12px}
+  .capteur .val{font-size:24px}
+  .graphe canvas{height:250px}
+  .explo-grille{grid-template-columns:1fr}
+  .verser{grid-template-columns:repeat(2,1fr)}
+  .parties{gap:6px}
+  .parties button{flex:1 1 calc(50% - 6px);min-height:44px;font-size:14px;padding:6px 8px;gap:6px}
+  .parties button .n{width:24px;height:24px;font-size:13px}
+  .materiel{display:none}
+  h1{font-size:20px}
+  .kicker{font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="retour" href="#" onclick="try{parent.location.hash='terminale/matiere/M%C3%A9thodes%20chimiques%20d\'analyse'}catch(e){};return false">← Retour au chapitre</a>
+  <header class="tete">
+    <p class="kicker">EFIR · Terminale spécialité · Chapitre 3 · Méthodes chimiques d'analyse · Activité expérimentale 5 (AE5) avec les sondes du labo · Simulation <span class="badge3d">3D</span></p>
+    <h1>Titrer avec les sondes pH et conductivité du labo</h1>
+    <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+    <p class="pb"><span>Problématique :</span> le vinaigre de la cantine contient-il vraiment 6 % d'acide éthanoïque, comme l'annonce son étiquette ? Une seule expérience, deux sondes, deux façons de trouver l'équivalence.</p>
+    <p class="materiel"><b>Matériel du labo :</b> interface d'acquisition à 2 voies, sonde pH, sonde de conductivité à commutateur de gamme, logiciel d'acquisition (ici une imitation simplifiée de Graphical Analysis), burette de 25 mL, agitateur magnétique.</p>
+  </header>
+
+  <nav class="parties" role="tablist" aria-label="Parties de l'activité">
+    <button role="tab" data-p="0" aria-selected="true"><span class="n">1</span>Préparer et étalonner les sondes</button>
+    <button role="tab" data-p="1" aria-selected="false"><span class="n">2</span>Réaliser le titrage</button>
+    <button role="tab" data-p="2" aria-selected="false"><span class="n">3</span>Exploiter et ranger</button>
+    <button role="tab" data-p="3" aria-selected="false"><span class="n">🔬</span>Explorer librement</button>
+  </nav>
+
+  <section class="assistant" aria-live="polite">
+    <div class="a-tete">
+      <div><h2 id="a-titre"></h2><p class="a-notion" id="a-notion"></p></div>
+      <span class="a-compteur" id="a-compteur"></span>
+    </div>
+    <div class="a-corps">
+      <div class="scene" id="scene">
+        <span class="badge-tourner">↻ Glissez pour tourner</span>
+        <div class="scene-outils"><button type="button" id="b-etiq" aria-pressed="true">🏷 Étiquettes</button><button type="button" id="b-vue">⟲ Vue</button></div>
+        <div class="vue2d" id="vue2d"></div>
+        <div class="scene-msg" id="scene-msg"></div>
+      </div>
+      <div class="etape" id="etape"></div>
+    </div>
+  </section>
+
+  <section class="ga" id="ga" aria-label="Écran du logiciel d'acquisition">
+    <div class="ga-titre"><span class="pts"><i></i><i></i><i></i></span><b>Écran de l'ordinateur · logiciel d'acquisition</b><span>imitation simplifiée de Graphical Analysis</span></div>
+    <div class="ga-barre">
+      <button class="ga-btn" id="g-mode" title="Mode de collecte">⚙ Mode : <span id="g-mode-t">Temps</span></button>
+      <button class="ga-btn ga-collecter" id="g-collecter">▶ Collecter</button>
+      <button class="ga-btn ga-garder" id="g-garder" disabled>✓ Garder</button>
+      <span class="sep"></span>
+      <div class="ga-menu"><button class="ga-btn" id="g-analyse">📈 Analyse ▾</button>
+        <div class="liste" id="g-analyse-l">
+          <button data-a="examiner">🔍 Examiner (lire un point)</button>
+          <button data-a="tangentes">📐 Méthode des tangentes parallèles</button>
+          <button data-a="derivee">∂ Dérivée dpH/dV</button>
+          <button data-a="ajust">📏 Ajustement linéaire de la sélection</button>
+          <button data-a="prop">📏 Ajustement proportionnel (droite par l'origine)</button>
+          <button data-a="corrige">σ corrigée de la dilution</button>
+          <button data-a="theorie">〰 Courbe théorique (prévision)</button>
+          <button data-a="effacer">✕ Effacer les analyses</button>
+        </div></div>
+      <button class="ga-btn" id="g-graphes" title="Un ou deux graphes">◫ 2 graphes</button>
+      <button class="ga-btn on" id="g-tab">▦ Tableau</button>
+      <button class="ga-btn" id="g-suppr" title="Supprimer le dernier point gardé">↶ Dernier point</button>
+      <button class="ga-btn" id="g-csv">⬇ CSV</button>
+    </div>
+    <div class="ga-capteurs">
+      <div class="capteur ph absent" id="c-ph"><div><div class="nom">CH1 · pH</div><div><span class="val" id="v-ph">– – –</span></div></div><div class="etat" id="e-ph">non branché</div></div>
+      <div class="capteur cond absent" id="c-cond"><div><div class="nom">CH2 · Conductivité</div><div><span class="val" id="v-cond">– – –</span><span class="unite">µS/cm</span></div></div><div class="etat" id="e-cond">non branché</div></div>
+    </div>
+    <div class="ga-zone" id="g-zone">
+      <div>
+        <div class="ga-graphes deux" id="g-graphes-z">
+          <div class="graphe"><canvas id="cv-ph" aria-label="Graphe pH en fonction du volume"></canvas></div>
+          <div class="graphe"><canvas id="cv-cond" aria-label="Graphe conductivité en fonction du volume"></canvas></div>
+        </div>
+        <div class="ga-analyse" id="g-analyse-z"></div>
+      </div>
+      <div class="ga-tab" id="g-table"></div>
+    </div>
+    <div class="ga-pied"><span id="g-pied-g"></span><span id="g-pied-d"></span></div>
+  </section>
+
+  <details class="docs">
+    <summary>📖 Données et documents</summary>
+    <p><b>Solution titrée S<sub>A</sub></b> : vinaigre de la cantine dilué 10 fois. <b>Solution titrante</b> : soude (Na⁺ + HO⁻), C<sub>B</sub> = 1,00 × 10⁻¹ mol·L⁻¹. <b>Prise d'essai</b> : V<sub>A</sub> = 10,0 mL, complétée par environ 40 mL d'eau distillée pour que les sondes plongent.</p>
+    <p><b>Réaction support du titrage</b> : CH₃COOH(aq) + HO⁻(aq) → CH₃COO⁻(aq) + H₂O(ℓ). pK<sub>A</sub>(CH₃COOH / CH₃COO⁻) = 4,76 à 25 °C. M(CH₃COOH) = 60,1 g·mol⁻¹. Le « degré » d'un vinaigre est la masse d'acide éthanoïque, en g, dans 100 g de vinaigre (masse volumique ≈ 1,01 g·mL⁻¹).</p>
+    <p><b>Conductivités molaires ioniques à 25 °C</b> (mS·m²·mol⁻¹) :</p>
+    <table><tr><th>H₃O⁺</th><th>HO⁻</th><th>Na⁺</th><th>Cl⁻</th><th>CH₃COO⁻</th><th>NH₄⁺</th></tr><tr><td>34,98</td><td>19,86</td><td>5,01</td><td>7,63</td><td>4,09</td><td>7,34</td></tr></table>
+    <p><b>Loi de Kohlrausch</b> : σ = Σ λ<sub>i</sub>[X<sub>i</sub>], avec [X<sub>i</sub>] en mol·m⁻³ ; 1 mS·m⁻¹ = 10 µS·cm⁻¹.</p>
+    <p><b>Les sondes</b> : la sonde pH délivre une tension qui dépend linéairement du pH ; le logiciel la convertit grâce à l'étalonnage (2 tampons). La sonde de conductivité a trois gammes (0–200, 0–2 000, 0–20 000 µS/cm) : au-delà de la gamme, la mesure plafonne ; une gamme trop large donne une mesure moins précise. L'étalonnage de la conductivité est propre à une gamme.</p>
+  </details>
+
+  <aside class="securite">
+    <h3>⚠️ Rappel de sécurité</h3>
+    <ul>
+      <li>La soude est corrosive, même diluée : blouse, gants et lunettes pendant tout le titrage.</li>
+      <li>Le bulbe de verre de la sonde pH est fragile : il ne doit toucher ni le barreau aimanté ni la paroi. On le tamponne, on ne le frotte jamais.</li>
+      <li>La sonde pH ne doit jamais sécher : entre deux séances, elle reste dans son flacon de stockage (jamais dans l'eau distillée).</li>
+      <li>Les solutions usagées vont dans le bidon de récupération, pas dans l'évier.</li>
+    </ul>
+  </aside>
+</div>
+
+<div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+  <div>
+    <h4 id="dlg-t">Garder ce point : saisir le volume versé</h4>
+    <div class="ligne">
+      <canvas id="dlg-burette" width="300" height="520" aria-label="Vue agrandie de la burette"></canvas>
+      <div class="droite">
+        <p style="margin:0" id="dlg-aide">Lis la burette au <b>bas du ménisque</b>, œil à la hauteur du liquide (graduations tous les 0,1 mL).</p>
+        <label for="dlg-v"><b>Volume (mL)</b></label>
+        <input id="dlg-v" type="text" inputmode="decimal" autocomplete="off">
+        <div class="retour-msg ko" id="dlg-msg"></div>
+        <div class="bts"><button class="btn sec" id="dlg-annuler" type="button">Annuler</button><button class="btn" id="dlg-ok" type="button">✓ Garder</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== Labo virtuel EFIR · sondes du labo : modèle chimique et capteurs ===== */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const fr = (x, d) => (Number.isFinite(+x) ? (+x).toFixed(d) : "–").replace(".", ",").replace(/^-/, "−");
+const num = t => parseFloat(String(t == null ? "" : t).trim().replace(/\s/g, "").replace(",", ".").replace("−", "-"));
+const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+
+/* ---------- chimie : pH exact (électroneutralité) et conductivité (Kohlrausch), 25 °C ---------- */
+const CHIM = (function () {
+  const L = { H: 34.98, OH: 19.86, Na: 5.01, Cl: 7.63, Ac: 4.09, NH4: 7.34 }; /* mS·m²·mol⁻¹ */
+  const SYS = {
+    acet: { nom: "Acide éthanoïque (vinaigre) titré par la soude", analyte: "acide", pKa: 4.76, ion: "Ac", titrant: "Na", nomA: "acide éthanoïque", nomT: "soude", eq: "CH₃COOH + HO⁻ → CH₃COO⁻ + H₂O" },
+    hcl: { nom: "Acide chlorhydrique titré par la soude", analyte: "acide", pKa: -8, ion: "Cl", titrant: "Na", nomA: "acide chlorhydrique", nomT: "soude", eq: "H₃O⁺ + HO⁻ → 2 H₂O" },
+    nh3: { nom: "Ammoniac titré par l'acide chlorhydrique", analyte: "base", pKa: 9.25, ion: "NH4", titrant: "Cl", nomA: "ammoniac", nomT: "acide chlorhydrique", eq: "NH₃ + H₃O⁺ → NH₄⁺ + H₂O" }
+  };
+  function etat(id, Ca, Va, Veau, Cb, V) {
+    const S = SYS[id], Vt = Va + Veau + V, C0 = Ca * Va / Vt, Ct = Cb * V / Vt, Ka = Math.pow(10, -S.pKa), Kw = 1e-14;
+    const f = S.analyte === "acide" ? h => h + Ct - Kw / h - C0 * Ka / (Ka + h) : h => h + C0 * h / (Ka + h) - Kw / h - Ct;
+    let lo = -15, hi = 1;
+    for (let i = 0; i < 70; i++) { const m = (lo + hi) / 2; if (f(Math.pow(10, m)) > 0) hi = m; else lo = m; }
+    const h = Math.pow(10, (lo + hi) / 2), oh = Kw / h, ions = { H: h, OH: oh };
+    if (S.analyte === "acide") { ions.Na = Ct; ions[S.ion] = C0 * Ka / (Ka + h); }
+    else { ions.Cl = Ct; ions.NH4 = C0 * h / (Ka + h); }
+    let s = 0; for (const k in ions) s += (L[k] || 0) * ions[k];
+    return { pH: -Math.log10(h), sigma: s * 1e4, ions, Vt };
+  }
+  return { L, SYS, etat };
+})();
+
+/* ---------- état du labo ---------- */
+const LAB = {
+  sys: "acet", Ca: 0.0985, Va: 10, Veau: 40, Cb: 0.100,
+  V: 0,                         /* volume réellement versé (mL) */
+  becher: { acide: false, eau: false, barreau: false }, agit: false,
+  burette: { remplie: false }, robinet: false, epi: false,
+  iface: false, branche: { ph: false, cond: false },
+  gamme: 2000,                  /* position du commutateur (µS/cm) */
+  sonde: { ph: { milieu: "stock", x: 4.0 }, cond: { milieu: "air", x: 0 } },
+  calPH: { a: -4, b: 14, pts: [], fait: false },
+  calC: { a: null, b: null, pts: [], gamme: null, fait: false },
+  mode: "temps", collecte: false, data: [],
+  indic: "aucun", sondesActives: { ph: true, cond: true },
+  explorer: false
+};
+const ECOUTE = [];                  /* fonctions appelées à chaque changement d'état */
+function change() { ECOUTE.forEach(f => { try { f(); } catch (e) { console.error(e); } }); }
+
+function chimieBecher() {
+  if (!LAB.becher.acide) return null;
+  return CHIM.etat(LAB.sys, LAB.Ca, LAB.Va, LAB.becher.eau ? LAB.Veau : 0, LAB.Cb, LAB.V);
+}
+function volumeBecher() { return (LAB.becher.acide ? LAB.Va : 0) + (LAB.becher.eau ? LAB.Veau : 0) + LAB.V; }
+/* valeur « vraie » vue par chaque sonde selon l'endroit où elle plonge */
+function cible(type) {
+  const m = LAB.sonde[type].milieu, c = m === "becher" ? chimieBecher() : null;
+  if (type === "ph") {
+    if (m === "buf4") return 4.00; if (m === "buf7") return 7.00; if (m === "stock") return 4.00;
+    if (m === "eau") return 6.3; if (m === "std") return 6.9;
+    if (m === "becher") return c && volumeBecher() >= 30 ? c.pH : NaN;
+    return NaN; /* à l'air : mesure sans signification */
+  }
+  if (window.MILIEUX && MILIEUX[m]) return MILIEUX[m]();
+  if (m === "std") return 1413; if (m === "eau") return 3; if (m === "buf4" || m === "buf7") return 3600; if (m === "stock") return 25000;
+  if (m === "becher") return c && volumeBecher() >= 30 ? c.sigma : (volumeBecher() >= 30 ? 3 : 0);
+  return 0;
+}
+/* ---------- les capteurs : réponse progressive, tension brute, étalonnage, gammes ---------- */
+const CAPT = {
+  tauPH: 1.2, tauC: 0.6,
+  tick(dt) {
+    const p = LAB.sonde.ph, c = LAB.sonde.cond;
+    let t = cible("ph");
+    if (!Number.isFinite(t)) { p.air = (p.air || 7.3) + gauss() * 0.02 * dt * 10; p.air = Math.min(9, Math.max(5.5, p.air)); t = p.air; }
+    p.x += (t - p.x) * (1 - Math.exp(-dt / this.tauPH)); p.t = t;
+    const tc = cible("cond"); c.x += (tc - c.x) * (1 - Math.exp(-dt / this.tauC)); c.t = tc;
+  },
+  stable(type) {
+    const s = LAB.sonde[type];
+    const t = cible(type);
+    if (type === "ph") return Number.isFinite(t) && Math.abs(t - s.x) < 0.012;
+    return Math.abs(t - s.x) <= Math.max(0.004 * Math.abs(t), LAB.gamme / 4000);
+  },
+  regler(type) { const s = LAB.sonde[type]; const t = cible(type); if (Number.isFinite(t)) { s.x = t; s.t = t; } },
+  tensionPH() { return 1.75 - 0.235 * (LAB.sonde.ph.x - 7) + 0.03 + gauss() * 0.0006; },
+  lirePH() { const U = this.tensionPH(); return { U, v: Math.max(-1, Math.min(15, LAB.calPH.a * U + LAB.calPH.b)) }; },
+  tensionC() { const brut = 2.5 * LAB.sonde.cond.x / LAB.gamme * 0.96; return { U: Math.min(2.5, Math.max(0, brut + gauss() * 0.0004)), hors: brut > 2.49 }; },
+  lireC() {
+    const { U, hors } = this.tensionC(), C = LAB.calC, g = LAB.gamme;
+    let v = (C.fait && C.gamme === g) ? C.a * U + C.b : U / 2.5 * g;
+    const pas = g / 2000; v = Math.max(0, Math.round(v / pas) * pas);
+    return { U, v, hors, dec: g === 200 ? 1 : 0 };
+  }
+};
+const fC = (v, dec) => dec ? fr(v, 1) : Math.round(v).toLocaleString("fr-FR").replace(/ /g, " ");
+
+/* ---------- versement à la burette (animé) ---------- */
+const VERSE = {
+  file: [], enCours: 0, debit: 0,
+  ajoute(dv, duree) { this.file.push({ reste: dv, debit: dv / Math.max(0.15, duree) }); },
+  tick(dt) {
+    let dv = 0;
+    if (LAB.robinet && LAB.burette.remplie) dv += 0.45 * dt;
+    if (this.file.length) { const f = this.file[0], d = Math.min(f.reste, f.debit * dt); f.reste -= d; dv += d; if (f.reste <= 1e-9) this.file.shift(); }
+    if (dv > 0) {
+      dv = Math.min(dv, 25 - LAB.V);
+      if (dv <= 0) { LAB.robinet = false; this.file = []; return 0; }
+      LAB.V += dv; this.debit = dv / dt;
+    } else this.debit = 0;
+    return dv;
+  },
+  occupe() { return this.file.length > 0 || LAB.robinet; }
+};
+
+/* ---------- indicateurs colorés (mode Explorer) ---------- */
+const INDIC = {
+  aucun: null,
+  bbt: { nom: "Bleu de bromothymol", z: [6.0, 7.6], a: [236, 200, 40], b: [40, 90, 200] },
+  phph: { nom: "Phénolphtaléine", z: [8.2, 10.0], a: [245, 245, 250], b: [214, 40, 150] },
+  hel: { nom: "Hélianthine", z: [3.1, 4.4], a: [220, 50, 40], b: [240, 180, 40] }
+};
+function couleurBecher() {
+  const I = INDIC[LAB.indic], c = chimieBecher();
+  if (!I || !c) return null;
+  const t = Math.max(0, Math.min(1, (c.pH - I.z[0]) / (I.z[1] - I.z[0])));
+  return I.a.map((v, i) => Math.round(v + (I.b[i] - v) * t));
+}
+
+/* ===== Scène 3D (three.js r128) : paillasse, burette, agitateur, sondes, interface, ordinateur ===== */
+const S3D = (function () {
+  const T = window.THREE;
+  let ok = false, R, scene, cam, hote, larg = 1, haut = 1, ecranTex, ecranCv, etiqVisibles = true;
+  const O = {}, etiquettes = [], cliquables = [], gouttes = [], ondes = [], jets = [];
+  const vue = { th: 0.35, ph: 1.08, d: 125, cx: 2, cy: 18, cz: 0 }, but = { th: 0.35, ph: 1.08, d: 125, cx: 2, cy: 18, cz: 0 };
+  const VUES = {
+    ensemble: { th: 0.35, ph: 1.08, d: 125, cx: 2, cy: 18, cz: 0 },
+    interface: { th: 0.25, ph: 0.95, d: 48, cx: 15, cy: 4, cz: 4 },
+    sonde: { th: 0.35, ph: 1.2, d: 55, cx: 0, cy: 18, cz: 2 },
+    tampons: { th: -0.1, ph: 1.0, d: 70, cx: -18, cy: 9, cz: 8 },
+    rincage: { th: -0.3, ph: 1.05, d: 70, cx: -26, cy: 10, cz: 5 },
+    becher: { th: 0.25, ph: 1.15, d: 62, cx: 0, cy: 13, cz: 1 },
+    burette: { th: 0.25, ph: 1.4, d: 70, cx: 0, cy: 38, cz: 0 },
+    ordi: { th: 0.05, ph: 1.25, d: 52, cx: 37, cy: 10, cz: -3 },
+    rangement: { th: 0.1, ph: 1.0, d: 70, cx: -5, cy: 10, cz: 6 },
+    portoir: { th: 0.12, ph: 1.12, d: 62, cx: 0, cy: 7, cz: 2 },
+    fiole: { th: -0.2, ph: 1.12, d: 60, cx: -16, cy: 8, cz: -6 }
+  };
+  /* cadre étroit (colonne centrale du poste, téléphone) : vue d'ensemble rapprochée et recentrée */
+  const ETROIT = { ensemble: (window.CFG_PAGE || {}).mode !== "etal" ? { th: 0.4, ph: 1.12, d: 98, cx: 7, cy: 23, cz: 0 } : { th: 0.4, ph: 0.9, d: 84, cx: 5, cy: 6, cz: 0 } };
+  let etroit = false, nomVue = "ensemble";
+  const cible = n => (etroit && ETROIT[n]) || VUES[n];
+  /* positions des sondes : pointe (origine du groupe) */
+  const POS = {
+    ph: { repos: [1.15, 17, 0.8], becher: [1.15, 5.8, 0.8], buf4: [-24, 1.2, 10], buf7: [-18, 1.2, 10], std: [-12, 1.2, 10], eau: [-31, 11, 2], air: [-6, 22, 12], stock: [9, 1.6, 12], table: [6, 1.0, 14] },
+    cond: { repos: [-1.15, 17, 0.8], becher: [-1.15, 5.8, 0.8], buf4: [-24, 1.2, 10], buf7: [-18, 1.2, 10], std: [-12, 1.2, 10], eau: [-29, 11, 1], air: [-9, 18, 9], stock: [9, 1.6, 12], table: [-5, 0.7, 15] }
+  };
+  const BECHER = { x: 0, z: 0, y0: 5, r: 2.5, h: 7 };
+  const BUR = { x: 0, z: -1.2, y0mL: 63, ymm: 1.8, yRob: 16.6, yTip: 11.4 };
+
+  const mat = (c, r, m, o) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: r == null ? .5 : r, metalness: m || 0 }, o || {}));
+  const verre = () => new T.MeshPhysicalMaterial({ color: 0xffffff, roughness: .05, metalness: 0, transparent: true, opacity: .3, side: T.DoubleSide, depthWrite: false, clearcoat: 1, clearcoatRoughness: .05, envMapIntensity: 1.4 });
+  function m(geo, ma, x, y, z, ombre) { const k = new T.Mesh(geo, ma); k.position.set(x || 0, y || 0, z || 0); if (ombre !== false) { k.castShadow = true; k.receiveShadow = true; } return k; }
+  function texte(cv, lignes, opt) {
+    const c = cv.getContext("2d"), W = cv.width, H = cv.height; opt = opt || {};
+    c.fillStyle = opt.fond || "#fff"; c.fillRect(0, 0, W, H);
+    if (opt.bande) { c.fillStyle = opt.bande; c.fillRect(0, 0, W, H * .3); }
+    c.fillStyle = opt.encre || "#1F1630"; c.textAlign = "center"; c.textBaseline = "middle";
+    lignes.forEach((l, i) => { c.font = (i === 0 ? "700 " : "") + (opt.taille || 34) * (i === 0 ? 1 : .8) + "px Atkinson Hyperlegible, Arial, sans-serif"; c.fillText(l, W / 2, H * (opt.y0 || .5) + (i - (lignes.length - 1) / 2) * (opt.taille || 34) * 1.15); });
+    const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding; t.anisotropy = 4; return t;
+  }
+  function cvs(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+  function etiquette(txt, x, y, z, coul, parent) {
+    const cv = cvs(512, 96), c = cv.getContext("2d");
+    c.font = "700 40px Atkinson Hyperlegible, Arial, sans-serif"; const w = Math.min(500, c.measureText(txt).width + 44);
+    c.fillStyle = "rgba(255,255,255,.94)"; c.strokeStyle = coul || "#4A148C"; c.lineWidth = 4;
+    const x0 = (512 - w) / 2; c.beginPath(); c.moveTo(x0 + 22, 8); c.arcTo(x0 + w, 8, x0 + w, 88, 22); c.arcTo(x0 + w, 88, x0, 88, 22); c.arcTo(x0, 88, x0, 8, 22); c.arcTo(x0, 8, x0 + w, 8, 22); c.fill(); c.stroke();
+    c.fillStyle = coul || "#4A148C"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(txt, 256, 50);
+    const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding;
+    const s = new T.Sprite(new T.SpriteMaterial({ map: t, depthTest: false, transparent: true, sizeAttenuation: false })); s.scale.set(.2, .0375, 1); s.position.set(x, y, z); s.renderOrder = 10;
+    (parent || scene).add(s); etiquettes.push(s); return s;
+  }
+  function ombreDouce(x, z, r, op) {
+    const cv = cvs(128, 128), c = cv.getContext("2d"), g = c.createRadialGradient(64, 64, 4, 64, 64, 64);
+    g.addColorStop(0, "rgba(40,20,60," + (op || .35) + ")"); g.addColorStop(1, "rgba(40,20,60,0)"); c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+    const p = new T.Mesh(new T.PlaneGeometry(r * 2, r * 2), new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false }));
+    p.rotation.x = -Math.PI / 2; p.position.set(x, .03, z); scene.add(p); return p;
+  }
+  function becherGeo(r, h) {
+    const pts = [new T.Vector2(0, 0), new T.Vector2(r - .3, 0), new T.Vector2(r, .3), new T.Vector2(r, h), new T.Vector2(r + .2, h + .15)];
+    return new T.LatheGeometry(pts, 48);
+  }
+  function petitBecher(x, z, r, h, liq, etiq, coulEtiq) {
+    const g = new T.Group(); g.position.set(x, 0, z);
+    g.add(m(becherGeo(r, h), verre(), 0, 0, 0, false));
+    if (liq) { const l = m(new T.CylinderGeometry(r - .1, r - .1, liq.h, 40), mat(liq.c, .15, 0, { transparent: true, opacity: liq.o || .55 }), 0, liq.h / 2 + .05, 0, false); g.add(l); }
+    if (etiq) { const t = texte(cvs(256, 128), etiq, { bande: coulEtiq, taille: 30, y0: .62 }); const e = m(new T.CylinderGeometry(r + .03, r + .03, h * .38, 40, 1, true, -0.7, 1.4), new T.MeshStandardMaterial({ map: t, roughness: .6 }), 0, h * .45, 0, false); g.add(e); }
+    scene.add(g); ombreDouce(x, z, r * 1.8, .25); return g;
+  }
+  function sonde(type) {
+    const g = new T.Group(), noir = mat(0x2b2b30, .45), gris = mat(0x55555c, .4);
+    if (type === "ph") {
+      g.add(m(new T.CylinderGeometry(.42, .42, 4.2, 24), verre(), 0, 2.1, 0, false));
+      const bulbe = m(new T.SphereGeometry(.42, 24, 16), new T.MeshPhysicalMaterial({ color: 0xdfefff, roughness: .1, transparent: true, opacity: .65, clearcoat: 1 }), 0, .5, 0, false); g.add(bulbe);
+      const garde = m(new T.CylinderGeometry(.62, .62, 3.2, 24, 1, true), mat(0x3a3a40, .5, 0, { side: T.DoubleSide, transparent: true, opacity: .55 }), 0, 1.6, 0, false); g.add(garde);
+      g.add(m(new T.CylinderGeometry(.62, .62, 13, 28), noir, 0, 10.4, 0));
+      g.add(m(new T.CylinderGeometry(.66, .66, .8, 28), mat(0xC2185B, .4), 0, 4.3, 0));
+      g.add(m(new T.CylinderGeometry(.35, .5, 1.8, 20), gris, 0, 17.8, 0));
+      const t = texte(cvs(256, 64), ["pH"], { fond: "#2b2b30", encre: "#fff", taille: 40 });
+      g.add(m(new T.PlaneGeometry(1.1, .28 * 1.1 * 4), new T.MeshBasicMaterial({ map: t }), 0, 12, .63, false).rotateZ(Math.PI / 2));
+      g.userData.haut = 18.7;
+    } else {
+      g.add(m(new T.CylinderGeometry(.62, .62, 15, 28), noir, 0, 7.5, 0));
+      const fente = m(new T.BoxGeometry(1.3, 2.2, .5), mat(0x101012, .8), 0, 1.6, 0, false); g.add(fente);
+      g.add(m(new T.BoxGeometry(.1, 1.8, .55), mat(0x9e9e9e, .3, .6), -.25, 1.6, 0, false), m(new T.BoxGeometry(.1, 1.8, .55), mat(0x9e9e9e, .3, .6), .25, 1.6, 0, false));
+      /* boîtier du commutateur de gamme */
+      const boite = new T.Group(); boite.position.set(0, 13.2, 0);
+      boite.add(m(new T.BoxGeometry(2.2, 4.4, 1.7), mat(0x3d2a5c, .45)));
+      const tc = texte(cvs(128, 256), [""], { fond: "#3d2a5c" }); const cx = tc.image.getContext("2d");
+      cx.fillStyle = "#fff"; cx.font = "700 26px Arial"; cx.textAlign = "left";["20000", "2000", "200"].forEach((l, i) => cx.fillText(l, 52, 50 + i * 78)); cx.fillStyle = "#1a1030"; cx.fillRect(18, 30, 20, 200); tc.needsUpdate = true;
+      boite.add(m(new T.PlaneGeometry(1.9, 3.9), new T.MeshBasicMaterial({ map: tc }), 0, 0, .86, false));
+      const cur = m(new T.BoxGeometry(.5, .6, .3), mat(0xF48FB1, .35), -.53, 0, 1.0, false); boite.add(cur); g.userData.curseur = cur;
+      g.add(boite);
+      g.add(m(new T.CylinderGeometry(.35, .5, 1.6, 20), gris, 0, 16.2, 0));
+      g.userData.haut = 17;
+    }
+    scene.add(g); return g;
+  }
+  function cable(nom, coul) {
+    const k = new T.Mesh(new T.BufferGeometry(), mat(coul || 0x222226, .6)); k.castShadow = true; scene.add(k); O[nom] = k; return k;
+  }
+  function majCable(k, a, b, mou) {
+    const mid = a.clone().lerp(b, .5); mid.y = Math.max(.6, Math.min(a.y, b.y) - (mou || 4));
+    const c1 = a.clone().add(new T.Vector3(0, 3, 0)), c2 = b.clone().add(new T.Vector3(0, 1.5, 2.5));
+    const courbe = new T.CatmullRomCurve3([a, c1, mid, c2, b]);
+    k.geometry.dispose(); k.geometry = new T.TubeGeometry(courbe, 48, .22, 8, false);
+  }
+
+  function construit() {
+    scene = new T.Scene();
+    /* environnement doux pour les reflets du verre */
+    const pm = new T.PMREMGenerator(R), env = new T.Scene();
+    env.add(new T.Mesh(new T.BoxGeometry(200, 200, 200), new T.MeshBasicMaterial({ color: 0x8f84a3, side: T.BackSide })));
+    [[0, 90, 0, 120, 60], [-90, 30, 20, 40, 80], [80, 40, -30, 50, 60]].forEach(([x, y, z, w, h]) => { const p = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: 0xe8e2f0, side: T.DoubleSide })); p.position.set(x, y, z); p.lookAt(0, 0, 0); env.add(p); });
+    scene.environment = pm.fromScene(env, .04).texture;
+    scene.add(new T.HemisphereLight(0xffffff, 0xb9a9cc, .35));
+    const sol = new T.DirectionalLight(0xfff8f0, .85); sol.position.set(30, 80, 45); sol.castShadow = true;
+    sol.shadow.mapSize.set(2048, 2048); Object.assign(sol.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 10, far: 220 }); sol.shadow.bias = -.0004; sol.shadow.radius = 4;
+    scene.add(sol);
+    /* paillasse */
+    const pa = m(new T.BoxGeometry(104, 3, 44), mat(0xCFC4DC, .8), 3, -1.5, 2); scene.add(pa);
+    scene.add(m(new T.BoxGeometry(104, .4, .6), mat(0xD1C4E9, .5), 3, -.2, 24.2, false));
+    /* agitateur magnétique */
+    const ag = new T.Group(); ag.position.set(BECHER.x, 0, BECHER.z);
+    ag.add(m(new T.BoxGeometry(14, 4.6, 14), mat(0xe6e3ec, .45)).translateY(2.3));
+    ag.add(m(new T.BoxGeometry(12.4, .4, 12.4), mat(0xE9E4F0, .35)).translateY(4.8));
+    const bt = m(new T.CylinderGeometry(1.1, 1.1, 1, 24), mat(0x4A148C, .4), -3.6, 2.6, 7.3); bt.rotation.x = Math.PI / 2; ag.add(bt); O.bouton = bt;
+    const voy = m(new T.SphereGeometry(.35, 12, 8), mat(0x666666, .3, 0, { emissive: 0x000000 }), 3.8, 2.6, 7.05, false); ag.add(voy); O.voyAg = voy;
+    scene.add(ag); O.ag = ag; O.agOmbre = ombreDouce(BECHER.x, BECHER.z, 11, .3);
+    /* bécher de titrage */
+    const bc = new T.Group(); bc.position.set(BECHER.x, BECHER.y0, BECHER.z); O.becher = bc;
+    bc.add(m(becherGeo(BECHER.r, BECHER.h), verre(), 0, 0, 0, false));
+    const grad = texte(cvs(128, 256), [""], { fond: "rgba(0,0,0,0)" }); { const c = grad.image.getContext("2d"); c.clearRect(0, 0, 128, 256); c.strokeStyle = "#ffffff"; c.fillStyle = "#ffffff"; c.lineWidth = 3; c.font = "700 22px Arial"; for (let i = 1; i <= 4; i++) { const y = 240 - i * 50; c.beginPath(); c.moveTo(10, y); c.lineTo(50, y); c.stroke(); c.fillText(i * 25 + "", 58, y + 8); } grad.needsUpdate = true; }
+    bc.add(m(new T.CylinderGeometry(BECHER.r + .02, BECHER.r + .02, BECHER.h * .9, 30, 1, true, -.4, .8), new T.MeshBasicMaterial({ map: grad, transparent: true, depthWrite: false, opacity: .9 }), 0, BECHER.h * .45, 0, false));
+    O.liq = m(new T.CylinderGeometry(BECHER.r - .1, BECHER.r - .1, 1, 48), mat(0xd6ecff, .1, 0, { transparent: true, opacity: .5 }), 0, .5, 0, false); O.liq.visible = false; bc.add(O.liq);
+    O.surf = m(new T.CircleGeometry(BECHER.r - .1, 48), mat(0xeaf5ff, .05, 0, { transparent: true, opacity: .5, side: T.DoubleSide }), 0, 1, 0, false); O.surf.rotation.x = -Math.PI / 2; O.surf.visible = false; bc.add(O.surf);
+    O.barreau = m(T.CapsuleGeometry ? new T.CapsuleGeometry(.25, 1.6, 6, 12) : new T.CylinderGeometry(.25, .25, 2.1, 12), mat(0xffffff, .3), 0, .35, 0); O.barreau.rotation.z = Math.PI / 2; O.barreau.visible = false; bc.add(O.barreau);
+    scene.add(bc);
+    /* potence, noix, pinces */
+    const pot = new T.Group(); scene.add(pot); O.pot = pot;
+    const metal = mat(0xb9bcc4, .3, .8);
+    pot.add(m(new T.BoxGeometry(14, 1.3, 20), mat(0x37323f, .5), -10, .65, -6));
+    pot.add(m(new T.CylinderGeometry(.6, .6, 76, 16), metal, -10, 38, -8));
+    const noix = (y, bx, bz) => { pot.add(m(new T.BoxGeometry(2, 2, 2), mat(0x444047, .5, .3), -10, y, -8)); const L = Math.hypot(bx + 10, bz + 8); const br = m(new T.CylinderGeometry(.35, .35, L, 10), metal, (bx - 10) / 2, y, (bz - 8) / 2); br.rotation.z = Math.PI / 2; br.rotation.y = -Math.atan2(bz + 8, bx + 10); pot.add(br); };
+    noix(42, BUR.x - 1, BUR.z); noix(26, 0, .8);
+    pot.add(m(new T.TorusGeometry(.75, .18, 8, 20), mat(0x444047, .5), BUR.x, 42, BUR.z).rotateX(Math.PI / 2));
+    const pince = m(new T.BoxGeometry(4.6, .6, 1), mat(0x444047, .5), 0, 26, .8); pot.add(pince);
+    pot.add(m(new T.TorusGeometry(.75, .15, 8, 20), mat(0x444047, .5), 1.15, 26, .8).rotateX(Math.PI / 2), m(new T.TorusGeometry(.75, .15, 8, 20), mat(0x444047, .5), -1.15, 26, .8).rotateX(Math.PI / 2));
+    /* burette de 25 mL */
+    const bu = new T.Group(); bu.position.set(BUR.x, 0, BUR.z); O.burette = bu;
+    const yHaut = BUR.y0mL + 5, yBas = BUR.yRob + 1;
+    bu.add(m(new T.CylinderGeometry(.6, .6, yHaut - yBas, 24, 1, true), verre(), 0, (yHaut + yBas) / 2, 0, false));
+    const gcv = cvs(160, 2048), gc = gcv.getContext("2d"); gc.clearRect(0, 0, 160, 2048);
+    const pxmL = 2048 / 27.7; gc.strokeStyle = "#1F1630"; gc.fillStyle = "#1F1630"; gc.font = "700 30px Arial";
+    for (let i = 0; i <= 250; i++) { const yy = (i / 10 + 5 / 1.8) * pxmL; const L = i % 10 === 0 ? 70 : i % 5 === 0 ? 48 : 30; gc.lineWidth = i % 10 === 0 ? 4 : 2.5; gc.beginPath(); gc.moveTo(10, yy); gc.lineTo(10 + L, yy); gc.stroke(); if (i % 10 === 0) gc.fillText(String(i / 10), 88, yy + 11); }
+    const gt = new T.CanvasTexture(gcv); gt.anisotropy = 8;
+    const hG = 27.7 * BUR.ymm; const gm = m(new T.CylinderGeometry(.62, .62, hG, 24, 1, true, -.55, 1.1), new T.MeshBasicMaterial({ map: gt, transparent: true, depthWrite: false }), 0, BUR.y0mL + 5 - hG / 2, 0, false); bu.add(gm);
+    O.liqBur = m(new T.CylinderGeometry(.5, .5, 1, 20), mat(0xcfe3ff, .1, 0, { transparent: true, opacity: .6 }), 0, 0, 0, false); O.liqBur.visible = false; bu.add(O.liqBur);
+    bu.add(m(new T.CylinderGeometry(.6, .25, 1.2, 20), verre(), 0, yBas - .6, 0, false));
+    const rob = new T.Group(); rob.position.set(0, BUR.yRob, 0);
+    rob.add(m(new T.CylinderGeometry(.4, .4, 2.4, 16), mat(0xf5f5f5, .3)).rotateZ(Math.PI / 2));
+    const poignee = m(new T.BoxGeometry(.45, 2.6, .5), mat(0x4A148C, .4), 1.4, 0, 0); rob.add(poignee); O.poignee = poignee; poignee.rotation.z = Math.PI / 2;
+    poignee.userData = { nom: "Robinet de la burette", robinet: true }; cliquables.push(poignee);
+    bu.add(rob);
+    bu.add(m(new T.CylinderGeometry(.22, .1, BUR.yRob - BUR.yTip - .4, 12), verre(), 0, (BUR.yRob + BUR.yTip) / 2 - .4, 0, false));
+    scene.add(bu);
+    /* sondes et câbles */
+    O.sph = sonde("ph"); O.scond = sonde("cond");
+    O.sph.userData.nom = "Sonde pH"; O.scond.userData.nom = "Sonde de conductivité";
+    cable("cph", 0x26262b); cable("ccond", 0x26262b); cable("cusb", 0x9e9e9e);
+    /* interface */
+    const it = new T.Group(); it.position.set(17, 0, 3); O.iface = it;
+    it.add(m(new T.BoxGeometry(11, 3.2, 7.5), mat(0x3a0f6e, .5)).translateY(1.6));
+    it.add(m(new T.BoxGeometry(10.4, .3, 6.9), mat(0x3a0f6e, .5)).translateY(3.3));
+    const ft = texte(cvs(512, 160), [""], { fond: "#3a0f6e" }); { const c = ft.image.getContext("2d"); c.fillStyle = "#fff"; c.font = "700 40px Arial"; c.textAlign = "center"; c.fillText("CH 1", 120, 135); c.fillText("CH 2", 300, 135); c.font = "700 30px Arial"; c.fillText("INTERFACE", 256, 34); ft.needsUpdate = true; }
+    it.add(m(new T.PlaneGeometry(11, 3.2), new T.MeshBasicMaterial({ map: ft }), 0, 1.6, 3.76, false));
+    [-3, 0.6].forEach(x => it.add(m(new T.CylinderGeometry(.55, .55, .4, 16), mat(0x111111, .6), x, 1.9, 3.8, false).rotateX(Math.PI / 2)));
+    O.led = m(new T.SphereGeometry(.3, 12, 8), mat(0x444444, .3, 0, { emissive: 0x000000 }), 4.2, 2.4, 3.8, false); it.add(O.led);
+    scene.add(it); ombreDouce(17, 3, 9, .3);
+    /* ordinateur portable : l'écran reproduit le logiciel */
+    const pc = new T.Group(); pc.position.set(38, 0, -4); pc.rotation.y = -.42;
+    pc.add(m(new T.BoxGeometry(26, 1.1, 18), mat(0x9fa3ad, .35, .6)).translateY(.55));
+    pc.add(m(new T.BoxGeometry(22, .1, 8), mat(0x4b4f58, .6), 0, 1.15, -3, false));
+    const ec = new T.Group(); ec.position.set(0, 1.1, -9); ec.rotation.x = -.22;
+    ec.add(m(new T.BoxGeometry(26, 17, .7), mat(0x2b2d33, .4, .3)).translateY(8.5));
+    ecranCv = cvs(1024, 640); ecranTex = new T.CanvasTexture(ecranCv); ecranTex.encoding = T.sRGBEncoding; ecranTex.anisotropy = 4;
+    ec.add(m(new T.PlaneGeometry(24.4, 15.25), new T.MeshBasicMaterial({ map: ecranTex, toneMapped: false }), 0, 8.6, .37, false));
+    pc.add(ec); scene.add(pc); ombreDouce(38, -4, 18, .25);
+    /* tampons, étalon, rinçage, flacon de stockage, pissette, flacons */
+    O.buf4 = petitBecher(-24, 10, 2.2, 5.5, { h: 3.4, c: 0xff8a80, o: .5 }, ["pH 4,00", "tampon"], "#E53935");
+    O.buf7 = petitBecher(-18, 10, 2.2, 5.5, { h: 3.4, c: 0xffe082, o: .5 }, ["pH 7,00", "tampon"], "#FBC02D");
+    O.std = petitBecher(-12, 10, 2.2, 5.5, { h: 3.4, c: 0xc8e6c9, o: .45 }, ["1 413", "µS/cm"], "#43A047");
+    O.rinc = petitBecher(-31, 1, 3.4, 9, { h: 2.2, c: 0xdde8f5, o: .4 }, ["Rinçage"], "#7E57C2");
+    const st = new T.Group(); st.position.set(9, 0, 12);
+    st.add(m(new T.CylinderGeometry(1.5, 1.5, 4.5, 24), mat(0xf2f2f2, .4, 0, { transparent: true, opacity: .8 })).translateY(2.25));
+    st.add(m(new T.CylinderGeometry(1.55, 1.55, .8, 24), mat(0xC2185B, .4)).translateY(4.6));
+    scene.add(st); O.stock = st; ombreDouce(9, 12, 3, .25);
+    const pis = new T.Group(); pis.position.set(-37, 0, 11); O.pis = pis;
+    pis.add(m(new T.LatheGeometry([new T.Vector2(0, 0), new T.Vector2(2.2, 0), new T.Vector2(2.4, 1), new T.Vector2(2.3, 8), new T.Vector2(1.2, 9.5), new T.Vector2(.6, 10)], 32), mat(0xf4f8ff, .3, 0, { transparent: true, opacity: .85 })));
+    pis.add(m(new T.CylinderGeometry(.75, .75, .8, 16), mat(0x1E88E5, .4)).translateY(10.3));
+    const bec = m(new T.CylinderGeometry(.15, .15, 5, 8), mat(0xffffff, .5), 1.6, 12, 0); bec.rotation.z = -1.0; pis.add(bec);
+    scene.add(pis); ombreDouce(-37, 11, 4, .25);
+    const flacon = (x, z, coul, l1, l2) => { const g = new T.Group(); g.position.set(x, 0, z); g.add(m(new T.CylinderGeometry(2.4, 2.4, 9, 28), mat(0xf6f6f6, .45)).translateY(4.5)); g.add(m(new T.CylinderGeometry(1, 1, 2, 16), mat(coul, .4)).translateY(10)); const t = texte(cvs(256, 160), [l1, l2], { bande: "#" + coul.toString(16).padStart(6, "0"), taille: 30, y0: .62 }); g.add(m(new T.CylinderGeometry(2.43, 2.43, 4, 28, 1, true, -.8, 1.6), new T.MeshStandardMaterial({ map: t, roughness: .6 }), 0, 4.5, 0, false)); scene.add(g); ombreDouce(x, z, 4.5, .25); return g; };
+    O.fSoude = flacon(-28, -12, 0xC62828, "Soude", "0,100 mol/L"); O.fVin = flacon(-21, -12, 0x6A1B9A, "Vinaigre", "dilué ×10");
+    /* pipette jaugée (animée à la partie 2) */
+    const pip = new T.Group(); O.pip = pip; pip.visible = false;
+    pip.add(m(new T.CylinderGeometry(.18, .18, 9, 10), verre(), 0, 13, 0, false), m(new T.SphereGeometry(.7, 16, 12), verre(), 0, 7.6, 0, false), m(new T.CylinderGeometry(.1, .18, 5, 10), verre(), 0, 2.7, 0, false), m(new T.SphereGeometry(1, 16, 12), mat(0xE53935, .5), 0, 18.4, 0));
+    scene.add(pip);
+    /* lunettes et gants (EPI) */
+    const epi = new T.Group(); epi.position.set(26, 0, 15); O.epi = epi;
+    epi.add(m(new T.TorusGeometry(1.1, .25, 8, 20), mat(0x80DEEA, .2, 0, { transparent: true, opacity: .8 }), -1.3, .4, 0).rotateX(Math.PI / 2), m(new T.TorusGeometry(1.1, .25, 8, 20), mat(0x80DEEA, .2, 0, { transparent: true, opacity: .8 }), 1.3, .4, 0).rotateX(Math.PI / 2));
+    epi.add(m(new T.BoxGeometry(4, .6, 3), mat(0x7E57C2, .7), 0, .3, 3.2));
+    scene.add(epi);
+    /* étiquettes */
+    etiquette("Interface", 17, 7.5, 3); etiquette("Sonde de conductivité", 0, 19.5, 0, "#5E35B1", O.scond); etiquette("Ordinateur", 38, 22, -6); etiquette("Rinçage", -31, 12.5, 1);
+    if (CFG.mode === "titrage") { etiquette("Burette (soude)", -8.5, 58, BUR.z); etiquette("Sonde pH", 0, 21, 0, "#C2185B", O.sph); etiquette("Tampons et étalon", -18, 9, 10); etiquette("Agitateur magnétique", 0, 1.8, 9.5); etiquette("Stockage pH", 9, 7.5, 12, "#C2185B"); }
+    else construitEtal();
+    /* état initial des objets mobiles */
+    placeSonde("ph", "stock", true); placeSonde("cond", "table", true);
+  }
+
+  function construitEtal() {
+    [O.ag, O.agOmbre, O.becher, O.burette, O.pot, O.sph, O.cph, O.buf4, O.buf7, O.stock].forEach(o => { if (o) o.visible = false; });
+    const rk = new T.Group(); rk.position.set(0, 0, 2); scene.add(rk); O.rack = rk;
+    const bois = mat(0xE9E4F0, .6);
+    rk.add(m(new T.BoxGeometry(22, .8, 5), bois, 0, .4, 0), m(new T.BoxGeometry(22, .5, 5), bois, 0, 7, 0), m(new T.BoxGeometry(.6, 7, 4), bois, -10.7, 3.6, 0), m(new T.BoxGeometry(.6, 7, 4), bois, 10.7, 3.6, 0));
+    O.tubesLiq = [];
+    const noms = CFG.tubes || [];
+    noms.forEach((n, k) => {
+      const x = -8.5 + k * 3.4, t = new T.Group(); t.position.set(x, .8, 0); rk.add(t);
+      t.add(m(new T.CylinderGeometry(.95, .95, 12, 24, 1, true), verre(), 0, 6.6, 0, false), m(new T.SphereGeometry(.95, 20, 10, 0, 6.3, Math.PI / 2, Math.PI / 2), verre(), 0, .6, 0, false));
+      const l = m(new T.CylinderGeometry(.85, .85, 4.6, 20), mat(n.coul || 0xd6ecff, .1, 0, { transparent: true, opacity: .55 }), 0, 2.9, 0, false); l.visible = false; t.add(l); O.tubesLiq.push(l);
+      const tx = texte(cvs(256, 96), [n.court], { fond: "#ffffff", taille: 40 }); rk.add(m(new T.PlaneGeometry(3, 1.1), new T.MeshBasicMaterial({ map: tx }), x, 7, 2.52, false));
+      POS.cond["tube" + k] = [x, 1.9, 2];
+    });
+    ombreDouce(0, 2, 14, .25);
+    /* fiole jaugée de 100 mL */
+    const fi = new T.Group(); fi.position.set(-14, 0, -7); scene.add(fi); O.fiole = fi;
+    fi.add(m(new T.LatheGeometry([new T.Vector2(0, 0), new T.Vector2(3.4, 0), new T.Vector2(3.8, 1.5), new T.Vector2(3.6, 5), new T.Vector2(2, 7.5), new T.Vector2(.7, 9), new T.Vector2(.7, 17)], 40), verre(), 0, 0, 0, false));
+    fi.add(m(new T.TorusGeometry(.72, .05, 6, 24), mat(0x1F1630, .5), 0, 14, 0, false).rotateX(Math.PI / 2));
+    O.fioleLiq = m(new T.CylinderGeometry(3.3, 3.3, 1, 32), mat(0xd6ecff, .1, 0, { transparent: true, opacity: .5 }), 0, .5, 0, false); O.fioleLiq.visible = false; fi.add(O.fioleLiq);
+    ombreDouce(-14, -7, 6, .25);
+    O.fSoude.visible = O.fVin.visible = false;
+    const flacon = (x, z, coul, l1, l2) => { const g = new T.Group(); g.position.set(x, 0, z); g.add(m(new T.CylinderGeometry(2.4, 2.4, 9, 28), mat(0xf6f6f6, .45)).translateY(4.5)); g.add(m(new T.CylinderGeometry(1, 1, 2, 16), mat(coul, .4)).translateY(10)); const t = texte(cvs(256, 160), [l1, l2], { bande: "#" + coul.toString(16).padStart(6, "0"), taille: 30, y0: .62 }); g.add(m(new T.CylinderGeometry(2.43, 2.43, 4, 28, 1, true, -.8, 1.6), new T.MeshStandardMaterial({ map: t, roughness: .6 }), 0, 4.5, 0, false)); scene.add(g); ombreDouce(x, z, 4.5, .25); return g; };
+    (CFG.flacons || []).forEach(f => flacon(f[0], f[1], f[2], f[3], f[4]));
+    etiquette("Gamme d'étalonnage", 0, 12, 2); etiquette("Fiole jaugée 100 mL", -14, 21, -7); etiquette("Étalon 1 413 µS/cm", -12, 8, 10, "#2E7D32");
+  }
+  /* ---------- animation des sondes (trajets en 3 temps : monter, translater, descendre) ---------- */
+  const anims = [];
+  function vec(a) { return new T.Vector3(a[0], a[1], a[2]); }
+  function placeSonde(type, ou, direct) {
+    const g = type === "ph" ? O.sph : O.scond; if (!g) return Promise.resolve(); const p = vec(POS[type][ou]);
+    const couche = ou === "table";
+    const fin = () => { g.rotation.set(couche ? Math.PI / 2 : 0, 0, couche ? (type === "ph" ? .3 : -.2) : 0); };
+    if (direct || !ok) { g.position.copy(p); fin(); g.userData.dirty = true; return Promise.resolve(); }
+    return new Promise(res => {
+      const a = g.position.clone(), hMax = Math.max(a.y, p.y, CFG.mode === "titrage" ? 0 : 7) + 8, chemin = [a, new T.Vector3(a.x, hMax, a.z), new T.Vector3(p.x, hMax, p.z), p];
+      const r0 = g.rotation.x, r1 = couche ? Math.PI / 2 : 0, z0 = g.rotation.z, z1 = couche ? (type === "ph" ? .3 : -.2) : 0;
+      anims.push({ d: 1.6, t: 0, f: k => { const s = k * 3, i = Math.min(2, Math.floor(s)), u = s - i, e = u * u * (3 - 2 * u); g.position.copy(chemin[i]).lerp(chemin[i + 1], e); g.rotation.x = r0 + (r1 - r0) * k; g.rotation.z = z0 + (z1 - z0) * k; g.userData.dirty = true; }, fin: () => { fin(); res(); } });
+    });
+  }
+  function anime(d, f) { return new Promise(res => { if (!ok) { f(1); res(); return; } anims.push({ d, t: 0, f, fin: res }); }); }
+  function pipette(A, B) {
+    if (!ok) return Promise.resolve();
+    const p = O.pip; p.visible = true; const a = A ? vec(A) : new T.Vector3(-21, 10, -12), b = B ? vec(B) : new T.Vector3(BECHER.x + .6, BECHER.y0 + 3, BECHER.z + .6);
+    p.position.copy(a);
+    return anime(1.2, k => { p.position.copy(a).lerp(new T.Vector3((a.x + b.x) / 2, 22, (a.z + b.z) / 2), k); })
+      .then(() => anime(1.0, k => p.position.lerpVectors(new T.Vector3((a.x + b.x) / 2, 22, (a.z + b.z) / 2), b, k)))
+      .then(() => anime(1.0, () => { }))
+      .then(() => { p.visible = false; });
+  }
+  function jet(cibleV, duree) {
+    if (!ok) return Promise.resolve();
+    const g = O.pis, a0 = g.rotation.z;
+    return anime(duree || 1.6, k => { g.rotation.z = Math.sin(Math.min(1, k * 4) * Math.PI / 2) * .5 * (k < .85 ? 1 : (1 - k) / .15); if (k > .15 && k < .85 && Math.random() < .7) jets.push({ p: new T.Vector3(-34.5, 12.5, 11), v: cibleV.clone().sub(new T.Vector3(-34.5, 12.5, 11)).multiplyScalar(1.6).add(new T.Vector3(0, 6, 0)), t: 0 }); }).then(() => { g.rotation.z = a0; });
+  }
+  function versGoutte() {
+    const d = new T.Mesh(new T.SphereGeometry(.16, 8, 6), mat(0xcfe3ff, .1, 0, { transparent: true, opacity: .8 }));
+    d.position.set(BUR.x, BUR.yTip - .4, BUR.z); d.userData.v = 0; scene.add(d); gouttes.push(d);
+  }
+
+  /* ---------- mise à jour à chaque image ---------- */
+  let tPrec = 0, accGoutte = 0, rot = 0, tEcran = 0;
+  function frame(t) {
+    requestAnimationFrame(frame);
+    const dtr = Math.min(.25, (t - tPrec) / 1000 || .016); tPrec = t; MOTEUR.tick(dtr); const dt = Math.min(.05, dtr);
+
+    if (!ok || document.hidden || !visibleEcran) return;
+    for (let i = anims.length - 1; i >= 0; i--) { const a = anims[i]; a.t += dt; const k = Math.min(1, a.t / a.d); a.f(k); if (k >= 1) { anims.splice(i, 1); a.fin && a.fin(); } }
+    /* caméra */
+    ["th", "ph", "d", "cx", "cy", "cz"].forEach(k => vue[k] += (but[k] - vue[k]) * Math.min(1, dt * 4));
+    const sp = Math.sin(vue.ph); cam.position.set(vue.cx + vue.d * sp * Math.sin(vue.th), vue.cy + vue.d * Math.cos(vue.ph), vue.cz + vue.d * sp * Math.cos(vue.th)); cam.lookAt(vue.cx, vue.cy, vue.cz);
+    /* liquide du bécher */
+    const Vb = volumeBecher(), surfB = Math.PI * Math.pow(BECHER.r - .1, 2);
+    const hB = Math.min(BECHER.h - .3, Vb / surfB * 1.25);
+    O.liq.visible = O.surf.visible = Vb > 0.1;
+    if (Vb > .1) { O.liq.scale.y = hB; O.liq.position.y = hB / 2 + .05; O.surf.position.y = hB + .06; }
+    const col = couleurBecher(); if (col) { O.liq.material.color.setRGB(col[0] / 255, col[1] / 255, col[2] / 255).convertSRGBToLinear(); O.liq.material.opacity = .7; } else { O.liq.material.color.set(0xd6ecff); O.liq.material.opacity = .45; }
+    O.barreau.visible = LAB.becher.barreau;
+    if (LAB.agit) { rot += dt * 14; O.barreau.rotation.y = rot; O.surf.scale.set(1, 1, 1); }
+    O.voyAg.material.emissive.set(LAB.agit ? 0x43A047 : 0x000000);
+    O.bouton.rotation.y = LAB.agit ? 1.2 : 0;
+    /* burette */
+    O.liqBur.visible = LAB.burette.remplie;
+    if (LAB.burette.remplie) { const yNiv = BUR.y0mL - LAB.V * BUR.ymm, yB = BUR.yRob - .5; O.liqBur.scale.y = Math.max(.01, yNiv - yB); O.liqBur.position.y = (yNiv + yB) / 2; }
+    O.poignee.rotation.z = (LAB.robinet || VERSE.debit > 0) ? 0 : Math.PI / 2;
+    if (VERSE.debit > 0) { accGoutte += VERSE.debit * dt / .05; while (accGoutte >= 1 && gouttes.length < 40) { accGoutte -= 1; versGoutte(); } }
+    const yS = BECHER.y0 + (Vb > .1 ? hB : 0);
+    for (let i = gouttes.length - 1; i >= 0; i--) { const d = gouttes[i]; d.userData.v += 60 * dt; d.position.y -= d.userData.v * dt; if (d.position.y <= yS + .1) { scene.remove(d); d.geometry.dispose(); gouttes.splice(i, 1); onde(yS); } }
+    for (let i = ondes.length - 1; i >= 0; i--) { const o = ondes[i]; o.userData.t += dt; const k = o.userData.t / .6; o.scale.setScalar(1 + k * 5); o.material.opacity = .5 * (1 - k); if (k >= 1) { scene.remove(o); ondes.splice(i, 1); } }
+    for (let i = jets.length - 1; i >= 0; i--) { const j = jets[i]; j.t += dt; if (!j.m) { j.m = new T.Mesh(new T.SphereGeometry(.12, 6, 4), mat(0xbbdefb, .1, 0, { transparent: true, opacity: .8 })); scene.add(j.m); } j.v.y -= 30 * dt; j.p.addScaledVector(j.v, dt); j.m.position.copy(j.p); if (j.t > .9 || j.p.y < 0) { scene.remove(j.m); jets.splice(i, 1); } }
+    /* sondes : commutateur et câbles */
+    const cur = O.scond.userData.curseur; cur.position.y = LAB.gamme === 20000 ? 1.25 : LAB.gamme === 2000 ? 0 : -1.25;
+    const port = x => new T.Vector3(17 + x, 1.9, 7.2);
+    const bout = (g) => g.localToWorld(new T.Vector3(0, g.userData.haut, 0));
+    if (O.sph.userData.dirty || O.scond.userData.dirty || !O.cph.geometry.attributes.position || frame.br !== JSON.stringify(LAB.branche) + LAB.iface) {
+      O.sph.updateMatrixWorld(); O.scond.updateMatrixWorld();
+      majCable(O.cph, bout(O.sph), LAB.branche.ph ? port(-3) : new T.Vector3(11, .3, 12), 3);
+      majCable(O.ccond, bout(O.scond), LAB.branche.cond ? port(.6) : new T.Vector3(13, .3, 13), 3);
+      majCable(O.cusb, new T.Vector3(22.5, 1.6, 3), LAB.iface ? new T.Vector3(27, 1, -2) : new T.Vector3(24.5, .3, 6), 1);
+      O.sph.userData.dirty = O.scond.userData.dirty = false; frame.br = JSON.stringify(LAB.branche) + LAB.iface;
+    }
+    O.led.material.emissive.set(LAB.iface ? 0x43A047 : 0x000000);
+    O.epi.visible = !LAB.epi;
+    if (O.tubesLiq) O.tubesLiq.forEach((l, k) => { l.visible = !!(LAB.tubes && LAB.tubes[k] && LAB.tubes[k].pret); });
+    if (O.fioleLiq) { const n = LAB.fiole || 0; O.fioleLiq.visible = n > 0; O.fioleLiq.scale.y = Math.max(.01, n * 7.5); O.fioleLiq.position.y = n * 7.5 / 2 + .3; }
+    /* écran de l'ordinateur */
+    if (t - tEcran > 300) { tEcran = t; if (window.GA) GA.dessineEcran(ecranCv); ecranTex.needsUpdate = true; }
+    R.render(scene, cam);
+  }
+  function onde(y) {
+    const o = new T.Mesh(new T.RingGeometry(.15, .25, 24), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .5, side: T.DoubleSide, depthWrite: false }));
+    o.rotation.x = -Math.PI / 2; o.position.set(BUR.x, y + .08, BUR.z); o.userData.t = 0; scene.add(o); ondes.push(o);
+  }
+  /* ---------- interactions : tourner, zoomer, cliquer, maintenir le robinet ---------- */
+  let visibleEcran = true;
+  function interactions(cv) {
+    const ptrs = new Map(); let glisse = 0, pinch0 = 0, robinetTenu = false;
+    const ray = new T.Raycaster(), souris = new T.Vector2();
+    const pick = e => { const r = cv.getBoundingClientRect(); souris.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(souris, cam); const h = ray.intersectObjects(cliquables, false); return h.length ? h[0].object : null; };
+    cv.addEventListener("pointerdown", e => {
+      cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); glisse = 0;
+      const o = pick(e); if (o && o.userData.robinet && MOTEUR.peutVerser()) { robinetTenu = true; LAB.robinet = true; MOTEUR.msg("Robinet ouvert : relâchez pour fermer."); change(); }
+      if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); }
+    });
+    cv.addEventListener("pointermove", e => {
+      const p = ptrs.get(e.pointerId); if (!p) return;
+      const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; glisse += Math.abs(dx) + Math.abs(dy);
+      if (robinetTenu) return;
+      if (ptrs.size === 1) { but.th -= dx * .006; but.ph = Math.max(.35, Math.min(1.5, but.ph - dy * .005)); but.th = Math.max(-1.3, Math.min(1.3, but.th)); }
+      else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch0) but.d = Math.max(20, Math.min(170, but.d * pinch0 / d)); pinch0 = d; }
+    });
+    const fin = e => { ptrs.delete(e.pointerId); if (robinetTenu) { robinetTenu = false; LAB.robinet = false; MOTEUR.msg(""); change(); } if (ptrs.size < 2) pinch0 = 0; };
+    cv.addEventListener("pointerup", e => { if (glisse < 6 && !robinetTenu) { const o = pick(e); if (o && o.userData.nom && !o.userData.robinet) MOTEUR.msg(o.userData.nom); else if (o && o.userData.robinet) MOTEUR.msg(MOTEUR.peutVerser() ? "Maintenez le robinet pour verser goutte à goutte." : "Le robinet ne sert qu'au moment du titrage."); } fin(e); });
+    cv.addEventListener("pointercancel", fin);
+    cv.addEventListener("wheel", e => { e.preventDefault(); but.d = Math.max(20, Math.min(170, but.d * (e.deltaY > 0 ? 1.1 : .9))); }, { passive: false });
+    cv.addEventListener("dblclick", () => { nomVue = "ensemble"; Object.assign(but, cible("ensemble")); });
+    if ("IntersectionObserver" in window) new IntersectionObserver(en => { visibleEcran = en[0].isIntersecting; }).observe(cv);
+  }
+  function redim() { if (!ok) return; const r = hote.getBoundingClientRect(); larg = Math.max(200, r.width); haut = Math.max(200, r.height); R.setSize(larg, haut, false); cam.aspect = larg / haut; /* cadre étroit (colonne centrale, téléphone) : on garde le même champ horizontal */ cam.fov = cam.aspect < 1.25 ? 2 * Math.atan(Math.tan(19 * Math.PI / 180) * 1.25 / cam.aspect) * 180 / Math.PI : 38; cam.updateProjectionMatrix();
+    const e = cam.aspect < 1.25; if (e !== etroit) { etroit = e; if (ETROIT[nomVue]) Object.assign(but, cible(nomVue)); } }
+
+  function init(h) {
+    hote = h;
+    try {
+      if (!T) throw new Error("three");
+      R = new T.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+      if (!R.getContext()) throw new Error("webgl");
+    } catch (e) { requestAnimationFrame(frame); return false; }
+    R.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); R.outputEncoding = T.sRGBEncoding; R.toneMapping = T.ACESFilmicToneMapping; R.toneMappingExposure = .9;
+    R.shadowMap.enabled = true; R.shadowMap.type = T.PCFSoftShadowMap; R.setClearColor(0x000000, 0);
+    cam = new T.PerspectiveCamera(38, 1.4, 1, 600);
+    hote.insertBefore(R.domElement, hote.firstChild); R.domElement.setAttribute("aria-label", "Scène 3D du montage : glissez pour tourner");
+    try { construit(); } catch (e) { console.error(e); R.domElement.remove(); requestAnimationFrame(frame); return false; }
+    ok = true; interactions(R.domElement); redim();
+    window.addEventListener("resize", redim); if ("ResizeObserver" in window) new ResizeObserver(redim).observe(hote);
+    requestAnimationFrame(frame); return true;
+  }
+  return {
+    init, placeSonde, pipette: (a, b) => pipette(a, b), jet: k => jet(k === "ph" ? vec(POS.ph.eau).add(new T.Vector3(0, 4, 0)) : vec(POS.cond.eau).add(new T.Vector3(0, 4, 0))),
+    vue(nom) { if (VUES[nom]) { nomVue = nom; Object.assign(but, cible(nom)); } },
+    etiquettes(on) { etiqVisibles = on; etiquettes.forEach(s => s.visible = on); },
+    get ok() { return ok; }, anime
+  };
+})();
+
+/* configuration de la page (titrage par défaut ; la page d'étalonnage la redéfinit avant ce fichier) */
+const CFG = Object.assign({ mode: "titrage", sondes: ["ph", "cond"], xnom: "Volume", xunite: "mL", xlab: "Volume V (mL)", xcol: "V (mL)", xsym: "V", xdef: 20, xdec: 2 }, window.CFG_PAGE || {});
+/* ===== Écran du logiciel d'acquisition (imitation simplifiée de Graphical Analysis) ===== */
+const ANA = { tang: false, t1: null, deriv: false, fits: [], sel: null, exam: false, curseur: null, corr: false, theo: false, deux: true, tab: true };
+const OUTILS = {
+  trie(d, cle) { const m = new Map(); d.forEach(p => { if (Number.isFinite(p[cle])) m.set(+p.V.toFixed(3), p[cle]); }); return [...m.entries()].sort((a, b) => a[0] - b[0]); },
+  pchip(P) {
+    const n = P.length, x = P.map(p => p[0]), y = P.map(p => p[1]), h = [], dl = [], mm = new Array(n).fill(0);
+    for (let i = 0; i < n - 1; i++) { h[i] = x[i + 1] - x[i]; dl[i] = (y[i + 1] - y[i]) / h[i]; }
+    if (n < 2) return null;
+    mm[0] = dl[0]; mm[n - 1] = dl[n - 2];
+    for (let i = 1; i < n - 1; i++) { if (dl[i - 1] * dl[i] <= 0) mm[i] = 0; else { const w1 = 2 * h[i] + h[i - 1], w2 = h[i] + 2 * h[i - 1]; mm[i] = (w1 + w2) / (w1 / dl[i - 1] + w2 / dl[i]); } }
+    const seg = v => { let i = 0; while (i < n - 2 && v > x[i + 1]) i++; return i; };
+    return {
+      xmin: x[0], xmax: x[n - 1],
+      f(v) { const i = seg(v), t = (v - x[i]) / h[i], t2 = t * t, t3 = t2 * t; return (2 * t3 - 3 * t2 + 1) * y[i] + (t3 - 2 * t2 + t) * h[i] * mm[i] + (-2 * t3 + 3 * t2) * y[i + 1] + (t3 - t2) * h[i] * mm[i + 1]; },
+      d(v) { const i = seg(v), t = (v - x[i]) / h[i], t2 = t * t; return ((6 * t2 - 6 * t) * y[i] + (3 * t2 - 4 * t + 1) * h[i] * mm[i] + (-6 * t2 + 6 * t) * y[i + 1] + (3 * t2 - 2 * t) * h[i] * mm[i + 1]) / h[i]; }
+    };
+  },
+  derivee(P) { const r = []; for (let i = 0; i < P.length - 1; i++) { const dx = P[i + 1][0] - P[i][0]; if (dx > 0) r.push([(P[i][0] + P[i + 1][0]) / 2, Math.abs((P[i + 1][1] - P[i][1]) / dx)]); } return r; },
+  veDerivee(P) {
+    const D = this.derivee(P); if (D.length < 3) return null; let k = 0; D.forEach((p, i) => { if (p[1] > D[k][1]) k = i; });
+    if (k === 0 || k === D.length - 1) return { V: D[k][0], D };
+    const [a, b, c] = [D[k - 1], D[k], D[k + 1]], den = (a[0] - b[0]) * (a[0] - c[0]) * (b[0] - c[0]);
+    if (!den) return { V: b[0], D };
+    const A = (c[0] * (b[1] - a[1]) + b[0] * (a[1] - c[1]) + a[0] * (c[1] - b[1])) / den, B = (c[0] * c[0] * (a[1] - b[1]) + b[0] * b[0] * (c[1] - a[1]) + a[0] * a[0] * (b[1] - c[1])) / den;
+    const V = A < 0 ? -B / (2 * A) : b[0]; return { V: Math.min(c[0], Math.max(a[0], V)), D };
+  },
+  tangentes(P, V1) {
+    const S = this.pchip(P), E = this.veDerivee(P); if (!S || !E || P.length < 6) return null;
+    V1 = Math.max(S.xmin + .05, Math.min(E.V - .3, V1)); const s = S.d(V1), b1 = S.f(V1) - s * V1;
+    let V2 = null; for (let v = E.V + .05; v <= S.xmax; v += .01) { if (S.d(v) <= s) { V2 = v; break; } }
+    if (V2 == null) return { erreur: "Pas assez de points après l'équivalence pour tracer la tangente parallèle." };
+    const b2 = S.f(V2) - s * V2, bm = (b1 + b2) / 2, g = v => S.f(v) - (s * v + bm);
+    let lo = V1, hi = V2; if (g(lo) * g(hi) > 0) return { erreur: "Déplacez la première tangente." };
+    for (let i = 0; i < 60; i++) { const mi = (lo + hi) / 2; if (g(lo) * g(mi) <= 0) hi = mi; else lo = mi; }
+    const VE = (lo + hi) / 2; return { V1, V2, s, b1, b2, bm, VE, pHE: S.f(VE) };
+  },
+  ajuste(P, a, b) {
+    const Q = P.filter(p => p[0] >= Math.min(a, b) - 1e-9 && p[0] <= Math.max(a, b) + 1e-9); if (Q.length < 2) return null;
+    const n = Q.length, sx = Q.reduce((s, p) => s + p[0], 0), sy = Q.reduce((s, p) => s + p[1], 0), sxx = Q.reduce((s, p) => s + p[0] * p[0], 0), sxy = Q.reduce((s, p) => s + p[0] * p[1], 0), syy = Q.reduce((s, p) => s + p[1] * p[1], 0);
+    const den = n * sxx - sx * sx; if (!den) return null; const m = (n * sxy - sx * sy) / den, k = (sy - m * sx) / n;
+    const r = (n * sxy - sx * sy) / Math.sqrt(den * (n * syy - sy * sy) || 1); return { m, k, r, n, a: Math.min(a, b), b: Math.max(a, b) };
+  },
+  ajusteProp(P) {
+    if (P.length < 2) return null; const sxx = P.reduce((s, p) => s + p[0] * p[0], 0), sxy = P.reduce((s, p) => s + p[0] * p[1], 0), m = sxy / sxx;
+    const my = P.reduce((s, p) => s + p[1], 0) / P.length, sst = P.reduce((s, p) => s + (p[1] - my) ** 2, 0), sse = P.reduce((s, p) => s + (p[1] - m * p[0]) ** 2, 0);
+    return { m, k: 0, r: Math.sqrt(Math.max(0, 1 - sse / sst)), n: P.length, a: Math.min(...P.map(p => p[0])), b: Math.max(...P.map(p => p[0])), prop: true };
+  },
+  pas(e) { const p = Math.pow(10, Math.floor(Math.log10(e))), r = e / p; return (r < 1.5 ? 1 : r < 3.5 ? 2 : r < 7.5 ? 5 : 10) * p; }
+};
+
+const GA = (function () {
+  const C = { ph: "#C2185B", cond: "#5E35B1", deriv: "#FB8C00", tang: "#1565C0", fit: ["#2E7D32", "#00838F"], grille: "#EEE8F4", axe: "#3b2d4d" };
+  let confirmeNouvelle = 0, menuMode = null;
+  const serie = type => {
+    if (LAB.mode === "temps") return LAB.data.filter(p => Number.isFinite(p[type])).map(p => [p.t, p[type]]);
+    let P = OUTILS.trie(LAB.data, type);
+    if (type === "cond" && ANA.corr) { const V0 = (LAB.becher.acide ? LAB.Va : 0) + (LAB.becher.eau ? LAB.Veau : 0) || 50; P = P.map(([v, s]) => [v, s * (V0 + v) / V0]); }
+    return P;
+  };
+  function theorie(type) {
+    if (!LAB.becher.acide) return [];
+    const VE = LAB.Ca * LAB.Va / LAB.Cb, vmax = Math.min(25, Math.max(VE * 2, 5)), r = [], V0 = LAB.Va + (LAB.becher.eau ? LAB.Veau : 0);
+    for (let i = 0; i <= 200; i++) { const v = vmax * i / 200, e = CHIM.etat(LAB.sys, LAB.Ca, LAB.Va, LAB.becher.eau ? LAB.Veau : 0, LAB.Cb, v); r.push([v, type === "ph" ? e.pH : (ANA.corr ? e.sigma * (V0 + v) / V0 : e.sigma)]); }
+    return r;
+  }
+  /* ---------- tracé d'un graphe ---------- */
+  function trace(c, W, H, type, o) {
+    o = o || {}; const mini = !!o.mini, P = serie(type), coul = C[type], f = mini ? 1.35 : 1;
+    c.save(); c.fillStyle = "#fff"; c.fillRect(0, 0, W, H);
+    const g = { l: 58 * f, r: (ANA.deriv && type === "ph" && !mini ? 52 : 16) * f, t: 30 * f, b: 44 * f }, lx = W - g.l - g.r, ly = H - g.t - g.b;
+    const th = ANA.theo ? theorie(type) : [];
+    let xmax = LAB.mode === "temps" ? Math.max(30, ...P.map(p => p[0])) : Math.max(LAB.explorer && CFG.mode === "titrage" ? 5 : CFG.xdef, ...P.map(p => p[0]), ...th.map(p => p[0]));
+    let ymin = type === "ph" ? 0 : 0, ymax = type === "ph" ? 14 : Math.max(500, ...P.map(p => p[1]), ...th.map(p => p[1])) * 1.1;
+    if (type === "cond" && LAB.gamme && P.length === 0 && !th.length) ymax = Math.min(LAB.gamme, 5000);
+    const X = v => g.l + v / xmax * lx, Y = v => g.t + ly - (v - ymin) / (ymax - ymin) * ly;
+    const px = OUTILS.pas(xmax / 8), py = OUTILS.pas((ymax - ymin) / 6);
+    c.font = (13 * f) + "px Atkinson Hyperlegible, Arial, sans-serif"; c.textBaseline = "middle";
+    c.strokeStyle = C.grille; c.lineWidth = 1; c.fillStyle = "#5B4B6E";
+    for (let v = 0; v <= xmax + 1e-9; v += px) { c.beginPath(); c.moveTo(X(v), g.t); c.lineTo(X(v), g.t + ly); c.stroke(); c.textAlign = "center"; c.fillText(fr(v, px < 1 ? 1 : 0), X(v), g.t + ly + 14 * f); }
+    for (let v = Math.ceil(ymin / py) * py; v <= ymax + 1e-9; v += py) { c.beginPath(); c.moveTo(g.l, Y(v)); c.lineTo(g.l + lx, Y(v)); c.stroke(); c.textAlign = "right"; c.fillText(type === "cond" ? fC(v, 0) : fr(v, py < 1 ? 1 : 0), g.l - 6, Y(v)); }
+    c.strokeStyle = C.axe; c.lineWidth = 1.5; c.beginPath(); c.moveTo(g.l, g.t); c.lineTo(g.l, g.t + ly); c.lineTo(g.l + lx, g.t + ly); c.stroke();
+    c.fillStyle = coul; c.font = "700 " + (14 * f) + "px Atkinson Hyperlegible, Arial, sans-serif"; c.textAlign = "left";
+    c.fillText(type === "ph" ? "pH" : (ANA.corr ? "σ corrigée (µS/cm)" : "Conductivité σ (µS/cm)"), g.l, 14 * f);
+    c.fillStyle = "#3b2d4d"; c.textAlign = "right"; c.fillText(LAB.mode === "temps" ? "Temps (s)" : CFG.xlab, g.l + lx, g.t + ly + 32 * f);
+    c.save(); c.beginPath(); c.rect(g.l, g.t, lx, ly); c.clip();
+    /* sélection */
+    if (ANA.sel && ANA.sel.g === type && !mini) { c.fillStyle = "rgba(46,125,50,.10)"; c.fillRect(X(Math.min(ANA.sel.a, ANA.sel.b)), g.t, Math.abs(X(ANA.sel.b) - X(ANA.sel.a)), ly); }
+    /* courbe théorique */
+    if (th.length) { c.strokeStyle = coul; c.globalAlpha = .35; c.setLineDash([6, 5]); c.lineWidth = 2; c.beginPath(); th.forEach((p, i) => i ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1]))); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; }
+    /* dérivée (axe de droite) */
+    if (ANA.deriv && type === "ph" && P.length > 2) {
+      const D = OUTILS.derivee(P), dmax = Math.max(1, ...D.map(p => p[1])) * 1.1, YD = v => g.t + ly - v / dmax * ly;
+      c.strokeStyle = C.deriv; c.lineWidth = 2; c.beginPath(); D.forEach((p, i) => i ? c.lineTo(X(p[0]), YD(p[1])) : c.moveTo(X(p[0]), YD(p[1]))); c.stroke();
+      c.fillStyle = C.deriv; D.forEach(p => { c.beginPath(); c.arc(X(p[0]), YD(p[1]), 2.5 * f, 0, 7); c.fill(); });
+      c.restore(); c.save();
+      if (!mini) { c.fillStyle = C.deriv; c.font = (12 * f) + "px Atkinson Hyperlegible, Arial"; c.textAlign = "left"; const pd = OUTILS.pas(dmax / 5); for (let v = 0; v <= dmax; v += pd) c.fillText(fr(v, pd < 1 ? 1 : 0), g.l + lx + 5, YD(v)); c.save(); c.translate(W - 6, g.t + ly / 2); c.rotate(-Math.PI / 2); c.textAlign = "center"; c.fillText("dpH/dV (mL⁻¹)", 0, 0); c.restore(); }
+      c.beginPath(); c.rect(g.l, g.t, lx, ly); c.clip();
+    }
+    /* tangentes */
+    if (ANA.tang && type === "ph") {
+      const tg = OUTILS.tangentes(P, ANA.t1 == null ? (LAB.Ca * LAB.Va / LAB.Cb) * .55 : ANA.t1);
+      if (tg && !tg.erreur) {
+        c.lineWidth = 2; c.strokeStyle = C.tang; [tg.b1, tg.b2].forEach(b => { c.beginPath(); c.moveTo(X(0), Y(b)); c.lineTo(X(xmax), Y(tg.s * xmax + b)); c.stroke(); });
+        c.setLineDash([8, 6]); c.beginPath(); c.moveTo(X(0), Y(tg.bm)); c.lineTo(X(xmax), Y(tg.s * xmax + tg.bm)); c.stroke(); c.setLineDash([]);
+        c.fillStyle = C.tang; [[tg.V1, tg.s * tg.V1 + tg.b1], [tg.V2, tg.s * tg.V2 + tg.b2]].forEach(p => { c.beginPath(); c.arc(X(p[0]), Y(p[1]), 5 * f, 0, 7); c.fill(); });
+        c.strokeStyle = "#C62828"; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(X(tg.VE), Y(tg.pHE)); c.lineTo(X(tg.VE), g.t + ly); c.stroke(); c.setLineDash([]);
+        c.fillStyle = "#C62828"; c.beginPath(); c.arc(X(tg.VE), Y(tg.pHE), 6 * f, 0, 7); c.fill();
+      }
+    }
+    /* ajustements linéaires */
+    ANA.fits.filter(F => F.g === type).forEach((F, i) => { c.strokeStyle = C.fit[i % 2]; c.lineWidth = 2.2; c.beginPath(); c.moveTo(X(0), Y(F.k)); c.lineTo(X(xmax), Y(F.m * xmax + F.k)); c.stroke(); });
+    const Fg = ANA.fits.filter(F => F.g === type); if (Fg.length === 2 && Fg[0].m !== Fg[1].m) { const vi = (Fg[1].k - Fg[0].k) / (Fg[0].m - Fg[1].m), yi = Fg[0].m * vi + Fg[0].k; c.fillStyle = "#C62828"; c.beginPath(); c.arc(X(vi), Y(yi), 6 * f, 0, 7); c.fill(); c.strokeStyle = "#C62828"; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(X(vi), Y(yi)); c.lineTo(X(vi), g.t + ly); c.stroke(); c.setLineDash([]); }
+    /* points mesurés */
+    if (P.length) {
+      c.strokeStyle = coul; c.lineWidth = 2 * f; c.beginPath(); P.forEach((p, i) => i ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1]))); c.stroke();
+      c.fillStyle = coul; P.forEach(p => { c.beginPath(); c.arc(X(p[0]), Y(p[1]), 3.6 * f, 0, 7); c.fill(); });
+    }
+    /* examiner */
+    if (ANA.exam && ANA.curseur && ANA.curseur.g === type && P.length && !mini) {
+      let best = P[0]; P.forEach(p => { if (Math.abs(p[0] - ANA.curseur.v) < Math.abs(best[0] - ANA.curseur.v)) best = p; });
+      c.strokeStyle = "rgba(31,22,48,.45)"; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(X(best[0]), g.t); c.lineTo(X(best[0]), g.t + ly); c.stroke(); c.setLineDash([]);
+      c.strokeStyle = coul; c.lineWidth = 3; c.beginPath(); c.arc(X(best[0]), Y(best[1]), 7, 0, 7); c.stroke();
+      const t = `${CFG.xsym} = ${fr(best[0], CFG.xdec)} ${CFG.xunite} ; ${type === "ph" ? "pH = " + fr(best[1], 2) : "σ = " + fC(best[1], 0) + " µS/cm"}`;
+      c.font = "700 14px Atkinson Hyperlegible, Arial"; const w = c.measureText(t).width + 16, xx = Math.min(X(best[0]) + 10, g.l + lx - w - 4);
+      c.fillStyle = "rgba(255,255,255,.95)"; c.fillRect(xx, g.t + 6, w, 26); c.strokeStyle = coul; c.lineWidth = 1; c.strokeRect(xx, g.t + 6, w, 26); c.fillStyle = "#1F1630"; c.textAlign = "left"; c.fillText(t, xx + 8, g.t + 19);
+    }
+    c.restore();
+    if (!P.length && !mini) { c.fillStyle = "#9b8fb0"; c.font = "15px Atkinson Hyperlegible, Arial"; c.textAlign = "center"; c.fillText(LAB.branche[type] ? "Aucune donnée : lancez la collecte" : "Capteur non branché", g.l + lx / 2, g.t + ly / 2); }
+    c.restore();
+    return { X, Y, g, lx, ly, xmax, ymin, ymax, Xinv: px2 => (px2 - g.l) / lx * xmax };
+  }
+  const geo = {};
+  function dessine() {
+    const types = CFG.sondes.length === 1 ? CFG.sondes : ANA.deux ? ["ph", "cond"] : [LAB.branche.ph || !LAB.branche.cond ? "ph" : "cond"];
+    ["ph", "cond"].forEach(tp => { const cv = $("#cv-" + tp); cv.parentNode.style.display = types.includes(tp) ? "" : "none"; });
+    types.forEach(tp => {
+      const cv = $("#cv-" + tp), r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
+      if (r.width < 10) return; const W = Math.round(r.width * d), H = Math.round(r.height * d);
+      if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+      const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); geo[tp] = trace(c, r.width, r.height, tp);
+    });
+    $("#g-graphes-z").classList.toggle("deux", ANA.deux);
+  }
+  function dessineEcran(cv) {
+    const c = cv.getContext("2d"), W = cv.width, H = cv.height;
+    c.fillStyle = "#F8F6FA"; c.fillRect(0, 0, W, H); c.fillStyle = "#2A1546"; c.fillRect(0, 0, W, 46);
+    c.fillStyle = "#fff"; c.font = "700 24px Atkinson Hyperlegible, Arial"; c.textAlign = "left"; c.textBaseline = "middle"; c.fillText("Acquisition · " + (LAB.mode === "evt" ? "Événements + valeurs" : "Temps"), 18, 24);
+    c.fillStyle = LAB.collecte ? "#C62828" : "#2E7D32"; c.fillRect(W - 190, 8, 172, 30); c.fillStyle = "#fff"; c.textAlign = "center"; c.fillText(LAB.collecte ? "■ Arrêter" : "▶ Collecter", W - 104, 24);
+    const box = (x, tp, txt, u) => { c.fillStyle = "#fff"; c.fillRect(x, 58, 480, 92); c.fillStyle = C[tp]; c.fillRect(x, 58, 10, 92); c.font = "700 20px Atkinson Hyperlegible, Arial"; c.textAlign = "left"; c.fillStyle = "#5B4B6E"; c.fillText(tp === "ph" ? "CH1 · pH" : "CH2 · Conductivité", x + 24, 78); c.fillStyle = C[tp]; c.font = "700 50px Atkinson Hyperlegible, Arial"; c.fillText(txt, x + 24, 122); const w = c.measureText(txt).width; c.font = "700 22px Arial"; c.fillStyle = "#5B4B6E"; c.fillText(u, x + 36 + w, 126); };
+    const m = MOTEUR.lectures();
+    const un = CFG.sondes.length === 1;
+    if (!un) box(16, "ph", LAB.iface && LAB.branche.ph ? fr(m.ph.v, 2) : "– – –", "");
+    box(un ? 16 : 528, "cond", LAB.iface && LAB.branche.cond ? (m.cond.hors ? "> " : "") + fC(m.cond.v, m.cond.dec) : "– – –", "µS/cm");
+    if (un) { c.save(); c.translate(16, 166); trace(c, W - 32, H - 182, "cond", { mini: true }); c.restore(); }
+    else ["ph", "cond"].forEach((tp, i) => { c.save(); c.translate(16 + i * 504, 166); trace(c, 488, H - 182, tp, { mini: true }); c.restore(); });
+  }
+  /* ---------- capteurs (afficheurs) ---------- */
+  function afficheurs() {
+    const m = MOTEUR.lectures(); if (!CFG.sondes.includes("ph")) { $("#c-ph").style.display = "none"; const g = $("#g-graphes"); if (g) g.style.display = "none"; }
+    [["ph", "pH"], ["cond", "Conductivité"]].forEach(([tp]) => {
+      const on = LAB.iface && LAB.branche[tp], box = $("#c-" + tp); box.classList.toggle("absent", !on);
+      if (!on) { $("#v-" + tp).textContent = "– – –"; $("#e-" + tp).innerHTML = LAB.branche[tp] ? "interface non reliée" : "non branché"; return; }
+      const st = CAPT.stable(tp);
+      if (tp === "ph") { $("#v-ph").textContent = fr(m.ph.v, 2); $("#e-ph").innerHTML = `<span class="voyant ${st ? "st" : ""}"></span>${st ? "stable" : "en évolution"}<br>tension : ${fr(m.ph.U, 3)} V<br>${LAB.calPH.fait ? "étalonnée ✓" : "étalonnage d'usine"}`; }
+      else { $("#v-cond").innerHTML = (m.cond.hors ? '<span class="hors">&gt; </span>' : "") + fC(m.cond.v, m.cond.dec); $("#e-cond").innerHTML = `<span class="voyant ${st ? "st" : ""}"></span>${st ? "stable" : "en évolution"}<br>gamme 0–${fC(LAB.gamme, 0)} µS/cm${m.cond.hors ? '<br><span class="hors">hors gamme !</span>' : ""}<br>${LAB.calC.fait && LAB.calC.gamme === LAB.gamme ? "étalonnée ✓" : (LAB.calC.fait ? '<span class="hors">étalonnée sur une autre gamme</span>' : "étalonnage d'usine")}`; }
+    });
+    $("#g-mode-t").textContent = LAB.mode === "evt" ? "Événements + valeurs" : "Temps";
+    const col = $("#g-collecter"); col.textContent = LAB.collecte ? "■ Arrêter" : "▶ Collecter"; col.classList.toggle("stop", LAB.collecte);
+    col.disabled = !LAB.iface || !(LAB.branche.ph || LAB.branche.cond);
+    $("#g-garder").disabled = !(LAB.collecte && LAB.mode === "evt");
+    $("#g-pied-g").textContent = `${LAB.data.length} point${LAB.data.length > 1 ? "s" : ""} · ${LAB.mode === "evt" ? CFG.xnom + " (" + CFG.xunite + ") saisi" + (CFG.xnom === "Volume" ? "" : "e") + " à chaque « Garder »" : "mesure toutes les secondes"}`;
+    $("#g-pied-d").textContent = `${CFG.sondes.includes("ph") ? "pH : " + (LAB.calPH.fait ? "étalonnage 2 points" : "étalonnage d'usine") + " · " : ""}Conductivité : ${LAB.calC.fait ? "étalonnée (gamme 0–" + fC(LAB.calC.gamme, 0) + ")" : "étalonnage d'usine"}`;
+  }
+  function tableau() {
+    const z = $("#g-table");
+    if (!LAB.data.length) { z.innerHTML = '<div class="vide">Les points gardés s\'affichent ici.</div>'; return; }
+    const ev = LAB.mode === "evt";
+    z.innerHTML = `<table><thead><tr><th>${ev ? CFG.xcol : "t (s)"}</th>${CFG.sondes.includes("ph") ? "<th>pH</th>" : ""}<th>σ (µS/cm)</th></tr></thead><tbody>${LAB.data.map(p => `<tr class="${p.inst ? "inst" : ""}" title="${p.inst ? "point gardé avant stabilisation" : ""}"><td>${ev ? fr(p.V, CFG.xdec) : fr(p.t, 0)}</td>${CFG.sondes.includes("ph") ? `<td>${Number.isFinite(p.ph) ? fr(p.ph, 2) : "–"}</td>` : ""}<td>${Number.isFinite(p.cond) ? fC(p.cond, LAB.gamme === 200 ? 1 : 0) : "–"}</td></tr>`).join("")}</tbody></table>`;
+    z.scrollTop = z.scrollHeight;
+  }
+  function analyses() {
+    const z = $("#g-analyse-z"), b = []; const P = serie("ph");
+    if (ANA.tang) {
+      const VEth = LAB.Ca * LAB.Va / LAB.Cb, tg = OUTILS.tangentes(P, ANA.t1 == null ? VEth * .55 : ANA.t1);
+      const v1 = ANA.t1 == null ? VEth * .55 : ANA.t1;
+      b.push(`<div class="ga-reglage"><label for="g-t1"><b>Première tangente</b> en V = <span id="g-t1v">${fr(tg && tg.V1 != null ? tg.V1 : v1, 1)}</span> mL</label><input type="range" id="g-t1" min="0.5" max="${Math.max(1, (OUTILS.veDerivee(P) || { V: VEth }).V - .4).toFixed(2)}" step="0.1" value="${v1.toFixed(1)}"><span style="color:var(--doux)">la tangente parallèle et la droite équidistante suivent</span></div>`);
+      b.push(tg && !tg.erreur ? `<div class="boite"><b>Méthode des tangentes</b><br>V<sub>E</sub> ≈ ${fr(tg.VE, 2)} mL ; pH<sub>E</sub> ≈ ${fr(tg.pHE, 2)}</div>` : `<div class="boite">${tg ? tg.erreur : "Il faut au moins 6 points de part et d'autre du saut."}</div>`);
+    }
+    if (ANA.deriv) { const E = OUTILS.veDerivee(P); b.push(E ? `<div class="boite"><b>Dérivée</b> (orange, axe de droite)<br>maximum pour V ≈ ${fr(E.V, 2)} mL</div>` : '<div class="boite">Dérivée : pas assez de points.</div>'); }
+    ["ph", "cond"].forEach(tp => { const F = ANA.fits.filter(f => f.g === tp); F.forEach((f, i) => b.push(`<div class="boite" style="border-color:${C.fit[i % 2]}"><b style="color:${C.fit[i % 2]}">${f.prop ? "Ajustement proportionnel" : "Ajustement " + (i + 1)}</b> (${tp === "ph" ? "pH" : "σ"}, de ${fr(f.a, 1)} à ${fr(f.b, 1)} ${CFG.xunite})<br>${f.prop ? `σ = ${fr(f.m, 1)} × ${CFG.xsym}` : `y = ${fr(f.m, tp === "ph" ? 3 : 1)} ${CFG.xsym} ${f.k < 0 ? "−" : "+"} ${fr(Math.abs(f.k), tp === "ph" ? 2 : 0)}`} ; r = ${fr(f.r, 4)}</div>`));
+      if (F.length === 2 && F[0].m !== F[1].m) { const vi = (F[1].k - F[0].k) / (F[0].m - F[1].m); b.push(`<div class="boite" style="border-color:#C62828"><b style="color:#C62828">Intersection des droites</b><br>V = ${fr(vi, 2)} mL</div>`); } });
+    if (ANA.sel) b.push(`<div class="boite">Sélection : de ${fr(Math.min(ANA.sel.a, ANA.sel.b), 1)} à ${fr(Math.max(ANA.sel.a, ANA.sel.b), 1)} mL sur ${ANA.sel.g === "ph" ? "pH" : "σ"} · <a href="#" id="g-fit-go" style="color:var(--prune);font-weight:700">📏 Ajuster cette sélection</a></div>`);
+    if (ANA.corr) b.push('<div class="boite">σ corrigée = σ × (V₀ + V) / V₀ : on compense la dilution par la soude versée.</div>');
+    const html = b.length ? `<div class="ga-res">${b.join("")}</div>` : "";
+    if (z.dataset.h !== html) { z.dataset.h = html; z.innerHTML = html; const r = $("#g-t1"); if (r) r.addEventListener("input", () => { ANA.t1 = +r.value; tout(); }); const go = $("#g-fit-go"); if (go) go.addEventListener("click", e => { e.preventDefault(); GA.ajusteSel(); }); }
+    else { const r = $("#g-t1v"); if (r && ANA.tang) { const tg = OUTILS.tangentes(P, ANA.t1 == null ? LAB.Ca * LAB.Va / LAB.Cb * .55 : ANA.t1); if (tg && tg.V1 != null) r.textContent = fr(tg.V1, 1); } }
+    $$("#g-analyse-l button").forEach(bt => { const a = bt.dataset.a; bt.classList.toggle("on", (a === "tangentes" && ANA.tang) || (a === "derivee" && ANA.deriv) || (a === "examiner" && ANA.exam) || (a === "corrige" && ANA.corr) || (a === "theorie" && ANA.theo)); });
+  }
+  function tout() { afficheurs(); dessine(); tableau(); analyses(); }
+  /* ---------- burette agrandie (lecture du volume) ---------- */
+  function burette(cv, V) {
+    const c = cv.getContext("2d"), W = cv.width, H = cv.height, pxmL = H / 2.4, y = v => H / 2 + (v - V) * pxmL, x0 = W * .3, x1 = W * .7;
+    c.fillStyle = "#fbfaff"; c.fillRect(0, 0, W, H);
+    c.fillStyle = "#d8e8ff"; const ym = y(V); c.fillRect(x0, ym, x1 - x0, H - ym);
+    c.fillStyle = "#fbfaff"; c.beginPath(); c.moveTo(x0, ym - 12); c.quadraticCurveTo((x0 + x1) / 2, ym + 18, x1, ym - 12); c.lineTo(x1, ym - 30); c.lineTo(x0, ym - 30); c.fill();
+    c.strokeStyle = "#5b8fd6"; c.lineWidth = 2.5; c.beginPath(); c.moveTo(x0, ym - 12); c.quadraticCurveTo((x0 + x1) / 2, ym + 18, x1, ym - 12); c.stroke();
+    c.strokeStyle = "#7d6f93"; c.lineWidth = 3; c.beginPath(); c.moveTo(x0, 0); c.lineTo(x0, H); c.moveTo(x1, 0); c.lineTo(x1, H); c.stroke();
+    c.strokeStyle = "#1F1630"; c.fillStyle = "#1F1630"; c.font = "700 26px Arial"; c.textAlign = "left"; c.textBaseline = "middle";
+    for (let i = Math.floor((V - 1.4) * 10); i <= Math.ceil((V + 1.4) * 10); i++) { if (i < 0 || i > 250) continue; const yy = y(i / 10), L = i % 10 === 0 ? 60 : i % 5 === 0 ? 42 : 26; c.lineWidth = i % 10 === 0 ? 3 : 2; c.beginPath(); c.moveTo(x0, yy); c.lineTo(x0 + L, yy); c.stroke(); if (i % 10 === 0) c.fillText(String(i / 10), x1 + 10, yy); }
+    c.fillStyle = "#C2185B"; c.font = "700 20px Arial"; c.textAlign = "left"; c.fillText("👁", 6, ym + 6);
+    c.strokeStyle = "rgba(194,24,91,.5)"; c.setLineDash([5, 5]); c.lineWidth = 1.5; c.beginPath(); c.moveTo(28, ym + 4); c.lineTo(x0, ym + 4); c.stroke(); c.setLineDash([]);
+  }
+  /* ---------- actions de l'écran ---------- */
+  function collecter() {
+    if (LAB.collecte) { LAB.collecte = false; MOTEUR.evt("arret"); change(); return; }
+    if (LAB.data.length && confirmeNouvelle < Date.now()) { confirmeNouvelle = Date.now() + 5000; MOTEUR.msg("Une nouvelle collecte efface les points actuels : cliquez encore sur ▶ Collecter pour confirmer."); return; }
+    LAB.data = []; ANA.fits = []; ANA.sel = null; LAB.collecte = true; LAB.t0 = performance.now(); MOTEUR.evt("collecte"); change();
+  }
+  let dlgOuvert = false;
+  function garder() {
+    if (!(LAB.collecte && LAB.mode === "evt")) return;
+    const pt = MOTEUR.prendrePoint(); if (!pt) return;
+    if (MOTEUR.saisieAuto()) { pt.V = MOTEUR.xAuto ? MOTEUR.xAuto() : Math.round(LAB.V * 100) / 100; LAB.data.push(pt); MOTEUR.evt("garde", pt); change(); return; }
+    const d = $("#dlg"); d.classList.add("on"); dlgOuvert = true; const cv = $("#dlg-burette"); if (CFG.mode === "titrage") burette(cv, LAB.V); else { cv.style.display = "none"; $("#dlg-t").textContent = "Garder ce point : saisir la " + CFG.xnom.toLowerCase(); $("#dlg-aide").innerHTML = MOTEUR.aideSaisie ? MOTEUR.aideSaisie() : ""; $("label[for=dlg-v] b").textContent = CFG.xnom + " (" + CFG.xunite + ")"; }
+    const inp = $("#dlg-v"); inp.value = ""; $("#dlg-msg").classList.remove("on"); setTimeout(() => inp.focus(), 50);
+    const ok = () => { const v = num(inp.value); if (!Number.isFinite(v) || v < 0 || v > (CFG.mode === "titrage" ? 25 : 1000)) { msgDlg(CFG.mode === "titrage" ? "Entrez un volume entre 0 et 25 mL (par exemple 9,6)." : "Entrez un nombre positif (par exemple 8,0)."); return; }
+      const err = MOTEUR.verifLecture(v); if (err) { msgDlg(err); return; }
+      pt.V = v; pt.Vvrai = CFG.mode === "titrage" ? LAB.V : v; LAB.data.push(pt); ferme(); MOTEUR.evt("garde", pt); change(); };
+    const ferme = () => { d.classList.remove("on"); dlgOuvert = false; $("#dlg-ok").onclick = $("#dlg-annuler").onclick = inp.onkeydown = null; };
+    $("#dlg-ok").onclick = ok; $("#dlg-annuler").onclick = ferme; inp.onkeydown = e => { if (e.key === "Enter") ok(); if (e.key === "Escape") ferme(); };
+  }
+  function msgDlg(t) { const m = $("#dlg-msg"); m.textContent = t; m.classList.add("on"); }
+  function ajusteSel() {
+    if (!ANA.sel) { MOTEUR.msg("Sélectionnez d'abord des points : glissez horizontalement sur le graphe."); return; }
+    const F = OUTILS.ajuste(serie(ANA.sel.g), ANA.sel.a, ANA.sel.b);
+    if (!F) { MOTEUR.msg("Il faut au moins 2 points dans la sélection."); return; }
+    F.g = ANA.sel.g; const autres = ANA.fits.filter(f => f.g === F.g); if (autres.length >= 2) ANA.fits.splice(ANA.fits.indexOf(autres[0]), 1);
+    ANA.fits.push(F); ANA.sel = null; MOTEUR.evt("ajust", F); tout();
+  }
+  function selection(g, a, b) { ANA.sel = { g, a, b }; tout(); }
+  function menuAnalyse(a) {
+    if (a === "examiner") ANA.exam = !ANA.exam;
+    if (a === "tangentes") { ANA.tang = !ANA.tang; if (ANA.tang) MOTEUR.evt("tangentes"); }
+    if (a === "derivee") { ANA.deriv = !ANA.deriv; if (ANA.deriv) MOTEUR.evt("derivee"); }
+    if (a === "ajust") ajusteSel();
+    if (a === "prop") { const tp = CFG.sondes.length === 1 ? CFG.sondes[0] : "cond", F = OUTILS.ajusteProp(serie(tp)); if (!F) MOTEUR.msg("Il faut au moins 2 points."); else { F.g = tp; ANA.fits = ANA.fits.filter(f => f.g !== tp); ANA.fits.push(F); MOTEUR.evt("ajust", F); } }
+    if (a === "corrige") { ANA.corr = !ANA.corr; ANA.fits = ANA.fits.filter(f => f.g !== "cond"); }
+    if (a === "theorie") ANA.theo = !ANA.theo;
+    if (a === "effacer") { ANA.tang = ANA.deriv = ANA.exam = ANA.corr = false; ANA.fits = []; ANA.sel = null; ANA.t1 = null; }
+    $("#g-analyse-l").classList.remove("on"); tout();
+  }
+  function csv() {
+    if (!LAB.data.length) { MOTEUR.msg("Aucun point à exporter."); return; }
+    const ev = LAB.mode === "evt", l = [(ev ? CFG.xcol : "t (s)") + ";pH;sigma (µS/cm)"].concat(LAB.data.map(p => [ev ? fr(p.V, 2) : fr(p.t, 0), Number.isFinite(p.ph) ? fr(p.ph, 2) : "", Number.isFinite(p.cond) ? String(Math.round(p.cond * 10) / 10).replace(".", ",") : ""].join(";")));
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + l.join("\r\n")], { type: "text/csv" })); a.download = "titrage_mesures.csv"; document.body.appendChild(a); a.click(); a.remove();
+  }
+  function init() {
+    $("#g-collecter").addEventListener("click", collecter);
+    $("#g-garder").addEventListener("click", garder);
+    $("#g-mode").addEventListener("click", () => {
+      if (LAB.collecte) { MOTEUR.msg("Arrêtez la collecte avant de changer de mode."); return; }
+      if (!menuMode) { menuMode = document.createElement("div"); menuMode.className = "liste on"; menuMode.style.cssText = "position:absolute;z-index:30"; document.body.appendChild(menuMode); }
+      const r = $("#g-mode").getBoundingClientRect(); menuMode.style.left = (r.left + scrollX) + "px"; menuMode.style.top = (r.bottom + scrollY + 4) + "px";
+      menuMode.innerHTML = `<div class="ga-menu"><div class="liste on" style="position:static"><button data-m="temps" class="${LAB.mode === "temps" ? "on" : ""}">Temps (une mesure par seconde)</button><button data-m="evt" class="${LAB.mode === "evt" ? "on" : ""}">Événements + valeurs · nom « Volume », unité « mL »</button></div></div>`;
+      menuMode.querySelectorAll("button").forEach(b => b.onclick = () => { LAB.mode = b.dataset.m; LAB.data = []; menuMode.remove(); menuMode = null; MOTEUR.evt("mode", LAB.mode); change(); });
+      setTimeout(() => document.addEventListener("click", function f(e) { if (menuMode && !menuMode.contains(e.target)) { menuMode.remove(); menuMode = null; } document.removeEventListener("click", f); }), 0);
+    });
+    $("#g-analyse").addEventListener("click", e => { e.stopPropagation(); $("#g-analyse-l").classList.toggle("on"); });
+    document.addEventListener("click", e => { if (!e.target.closest(".ga-menu")) $("#g-analyse-l").classList.remove("on"); });
+    $$("#g-analyse-l button").forEach(b => b.addEventListener("click", () => menuAnalyse(b.dataset.a)));
+    $("#g-graphes").addEventListener("click", () => { ANA.deux = !ANA.deux; $("#g-graphes").textContent = ANA.deux ? "◫ 2 graphes" : "▭ 1 graphe"; tout(); });
+    $("#g-tab").addEventListener("click", () => { ANA.tab = !ANA.tab; $("#g-tab").classList.toggle("on", ANA.tab); $("#g-zone").classList.toggle("sans-tab", !ANA.tab); tout(); });
+    $("#g-suppr").addEventListener("click", () => { if (LAB.data.length) { LAB.data.pop(); MOTEUR.evt("suppr"); change(); } });
+    $("#g-csv").addEventListener("click", csv);
+    ["ph", "cond"].forEach(tp => {
+      const cv = $("#cv-" + tp); let d0 = null;
+      const vx = e => { const G = geo[tp]; if (!G) return null; const r = cv.getBoundingClientRect(); return Math.max(0, Math.min(G.xmax, G.Xinv(e.clientX - r.left))); };
+      cv.addEventListener("pointerdown", e => { if (LAB.mode !== "evt") return; d0 = vx(e); cv.setPointerCapture(e.pointerId); });
+      cv.addEventListener("pointermove", e => { const v = vx(e); if (v == null) return; if (d0 != null && Math.abs(v - d0) > .2) { ANA.sel = { g: tp, a: d0, b: v }; tout(); } else if (ANA.exam) { ANA.curseur = { g: tp, v }; dessine(); } });
+      cv.addEventListener("pointerup", e => { if (d0 != null) { const v = vx(e); if (v != null && Math.abs(v - d0) > .2) selection(tp, d0, v); else if (ANA.exam) { ANA.curseur = { g: tp, v }; dessine(); } } d0 = null; });
+    });
+    window.addEventListener("resize", () => dessine());
+    ECOUTE.push(tout);
+    setInterval(() => { if (!dlgOuvert) afficheurs(); }, 200);
+    tout();
+  }
+  return { init, tout, dessine, dessineEcran, ajusteSel, selection, serie, burette, collecter, garder, menuAnalyse };
+})();
+window.GA = GA;
+
+/* ===== Moteur : lien entre le labo, la scène 3D, l'écran et l'assistant pas à pas ===== */
+const VE_VRAI = () => LAB.Ca * LAB.Va / LAB.Cb;
+const milieuDe = pos => (pos === "table" || pos === "repos" || pos === "air") ? "air" : pos;
+function bouge(type, pos, direct) {
+  const s = LAB.sonde[type]; s.pos = pos;
+  if (direct || !S3D.ok) { s.milieu = milieuDe(pos); S3D.placeSonde(type, pos, true); return Promise.resolve(); }
+  s.milieu = "air";
+  return S3D.placeSonde(type, pos).then(() => { s.milieu = milieuDe(pos); change(); });
+}
+const attends = ms => new Promise(r => setTimeout(r, ms));
+/* étalonnages « parfaits » (pour les états préparés) */
+function calPHparfait() { const U7 = 1.78, U4 = 1.78 + .235 * 3, a = 3 / (U7 - U4); Object.assign(LAB.calPH, { a, b: 7 - a * U7, fait: true, pts: [[U7, 7], [U4, 4]] }); }
+function calCparfait(g) { const U = 2.5 * 1413 / g * .96; Object.assign(LAB.calC, { a: 1413 / U, b: 0, fait: true, gamme: g, pts: [[0, 0], [U, 1413]] }); }
+const VOLS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8.5, 9, 9.2, 9.4, 9.6, 9.8, 10, 10.2, 10.4, 10.6, 10.8, 11, 11.5, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+function pointExact(V) {
+  LAB.V = V; CAPT.regler("ph"); CAPT.regler("cond");
+  const m = MOTEUR.lectures(); return { V: Math.round(V * 100) / 100, Vvrai: V, ph: LAB.branche.ph && LAB.sondesActives.ph ? m.ph.v : NaN, cond: LAB.branche.cond && LAB.sondesActives.cond ? m.cond.v : NaN };
+}
+
+const MOTEUR = {
+  tAcc: 0,
+  tick(dt) {
+    const dv = VERSE.tick(dt); CAPT.tick(dt);
+    if (dv > 0) { this.versDepuis = (this.versDepuis || 0) + dv; }
+    if (LAB.collecte && LAB.mode === "temps") { this.tAcc += dt; if (this.tAcc >= 1) { this.tAcc = 0; const m = this.lectures(), t = (performance.now() - LAB.t0) / 1000; LAB.data.push({ t, ph: LAB.branche.ph ? m.ph.v : NaN, cond: LAB.branche.cond ? m.cond.v : NaN }); if (t > 180) LAB.collecte = false; change(); } }
+  },
+  lectures() { return { ph: CAPT.lirePH(), cond: CAPT.lireC() }; },
+  prendrePoint() {
+    const stPH = !LAB.branche.ph || CAPT.stable("ph"), stC = !LAB.branche.cond || CAPT.stable("cond"), st = stPH && stC;
+    if (!st && !LAB.explorer && !ETAPES.auto) { this.msg("Attendez que les mesures soient stables (voyants verts) avant de garder le point."); return null; }
+    if (VERSE.occupe()) { this.msg("Attendez la fin du versement."); return null; }
+    const m = this.lectures();
+    return { ph: LAB.branche.ph && LAB.sondesActives.ph ? m.ph.v : NaN, cond: LAB.branche.cond && LAB.sondesActives.cond ? m.cond.v : NaN, inst: !st };
+  },
+  verifLecture(v) {
+    const e = Math.abs(v - LAB.V);
+    if (e > .1 && !LAB.explorer) { this.nErr = (this.nErr || 0) + 1; return this.nErr >= 2 ? `Aide : le bas du ménisque est au niveau de ${fr(LAB.V, 2)} mL. Les grands traits numérotés valent 1 mL, chaque petit trait 0,1 mL. Saisissez cette valeur.` : `La lecture ne correspond pas : regardez le bas du ménisque. Chaque petit trait vaut 0,1 mL (écart ${e > .5 ? "important" : "de quelques graduations"}).`; }
+    this.nErr = 0;
+    if (LAB.data.some(p => Math.abs(p.V - v) < 1e-6)) return "Ce volume a déjà un point : versez encore de la soude avant de garder un nouveau point.";
+    if (e > .1) this.msg(`Lecture à vérifier : la burette indique ${fr(LAB.V, 2)} mL.`);
+    return null;
+  },
+  saisieAuto() { return LAB.explorer ? EXPLO.auto : ETAPES.auto; },
+  peutVerser() { return LAB.burette.remplie && LAB.becher.acide && (LAB.explorer || ETAPES.verserOK()); },
+  msg(t) { const z = $("#scene-msg"); z.textContent = t || ""; z.classList.toggle("on", !!t); clearTimeout(this._m); if (t) this._m = setTimeout(() => z.classList.remove("on"), 6000); },
+  evt(nom, d) { ETAPES.evt(nom, d); if (LAB.explorer) EXPLO.evt(nom, d); }
+};
+
+/* ---------- états de départ de chaque partie ---------- */
+function etatInitial() {
+  Object.assign(LAB, { sys: "acet", Ca: .0985, Va: 10, Veau: 40, Cb: .1, V: 0, agit: false, robinet: false, epi: false, iface: false, gamme: 2000, mode: "temps", collecte: false, data: [], indic: "aucun", explorer: false });
+  LAB.becher = { acide: false, eau: false, barreau: false }; LAB.burette = { remplie: false }; LAB.branche = { ph: false, cond: false }; LAB.sondesActives = { ph: true, cond: true };
+  LAB.calPH = { a: -4, b: 14, pts: [], fait: false }; LAB.calC = { a: null, b: null, pts: [], gamme: null, fait: false };
+  LAB.sonde.ph.x = 4; LAB.sonde.cond.x = 0; bouge("ph", "stock", true); bouge("cond", "table", true);
+  Object.assign(ANA, { tang: false, t1: null, deriv: false, fits: [], sel: null, exam: false, corr: false, theo: false });
+}
+function etatFinP1() { etatInitial(); Object.assign(LAB, { iface: true, gamme: 20000, mode: "evt" }); LAB.branche = { ph: true, cond: true }; calPHparfait(); calCparfait(20000); bouge("ph", "stock", true); bouge("cond", "table", true); }
+function etatFinP2() {
+  etatFinP1(); LAB.epi = true; LAB.burette.remplie = true; LAB.becher = { acide: true, eau: true, barreau: true };
+  bouge("ph", "becher", true); bouge("cond", "becher", true); LAB.data = VOLS.map(pointExact); LAB.V = 20; LAB.collecte = false; LAB.agit = false;
+}
+
+/* ---------- les trois parties pas à pas ---------- */
+const VE_TXT = () => fr(VE_VRAI(), 2);
+const PARTIES = [
+  { titre: "Partie 1 · Préparer et étalonner les sondes", notion: "Chapitre 3 · Notions : capteur, étalonnage, gamme de mesure", prepare: etatInitial,
+    etapes: [
+      { titre: "Brancher les capteurs", vue: "interface",
+        html: `<p>La sonde pH se branche sur la voie <b>CH 1</b>, la sonde de conductivité sur <b>CH 2</b>, puis l'interface se relie à l'ordinateur par USB.</p><p>Le logiciel <b>reconnaît automatiquement</b> chaque capteur : une puce dans la prise lui indique son type et son étalonnage d'usine.</p>`,
+        actions: [{ label: "🔌 Brancher les deux sondes et l'interface", run: async () => { LAB.branche.ph = true; change(); await attends(450); LAB.branche.cond = true; change(); await attends(450); LAB.iface = true; change(); MOTEUR.msg("Capteurs détectés : pH (CH 1) et conductivité (CH 2)."); } }],
+        apres: "Regardez l'écran : les deux afficheurs sont apparus. Le pH affiché n'a pas encore de sens (sonde dans son flacon de stockage)." },
+      { titre: "Choisir la gamme de conductivité", vue: "sonde",
+        html: `<p>Le commutateur de la sonde propose trois gammes. Une gamme trop petite <b>plafonne</b> la mesure ; une gamme trop grande la rend <b>moins précise</b>.</p><p class="note">Après l'équivalence, le bécher contiendra environ 1 × 10⁻² mol·L⁻¹ de Na⁺ et autant de HO⁻.<br><span class="formule">σ ≈ (λ<sub>Na⁺</sub> + λ<sub>HO⁻</sub>) × [ion] = (5,01 + 19,86) × 10⁻³ S·m²·mol⁻¹ × 10 mol·m⁻³</span></p><p><b>Quelle gamme choisir ?</b></p>`,
+        ui(z, et) { z.innerHTML = `<div class="choix"><button data-g="200">0 – 200 µS/cm</button><button data-g="2000">0 – 2 000 µS/cm</button><button data-g="20000">0 – 20 000 µS/cm</button></div>`;
+          z.querySelectorAll("button").forEach(b => b.onclick = () => { const g = +b.dataset.g; LAB.gamme = g; change(); z.querySelectorAll("button").forEach(x => x.className = "");
+            if (g === 20000) { b.className = "ok"; ETAPES.retour("σ ≈ 0,25 S·m⁻¹ = 2 500 µS/cm : seule la gamme 0–20 000 µS/cm convient. Le curseur est en place.", "info"); ETAPES.valide(); }
+            else { b.className = "ko"; ETAPES.retour(g === 2000 ? "σ ≈ 0,25 S/m = 2 500 µS/cm dépasse 2 000 µS/cm : après l'équivalence, la mesure plafonnerait et la seconde droite serait fausse." : "Beaucoup trop petite : la mesure plafonnerait dès le début du titrage.", "ko"); } }); },
+        actions: [] },
+      { titre: "Rincer la sonde pH", vue: "rincage",
+        html: `<p>On sort la sonde pH de son flacon de stockage, on la rince à l'eau distillée au-dessus du bécher de rinçage, puis on la <b>tamponne</b> avec du papier absorbant, sans frotter le bulbe de verre.</p>`,
+        actions: [{ label: "💧 Rincer et tamponner la sonde pH", run: async () => { await bouge("ph", "eau"); await S3D.jet("ph"); await bouge("ph", "air"); } }] },
+      { titre: "Étalonner le pH : point 1, tampon pH 7,00", vue: "tampons",
+        html: `<p>On plonge la sonde dans le tampon pH 7,00, on agite doucement et on attend que la <b>tension</b> se stabilise. On saisit alors la valeur du tampon et on garde le point.</p><p class="note">Avant l'étalonnage, le logiciel utilise l'étalonnage d'usine : dans le tampon pH 7,00, il affiche souvent une valeur un peu différente.</p>`,
+        live: () => LAB.sonde.ph.milieu === "buf7" ? `<div class="lecture">Tension lue : <b>${fr(CAPT.tensionPH(), 3)} V</b> · pH affiché (usine) : <b>${fr(CAPT.lirePH().v, 2)}</b> · ${CAPT.stable("ph") ? "✅ stable" : "⏳ en évolution"}</div>` : "",
+        actions: [{ label: "🧪 Plonger la sonde dans le tampon pH 7,00", run: () => bouge("ph", "buf7") },
+          { label: "✓ Garder le point 1 (valeur saisie : 7,00)", pret: () => CAPT.stable("ph"), attente: "⏳ Attendre la stabilisation…", run: async () => { LAB.calPH.pts = [[CAPT.tensionPH(), 7]]; MOTEUR.msg("Point 1 enregistré : pH 7,00."); } }] },
+      { titre: "Étalonner le pH : point 2, tampon pH 4,00", vue: "tampons",
+        html: `<p>On rince la sonde entre les deux tampons pour ne pas les contaminer, puis on recommence avec le tampon pH 4,00.</p><p>Avec deux points, le logiciel calcule la droite d'étalonnage <span class="formule">pH = a × U + b</span>.</p>`,
+        live: () => { let h = LAB.sonde.ph.milieu === "buf4" ? `<div class="lecture">Tension lue : <b>${fr(CAPT.tensionPH(), 3)} V</b> · ${CAPT.stable("ph") ? "✅ stable" : "⏳ en évolution"}</div>` : ""; if (LAB.calPH.fait) h += `<p class="note">Étalonnage enregistré : <b>pH = ${fr(LAB.calPH.a, 3)} × U + ${fr(LAB.calPH.b, 2)}</b> (U en V). Le tampon pH 4,00 se lit maintenant ${fr(CAPT.lirePH().v, 2)}.</p>`; return h; },
+        actions: [{ label: "💧 Rincer et tamponner la sonde", run: async () => { await bouge("ph", "eau"); await S3D.jet("ph"); await bouge("ph", "air"); } },
+          { label: "🧪 Plonger la sonde dans le tampon pH 4,00", run: () => bouge("ph", "buf4") },
+          { label: "✓ Garder le point 2 (valeur saisie : 4,00)", pret: () => CAPT.stable("ph"), attente: "⏳ Attendre la stabilisation…", run: async () => { const p1 = LAB.calPH.pts[0] || [1.78, 7], U = CAPT.tensionPH(), a = (p1[1] - 4) / (p1[0] - U); Object.assign(LAB.calPH, { a, b: 4 - a * U, fait: true, pts: [p1, [U, 4]] }); change(); } }] },
+      { titre: "Étalonner la conductivité", vue: "tampons",
+        html: `<p>L'étalonnage de conductivité se fait <b>sur la gamme choisie</b> (0–20 000 µS/cm) : il serait faux si l'on changeait de gamme ensuite.</p><ul><li>Point 1 : sonde propre et sèche, à l'air → 0 µS/cm.</li><li>Point 2 : solution étalon de chlorure de potassium → 1 413 µS/cm à 25 °C.</li></ul>`,
+        live: () => LAB.branche.cond ? `<div class="lecture">Tension lue : <b>${fr(CAPT.tensionC().U, 3)} V</b> · ${CAPT.stable("cond") ? "✅ stable" : "⏳ en évolution"}${LAB.calC.fait ? ` · étalon lu : <b>${fC(CAPT.lireC().v, 0)} µS/cm</b>` : ""}</div>` : "",
+        actions: [{ label: "✓ Sonde sèche à l'air : garder le point 1 (0 µS/cm)", run: async () => { await bouge("cond", "air"); await attends(400); CAPT.regler("cond"); LAB.calC.pts = [[CAPT.tensionC().U, 0]]; } },
+          { label: "🧪 Plonger la sonde dans l'étalon 1 413 µS/cm", run: () => bouge("cond", "std") },
+          { label: "✓ Garder le point 2 (valeur saisie : 1 413)", pret: () => CAPT.stable("cond"), attente: "⏳ Attendre la stabilisation…", run: async () => { const p0 = LAB.calC.pts[0] || [0, 0], U = CAPT.tensionC().U, a = 1413 / (U - p0[0]); Object.assign(LAB.calC, { a, b: -a * p0[0], fait: true, gamme: LAB.gamme, pts: [p0, [U, 1413]] }); change(); } }] },
+      { titre: "Choisir le mode « Événements + valeurs »", vue: "ordi",
+        html: `<p>Pendant un titrage, la grandeur qui varie est le <b>volume versé</b>, pas le temps. Dans le menu ⚙ Mode, on choisit <b>Événements + valeurs</b>, avec le nom « Volume » et l'unité « mL ».</p><p>À chaque clic sur <b>✓ Garder</b>, le logiciel enregistre le pH et σ, puis demande le volume lu sur la burette.</p>`,
+        verif: () => LAB.mode === "evt",
+        actions: [{ label: "⚙ Choisir Événements + valeurs (Volume, mL)", run: async () => { LAB.mode = "evt"; LAB.data = []; change(); } }],
+        apres: "Vous pouvez aussi le faire vous-même avec le bouton ⚙ Mode de l'écran." },
+      { titre: "Conclusion : le montage est prêt", vue: "ensemble", conclusion: true,
+        html: () => `<p>Les deux capteurs sont reconnus et étalonnés :</p><ul><li>pH : <b>pH = ${fr(LAB.calPH.a, 3)} × U + ${fr(LAB.calPH.b, 2)}</b> (2 tampons).</li><li>Conductivité : gamme <b>0–${fC(LAB.gamme, 0)} µS/cm</b>, étalonnée avec 2 points (0 et 1 413 µS/cm).</li><li>Collecte : <b>${LAB.mode === "evt" ? "Événements + valeurs (Volume, mL)" : "Temps"}</b>.</li></ul><p class="attention">⚠️ Erreur fréquente : laisser la sonde pH à l'air entre deux manipulations. En attendant le titrage, elle retourne dans son flacon de stockage.</p>`,
+        actions: [{ label: "🧴 Remettre la sonde pH dans son flacon de stockage", run: () => bouge("ph", "stock") }, { label: "Terminer la partie 1", run: async () => { } }] }
+    ] },
+  { titre: "Partie 2 · Réaliser le titrage", notion: "Chapitre 3 · Notions : titrage, suivi pH-métrique et conductimétrique", prepare: etatFinP1,
+    etapes: [
+      { titre: "Se protéger et remplir la burette", vue: "burette",
+        html: `<p>La soude est corrosive : blouse, gants et lunettes. On rince la burette avec la soude, on la remplit au-dessus du zéro, on chasse la bulle d'air sous le robinet, puis on <b>ajuste le zéro</b> (bas du ménisque).</p>`,
+        actions: [{ label: "🧤 Mettre blouse, gants et lunettes", run: async () => { LAB.epi = true; change(); } },
+          { label: "🧪 Remplir la burette et ajuster le zéro", run: async () => { LAB.burette.remplie = true; LAB.V = -2; change(); await attends(500); VERSE.ajoute(2, 1.6); await attends(1800); LAB.V = 0; change(); MOTEUR.msg("Burette remplie, zéro ajusté."); } }] },
+      { titre: "Préparer le bécher", vue: "becher",
+        html: `<p>À la pipette jaugée, on prélève <b>V<sub>A</sub> = 10,0 mL</b> de vinaigre dilué S<sub>A</sub>. On ajoute environ <b>40 mL d'eau distillée</b> et le barreau aimanté.</p><p class="note">Pourquoi ajouter de l'eau ? Pour que les sondes plongent. La quantité d'acide ne change pas, donc V<sub>E</sub> non plus.</p>`,
+        actions: [{ label: "🧪 Prélever 10,0 mL de S_A à la pipette jaugée", run: async () => { await S3D.pipette(); LAB.becher.acide = true; change(); } },
+          { label: "💧 Ajouter 40 mL d'eau distillée et le barreau aimanté", run: async () => { LAB.becher.eau = true; LAB.becher.barreau = true; change(); } }] },
+      { titre: "Installer les sondes et agiter", vue: "becher",
+        html: `<p>On rince les sondes, puis on les fixe pour qu'elles plongent <b>sans toucher le barreau ni la paroi</b>. On règle une agitation douce et régulière (pas de tourbillon qui découvre les sondes).</p>`,
+        actions: [{ label: "🧴 Rincer les sondes et les placer dans le bécher", run: async () => { await bouge("ph", "eau"); await S3D.jet("ph"); await Promise.all([bouge("ph", "becher"), bouge("cond", "becher")]); } },
+          { label: "🌀 Lancer une agitation douce", run: async () => { LAB.agit = true; change(); } }] },
+      { titre: "Lancer la collecte et garder le point V = 0", vue: "ordi", autoValide: true,
+        html: `<p>On clique sur <b>▶ Collecter</b>. Avant toute addition, on attend que les deux mesures soient stables (voyants verts), on clique sur <b>✓ Garder</b> et on saisit <b>0</b> mL.</p>`,
+        verif: () => LAB.collecte && LAB.data.some(p => p.V === 0),
+        actions: [{ label: "▶ Lancer la collecte", run: async () => { if (!LAB.collecte) GA.collecter(); } },
+          { label: "✓ Garder le premier point (saisir 0)", pret: () => CAPT.stable("ph") && CAPT.stable("cond"), attente: "⏳ Attendre la stabilisation…", run: async () => GA.garder() }] },
+      { titre: "Titrer : verser, attendre, garder, lire", vue: "becher", titrage: true,
+        html: () => `<p>On verse la soude, on attend la stabilisation, on garde le point et on saisit le volume lu. Ajouts de <b>1 mL</b> loin de l'équivalence, de <b>0,2 mL</b> entre 8 et 12 mL, puis jusqu'à <b>20 mL</b>.</p><p class="note">Astuce : vous pouvez aussi <b>maintenir le robinet</b> de la burette dans la scène 3D pour verser goutte à goutte.</p>`,
+        live: () => { const n = LAB.data.length, max = LAB.data.reduce((m, p) => Math.max(m, p.V), 0), pr = LAB.data.filter(p => Math.abs(p.V - VE_VRAI()) <= 1.2).length;
+          return `<div class="lecture">Burette : <b>${fr(LAB.V, 2)} mL</b> · points : <b>${n}</b> · jusqu'à <b>${fr(max, 1)} mL</b> · près du saut : <b>${pr}</b>/3</div>`; },
+        ui(z) { z.innerHTML = `<div class="verser"><button class="btn sec" data-v="1">+ 1 mL</button><button class="btn sec" data-v="0.5">+ 0,5 mL</button><button class="btn sec" data-v="0.2">+ 0,2 mL</button><button class="btn sec" data-v="0.05">1 goutte</button></div>
+          <button class="btn ga-garder" id="e-garder" style="width:100%">✓ Garder (puis saisir le volume)</button>
+          <button class="btn sec" id="e-auto" style="width:100%" hidden>⏩ Faire les mesures restantes automatiquement</button>`;
+          z.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { if (!MOTEUR.peutVerser()) return; const v = +b.dataset.v; VERSE.ajoute(v, v >= 1 ? 1.2 : v >= .2 ? .6 : .15); });
+          $("#e-garder", z).onclick = () => GA.garder();
+          $("#e-auto", z).onclick = () => ETAPES.autoTitrage(); },
+        verif: () => LAB.data.length >= 12 && LAB.data.some(p => p.V >= 18) && LAB.data.filter(p => Math.abs(p.V - VE_VRAI()) <= 1.2).length >= 3,
+        actions: [] },
+      { titre: "Arrêter et observer", vue: "ordi",
+        html: () => `<p>On arrête la collecte et l'agitation. Les deux courbes sont tracées côte à côte :</p><ul><li><b>pH = f(V)</b> : un saut de pH autour de ${fr(Math.round(VE_VRAI()), 0)} mL.</li><li><b>σ = f(V)</b> : deux portions presque rectilignes ; la pente augmente nettement après l'équivalence.</li></ul><p class="note">Avant l'équivalence, l'acide (molécule, très peu conductrice) est remplacé par Na⁺ + CH₃COO⁻ : σ augmente un peu. Après, on ajoute Na⁺ + HO⁻ (λ<sub>HO⁻</sub> élevée) : σ augmente beaucoup plus vite.</p>`,
+        actions: [{ label: "■ Arrêter la collecte et l'agitation", run: async () => { if (LAB.collecte) GA.collecter(); LAB.agit = false; ANA.deux = true; change(); } }] },
+      { titre: "Conclusion : une expérience, deux courbes", vue: "ordi", conclusion: true,
+        html: () => `<p>Vous avez obtenu <b>${LAB.data.length} points</b>, chacun avec le pH et la conductivité mesurés au même instant. La partie 3 exploite les deux courbes pour trouver V<sub>E</sub> de deux façons et conclure sur l'étiquette.</p><p class="attention">⚠️ Erreurs fréquentes : garder un point avant la stabilisation ; lire la burette en haut du ménisque ; verser par gros volumes près de l'équivalence.</p>`,
+        actions: [{ label: "Terminer la partie 2", run: async () => { } }] }
+    ] },
+  { titre: "Partie 3 · Exploiter et ranger", notion: "Chapitre 3 · Notions : équivalence, méthode des tangentes, dérivée, conductimétrie, concentration", prepare: () => { if (!LAB.data.length || LAB.mode !== "evt") etatFinP2(); LAB.collecte = false; },
+    etapes: [
+      { titre: "Repérer V_E par la méthode des tangentes", vue: "ordi",
+        html: `<p>Dans <b>📈 Analyse</b>, choisissez <b>Méthode des tangentes parallèles</b>. Déplacez la première tangente (curseur sous le graphe) dans une zone arrondie avant le saut : le logiciel trace la tangente parallèle et la droite équidistante, qui coupe la courbe au point d'équivalence.</p>`,
+        ui(z) { z.innerHTML = `<div class="saisie"><label for="e-ve">V<sub>E</sub> lu (mL)</label><input id="e-ve" inputmode="decimal" autocomplete="off"></div>`; },
+        actions: [{ label: "📐 Tracer les tangentes", run: async () => { ANA.tang = true; ANA.deux = true; change(); } },
+          { label: "✓ Valider ma lecture de V_E", run: async () => { const v = num($("#e-ve").value), tg = OUTILS.tangentes(GA.serie("ph"), ANA.t1 == null ? VE_VRAI() * .55 : ANA.t1), ref = tg && tg.VE ? tg.VE : VE_VRAI();
+            if (!Number.isFinite(v)) { ETAPES.retour("Saisissez le volume lu, par exemple 9,8.", "ko"); throw 0; }
+            if (Math.abs(v - ref) > .25) { ETAPES.retour(ETAPES.erreur() >= 2 ? `Aide : le point rouge est à V ≈ ${fr(ref, 2)} mL. On lit l'abscisse du point où la droite en pointillés (équidistante des deux tangentes) coupe la courbe. Saisissez cette valeur.` : `Pas tout à fait : lisez l'abscisse du point rouge (là où la droite en pointillés coupe la courbe).`, "ko"); throw 0; }
+            ETAPES.res.veT = v; ETAPES.retour(`Bien lu : V<sub>E</sub> ≈ ${fr(v, 2)} mL par la méthode des tangentes.`, "info"); } }] },
+      { titre: "Confirmer avec la dérivée dpH/dV", vue: "ordi",
+        html: `<p>Choisissez <b>Dérivée dpH/dV</b> : le logiciel calcule la pente entre deux points successifs. La dérivée est maximale à l'équivalence.</p>`,
+        live: () => { if (!ANA.deriv) return ""; const E = OUTILS.veDerivee(GA.serie("ph")); return E ? `<p class="note">Maximum de la dérivée : <b>V ≈ ${fr(E.V, 2)} mL</b>. Les deux méthodes concordent ${ETAPES.res.veT ? `(tangentes : ${fr(ETAPES.res.veT, 2)} mL)` : ""}. Plus les points sont serrés près du saut, plus ce maximum est précis.</p>` : ""; },
+        verif: () => ANA.deriv,
+        actions: [{ label: "∂ Afficher la dérivée", run: async () => { ANA.deriv = true; change(); } }] },
+      { titre: "Repérer V_E sur σ = f(V) : deux droites", vue: "ordi", autoValide: true,
+        html: `<p>Sur le graphe de conductivité, <b>glissez horizontalement</b> pour sélectionner les points d'une branche, puis <b>📏 Ajustement linéaire</b>. Faites de même pour l'autre branche : l'intersection des deux droites donne V<sub>E</sub>.</p><p class="note">On évite les points juste autour de l'équivalence, où la courbe s'arrondit, et les points trop éloignés : la soude versée dilue le mélange et courbe un peu les branches. Pour aller plus loin : 📈 Analyse › σ corrigée de la dilution.</p>`,
+        ui(z) { z.innerHTML = `<p style="margin:0 0 6px;font-size:14px">Sans souris précise ? Ces boutons sélectionnent puis ajustent une branche pour vous :</p><div class="choix"><button data-s="4,8">Branche avant : 4 → 8 mL</button><button data-s="11.5,16">Branche après : 11,5 → 16 mL</button></div>`;
+          z.querySelectorAll("button").forEach(b => b.onclick = () => { const [a, c] = b.dataset.s.split(",").map(Number); ANA.deux = true; GA.selection("cond", a, c); setTimeout(() => { GA.ajusteSel(); b.className = "ok"; }, 700); }); },
+        verif: () => { const F = ANA.fits.filter(f => f.g === "cond"); if (F.length < 2) return false; const av = F.find(f => f.b <= VE_VRAI() - .3), ap = F.find(f => f.a >= VE_VRAI() + .3); if (!av || !ap) return false; const vi = (ap.k - av.k) / (av.m - ap.m); ETAPES.res.veC = vi; return Math.abs(vi - VE_VRAI()) < .45; },
+        live: () => { const F = ANA.fits.filter(f => f.g === "cond"); if (F.length === 2 && !ETAPES.etapeFaite()) return '<p class="retour-msg ko on">Les deux droites ne conviennent pas : prenez une branche entièrement avant le saut, l\'autre entièrement après, sans points trop éloignés (essayez les deux boutons ci-dessus).</p>'; return ETAPES.res.veC ? `<p class="note">Intersection : <b>V<sub>E</sub> ≈ ${fr(ETAPES.res.veC, 2)} mL</b>, en accord avec la pH-métrie.</p>` : ""; },
+        actions: [{ label: "📏 Ajuster la sélection en cours", repete: true, run: async () => { GA.ajusteSel(); } }] },
+      { titre: "Calculer la concentration et conclure", vue: "ordi",
+        html: () => `<p>À l'équivalence, les réactifs ont été introduits dans les proportions stœchiométriques : <span class="formule">n(CH₃COOH) initiale = n(HO⁻) versée</span>, donc <span class="formule">C<sub>A</sub> × V<sub>A</sub> = C<sub>B</sub> × V<sub>E</sub></span>.</p><p>Calculez C<sub>A</sub> avec votre V<sub>E</sub> (≈ ${fr(ETAPES.res.veT || VE_VRAI(), 2)} mL), V<sub>A</sub> = 10,0 mL et C<sub>B</sub> = 1,00 × 10⁻¹ mol·L⁻¹.</p>`,
+        ui(z) { z.innerHTML = `<div class="saisie"><label for="e-ca">C<sub>A</sub> (mol·L⁻¹)</label><input id="e-ca" inputmode="decimal" autocomplete="off" placeholder="ex. 0,0950"></div>`; },
+        actions: [{ label: "✓ Vérifier mon calcul", run: async () => { const v = num($("#e-ca").value), ve = ETAPES.res.veT || VE_VRAI(), ref = LAB.Cb * ve / LAB.Va;
+          if (!Number.isFinite(v)) { ETAPES.retour("Saisissez C_A, par exemple 0,0950.", "ko"); throw 0; }
+          if (Math.abs(v - ref) / ref > .03) { ETAPES.retour(ETAPES.erreur() >= 2 ? `Aide : C<sub>A</sub> = C<sub>B</sub> × V<sub>E</sub> / V<sub>A</sub> = 0,100 × ${fr(ve, 2)} / 10,0 = ${fr(ref, 4)} mol·L⁻¹ (les deux volumes en mL se simplifient). Saisissez ce résultat.` : (Math.abs(v * 1000 - ref) / ref < .03 ? "Attention aux unités : C<sub>A</sub> s'exprime en mol·L⁻¹." : "Revoyez le calcul : C<sub>A</sub> = C<sub>B</sub> × V<sub>E</sub> / V<sub>A</sub>."), "ko"); throw 0; }
+          const Cv = 10 * ref, t = Cv * 60.1, deg = t / 10 / 1.01; ETAPES.res.ca = ref;
+          ETAPES.retour(`Juste : C<sub>A</sub> = ${fr(ref, 4)} mol·L⁻¹.<br>Vinaigre (dilué 10 fois) : C = ${fr(Cv, 3)} mol·L⁻¹, soit ${fr(t, 1)} g·L⁻¹ d'acide éthanoïque, donc environ <b>${fr(deg, 1)} g pour 100 g</b> de vinaigre. L'étiquette (6°) est cohérente avec la mesure, compte tenu des incertitudes (lecture de V<sub>E</sub>, verrerie).`, "info"); } }] },
+      { titre: "Rincer et ranger", vue: "rangement",
+        html: `<p>On rince les deux sondes à l'eau distillée. La sonde de conductivité est séchée ; la sonde pH retourne dans son flacon. Les solutions vont dans le bidon de récupération.</p><p><b>Où range-t-on la sonde pH ?</b></p>`,
+        ui(z) { z.innerHTML = `<div class="choix"><button data-r="eau">Dans l'eau distillée</button><button data-r="sec">À sec, dans sa boîte</button><button data-r="stock">Dans sa solution de stockage</button></div>`;
+          z.querySelectorAll("button").forEach(b => b.onclick = () => { z.querySelectorAll("button").forEach(x => x.className = ""); if (b.dataset.r === "stock") { b.className = "ok"; ETAPES.res.rang = true; ETAPES.retour("Oui : la solution de stockage garde le verre hydraté. L'eau distillée appauvrit l'électrode en ions et la sonde à sec répond très lentement.", "info"); ETAPES.rendu(); } else { b.className = "ko"; ETAPES.retour(b.dataset.r === "eau" ? "Non : l'eau distillée « vide » la membrane de verre de ses ions, la sonde devient lente et imprécise." : "Non : une sonde pH qui sèche répond très lentement, voire plus du tout.", "ko"); } }); },
+        actions: [{ label: "💧 Rincer les deux sondes", pret: () => !!ETAPES.res.rang, attente: "Répondez d'abord à la question", run: async () => { await Promise.all([bouge("ph", "eau"), bouge("cond", "eau")]); await S3D.jet("ph"); } },
+          { label: "🧴 Sonde pH dans le flacon de stockage, sonde de conductivité séchée", run: async () => { await Promise.all([bouge("ph", "stock"), bouge("cond", "table")]); } },
+          { label: "🗑 Vider bécher et burette dans le bidon de récupération", run: async () => { LAB.becher = { acide: false, eau: false, barreau: false }; LAB.burette.remplie = false; LAB.V = 0; change(); MOTEUR.msg("Paillasse rangée."); } }] },
+      { titre: "Conclusion", vue: "ensemble", conclusion: true,
+        html: () => { const ve = ETAPES.res.veT || VE_VRAI(), ca = LAB.Cb * ve / LAB.Va, deg = 10 * ca * 60.1 / 10 / 1.01;
+          return `<p><b>Réponse à la problématique :</b> les deux méthodes donnent V<sub>E</sub> ≈ ${fr(ve, 1)} mL, d'où C<sub>A</sub> ≈ ${fr(ca, 4)} mol·L⁻¹ et un vinaigre à environ ${fr(deg, 1)} % : l'étiquette dit vrai.</p><ul><li>pH-métrie : V<sub>E</sub> au milieu du saut (tangentes ou maximum de la dérivée).</li><li>Conductimétrie : V<sub>E</sub> à l'intersection de deux droites, sans courbe en S.</li><li>Un capteur s'étalonne, sur la bonne gamme, avant la mesure.</li></ul>
+          <div class="cr"><input id="cr-nom" placeholder="Nom et prénom" autocomplete="name"><input id="cr-classe" placeholder="Classe"></div>`; },
+        actions: [{ label: "⬇ Télécharger mon compte rendu (PDF)", run: () => CR.pdf() }, { label: "Terminer l'activité", run: async () => { } }] }
+    ] }
+];
+
+/* ---------- moteur de l'assistant ---------- */
+const ETAPES = {
+  p: 0, i: 0, sous: {}, faits: new Set(), finies: new Set(), res: {}, auto: false, mode: "guide",
+  cle() { return this.p + "-" + this.i; }, et() { return PARTIES[this.p].etapes[this.i]; },
+  etapeFaite() { return this.faits.has(this.cle()); },
+  verserOK() { return this.mode === "guide" && !!this.et().titrage; },
+  ouvre(p, garderEtat) {
+    if (p >= PARTIES.length) { this.mode = "explo"; EXPLO.ouvre(); return; }
+    if (this.mode === "explo") EXPLO.ferme();
+    this.mode = "guide"; LAB.explorer = false;
+    if (this.p !== p || !garderEtat) { const avant = this.p; this.p = p; this.i = 0; if (!this.faits.has(p + "-0") || avant !== p) { PARTIES[p].prepare(); this.sous = {}; [...this.faits].filter(k => k.startsWith(p + "-")).forEach(k => this.faits.delete(k)); } }
+    this.rendu(); change(); sauve();
+  },
+  rendu() {
+    if (this.mode !== "guide") return;
+    const P = PARTIES[this.p], E = this.et(), n = P.etapes.length, fait = this.etapeFaite(), k = this.sous[this.cle()] || 0;
+    $("#a-titre").textContent = P.titre; $("#a-notion").textContent = P.notion; $("#a-compteur").textContent = `Étape ${this.i + 1} / ${n}`;
+    $$(".parties button").forEach((b, j) => { b.setAttribute("aria-selected", j === this.p ? "true" : "false"); b.classList.toggle("fait", this.finies.has(j)); });
+    const html = typeof E.html === "function" ? E.html() : E.html;
+    const z = $("#etape");
+    z.innerHTML = `<div class="e-num"><b>${E.conclusion ? "★" : this.i + 1}</b><h3>${E.titre.replace(/_([A-Z])/g, "<sub>$1</sub>")}</h3></div>
+      <div class="e-desc">${html}</div><div id="e-ui"></div><div id="e-live"></div>
+      <div class="actions">${E.actions.map((a, j) => `<button class="btn ${j < k || (fait && E.actions.length) ? "fait" : ""}" data-j="${j}">${j < k || fait ? "✓ " : ""}${a.label.replace(/_([A-Z])/g, "<sub>$1</sub>")}</button>`).join("")}</div>
+      <div class="retour-msg" id="e-msg"></div>
+      <div class="valide ${fait ? "on" : ""}" id="e-ok">✅ Action validée !${E.apres ? `<span style="font-weight:400;color:var(--encre)"> ${E.apres}</span>` : ""}</div>
+      <div class="nav-et"><button class="btn sec" id="e-prec" ${this.i === 0 ? "disabled" : ""}>← Précédent</button><button class="btn" id="e-suiv" ${fait ? "" : "disabled"}>${this.i === n - 1 ? (this.p < PARTIES.length - 1 ? "Partie suivante →" : "Explorer librement →") : "Suivant →"}</button></div>`;
+    if (E.ui) E.ui($("#e-ui"), E);
+    $$(".actions .btn", z).forEach(b => b.onclick = () => this.action(+b.dataset.j));
+    $("#e-prec").onclick = () => { this.i--; this.rendu(); S3D.vue(this.et().vue); sauve(); };
+    $("#e-suiv").onclick = () => { if (this.i < n - 1) { this.i++; this.rendu(); S3D.vue(this.et().vue); sauve(); } else { this.finies.add(this.p); this.ouvre(this.p + 1); S3D.vue(this.et ? (this.mode === "guide" ? this.et().vue : "becher") : "ensemble"); } };
+    this.majBoutons(); this.majLive();
+  },
+  majBoutons() {
+    if (this.mode !== "guide") return;
+    const E = this.et(), k = this.sous[this.cle()] || 0, fait = this.etapeFaite();
+    $$(".actions .btn").forEach((b, j) => { const a = E.actions[j]; if (!a) return; const pret = !a.pret || a.pret();
+      b.disabled = fait || j !== k || !pret || this.occupe;
+      if (j === k && !fait && a.attente) b.innerHTML = pret ? a.label.replace(/_([A-Z])/g, "<sub>$1</sub>") : a.attente; });
+    const ea = $("#e-auto"); if (ea) ea.hidden = !(E.titrage && LAB.data.length >= 4 && !fait);
+  },
+  majLive() { const E = this.et(), z = $("#e-live"); if (!z) return; const h = E.live ? E.live() : ""; if (z.dataset.h !== h) { z.dataset.h = h; z.innerHTML = h; } },
+  async action(j) {
+    const E = this.et(), a = E.actions[j]; if (!a || this.occupe) return;
+    this.occupe = true; this.majBoutons(); $("#e-msg").classList.remove("on");
+    try { await a.run(); if (!a.repete) this.sous[this.cle()] = j + 1; }
+    catch (e) { if (e !== 0) console.error(e); }
+    this.occupe = false;
+    if ((this.sous[this.cle()] || 0) >= E.actions.length && E.actions.length && (!E.verif || E.verif())) this.valide(true);
+    else { const m = $("#e-msg"), garde = m && m.classList.contains("on") ? m.outerHTML : ""; this.rendu(); if (garde) $("#e-msg").outerHTML = garde; }
+    sauve();
+  },
+  valide(silencieux) {
+    if (this.etapeFaite()) return; this.faits.add(this.cle());
+    const m = $("#e-msg"), garde = m && m.classList.contains("on") ? m.outerHTML : "";
+    this.rendu(); if (garde) $("#e-msg").outerHTML = garde;
+    sauve();
+  },
+  erreur() { const k = this.cle(); this.nErr = this.nErr || {}; this.nErr[k] = (this.nErr[k] || 0) + 1; return this.nErr[k]; },
+  retour(t, cls) { const m = $("#e-msg"); if (!m) return; m.innerHTML = t; m.className = "retour-msg on " + (cls || "info"); },
+  evt(nom) { if (this.mode !== "guide") return; setTimeout(() => this.controle(), 30); },
+  controle() {
+    if (this.mode !== "guide") return; const E = this.et();
+    if (!this.etapeFaite() && E.verif && E.verif() && ((this.sous[this.cle()] || 0) >= E.actions.length || E.titrage || E.autoValide || E.actions.length <= 1)) this.valide();
+    this.majBoutons(); this.majLive();
+  },
+  async autoTitrage() {
+    this.auto = true; const rest = VOLS.filter(v => v > LAB.V + .01 && !LAB.data.some(p => Math.abs(p.V - v) < .01));
+    for (const v of rest) { LAB.V = v; LAB.data.push(pointExact(v)); }
+    this.auto = false; change(); this.controle();
+  }
+};
+setInterval(() => ETAPES.controle(), 300);
+
+/* ---------- mode Explorer librement ---------- */
+const EXPLO = {
+  auto: true, instant: false, sauveGuide: null, sauveExplo: null,
+  defis: [
+    { t: "La gamme piège", q: "On titre 20,0 mL d'acide chlorhydrique à 0,100 mol·L⁻¹ (+ 30 mL d'eau) par la soude à 0,100 mol·L⁻¹, la sonde réglée sur 0–2 000 µS/cm. Que va afficher le conductimètre au départ ? Quelle gamme fallait-il ?",
+      prep: { sys: "hcl", Ca: .1, Va: 20, Veau: 30, Cb: .1, gamme: 2000 }, r: "Au départ σ ≈ (34,98 + 7,63) × 10⁻³ × 40 = 1,7 S·m⁻¹ ≈ 17 000 µS/cm : sur 0–2 000, la mesure plafonne (« hors gamme »). Il faut la gamme 0–20 000 µS/cm (et l'étalonner sur cette gamme)." },
+    { t: "L'eau ajoutée change-t-elle V_E ?", q: "Titrez 10,0 mL de vinaigre dilué avec 20 mL d'eau, puis recommencez avec 80 mL d'eau. Comparez V_E, le saut de pH et les valeurs de σ.",
+      prep: { sys: "acet", Ca: .0985, Va: 10, Veau: 20, Cb: .1, gamme: 20000 }, r: "V_E ne change pas (même quantité d'acide). Avec plus d'eau, σ est plus faible et les branches sont plus droites (dilution par la soude moins sensible) ; le saut de pH est un peu moins haut." },
+    { t: "Le pH à la demi-équivalence", q: "Avec l'acide éthanoïque, lisez le pH pour V = V_E / 2 (outil 🔍 Examiner). À quelle constante correspond-il ?",
+      prep: { sys: "acet", Ca: .1, Va: 10, Veau: 40, Cb: .1, gamme: 20000 }, r: "À la demi-équivalence, [CH₃COOH] = [CH₃COO⁻], donc pH = pK_A ≈ 4,8. C'est une méthode pour mesurer un pK_A." },
+    { t: "Acide fort ou acide faible ?", q: "Comparez l'acide chlorhydrique et l'acide éthanoïque de même concentration (0,100 mol·L⁻¹, 10 mL + 40 mL d'eau) : pH initial, hauteur du saut, allure de σ = f(V).",
+      prep: { sys: "hcl", Ca: .1, Va: 10, Veau: 40, Cb: .1, gamme: 20000 }, r: "Acide fort : pH initial plus bas (≈ 1,7), saut plus grand, σ en V (H₃O⁺, très conducteur, est remplacé par Na⁺). Acide faible : pH initial ≈ 3,0, σ croissante dès le début, cassure moins nette." },
+    { t: "Sans étalonnage", q: "Remettez l'étalonnage d'usine du pH (case ci-dessus) et refaites le titrage. Le volume équivalent change-t-il ? Et le pH à l'équivalence ?",
+      prep: { sys: "acet", Ca: .0985, Va: 10, Veau: 40, Cb: .1, gamme: 20000, usine: true }, r: "V_E ne change presque pas (il se lit sur l'axe des volumes), mais les valeurs de pH sont décalées, surtout loin de pH 7 : le pH à l'équivalence et le pK_A lu seraient faux." }
+  ],
+  ouvre() {
+    if (!LAB.explorer) { this.sauveGuide = { lab: JSON.parse(JSON.stringify(LAB)), ana: JSON.parse(JSON.stringify(ANA)) }; }
+    LAB.explorer = true;
+    if (this.sauveExplo) this.restaure(this.sauveExplo); else this.prepare({});
+    $("#a-titre").textContent = "🔬 Explorer librement"; $("#a-notion").textContent = "Chapitre 3 · Changer les solutions, les gammes, l'eau ajoutée… et prévoir avant de vérifier"; $("#a-compteur").textContent = "Mode libre";
+    $$(".parties button").forEach((b, j) => { b.setAttribute("aria-selected", j === 3 ? "true" : "false"); b.classList.toggle("fait", ETAPES.finies.has(j)); });
+    this.rendu(); S3D.vue("becher"); change();
+  },
+  ferme() { this.sauveExplo = { lab: JSON.parse(JSON.stringify(LAB)), ana: JSON.parse(JSON.stringify(ANA)) }; if (this.sauveGuide) this.restaure(this.sauveGuide); LAB.explorer = false; },
+  restaure(s) { const so = s.lab.sonde; Object.keys(s.lab).forEach(k => { if (k !== "sonde") LAB[k] = s.lab[k]; }); Object.assign(ANA, s.ana); ["ph", "cond"].forEach(t => { Object.assign(LAB.sonde[t], so[t]); bouge(t, so[t].pos || "table", true); }); },
+  prepare(o) {
+    const g = o.gamme || LAB.gamme || 20000;
+    Object.assign(LAB, { sys: o.sys || LAB.sys || "acet", Ca: o.Ca || LAB.Ca, Va: o.Va || LAB.Va, Veau: o.Veau != null ? o.Veau : LAB.Veau, Cb: o.Cb || LAB.Cb, V: 0, iface: true, mode: "evt", collecte: true, data: [], epi: true, agit: true, robinet: false, gamme: g });
+    LAB.branche = { ph: true, cond: true }; LAB.burette = { remplie: true }; LAB.becher = { acide: true, eau: LAB.Veau > 0, barreau: true };
+    if (o.usine) Object.assign(LAB.calPH, { a: -4, b: 14, fait: false }); else if (!LAB.calPH.fait || o.recal) calPHparfait();
+    calCparfait(g); VERSE.file = [];
+    bouge("ph", "becher", true); bouge("cond", "becher", true); CAPT.regler("ph"); CAPT.regler("cond");
+    Object.assign(ANA, { tang: false, t1: null, deriv: false, fits: [], sel: null });
+    if (volumeBecher() < 30) MOTEUR.msg("Moins de 30 mL dans le bécher : les sondes ne plongent pas assez. Ajoutez de l'eau.");
+    change();
+  },
+  lit() {
+    const v = id => num($("#x-" + id).value);
+    return { sys: $("#x-sys").value, Ca: v("ca"), Va: v("va"), Veau: v("eau"), Cb: v("cb"), gamme: +$("#x-g").value };
+  },
+  rendu() {
+    const z = $("#etape"), S = CHIM.SYS;
+    z.innerHTML = `<div class="e-num"><b>🔬</b><h3>Votre titrage</h3></div>
+      <div class="explo-grille">
+        <label class="plein">Titrage<select id="x-sys">${Object.keys(S).map(k => `<option value="${k}" ${k === LAB.sys ? "selected" : ""}>${S[k].nom}</option>`).join("")}</select></label>
+        <label>Concentration titrée (mol/L)<input id="x-ca" type="number" step="0.001" min="0.001" max="1" value="${LAB.Ca}"></label>
+        <label>Volume prélevé V (mL)<input id="x-va" type="number" step="1" min="5" max="50" value="${LAB.Va}"></label>
+        <label>Eau ajoutée (mL)<input id="x-eau" type="number" step="5" min="0" max="100" value="${LAB.Veau}"></label>
+        <label>Titrant (mol/L)<input id="x-cb" type="number" step="0.01" min="0.01" max="1" value="${LAB.Cb}"></label>
+        <label>Gamme de la sonde σ<select id="x-g">${[200, 2000, 20000].map(g => `<option value="${g}" ${g === LAB.gamme ? "selected" : ""}>0 – ${fC(g, 0)} µS/cm</option>`).join("")}</select></label>
+        <label>Indicateur coloré<select id="x-ind"><option value="aucun">aucun</option>${["bbt", "phph", "hel"].map(k => `<option value="${k}" ${k === LAB.indic ? "selected" : ""}>${INDIC[k].nom}</option>`).join("")}</select></label>
+        <label class="case"><input type="checkbox" id="x-auto" ${this.auto ? "checked" : ""}>Volume saisi automatiquement à chaque « Garder »</label>
+        <label class="case"><input type="checkbox" id="x-inst" ${this.instant ? "checked" : ""}>Sondes à réponse instantanée</label>
+        <label class="case plein"><input type="checkbox" id="x-usine" ${!LAB.calPH.fait ? "checked" : ""}>Sonde pH non étalonnée (étalonnage d'usine)</label>
+      </div>
+      <button class="btn" id="x-prep">↺ Préparer le bécher avec ces réglages</button>
+      <div class="verser"><button class="btn sec" data-v="1">+ 1 mL</button><button class="btn sec" data-v="0.5">+ 0,5 mL</button><button class="btn sec" data-v="0.1">+ 0,1 mL</button><button class="btn sec" data-v="0.05">1 goutte</button></div>
+      <div class="lecture" id="x-live"></div>
+      <button class="btn ga-garder" id="x-garder">✓ Garder ce point</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="x-tout" style="flex:1">⏩ Titrage automatique jusqu'à 2 V<sub>E</sub></button><button class="btn sec" id="x-prev" style="flex:1">🔮 Afficher la prévision</button></div>
+      <div class="retour-msg info" id="x-prevu"></div>
+      <h3 style="margin:6px 0 0;font-size:17px">🎯 Défis : prévoir, puis vérifier</h3>
+      <div class="defis">${this.defis.map((d, i) => `<div class="defi"><b>${i + 1}. ${d.t.replace(/_([A-Z])/g, "<sub>$1</sub>")}</b><br>${d.q.replace(/_([A-Z])/g, "<sub>$1</sub>")}<div class="bts"><button class="mini" data-d="${i}">Préparer l'expérience</button><button class="mini" data-r="${i}">Voir la réponse</button></div><div class="rep" id="x-r${i}">${d.r.replace(/_([A-Z])/g, "<sub>$1</sub>")}</div></div>`).join("")}</div>`;
+    $("#x-prep").onclick = () => { const o = this.lit(); if (![o.Ca, o.Va, o.Veau, o.Cb].every(Number.isFinite)) { MOTEUR.msg("Vérifiez les valeurs saisies."); return; } o.usine = $("#x-usine").checked; o.recal = !o.usine; this.prepare(o); this.majLive(); };
+    $("#x-ind").onchange = e => { LAB.indic = e.target.value; change(); };
+    $("#x-auto").onchange = e => { this.auto = e.target.checked; };
+    $("#x-inst").onchange = e => { this.instant = e.target.checked; CAPT.tauPH = this.instant ? .05 : 1.2; CAPT.tauC = this.instant ? .05 : .6; };
+    $("#x-g").onchange = e => { LAB.gamme = +e.target.value; calCparfait(LAB.gamme); change(); };
+    $("#x-usine").onchange = e => { if (e.target.checked) Object.assign(LAB.calPH, { a: -4, b: 14, fait: false }); else calPHparfait(); change(); };
+    z.querySelectorAll(".verser [data-v]").forEach(b => b.onclick = () => { if (!MOTEUR.peutVerser()) return; const v = +b.dataset.v; VERSE.ajoute(v, v >= 1 ? 1.2 : v >= .2 ? .6 : .15); });
+    $("#x-garder").onclick = () => { if (!LAB.collecte) { GA.collecter(); } GA.garder(); };
+    $("#x-tout").onclick = () => { const VE = VE_VRAI(), vmax = Math.min(25, 2 * VE); if (!LAB.collecte) GA.collecter(); const L = []; for (let v = 0; v <= vmax + 1e-9; v += (Math.abs(v - VE) < VE * .12 ? VE / 40 : VE / 10)) L.push(+v.toFixed(2)); L.forEach(v => { if (v + 1e-6 >= LAB.V && !LAB.data.some(p => Math.abs(p.V - v) < .005)) LAB.data.push(pointExact(v)); }); change(); };
+    $("#x-prev").onclick = () => { const VE = VE_VRAI(), m = $("#x-prevu"); m.innerHTML = `Prévision : V<sub>E</sub> = C × V / C<sub>titrant</sub> = ${fr(VE, 2)} mL${VE > 25 ? " : <b>plus que la burette (25 mL) !</b> Diminuez le volume prélevé ou augmentez la concentration du titrant." : VE < 5 ? " : <b>trop petit</b> pour être lu précisément." : "."} ${ANA.theo ? "" : "La courbe théorique est affichée en pointillés."}`; m.classList.add("on"); ANA.theo = true; change(); };
+    z.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { const d = this.defis[+b.dataset.d]; this.prepare(Object.assign({}, d.prep, { recal: !d.prep.usine })); this.rendu(); MOTEUR.msg("Défi prêt : prévoyez d'abord, puis versez et gardez des points."); });
+    z.querySelectorAll("[data-r]").forEach(b => b.onclick = () => $("#x-r" + b.dataset.r).classList.toggle("on"));
+    this.majLive();
+  },
+  majLive() { const z = $("#x-live"); if (!z) return; const m = MOTEUR.lectures(); z.innerHTML = `Burette : <b>${fr(LAB.V, 2)} mL</b> · bécher : <b>${fr(volumeBecher(), 0)} mL</b> · pH <b>${fr(m.ph.v, 2)}</b> · σ <b>${(m.cond.hors ? "> " : "") + fC(m.cond.v, m.cond.dec)}</b> µS/cm`; },
+  evt() { }
+};
+setInterval(() => { if (LAB.explorer) EXPLO.majLive(); }, 250);
+
+/* ---------- compte rendu PDF ---------- */
+const CR = {
+  charge() { return new Promise((res, rej) => { if (window.jspdf) return res(); const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); },
+  async pdf() {
+    const nom = ($("#cr-nom") && $("#cr-nom").value.trim()) || "Élève", classe = ($("#cr-classe") && $("#cr-classe").value.trim()) || "";
+    try { await this.charge(); } catch (e) { ETAPES.retour("Le module PDF n'a pas pu se charger : la fenêtre d'impression s'ouvre à la place.", "ko"); window.print(); return; }
+    const ascii = t => String(t).replace(/[₀-₉]/g, c => "0123456789"["₀₁₂₃₄₅₆₇₈₉".indexOf(c)]).replace(/[⁰¹²³⁴-⁹]/g, c => "0123456789"["⁰¹²³⁴⁵⁶⁷⁸⁹".indexOf(c)]).replace(/⁻/g, "-").replace(/⁺/g, "+").replace(/→/g, "->").replace(/σ/g, "sigma").replace(/µ/g, "u").replace(/×/g, "x").replace(/≈/g, "~").replace(/−/g, "-").replace(/[^\x00-\xff]/g, "");
+    const doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4" }); let y = 12;
+    doc.setFillColor(74, 20, 140); doc.rect(0, 0, 210, 26, "F"); doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text(ascii("Labo virtuel EFIR · Terminale · Chapitre 3"), 12, 11); doc.setFontSize(12); doc.text(ascii("Titrer avec les sondes pH et conductivité du labo"), 12, 19);
+    doc.setTextColor(31, 22, 48); y = 34; doc.setFontSize(11); doc.setFont("helvetica", "normal");
+    const l = (t, b) => { doc.setFont("helvetica", b ? "bold" : "normal"); doc.splitTextToSize(ascii(t), 186).forEach(s => { if (y > 280) { doc.addPage(); y = 16; } doc.text(s, 12, y); y += 5.6; }); };
+    l(`Élève : ${nom}${classe ? " · " + classe : ""} · ${new Date().toLocaleDateString("fr-FR")}`, true); y += 2;
+    l("Étalonnages", true); l(`pH : ${LAB.calPH.fait ? `pH = ${fr(LAB.calPH.a, 3)} x U + ${fr(LAB.calPH.b, 2)} (tampons 4,00 et 7,00)` : "étalonnage d'usine"}. Conductivité : ${LAB.calC.fait ? `gamme 0-${LAB.calC.gamme} uS/cm, 2 points (0 et 1413 uS/cm)` : "étalonnage d'usine"}.`); y += 2;
+    l("Graphes", true);
+    try { ["ph", "cond"].forEach((tp, i) => { const cv = $("#cv-" + tp); if (cv && cv.width) doc.addImage(cv.toDataURL("image/png"), "PNG", 12 + i * 95, y, 91, 91 * cv.height / cv.width); }); const cv = $("#cv-ph"); y += 91 * cv.height / cv.width + 4; } catch (e) { }
+    l("Mesures (Volume ; pH ; sigma en uS/cm)", true);
+    const pts = LAB.data.slice().sort((a, b) => a.V - b.V); doc.setFontSize(9.5);
+    for (let i = 0; i < pts.length; i += 3) l(pts.slice(i, i + 3).map(p => `V = ${fr(p.V, 2)} mL ; pH ${fr(p.ph, 2)} ; ${Math.round(p.cond)}`).join("     "));
+    doc.setFontSize(11); y += 2; l("Résultats", true);
+    const ve = ETAPES.res.veT || VE_VRAI(); l(`V_E (tangentes) : ${ETAPES.res.veT ? fr(ETAPES.res.veT, 2) + " mL" : "non déterminé"} ; V_E (conductimétrie) : ${ETAPES.res.veC ? fr(ETAPES.res.veC, 2) + " mL" : "non déterminé"}.`);
+    l(`C_A = C_B x V_E / V_A = ${fr(LAB.Cb * ve / LAB.Va, 4)} mol/L ; vinaigre : ${fr(10 * LAB.Cb * ve / LAB.Va, 3)} mol/L, soit environ ${fr(LAB.Cb * ve / LAB.Va * 601 / 10 / 1.01, 1)} g d'acide éthanoïque pour 100 g.`);
+    y += 2; l("Sécurité et rangement", true); l("Soude : gants et lunettes. Sonde pH rincée puis rangée dans sa solution de stockage. Solutions dans le bidon de récupération.");
+    const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(9); doc.setTextColor(120); doc.text(ascii(`Mme Messaoudi · EFIR · 2026-2027 · page ${i}/${n}`), 12, 290); }
+    doc.save(`TP_sondes_compte_rendu_${nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_")}.pdf`);
+    ETAPES.retour("Compte rendu téléchargé. Déposez le PDF dans le devoir Google Classroom (Ajouter > Fichier, puis Rendre).", "info");
+  }
+};
+
+/* ---------- sauvegarde (progression seulement) ---------- */
+const CLE_SAUVE = "efir-tle-ch3-sondes-v1";
+function sauve() { try { localStorage.setItem(CLE_SAUVE, JSON.stringify({ finies: [...ETAPES.finies], res: ETAPES.res })); } catch (e) { } }
+function relit() { try { const o = JSON.parse(localStorage.getItem(CLE_SAUVE)); if (o) { (o.finies || []).forEach(p => ETAPES.finies.add(p)); Object.assign(ETAPES.res, o.res || {}); } } catch (e) { } }
+
+/* ---------- vue 2D de secours (sans WebGL) ---------- */
+function vue2D() {
+  const z = $("#vue2d"); z.classList.add("on"); $(".badge-tourner").style.display = "none"; $(".scene-outils").style.display = "none";
+  z.innerHTML = `<svg viewBox="0 0 560 360" role="img" aria-label="Schéma du montage"><rect x="0" y="300" width="560" height="14" fill="#E1D8EC"/>
+    <rect x="96" y="20" width="8" height="282" fill="#9e9eaa"/><rect x="60" y="294" width="90" height="10" fill="#37323f"/>
+    <rect x="96" y="62" width="110" height="6" fill="#9e9eaa"/><rect x="196" y="30" width="16" height="180" rx="6" fill="#eaf3ff" stroke="#7d6f93"/><rect x="198" y="${46 + Math.min(1, LAB.V / 25) * 150}" width="12" height="${160 - Math.min(1, LAB.V / 25) * 150}" fill="#cfe3ff"/>
+    <rect x="190" y="210" width="28" height="8" fill="#4A148C"/><path d="M204 218 L204 236" stroke="#7d6f93" stroke-width="3"/>
+    <rect x="150" y="270" width="110" height="30" rx="4" fill="#f4f2f8" stroke="#bbb"/><path d="M168 230 L168 270 L242 270 L242 230" fill="${LAB.becher.acide ? "#d6ecff" : "none"}" stroke="#7d6f93" stroke-width="2"/>
+    <rect x="216" y="160" width="10" height="100" fill="#2b2b30"/><rect x="184" y="160" width="10" height="100" fill="#2b2b30"/>
+    <text x="230" y="150" font-size="13" fill="#C2185B">pH</text><text x="150" y="150" font-size="13" fill="#5E35B1">σ</text>
+    <rect x="310" y="270" width="90" height="30" rx="6" fill="#4A148C"/><text x="355" y="290" font-size="13" fill="#fff" text-anchor="middle">Interface</text>
+    <path d="M221 160 C 260 120, 300 240, 330 270" stroke="#26262b" stroke-width="3" fill="none"/><path d="M189 160 C 220 100, 300 230, 350 270" stroke="#26262b" stroke-width="3" fill="none"/>
+    <rect x="430" y="190" width="120" height="80" rx="6" fill="#2b2d33"/><rect x="438" y="198" width="104" height="64" fill="#F8F6FA"/><path d="M445 255 C 470 250, 480 248, 488 240 C 492 230, 494 215, 498 210 C 510 206, 525 205, 535 204" stroke="#C2185B" stroke-width="2" fill="none"/>
+    <path d="M400 285 L 440 270" stroke="#9e9e9e" stroke-width="3"/></svg>
+    <p>La 3D n'est pas disponible sur cet appareil : voici le schéma du montage. Toutes les étapes, les mesures et l'écran du logiciel restent utilisables.</p>`;
+}
+
+/* ---------- démarrage ---------- */
+function demarre() {
+  relit();
+  const ok3d = S3D.init($("#scene")); etatInitial(); GA.init(); if (!ok3d) { vue2D(); ECOUTE.push(() => { if ($("#vue2d").classList.contains("on")) vue2D(); }); }
+  $$(".parties button").forEach(b => b.addEventListener("click", () => { const p = +b.dataset.p; if (p === 3) ETAPES.ouvre(3); else ETAPES.ouvre(p); if (p < 3) S3D.vue(ETAPES.et().vue); }));
+  $("#b-etiq").addEventListener("click", e => { const on = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", on); S3D.etiquettes(on); });
+  $("#b-vue").addEventListener("click", () => S3D.vue(ETAPES.mode === "guide" ? ETAPES.et().vue : "becher"));
+  ETAPES.ouvre(0); S3D.vue("ensemble");
+  setTimeout(() => S3D.vue(ETAPES.et().vue), 900);
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarre); else demarre();
+
+</script>
+
+<script id="efir-bilan-fin-js">window.EFIR_ACT_ID="tle-ch3-sondes";
+/* « Télécharger mon bilan » à la fin des paillasses réalistes et des TP « sondes » (© EFIR, Mme Messaoudi).
+   Paillasses : un encadré Nom / Classe / bouton apparaît à l'étape « Conclusion ».
+   TP sondes : le bouton s'ajoute à côté de « Télécharger mon compte rendu (PDF) » à la dernière étape.
+   Le PDF est créé par EFIR_BILAN (page d'accueil) ; le code TPEFIR1 est rangé dans ses propriétés pour l'Espace professeur. */
+(function () {
+  const ID = window.EFIR_ACT_ID || "activite", CT0 = "efir-bilan-t0-" + ID;
+  let t0 = Date.now(); try { t0 = +localStorage.getItem(CT0) || t0; localStorage.setItem(CT0, String(t0)); } catch (e) {}
+  const $ = s => document.querySelector(s);
+  const nu = h => String(h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const texte = el => { if (!el) return ""; const c = el.cloneNode(true); c.querySelectorAll("button,input,select,textarea,#efir-bilan-fin").forEach(e => e.remove());
+    c.querySelectorAll("h1,h2,h3,h4,p,li,tr,div,br").forEach(e => e.append("\n")); c.querySelectorAll("td,th").forEach(e => e.append(" | "));
+    return c.textContent.replace(/[ \t]+/g, " ").replace(/ \| \n/g, "\n").replace(/\n\s*\n+/g, "\n").trim(); };
+  const memo = (k, v) => { try { if (v === undefined) return localStorage.getItem("efir-eleve-" + k) || ""; localStorage.setItem("efir-eleve-" + k, v); } catch (e) { return ""; } };
+  const fr = x => typeof x === "number" ? (Math.abs(x) >= 1e4 || (x !== 0 && Math.abs(x) < 1e-3) ? x.toExponential(3) : (+x.toPrecision(4)).toString()).replace(".", ",") : String(x);
+
+  function contenu() {
+    const h1 = $("h1"), titre = nu(h1 ? h1.innerHTML : document.title) || ID, parts = [];
+    let fait = 0, n = 0;
+    const et = $("#etapeN"); const m = et && et.textContent.match(/(\d+)\s*\/\s*(\d+)/); if (m) { fait = +m[1]; n = +m[2]; }
+    /* paillasse : tableau de mesures + interprétation ; TP sondes : résultats du moteur */
+    document.querySelectorAll("table.mesures").forEach(t => { const x = texte(t); if (x) parts.push("Tableau de mesures\n" + x); });
+    try { if (typeof ETAPES !== "undefined" && ETAPES) {
+      if (ETAPES.finies && ETAPES.finies.size != null && typeof PARTIES !== "undefined") { fait = ETAPES.finies.size; n = PARTIES.length || n; }
+      if (ETAPES.res) { const r = Object.entries(ETAPES.res).filter(([k, v]) => v != null && typeof v !== "object").map(([k, v]) => k + " = " + fr(v)); if (r.length) parts.push("Résultats\n" + r.join("\n")); } } } catch (e) {}
+    try { if (typeof LAB !== "undefined" && LAB && Array.isArray(LAB.data) && LAB.data.length) parts.push("Mesures enregistrées\n" + LAB.data.slice(0, 80).map(p => Object.entries(p).filter(([k, v]) => typeof v === "number").map(([k, v]) => k + " = " + fr(v)).join(" ; ")).join("\n")); } catch (e) {}
+    const interp = texte($("#interp")); if (interp) parts.push("Dernière interprétation\n" + interp);
+    const conc = texte($("#etDesc")) || texte($(".etape.active, .etape-courante"));
+    return { titre, fait, n, detail: parts.join("\n\n"), conc };
+  }
+
+  async function telecharge(nomI, clI, dit, b) {
+    const nom = nomI ? nomI.value.trim() : "", cl = clI ? clI.value.trim() : "";
+    if (!nom) { dit("Écrivez d'abord votre nom et prénom."); nomI && nomI.focus(); return; }
+    if (!cl) { dit("Écrivez d'abord votre classe."); clI && clI.focus(); return; }
+    memo("nom", nom); memo("classe", cl);
+    const c = contenu(), t1 = Date.now(), av = c.n ? Math.min(1, c.fait / c.n) : 1;
+    const o = { v: 1, tp: "act_" + ID, titre: c.titre, eleve: nom, classe: cl, t0, t1, note: null, av: Math.round(av * 100) / 100,
+      parties: [[c.titre, c.fait, c.n || c.fait]], erreurs: [], conc: c.conc.slice(0, 1500),
+      annexes: [{ titre: "Compte rendu de l'élève", texte: (c.detail + "\n\n" + c.conc).slice(0, 6000) }], j: [] };
+    const code = "TPEFIR1:" + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+    const champs = { eleve: nom, classe: cl, tp: c.titre, note: "à corriger", avancement: Math.round(av * 100) + " %", erreurs: "—", reponses_fausses: "",
+      temps: Math.max(1, Math.round((t1 - t0) / 60000)) + " min", detail: (c.n ? `Étapes réalisées : ${c.fait} / ${c.n}\n\n` : "") + (c.detail || "—"),
+      conclusion: c.conc.slice(0, 3000) || "(conclusion vide)", date: new Date().toLocaleString("fr-FR"), code };
+    b.disabled = true; dit("Préparation de votre bilan PDF…");
+    try { const f = window.EFIR_BILAN || (window.top && window.top.EFIR_BILAN); if (!f) throw new Error("bilan"); const r = await f(champs); if (!r || !r.ok) throw new Error("pdf");
+      dit("✓ Bilan PDF téléchargé : déposez-le dans le devoir Google Classroom."); }
+    catch (e) { dit("Le PDF n'a pas pu être créé. Réessayez, ou utilisez « Télécharger mon compte rendu (PDF) » s'il est proposé."); }
+    finally { b.disabled = false; }
+  }
+
+  const CSS = `#efir-bilan-fin{margin:12px 0;padding:12px 14px;border:1px solid #E1BEE7;border-radius:12px;background:#F8F6FA}
+#efir-bilan-fin h3{margin:0 0 4px;font-size:1rem;color:#4A148C}#efir-bilan-fin p{margin:0 0 8px;font-size:.9rem}
+#efir-bilan-fin .lig{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}#efir-bilan-fin input{flex:1 1 140px;min-width:0;padding:7px 10px;border:1px solid #D1C4E9;border-radius:8px;font:inherit;background:#fff}
+.efir-bilan-btn{background:#4A148C!important;color:#fff!important;border:1px solid #4A148C!important;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+.efir-bilan-btn:hover:not([disabled]){background:#380E6B!important}.efir-bilan-btn[disabled]{opacity:.6;cursor:wait}
+#efir-bilan-note{display:block;margin-top:6px;font-size:.88rem;color:#4A148C}`;
+  const st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
+
+  /* paillasse : encadré à l'étape « Conclusion » */
+  function paillasse() {
+    const desc = $("#etDesc"); if (!desc || !document.body.dataset) return;
+    let box = $("#efir-bilan-fin"); const fin = document.body.dataset.etape === "fin";
+    if (!fin) { if (box) box.hidden = true; return; }
+    if (!box) {
+      box = document.createElement("div"); box.id = "efir-bilan-fin";
+      box.innerHTML = `<h3>📄 Mon bilan</h3><p>Écrivez votre nom et votre classe, téléchargez le bilan PDF, puis déposez-le dans le devoir Google Classroom.</p>
+        <div class="lig"><input id="eb-nom" placeholder="Nom et prénom" autocomplete="name" aria-label="Nom et prénom"><input id="eb-classe" placeholder="Classe" aria-label="Classe"></div>
+        <button type="button" class="efir-bilan-btn" id="eb-btn">📄 Télécharger mon bilan</button><span id="efir-bilan-note" role="status" aria-live="polite"></span>`;
+      const nav = desc.parentElement.querySelector(".nav"); (nav ? nav.before(box) : desc.after(box));
+      const nomI = $("#eb-nom"), clI = $("#eb-classe"); nomI.value = memo("nom"); clI.value = memo("classe");
+      $("#eb-btn").addEventListener("click", e => telecharge(nomI, clI, t => $("#efir-bilan-note").textContent = t, e.currentTarget));
+    }
+    box.hidden = false;
+  }
+  /* TP sondes : bouton à côté du compte rendu PDF */
+  function sondes() {
+    const nomI = $("#cr-nom"); if (!nomI || $("#eb-btn-s")) return;
+    const cr = [...document.querySelectorAll("button")].find(x => /Télécharger mon compte rendu/.test(x.textContent)); if (!cr) return;
+    const b = document.createElement("button"); b.type = "button"; b.id = "eb-btn-s"; b.className = cr.className + " efir-bilan-btn"; b.textContent = "📄 Télécharger mon bilan";
+    const note = document.createElement("span"); note.id = "efir-bilan-note"; note.setAttribute("role", "status");
+    cr.after(b); b.after(note);
+    if (!nomI.value) nomI.value = memo("nom"); const clI = $("#cr-classe"); if (clI && !clI.value) clI.value = memo("classe");
+    b.addEventListener("click", () => telecharge($("#cr-nom"), $("#cr-classe"), t => note.textContent = t, b));
+  }
+  const tour = () => { try { paillasse(); sondes(); } catch (e) {} };
+  new MutationObserver(tour).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-etape"] });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tour); else tour();
+})();
+
+</script>
+</body>
+</html>

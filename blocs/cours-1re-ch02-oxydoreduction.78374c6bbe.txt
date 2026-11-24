@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carnet d'exploration · Réactions d'oxydoréduction · EFIR</title>
+<!-- © EFIR · Mme Messaoudi — Tous droits réservés. Carnet d'exploration de 1re spécialité, chapitre 2. -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--prune:#4A148C;--prune2:#7B1FA2;--rose:#C2185B;--fond:#F7F5FB;--carte:#fff;--trait:#E6DFF0;--texte:#1d1a2b;--doux:#5f5873;--or:#F9A825;--vert:#2e7d32;--rouge:#c62828;--pale:#F3EEFA}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.5 Inter,system-ui,Arial,sans-serif}
+.wrap{max-width:1150px;margin:0 auto;padding:22px 16px 30px}
+a.back{display:inline-flex;gap:6px;align-items:center;color:var(--prune2);font-weight:600;text-decoration:none;cursor:pointer}
+.kick{margin:14px 0 2px;font-size:12.5px;font-weight:700;letter-spacing:.08em;color:var(--doux);text-transform:uppercase}
+h1{margin:0 0 16px;font-size:clamp(22px,3vw,30px);line-height:1.2}
+.card{background:var(--carte);border:1px solid var(--trait);border-radius:16px;padding:16px}
+.jauge{display:flex;gap:14px;align-items:center}
+.jauge .ic{width:40px;height:40px;border-radius:10px;background:var(--pale);display:grid;place-items:center;color:var(--prune2);font-size:20px;flex:none}
+.jauge .bar{flex:1}.jauge .bar b{font-size:14px}.jauge .pc{font-weight:800;color:var(--prune2)}
+.barre{height:9px;border-radius:9px;background:#ECE8F2;margin-top:6px;overflow:hidden}.barre i{display:block;height:100%;background:linear-gradient(90deg,var(--prune2),var(--rose));width:0;transition:width .4s}
+.theme{display:flex;align-items:center;gap:12px;margin:18px 0 6px}.theme .ic{width:40px;height:40px;border-radius:10px;background:var(--pale);display:grid;place-items:center;font-size:20px}
+.theme h2{margin:0;font-size:20px}.theme p{margin:0;color:var(--doux);font-size:14px}.theme .pg{margin-left:auto;border:1px solid var(--trait);border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700;background:#fff}
+.stepper{display:grid;grid-template-columns:repeat(4,1fr);margin:14px 0 18px;position:relative}
+.stepper:before{content:"";position:absolute;left:12%;right:12%;top:24px;height:2px;background:var(--trait)}
+.st{position:relative;text-align:center;background:none;border:0;font:inherit;cursor:pointer;color:var(--doux);padding:0}
+.st .rd{width:48px;height:48px;margin:0 auto 6px;border-radius:50%;border:2px dashed #CFC5DE;background:#fff;display:grid;place-items:center;font-size:20px}
+.st b{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase}.st small{font-size:11.5px;color:#a99cc0}
+.st.on .rd{border:2.5px solid var(--prune2);color:var(--prune2)}.st.on b{color:var(--prune2)}
+.st.fait .rd{border:2.5px solid var(--vert);background:#E8F5E9}.st[disabled]{cursor:not-allowed;opacity:.7}
+.grille{display:grid;grid-template-columns:1fr 1.08fr;gap:22px;align-items:start}
+.gauche .k{font-size:12.5px;font-weight:700;letter-spacing:.08em;color:var(--prune2);text-transform:uppercase}
+.gauche h3.big{font-size:clamp(26px,3.2vw,38px);line-height:1.12;margin:10px 0 12px}.gauche h3.big span{display:block}.gauche h3.big .hl{color:var(--prune2)}
+.gauche .qq{color:var(--doux);margin:0 0 16px}
+.notion{margin:0 0 16px}.notion h4{margin:0 0 4px;font-size:16px}.notion h4 em{font-style:normal;color:var(--prune2);margin-right:8px}
+.notion p{margin:0 0 6px;color:#3c3650;font-size:15px}
+.f{padding:9px 14px;border-left:4px solid var(--prune2);background:var(--pale);border-radius:0 10px 10px 0;font-family:inherit;font-weight:600;font-size:15px}
+.nivdesc{border:1px solid #E9DDF7;background:#FBF8FF;border-radius:12px;padding:10px 14px;margin:14px 0}.nivdesc b{display:block;font-size:12px;letter-spacing:.06em;color:var(--prune2);text-transform:uppercase}
+.piege{border:1px solid #F3D27A;background:#FFF9E6;border-radius:12px;padding:10px 14px;margin:14px 0;color:#6a4b00;font-size:14.5px}.piege b{color:#8a4b00}
+.badge{border:1.5px dashed #CDBFE3;border-radius:12px;padding:10px 14px;color:var(--doux);font-size:14.5px;background:#FAF8FD}.badge.gagne{border:1.5px solid var(--vert);background:#E8F5E9;color:#1b5e20;font-weight:600}
+.nivs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.niv{border:1px solid var(--trait);background:#fff;border-radius:12px;padding:8px 10px;text-align:left;font:inherit;cursor:pointer}
+.niv small{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--doux)}.niv>span{display:block;font-weight:700;font-size:14px;color:var(--prune)}.niv .et span{display:inline}
+.niv .et{font-size:13px;color:#cfc5de;letter-spacing:2px}.niv .et .o{color:var(--or)}
+.niv.on{border:1.5px solid var(--prune2);background:#FAF5FF}.niv[disabled]{opacity:.5;cursor:not-allowed}
+.mission{display:flex;gap:12px;border:1px solid #E9DDF7;background:#FBF8FF;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.mission .pl{width:34px;height:34px;flex:none;border-radius:9px;background:var(--prune2);color:#fff;display:grid;place-items:center}
+.mission b{display:block;font-size:12px;letter-spacing:.06em;color:var(--prune2)}.mission p{margin:2px 0 0;font-size:15px}
+.scene{position:relative;height:300px;border:1px solid var(--trait);border-radius:14px;overflow:hidden;background:linear-gradient(#EEF1F7,#E7E3EE)}
+.scene canvas{display:block;width:100%;height:100%}
+.sbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--trait);background:#fff;border-radius:999px;padding:4px 12px;font:600 13px Inter,sans-serif;cursor:pointer;color:#3c3650}
+.chip.on{border-color:var(--prune2);color:var(--prune2);background:#FAF5FF}
+.mesures{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:10px}
+.mes{border:1px solid var(--trait);border-radius:10px;padding:6px 10px;background:#fff}.mes small{display:block;color:var(--doux);font-size:12px}.mes b{font-variant-numeric:tabular-nums}
+.ebars{margin-top:10px;display:grid;gap:5px}.eb{display:grid;grid-template-columns:96px 1fr 76px;align-items:center;gap:8px;font-size:13px}
+.eb i{display:block;height:12px;border-radius:6px;background:#ECE8F2;overflow:hidden}.eb i u{display:block;height:100%;text-decoration:none}
+.curseur{margin-top:12px}.curseur label{display:flex;justify-content:space-between;font-weight:600;font-size:14.5px}.curseur label b{background:var(--pale);color:var(--prune2);border-radius:8px;padding:1px 8px}
+input[type=range]{width:100%;accent-color:var(--prune2);margin-top:6px}
+.rep{margin-top:12px}.rep .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rep input[type=text]{width:140px;padding:8px 10px;border:1.5px solid #CDBFE3;border-radius:10px;font:inherit}
+.btn{min-height:42px;border-radius:12px;border:0;background:var(--prune);color:#fff;font:700 15px Inter,sans-serif;padding:8px 16px;cursor:pointer}.btn:hover{background:#380E6B}
+.btn.sec{background:#fff;color:#3c3650;border:1px solid var(--trait)}.btn.sec:hover{background:#FAF8FD}
+.btn[disabled]{background:#D9C6EE;cursor:not-allowed}
+.msg{margin-top:8px;padding:8px 12px;border-radius:10px;font-weight:600;font-size:14.5px}.msg.ok{background:#E8F5E9;color:#1b5e20}.msg.ko{background:#FFEBEE;color:#b71c1c}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--trait)}
+.journal{margin-top:22px}.journal h3{margin:0 0 8px;font-size:17px}.journal textarea{width:100%;min-height:90px;border:1px solid var(--trait);border-radius:12px;padding:10px;font:inherit;resize:vertical}
+.journal .row{display:flex;justify-content:flex-end;margin-top:8px}.journal p{color:var(--doux);font-size:13.5px;margin:8px 0 0}
+.bilan h3{margin:0 0 10px}.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.qcm .q{border:1px solid var(--trait);border-radius:12px;padding:10px 12px;margin:10px 0;background:#fff}.qcm label{display:block;margin:4px 0;cursor:pointer}
+footer{text-align:center;color:var(--doux);font-size:13px;margin-top:22px}
+.hid{display:none!important}
+@media (max-width:860px){.grille{grid-template-columns:1fr}.scene{height:260px}.stepper .st small{display:none}.bgrid{grid-template-columns:1fr}}
+@media (max-width:520px){.nivs{grid-template-columns:1fr 1fr 1fr}.niv span{font-size:12.5px}.st b{font-size:10px}.st .rd{width:40px;height:40px}.stepper:before{top:20px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <a class="back" id="retour">← Carnets d'exploration</a>
+  <p class="kick">🗺 EFIR · 1re spécialité · Chapitre 2 · Carnet d'exploration</p>
+  <h1>Réactions d'oxydoréduction</h1>
+  <div class="card jauge"><div class="ic">⚡</div><div class="bar"><b id="jtxt">Jauge de compréhension · 0 / 27 étoiles</b><div class="barre"><i id="jbar"></i></div></div><div class="pc" id="jpc">0 %</div></div>
+  <div class="theme"><div class="ic" id="thIc">🏠</div><div><h2 id="thNom">La gouttière</h2><p id="thSous">1re spécialité · Chapitre 2</p></div><span class="pg" id="thPg">Page 1 / 3</span></div>
+  <div class="stepper" id="stepper"></div>
+  <div id="vuePage">
+    <div class="grille">
+      <div class="card gauche" id="gauche"></div>
+      <div class="droite">
+        <div class="nivs" id="nivs"></div>
+        <div class="mission"><div class="pl">▶</div><div><b>MISSION</b><p id="mission"></p></div></div>
+        <div class="scene" id="scene"><canvas id="c2d"></canvas></div>
+        <div class="sbar"><span class="chip" id="aide3d">✋ Glissez pour tourner</span><button class="chip" id="b2d" type="button">☐ Vue 2D</button></div>
+        <div class="mesures" id="mesures"></div>
+        <div class="ebars" id="ebars"></div>
+        <div class="card curseur"><label for="cur"><span id="curNom"></span><b id="curVal"></b></label><input type="range" id="cur"></div>
+        <div class="card rep"><p id="repQ" style="margin:0 0 8px;font-weight:600"></p><div class="row"><input type="text" id="repIn" inputmode="decimal" placeholder="valeur" aria-label="ma réponse"><span id="repU"></span><button class="btn" id="repOk" type="button">Vérifier</button></div><div class="msg hid" id="repMsg"></div></div>
+        <div style="margin-top:10px"><button class="btn sec" id="raz" type="button" style="width:100%">↺ Recommencer le niveau</button></div>
+        <div class="nav"><button class="btn sec" id="prec" type="button">‹ Précédent</button><button class="btn" id="suiv" type="button">Page suivante ›</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="vueBilan" class="card bilan hid"></div>
+  <div class="card journal"><h3>✎ Journal de bord · <span id="jnNom">La gouttière</span></h3><textarea id="journal" placeholder="Notez vos réponses, vos calculs, ce qui vous surprend…"></textarea><div class="row"><button class="btn sec" id="jnSave" type="button">💾 Sauvegarder</button></div><p>Vos étoiles et vos notes restent sur cet appareil. À la fin, « Télécharger mon carnet » les rassemble dans un fichier.</p></div>
+  <footer>© 2026-2027 · Ma science physique-chimie · Conçu par Mme Messaoudi · © EFIR · Mme Messaoudi — Tous droits réservés</footer>
+</div>
+<script type="module">
+/* ---------- Données du carnet (programme de 1re spé, chapitre 2 ; valeurs inspirées des activités du manuel et des fiches EFIR) ---------- */
+const fr = (x, d = 2) => (Math.abs(x) < 1e-12 ? 0 : x).toFixed(d).replace('.', ',').replace('-', '−');
+const MEL = [['Zn', 'Cu²⁺', 1, 'zinc + ions cuivre (II)'], ['Fe', 'Cu²⁺', 1, 'fer + ions cuivre (II)'], ['Zn', 'Fe²⁺', 1, 'zinc + ions fer (II)'], ['Cu', 'Zn²⁺', 0, 'cuivre + ions zinc'], ['Cu', 'Fe²⁺', 0, 'cuivre + ions fer (II)'], ['Fe', 'Zn²⁺', 0, 'fer + ions zinc']];
+const PAGES = [
+  { cle: 'p1', nom: 'La gouttière', ic: '🏠', court: 'Page 1 · Transfert d\'électrons', badge: 'Détective des électrons', scene: 'tube',
+    lignes: ['Un métal.', 'Des ions.', 'Des électrons qui passent.'], hl: 2, question: 'Qu\'est-ce qu\'une réaction d\'oxydoréduction ?',
+    notions: [
+      { t: 'Les ions métalliques', p: 'Un atome de métal qui perd des électrons devient un cation : Zn → Zn²⁺ + 2 e⁻. Les tests à la soude les identifient : Zn²⁺ blanc, Fe²⁺ vert, Cu²⁺ bleu.', f: 'Cu²⁺ + 2 e⁻ → Cu ; Zn → Zn²⁺ + 2 e⁻' },
+      { t: 'Le transfert d\'électrons', p: 'Le métal cède des électrons au cation d\'un autre métal, qui les capte et se dépose. Les électrons ne restent jamais libres en solution.', f: 'Zn(s) + Cu²⁺(aq) → Zn²⁺(aq) + Cu(s)' },
+      { t: 'Le classement', p: 'Le zinc cède ses électrons aux ions Fe²⁺ et Cu²⁺, le fer aux ions Cu²⁺. L\'inverse ne se produit pas.', f: 'zinc → fer → cuivre (du haut vers le bas de la toiture)' }],
+    niveaux: [
+      { nom: 'Le transfert d\'électrons', desc: 'Du zinc est plongé dans une solution d\'ions cuivre (II) Cu²⁺.', piege: 'Chaque ion Cu²⁺ capte DEUX électrons : n(e⁻) = 2 × n(Cu²⁺) consommés.',
+        mission: 'Réglez 25 µmol d\'ions Cu²⁺ consommés et calculez le nombre d\'électrons transférés.', cur: { nom: 'Ions Cu²⁺ consommés', u: 'µmol', min: 0, max: 40, pas: 1, def: 10 }, q: 'n(e⁻) transférés =', u: 'µmol', rep: 50, tol: .01,
+        corr: 'n(e⁻) = 2 × 25 = 50 µmol : chaque atome de zinc cède 2 électrons à un ion Cu²⁺.' },
+      { nom: 'Les ions formés', desc: 'De la paille de fer réagit avec 4,0 mL de solution d\'ions Cu²⁺. Le fer est en excès.', piege: 'n = c × V avec V en L : 4,0 mL = 4,0 × 10⁻³ L. Il se forme autant d\'ions Fe²⁺ que d\'ions Cu²⁺ consommés.',
+        mission: 'Réglez la concentration sur 10 mmol·L⁻¹ et calculez la quantité d\'ions Fe²⁺ formés quand tous les ions Cu²⁺ ont réagi.', cur: { nom: 'Concentration en ions Cu²⁺', u: 'mmol·L⁻¹', min: 5, max: 50, pas: 1, def: 30 }, q: 'n(Fe²⁺) formés =', u: 'µmol', rep: 40, tol: .02,
+        corr: 'n(Cu²⁺) = 10 × 10⁻³ × 4,0 × 10⁻³ = 4,0 × 10⁻⁵ mol = 40 µmol ; Fe + Cu²⁺ → Fe²⁺ + Cu, donc 40 µmol d\'ions Fe²⁺.' },
+      { nom: 'Le classement', desc: 'Six mélanges « métal + ions d\'un autre métal » sont possibles avec le zinc, le fer et le cuivre.', piege: 'Un métal ne cède ses électrons qu\'aux ions d\'un métal placé plus bas dans le classement zinc → fer → cuivre.',
+        mission: 'Parcourez les six mélanges avec le curseur, puis indiquez combien donnent une transformation.', cur: { nom: 'Mélange n°', u: '', min: 1, max: 6, pas: 1, def: 1 }, q: 'Nombre de mélanges qui réagissent =', u: '', rep: 3, tol: .01,
+        corr: '3 mélanges : zinc + Cu²⁺, fer + Cu²⁺, zinc + Fe²⁺. Les trois autres ne donnent rien.' }] },
+  { cle: 'p2', nom: 'La cuve', ic: '🧪', court: 'Page 2 · Oxydant, réducteur, couple', badge: 'Maître des couples', scene: 'acide',
+    lignes: ['Un acide.', 'Un métal.', 'Deux couples.'], hl: 2, question: 'Comment décrire une réaction d\'oxydoréduction ?',
+    notions: [
+      { t: 'Oxydant et réducteur', p: 'Un réducteur est une espèce capable de céder des électrons ; un oxydant est une espèce capable d\'en capter.', f: 'Red → Ox + n e⁻ ; Ox + n e⁻ → Red' },
+      { t: 'Le couple oxydant/réducteur', p: 'Un oxydant et son réducteur conjugué forment un couple Ox/Red, relié par une demi-équation électronique écrite avec une double flèche.', f: 'Ox + n e⁻ ⇌ Red ; ex. 2 H⁺(aq) + 2 e⁻ ⇌ H₂(g)' },
+      { t: 'La réaction', p: 'Une réaction d\'oxydoréduction met en jeu deux couples : l\'oxydant de l\'un réagit avec le réducteur de l\'autre.', f: 'Ox₁ + Red₂ → Red₁ + Ox₂' }],
+    niveaux: [
+      { nom: 'Le dihydrogène', desc: 'Du zinc est attaqué par 4 mL d\'acide chlorhydrique à 1 mol·L⁻¹ : Zn + 2 H⁺ → Zn²⁺ + H₂. M(Zn) = 65,4 g·mol⁻¹ ; Vm = 24 L·mol⁻¹.', piege: 'n(H₂) = n(Zn) d\'après l\'équation ; la masse doit être convertie en g avant de diviser par M.',
+        mission: 'Réglez la masse de zinc sur 120 mg et calculez le volume de dihydrogène formé.', cur: { nom: 'Masse de zinc', u: 'mg', min: 20, max: 150, pas: 1, def: 60 }, q: 'V(H₂) =', u: 'mL', rep: 120 / 65.4 * 24, tol: .03,
+        corr: 'n(Zn) = 0,120 / 65,4 ≈ 1,83 × 10⁻³ mol = n(H₂) ; V = 1,83 × 10⁻³ × 24 ≈ 4,4 × 10⁻² L = 44 mL.' },
+      { nom: 'La demi-équation', desc: 'Couple de l\'aluminium : Al³⁺/Al.', piege: 'Le nombre d\'électrons est égal à la charge de l\'ion : il assure la conservation des charges.',
+        mission: 'Réglez la charge de l\'ion sur 3+ et indiquez le nombre d\'électrons de la demi-équation du couple Al³⁺/Al.', cur: { nom: 'Charge de l\'ion métallique', u: '+', min: 1, max: 3, pas: 1, def: 2 }, q: 'Nombre d\'électrons dans Al³⁺ + n e⁻ ⇌ Al : n =', u: '', rep: 3, tol: .01,
+        corr: 'Al³⁺(aq) + 3 e⁻ ⇌ Al(s) : 3 électrons pour passer d\'une charge 3+ à 0.' },
+      { nom: 'La cuve attaquée', desc: 'Une plaque de fer est entièrement attaquée par l\'acide : Fe + 2 H⁺ → Fe²⁺ + H₂. M(Fe) = 55,8 g·mol⁻¹ ; Vm = 24 L·mol⁻¹.', piege: 'Le fer est le réducteur, les ions H⁺ l\'oxydant ; n(H₂) = n(Fe).',
+        mission: 'Réglez une masse de fer de 5,6 g et calculez le volume de dihydrogène dégagé.', cur: { nom: 'Masse de fer', u: 'g', min: 1, max: 10, pas: .1, def: 3 }, q: 'V(H₂) =', u: 'L', rep: 5.6 / 55.8 * 24, tol: .03,
+        corr: 'n(Fe) = 5,6 / 55,8 ≈ 0,100 mol = n(H₂) ; V = 0,100 × 24 ≈ 2,4 L.' }] },
+  { cle: 'p3', nom: 'L\'eau de Javel', ic: '🧴', court: 'Page 3 · Équation d\'oxydoréduction', badge: 'Architecte des équations', scene: 'javel',
+    lignes: ['Deux demi-équations.', 'Des électrons égalisés.', 'Une équation.'], hl: 1, question: 'Pourquoi l\'eau de Javel a-t-elle une date limite d\'utilisation ?',
+    notions: [
+      { t: 'Écrire une demi-équation', p: 'On équilibre les éléments autres que O et H, puis O avec H₂O, puis H avec H⁺, puis les charges avec e⁻.', f: 'ClO⁻ + 2 H⁺ + 2 e⁻ ⇌ Cl⁻ + H₂O' },
+      { t: 'Établir l\'équation', p: 'On écrit les deux demi-équations dans le sens des réactifs, on égalise les électrons, on additionne et on simplifie : aucun électron ne reste.', f: '2 ClO⁻(aq) → 2 Cl⁻(aq) + O₂(g)' },
+      { t: 'L\'eau, oxydant ou réducteur', p: 'L\'eau intervient dans trois couples : O₂/H₂O et H₂O₂/H₂O (l\'eau y est le réducteur), H₂O/H₂ (l\'eau y est l\'oxydant).', f: '2 H₂O → O₂ + 4 H⁺ + 4 e⁻' }],
+    niveaux: [
+      { nom: 'Égaliser les électrons', desc: 'L\'ion ClO⁻ capte 2 électrons ; deux molécules d\'eau en cèdent 4 en formant O₂.', piege: 'On multiplie la demi-équation qui échange le moins d\'électrons, jusqu\'à égalité avec l\'autre.',
+        mission: 'Réglez le multiplicateur de la demi-équation de ClO⁻ pour égaliser les électrons captés et cédés.', cur: { nom: 'Multiplicateur de ClO⁻ + 2 H⁺ + 2 e⁻ → Cl⁻ + H₂O', u: '×', min: 1, max: 4, pas: 1, def: 1 }, q: 'Multiplicateur =', u: '', rep: 2, tol: .01,
+        corr: '× 2 : 4 électrons captés par 2 ClO⁻ = 4 électrons cédés par 2 H₂O. Équation : 2 ClO⁻ → 2 Cl⁻ + O₂.' },
+      { nom: 'La concentration', desc: 'Modèle simplifié : à 20 °C, à l\'abri de la lumière, c(ClO⁻) = 0,36 × e^(−0,074 t) mol·L⁻¹ (t en mois).', piege: 'Lisez la valeur pour la bonne durée : l\'eau de Javel n\'est plus efficace sous 0,29 mol·L⁻¹.',
+        mission: 'Réglez la durée sur 3 mois et relevez la concentration en ions hypochlorite.', cur: { nom: 'Durée de stockage', u: 'mois', min: 0, max: 12, pas: .5, def: 6 }, q: 'c(ClO⁻) au bout de 3 mois =', u: 'mol·L⁻¹', rep: .36 * Math.exp(-.0744 * 3), tol: .03,
+        corr: 'c ≈ 0,36 × 0,80 ≈ 0,29 mol·L⁻¹ : c\'est le seuil d\'efficacité, d\'où « à diluer dans les 3 mois ».' },
+      { nom: 'Le dioxygène', desc: 'Un litre d\'eau de Javel passe de 0,36 à 0,29 mol·L⁻¹ en ions ClO⁻. Vm = 24 L·mol⁻¹.', piege: '2 ClO⁻ donnent 1 O₂ : n(O₂) = Δn(ClO⁻) / 2.',
+        mission: 'Calculez le volume de dioxygène formé. Explorez l\'effet de la température avec le curseur.', cur: { nom: 'Température de stockage', u: '°C', min: 5, max: 35, pas: 1, def: 20 }, q: 'V(O₂) =', u: 'L', rep: .84, tol: .05,
+        corr: 'Δn(ClO⁻) = 0,07 mol ; n(O₂) = 0,035 mol ; V = 0,035 × 24 ≈ 0,84 L.' }] }];
+const QCM = [
+  { q: 'Un atome de zinc Zn qui devient un ion Zn²⁺ :', c: ['a cédé 2 électrons', 'a capté 2 électrons', 'a capté 2 protons'], b: 0 },
+  { q: 'Une réaction d\'oxydoréduction est :', c: ['un transfert d\'électrons entre deux réactifs', 'un transfert de protons', 'une dissolution'], b: 0 },
+  { q: 'Un oxydant est une espèce capable de :', c: ['céder des électrons', 'capter des électrons', 'céder des ions H⁺'], b: 1 },
+  { q: 'Le couple de l\'ion cuivre (II) s\'écrit :', c: ['Cu/Cu²⁺', 'Cu²⁺/Cu', 'Cu²⁺/Cu⁺⁺'], b: 1 },
+  { q: 'Dans l\'équation d\'une réaction d\'oxydoréduction :', c: ['il ne reste aucun électron', 'les électrons sont écrits à droite', 'on utilise une double flèche ⇌'], b: 0 },
+  { q: 'Dans la réaction Fe(s) + Cu²⁺(aq) → Fe²⁺(aq) + Cu(s), les ions sulfate sont :', c: ['oxydants', 'réducteurs', 'spectateurs'], b: 2 }];
+
+/* ---------- État sauvegardé ---------- */
+const CLE = 'efir-carnet-1re-ch02';
+const lit = () => { try { return JSON.parse(localStorage.getItem(CLE)) || {}; } catch (e) { return {}; } };
+let S = Object.assign({ page: 0, niv: [0, 0, 0], etoiles: {}, essais: {}, journal: {}, qcm: {}, bilan: false }, lit());
+const sauve = () => { try { localStorage.setItem(CLE, JSON.stringify(S)); } catch (e) {} };
+const $ = s => document.querySelector(s);
+const etoilesTot = () => Object.values(S.etoiles).reduce((a, b) => a + b, 0);
+const pageFaite = p => [0, 1, 2].every(n => (S.etoiles[p + '-' + n] || 0) > 0);
+const nivOuvert = (p, n) => n === 0 || (S.etoiles[p + '-' + (n - 1)] || 0) > 0;
+const pageOuverte = p => p === 0 || pageFaite(p - 1);
+
+$('#retour').onclick = () => { try { parent.location.hash = 'cours'; } catch (e) { location.hash = ''; } };
+
+/* ---------- Mise en page ---------- */
+function jauge() { const e = etoilesTot(); $('#jtxt').textContent = `Jauge de compréhension · ${e} / 27 étoiles`; $('#jpc').textContent = Math.round(e / 27 * 100) + ' %'; $('#jbar').style.width = (e / 27 * 100) + '%'; }
+function stepper() {
+  const el = $('#stepper'); el.innerHTML = '';
+  PAGES.forEach((P, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'st' + (!S.bilan && S.page === i ? ' on' : '') + (pageFaite(i) ? ' fait' : '');
+    b.disabled = !pageOuverte(i); b.innerHTML = `<div class="rd">${pageOuverte(i) ? P.ic : '🔒'}</div><b>${P.court}</b><small>Badge : ${P.badge}</small>`; b.onclick = () => { S.bilan = false; S.page = i; sauve(); rendu(); }; el.appendChild(b); });
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'st' + (S.bilan ? ' on' : ''); b.disabled = !pageFaite(2);
+  b.innerHTML = `<div class="rd">${pageFaite(2) ? '🏅' : '🔒'}</div><b>Bilan</b><small>Badges et QCM</small>`; b.onclick = () => { S.bilan = true; sauve(); rendu(); }; el.appendChild(b);
+}
+function gauche() {
+  const P = PAGES[S.page], n = S.niv[S.page], N = P.niveaux[n];
+  $('#gauche').innerHTML = `<div class="k">📖 ${P.court}</div><h3 class="big">${P.lignes.map((l, i) => `<span class="${i === P.hl ? 'hl' : ''}">${l}</span>`).join('')}</h3><p class="qq">${P.question}</p>` +
+    P.notions.map((x, i) => `<div class="notion"><h4><em>0${i + 1}</em>${x.t}</h4><p>${x.p}</p><div class="f">${x.f}</div></div>`).join('') +
+    `<div class="nivdesc"><b>Niveau ${n + 1} · ${N.nom}</b>${N.desc}</div><div class="piege">⚠️ <b>Piège du bac :</b> ${N.piege}</div>` +
+    `<div class="badge ${pageFaite(S.page) ? 'gagne' : ''}">${pageFaite(S.page) ? '🏅 Badge gagné : « ' + P.badge + ' »' : '🔒 Réussissez les 3 niveaux pour gagner le badge « ' + P.badge + ' ».'}</div>`;
+}
+function nivs() {
+  const P = PAGES[S.page], el = $('#nivs'); el.innerHTML = '';
+  P.niveaux.forEach((N, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'niv' + (S.niv[S.page] === i ? ' on' : ''); b.disabled = !nivOuvert(S.page, i);
+    const e = S.etoiles[S.page + '-' + i] || 0; b.innerHTML = `<small>${nivOuvert(S.page, i) ? '' : '🔒 '}NIVEAU ${i + 1}</small><span>${N.nom}</span><span class="et">${[0, 1, 2].map(k => `<span class="${k < e ? 'o' : ''}">★</span>`).join('')}</span>`;
+    b.onclick = () => { S.niv[S.page] = i; sauve(); rendu(); }; el.appendChild(b); });
+}
+let VAL = 0;
+function niveau() {
+  const P = PAGES[S.page], n = S.niv[S.page], N = P.niveaux[n], k = S.page + '-' + n;
+  $('#mission').innerHTML = N.mission; $('#curNom').innerHTML = N.cur.nom;
+  const c = $('#cur'); c.min = N.cur.min; c.max = N.cur.max; c.step = N.cur.pas; VAL = N.cur.def; c.value = VAL;
+  $('#repQ').innerHTML = N.q; $('#repU').textContent = N.u; $('#repIn').value = (S.essais[k] || {}).v || '';
+  const m = $('#repMsg'); if (S.etoiles[k]) { m.className = 'msg ok'; m.innerHTML = '✓ Niveau réussi (' + '★'.repeat(S.etoiles[k]) + '). ' + N.corr; } else { m.className = 'msg hid'; }
+  $('#thNom').textContent = P.nom; $('#thIc').textContent = P.ic; $('#thSous').textContent = '1re spécialité · Chapitre 2 · ' + P.court.replace(/^Page \d · /, ''); $('#thPg').textContent = `Page ${S.page + 1} / 3`;
+  $('#jnNom').textContent = P.nom; $('#journal').value = S.journal[P.cle] || '';
+  $('#prec').disabled = S.page === 0; $('#suiv').textContent = S.page === 2 ? 'Bilan ›' : 'Page suivante ›'; $('#suiv').disabled = !pageFaite(S.page);
+  majCur(); SC.choisir(P.scene);
+}
+function majCur() { const N = PAGES[S.page].niveaux[S.niv[S.page]]; $('#curVal').textContent = fr(VAL, N.cur.pas < .01 ? 3 : N.cur.pas < .1 ? 2 : N.cur.pas < 1 ? 1 : 0) + (N.cur.u ? ' ' + N.cur.u : ''); physique(); }
+$('#cur').oninput = e => { VAL = +e.target.value; majCur(); };
+$('#raz').onclick = () => { const k = S.page + '-' + S.niv[S.page]; delete S.etoiles[k]; delete S.essais[k]; sauve(); rendu(); };
+$('#prec').onclick = () => { if (S.page > 0) { S.page--; sauve(); rendu(); } };
+$('#suiv').onclick = () => { if (S.page < 2) S.page++; else S.bilan = true; sauve(); rendu(); };
+$('#jnSave').onclick = () => { S.journal[S.bilan ? 'bilan' : PAGES[S.page].cle] = $('#journal').value; sauve(); $('#jnSave').textContent = '✓ Sauvegardé'; setTimeout(() => $('#jnSave').textContent = '💾 Sauvegarder', 1400); };
+$('#journal').oninput = () => { S.journal[S.bilan ? 'bilan' : PAGES[S.page].cle] = $('#journal').value; sauve(); };
+const num = t => { const x = parseFloat(String(t).replace(/\s/g, '').replace(',', '.').replace('−', '-').replace(/[x×]10\^?(-?\d+)/i, 'e$1')); return isFinite(x) ? x : NaN; };
+$('#repOk').onclick = () => {
+  const P = PAGES[S.page], n = S.niv[S.page], N = P.niveaux[n], k = S.page + '-' + n, v = num($('#repIn').value), m = $('#repMsg');
+  const E = S.essais[k] = S.essais[k] || { n: 0 }; E.v = $('#repIn').value;
+  if (!isFinite(v)) { m.className = 'msg ko'; m.textContent = 'Écrivez une valeur numérique (ex. 44).'; return; }
+  if (S.etoiles[k]) { m.className = 'msg ok'; m.innerHTML = '✓ Déjà réussi. ' + N.corr; return; }
+  E.n++;
+  if (Math.abs(v - N.rep) <= Math.abs(N.rep) * N.tol) { S.etoiles[k] = E.n === 1 ? 3 : E.n === 2 ? 2 : 1; m.className = 'msg ok'; m.innerHTML = `✓ Juste : ${'★'.repeat(S.etoiles[k])} ! ${N.corr}`; }
+  else { m.className = 'msg ko'; m.innerHTML = E.n >= 2 ? `✗ Pas encore. Indice : ${N.piege}` : '✗ Pas encore : relisez la mission et vérifiez les unités.'; }
+  sauve(); jauge(); nivs(); stepper(); gauche(); $('#suiv').disabled = !pageFaite(S.page);
+};
+
+/* ---------- Physique de chaque niveau : mesures, barres d'énergie et état de la scène ---------- */
+const ST = {};
+function barres(l, max, u = 'J') { $('#ebars').innerHTML = l.map(([t, v, c]) => `<div class="eb"><span>${t}</span><i><u style="width:${Math.max(0, Math.min(100, v / max * 100))}%;background:${c}"></u></i><b>${fr(v, v >= 100 ? 0 : v < 1 ? 3 : 2)} ${u}</b></div>`).join(''); }
+function mesures(l) { $('#mesures').innerHTML = l.map(([t, v]) => `<div class="mes"><small>${t}</small><b>${v}</b></div>`).join(''); }
+function physique() {
+  for (const k in ST) delete ST[k];
+  const p = S.page, n = S.niv[p];
+  if (p === 0) {
+    if (n === 0) { const x = VAL; Object.assign(ST, { mode: 'tube', met: 'Zn', ion: 'Cu²⁺', reag: 1, frac: x / 40 }); mesures([['Cu²⁺ consommés', fr(x, 0) + ' µmol'], ['Zn²⁺ formés', fr(x, 0) + ' µmol'], ['électrons transférés', fr(2 * x, 0) + ' µmol']]); barres([['ions Cu²⁺ restants', 40 - x, '#1565C0'], ['ions Zn²⁺ formés', x, '#9e9e9e'], ['électrons transférés', 2 * x, '#F9A825']], 80, 'µmol'); }
+    if (n === 1) { const c = VAL, ni = c * 4; Object.assign(ST, { mode: 'tube', met: 'Fe', ion: 'Cu²⁺', reag: 1, frac: (performance.now() / 4000) % 1, anim: 1 }); mesures([['c(Cu²⁺)', fr(c, 0) + ' mmol·L⁻¹'], ['V', '4,0 mL'], ['n(Cu²⁺) initial', fr(ni, 0) + ' µmol']]); barres([['Cu²⁺ initial', ni, '#1565C0'], ['Fe²⁺ formés à la fin', ni, '#2e7d32']], 200, 'µmol'); }
+    if (n === 2) { const M = MEL[VAL - 1]; Object.assign(ST, { mode: 'tube', met: M[0], ion: M[1], reag: M[2], frac: M[2] ? .85 : 0 }); mesures([['Mélange', M[3]], ['Transformation', M[2] ? 'oui' : 'non'], ['Test à la soude', M[2] ? (M[0] === 'Zn' ? 'précipité blanc (Zn²⁺)' : 'précipité vert (Fe²⁺)') : 'ion de départ inchangé']]); barres([['électrons transférés (sur 40 µmol d\'ions)', M[2] ? 80 : 0, '#F9A825']], 80, 'µmol'); }
+  }
+  if (p === 1) {
+    if (n === 0) { const m = VAL, nz = m / 65.4, V = Math.min(nz, 2) * 24; Object.assign(ST, { mode: 'acide', met: 'Zn', rate: 1, vol: V }); mesures([['n(Zn)', fr(nz, 2) + ' mmol'], ['n(H⁺) disponible', '4,0 mmol'], ['V(H₂)', fr(V, 1) + ' mL']]); barres([['V(H₂)', V, '#4A148C']], 50, 'mL'); }
+    if (n === 1) { const z = VAL; Object.assign(ST, { mode: 'acide', met: 'Al', rate: 0, ch: z }); mesures([['Ion', 'M' + (z === 1 ? '⁺' : z === 2 ? '²⁺' : '³⁺')], ['Demi-équation', 'M' + (z === 1 ? '⁺' : z === 2 ? '²⁺' : '³⁺') + ' + ' + z + ' e⁻ ⇌ M']]); barres([['électrons captés par l\'ion', z, '#F9A825']], 3, 'e⁻'); }
+    if (n === 2) { const m = VAL, nf = m / 55.8, V = nf * 24; Object.assign(ST, { mode: 'acide', met: 'Fe', rate: .5, vol: V }); mesures([['n(Fe)', fr(nf, 3) + ' mol'], ['V(H₂)', fr(V, 2) + ' L']]); barres([['V(H₂)', V, '#4A148C']], 5, 'L'); }
+  }
+  if (p === 2) {
+    if (n === 0) { const k = VAL, cap = 2 * k, ced = 4; Object.assign(ST, { mode: 'javel', r: 1, eq: cap === ced }); mesures([['électrons captés par ClO⁻', cap + ' e⁻'], ['électrons cédés par 2 H₂O', ced + ' e⁻'], ['Bilan', cap === ced ? '✓ équilibré' : '✗ non équilibré']]); barres([['captés', cap, '#1565C0'], ['cédés', ced, '#E65100']], 8, 'e⁻'); }
+    if (n === 1) { const t = VAL, c = .36 * Math.exp(-.0744 * t); Object.assign(ST, { mode: 'javel', r: c / .36 }); mesures([['durée', fr(t, 1) + ' mois'], ['c(ClO⁻)', fr(c, 3) + ' mol·L⁻¹'], ['efficace ?', c >= .288 ? 'oui' : 'non']]); barres([['c(ClO⁻)', c, '#4A148C'], ['seuil', .288, '#c2185b']], .4, 'mol·L⁻¹'); }
+    if (n === 2) { const T = VAL, k = .0744 * Math.pow(2, (T - 20) / 10), tS = Math.log(1.25) / k; Object.assign(ST, { mode: 'javel', r: Math.exp(-k * 3), bul: k }); mesures([['température', fr(T, 0) + ' °C'], ['efficace pendant', fr(tS, 1) + ' mois'], ['c après 3 mois', fr(.36 * Math.exp(-k * 3), 3) + ' mol·L⁻¹']]); barres([['durée d\'efficacité', tS, '#2e7d32']], 9, 'mois'); }
+  }
+  SC.maj();
+}
+
+/* ---------- Scènes : 3D (Three.js) avec vue 2D de secours ---------- */
+const SC = { type: '', vue2d: false, three: null, t0: performance.now(),
+  choisir(t) { this.type = t; if (this.three) this.three.construire(t); },
+  maj() { if (this.three) this.three.maj(); }
+};
+const cv = $('#c2d'), ctx = cv.getContext('2d');
+function taille() { const r = $('#scene').getBoundingClientRect(); cv.width = r.width * 2; cv.height = r.height * 2; if (SC.three) SC.three.taille(r.width, r.height); }
+addEventListener('resize', taille);
+function dessin2d(t) {
+  const W = cv.width, H = cv.height; ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#F4F2F8'; ctx.fillRect(0, 0, W, H); ctx.lineWidth = 3; ctx.font = '600 24px Inter';
+  const fr2 = ST.anim ? (t / 4) % 1 : ST.frac;
+  if (ST.mode === 'tube') {
+    const x0 = W / 2 - 70, y0 = 40, w = 140, h = H - 100; const bleu = ST.ion === 'Cu²⁺' ? 1 - (ST.reag ? fr2 : 0) : 0;
+    ctx.fillStyle = ST.ion === 'Cu²⁺' ? `rgba(47,143,232,${.15 + .55 * bleu})` : ST.ion === 'Fe²⁺' ? 'rgba(185,220,143,.6)' : 'rgba(230,236,240,.6)'; ctx.fillRect(x0, y0 + 40, w, h - 40);
+    ctx.strokeStyle = '#90a4ae'; ctx.strokeRect(x0, y0, w, h);
+    const mc = { Zn: '#9aa4ad', Fe: '#5b5f66', Cu: '#c9773f' }[ST.met]; ctx.fillStyle = mc; ctx.fillRect(W / 2 - 18, y0 + 60, 36, h - 90);
+    if (ST.reag) { ctx.fillStyle = ST.ion === 'Cu²⁺' ? `rgba(142,59,22,${fr2})` : `rgba(30,30,30,${fr2})`; ctx.fillRect(W / 2 - 22, y0 + 60, 6, h - 90); ctx.fillRect(W / 2 + 16, y0 + 60, 6, h - 90);
+      ctx.fillStyle = '#F9A825'; for (let k = 0; k < 6; k++) { const ph = (t * .8 + k / 6) % 1, ex = W / 2 + 22 + ph * 50, ey = y0 + 90 + k * (h - 140) / 6; ctx.beginPath(); ctx.arc(ex, ey, 7, 0, 7); ctx.fill(); } }
+    ctx.fillStyle = '#4A148C'; ctx.fillText(ST.met + ' + ' + ST.ion + (ST.reag ? ' : transfert d\'électrons' : ' : aucune transformation'), 20, H - 20);
+  } else if (ST.mode === 'acide') {
+    const x0 = W / 2 - 120, y0 = 60, w = 240, h = H - 120; ctx.fillStyle = 'rgba(220,235,250,.8)'; ctx.fillRect(x0, y0 + 40, w, h - 40); ctx.strokeStyle = '#90a4ae'; ctx.strokeRect(x0, y0, w, h);
+    ctx.fillStyle = { Zn: '#9aa4ad', Fe: '#5b5f66', Al: '#cfd8dc' }[ST.met]; ctx.fillRect(W / 2 - 60, y0 + h - 30, 120, 22);
+    ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.strokeStyle = '#78909c'; ctx.lineWidth = 2; const nb = Math.round(14 * (ST.rate || 0)); for (let k = 0; k < nb; k++) { const ph = (t * .6 + k / nb) % 1, bx = W / 2 - 50 + (k * 37) % 100, by = y0 + h - 40 - ph * (h - 90); ctx.beginPath(); ctx.arc(bx, by, 8, 0, 7); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = '#4A148C'; ctx.fillText(ST.rate ? 'Dégagement de dihydrogène H₂' : 'Couple ' + 'M' + (ST.ch === 1 ? '⁺' : ST.ch === 2 ? '²⁺' : '³⁺') + '/M', 20, H - 20);
+  } else if (ST.mode === 'javel') {
+    const x0 = W / 2 - 80, y0 = 70, w = 160, h = H - 130; ctx.fillStyle = `rgba(217,240,163,${.3 + .6 * (ST.r || 1)})`; ctx.fillRect(x0, y0 + 30, w, h - 30); ctx.strokeStyle = '#90a4ae'; ctx.strokeRect(x0, y0, w, h);
+    ctx.fillStyle = '#1565c0'; ctx.fillRect(W / 2 - 30, y0 - 30, 60, 30);
+    ctx.fillStyle = '#7b1fa2'; ctx.fillRect(x0 + w + 30, y0 + h - h * (ST.r || 1), 20, h * (ST.r || 1)); ctx.strokeStyle = '#c2185b'; ctx.beginPath(); ctx.moveTo(x0 + w + 20, y0 + h - h * .8); ctx.lineTo(x0 + w + 60, y0 + h - h * .8); ctx.stroke();
+    ctx.fillStyle = '#fff'; const nb = Math.round(10 * Math.min(1, (ST.bul || .074) / .15)); for (let k = 0; k < nb; k++) { const ph = (t * .4 + k / nb) % 1; ctx.beginPath(); ctx.arc(x0 + 30 + (k * 41) % 100, y0 + h - 10 - ph * (h - 50), 6, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#4A148C'; ctx.fillText(ST.eq === false ? 'Électrons non égalisés' : ST.eq ? '2 ClO⁻ → 2 Cl⁻ + O₂' : 'c(ClO⁻) / c₀ = ' + fr(ST.r || 1, 2), 20, H - 20);
+  }
+}
+function boucle(t) { if (ST.anim && S.page === 0) { ST.frac = (t / 4000) % 1; } if (SC.vue2d || !SC.three) dessin2d(t / 1000); else SC.three.anime(t / 1000); requestAnimationFrame(boucle); }
+$('#b2d').onclick = () => { SC.vue2d = !SC.vue2d; $('#b2d').classList.toggle('on', SC.vue2d); $('#b2d').textContent = (SC.vue2d ? '☑' : '☐') + ' Vue 2D'; if (SC.three) SC.three.r.domElement.style.display = SC.vue2d ? 'none' : 'block'; cv.style.display = SC.vue2d || !SC.three ? 'block' : 'none'; };
+
+async function init3d() {
+  try {
+    const THREE = window.THREE || await new Promise((ok, ko) => { const u = ['/lib/three-r128.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js']; const essai = i => { if (i >= u.length) return ko(new Error('three')); const sc = document.createElement('script'); sc.src = u[i]; sc.onload = () => window.THREE ? ok(window.THREE) : essai(i + 1); sc.onerror = () => essai(i + 1); document.head.appendChild(sc); }; essai(0); });
+    const r = new THREE.WebGLRenderer({ antialias: true }); r.setPixelRatio(Math.min(2, devicePixelRatio)); $('#scene').appendChild(r.domElement); r.domElement.style.position = 'absolute'; r.domElement.style.inset = '0';
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0xEEF1F7); const cam = new THREE.PerspectiveCamera(40, 1, .05, 100);
+    const kL = THREE.CapsuleGeometry ? 1 : .5; scene.add(new THREE.HemisphereLight(0xffffff, 0xd8d0e8, 1.1 * kL)); const dl = new THREE.DirectionalLight(0xffffff, 1.2 * kL); dl.position.set(3, 6, 4); scene.add(dl);
+    let G = new THREE.Group(); scene.add(G); let rot = 0, drag = null;
+    r.domElement.addEventListener('pointerdown', e => drag = e.clientX); addEventListener('pointerup', () => drag = null);
+    r.domElement.addEventListener('pointermove', e => { if (drag != null) { rot += (e.clientX - drag) * .006; rot = Math.max(-.9, Math.min(.9, rot)); drag = e.clientX; } });
+    const M = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: .6 }, o));
+    const verre = () => new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: .25, roughness: .1 });
+    let O = {};
+    const T3 = { r,
+      taille(w, h) { r.setSize(w, h, false); r.domElement.style.width = '100%'; r.domElement.style.height = '100%'; cam.aspect = w / h; cam.updateProjectionMatrix(); },
+      construire(type) {
+        scene.remove(G); G = new THREE.Group(); scene.add(G); O = { type };
+        const pail = new THREE.Mesh(new THREE.BoxGeometry(3, .05, 1.4), M(0xd7ccc8)); pail.position.y = -.025; G.add(pail);
+        if (type === 'tube') {
+          const tube = new THREE.Mesh(new THREE.CylinderGeometry(.14, .14, 1.1, 32, 1, true), verre()); tube.position.y = .6; G.add(tube);
+          O.liq = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .8, 32), new THREE.MeshStandardMaterial({ color: 0x2f8fe8, transparent: true, opacity: .55 })); O.liq.position.y = .45; G.add(O.liq);
+          O.met = new THREE.Mesh(new THREE.BoxGeometry(.08, .75, .02), M(0x9aa4ad, { metalness: .6 })); O.met.position.y = .55; G.add(O.met);
+          O.dep = new THREE.Mesh(new THREE.BoxGeometry(.09, .7, .03), M(0x8e3b16, { transparent: true, opacity: 0 })); O.dep.position.y = .5; G.add(O.dep);
+          O.el = []; for (let k = 0; k < 8; k++) { const e = new THREE.Mesh(new THREE.SphereGeometry(.018, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffeb3b })); G.add(e); O.el.push(e); }
+          cam.position.set(0, .8, 2.5); cam.lookAt(0, .55, 0);
+        } else if (type === 'acide') {
+          const b = new THREE.Mesh(new THREE.CylinderGeometry(.35, .35, .7, 40, 1, true), verre()); b.position.y = .35; G.add(b);
+          const liq = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .45, 40), new THREE.MeshStandardMaterial({ color: 0xdcebfa, transparent: true, opacity: .6 })); liq.position.y = .23; G.add(liq);
+          O.met = new THREE.Mesh(new THREE.BoxGeometry(.3, .04, .2), M(0x9aa4ad, { metalness: .6 })); O.met.position.y = .03; G.add(O.met);
+          O.bul = []; for (let k = 0; k < 16; k++) { const s = new THREE.Mesh(new THREE.SphereGeometry(.02, 10, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .85 })); G.add(s); O.bul.push(s); }
+          cam.position.set(0, .8, 1.8); cam.lookAt(0, .3, 0);
+        } else {
+          const f = new THREE.Mesh(new THREE.CylinderGeometry(.18, .18, .7, 32), verre()); f.position.y = .35; G.add(f);
+          O.liq = new THREE.Mesh(new THREE.CylinderGeometry(.17, .17, .55, 32), new THREE.MeshStandardMaterial({ color: 0xd9f0a3, transparent: true, opacity: .8 })); O.liq.position.y = .29; G.add(O.liq);
+          const bo = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, .1, 20), M(0x1565c0)); bo.position.y = .78; G.add(bo);
+          O.j = new THREE.Mesh(new THREE.BoxGeometry(.05, 1, .05), M(0x7b1fa2)); O.j.position.x = .4; G.add(O.j);
+          const s = new THREE.Mesh(new THREE.BoxGeometry(.12, .008, .06), M(0xc2185b)); s.position.set(.4, .8 * .6, 0); G.add(s);
+          O.bul = []; for (let k = 0; k < 10; k++) { const b = new THREE.Mesh(new THREE.SphereGeometry(.015, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffffff })); G.add(b); O.bul.push(b); }
+          cam.position.set(.15, .6, 1.7); cam.lookAt(.15, .35, 0);
+        }
+        this.maj();
+      },
+      maj() {
+        if (O.type === 'tube') { O.met.material.color.setHex({ Zn: 0x9aa4ad, Fe: 0x5b5f66, Cu: 0xc9773f }[ST.met] || 0x9aa4ad); O.liq.material.color.setHex(ST.ion === 'Cu²⁺' ? 0x2f8fe8 : ST.ion === 'Fe²⁺' ? 0xb9dc8f : 0xeef3f6); O.dep.material.color.setHex(ST.ion === 'Cu²⁺' ? 0x8e3b16 : 0x262626); }
+        if (O.type === 'acide' && O.met) O.met.material.color.setHex({ Zn: 0x9aa4ad, Fe: 0x5b5f66, Al: 0xcfd8dc }[ST.met] || 0x9aa4ad);
+        if (O.type === 'javel') { const k = ST.r || 1; O.j.scale.y = .6 * k; O.j.position.y = .3 * k; O.liq.material.opacity = .3 + .6 * k; }
+      },
+      anime(t) {
+        G.rotation.y = rot;
+        if (O.type === 'tube') { const f = ST.anim ? (t / 4) % 1 : ST.frac || 0, cu = ST.ion === 'Cu²⁺'; O.liq.material.opacity = cu ? .15 + .55 * (1 - (ST.reag ? f : 0)) : .45; O.dep.material.opacity = ST.reag ? f : 0;
+          O.el.forEach((e, k) => { e.visible = !!ST.reag; const ph = (t * .7 + k / 8) % 1; e.position.set(.05 + ph * .1, .25 + k * .07, .02 + Math.sin(ph * 6) * .02); }); }
+        if (O.type === 'acide') O.bul.forEach((b, k) => { const on = k < 16 * (ST.rate || 0); b.visible = on; const ph = (t * .5 + k / 16) % 1; b.position.set(-.12 + (k * .07) % .24, .06 + ph * .38, ((k * .13) % .2) - .1); });
+        if (O.type === 'javel') O.bul.forEach((b, k) => { b.visible = k < 10 * Math.min(1, (ST.bul || .074) / .15); const ph = (t * .35 + k / 10) % 1; b.position.set(-.08 + (k * .05) % .16, .05 + ph * .5, 0); });
+        r.render(scene, cam);
+      } };
+    SC.three = T3; cv.style.display = 'none'; taille(); T3.construire(SC.type);
+  } catch (e) { console.warn('3D indisponible', e); SC.three = null; $('#aide3d').textContent = 'Vue 2D (la 3D n\'est pas disponible sur cet appareil)'; cv.style.display = 'block'; }
+}
+
+/* ---------- Bilan : badges, étoiles, QCM, téléchargement ---------- */
+function bilan() {
+  const el = $('#vueBilan'), e = etoilesTot();
+  el.innerHTML = `<h3>🏅 Bilan du carnet · ${e} / 27 étoiles</h3><div class="bgrid">${PAGES.map((P, i) => `<div class="badge ${pageFaite(i) ? 'gagne' : ''}">${P.ic} <b>${P.badge}</b><br>${[0, 1, 2].map(n => P.niveaux[n].nom + ' : ' + ('★'.repeat(S.etoiles[i + '-' + n] || 0) || '—')).join('<br>')}</div>`).join('')}</div>` +
+    `<div class="qcm"><h3>📝 QCM final</h3>${QCM.map((x, i) => `<div class="q"><p><b>${i + 1}.</b> ${x.q}</p>${x.c.map((c, j) => `<label><input type="radio" name="q${i}" value="${j}" ${S.qcm[i] === j ? 'checked' : ''}> ${c}</label>`).join('')}<div class="msg hid" id="qm${i}"></div></div>`).join('')}
+    <button class="btn" id="qcmOk" type="button">Vérifier le QCM</button> <button class="btn sec" id="pdf" type="button">⬇ Télécharger mon carnet (PDF)</button><p class="msg hid" id="pdfMsg"></p></div>`;
+  el.querySelectorAll('input[type=radio]').forEach(i => i.onchange = () => { S.qcm[+i.name.slice(1)] = +i.value; sauve(); });
+  $('#qcmOk').onclick = () => { let ok = 0; QCM.forEach((x, i) => { const m = $('#qm' + i), b = S.qcm[i] === x.b; if (b) ok++; m.className = 'msg ' + (b ? 'ok' : 'ko'); m.textContent = b ? '✓ Juste' : '✗ Réponse attendue : ' + x.c[x.b]; }); S.qcmScore = ok; sauve(); };
+  $('#pdf').onclick = telecharger;
+  $('#journal').value = S.journal.bilan || ''; $('#jnNom').textContent = 'Bilan';
+}
+const plat = s => String(s).replace(/<[^>]+>/g, '').replace(/ℰ/g, 'E').replace(/[⃗]/g, '').replace(/→/g, '->').replace(/⁻¹/g, '-1').replace(/²/g, '2').replace(/³/g, '3').replace(/−/g, '-').replace(/★/g, '*').replace(/·/g, '.').replace(/⁺/g, '+').replace(/⁻/g, '-').replace(/[₀-₉]/g, c => String(c.charCodeAt(0) - 8320)).replace(/[⁰¹²³⁴-⁹]/g, c => '⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(c)).replace(/⇌/g, '<=>').replace(/[^\x20-\xFF]/g, '');
+function chargeJsPDF() { return new Promise((ok, ko) => { if (window.jspdf) return ok(); const essai = (u, suite) => { const s = document.createElement('script'); s.src = u; s.onload = () => ok(); s.onerror = suite; document.head.appendChild(s); };
+  essai('/lib/jspdf-2.5.1.umd.min.js', () => essai('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', ko)); }); }
+async function telecharger() {
+  const nom = prompt ? null : null; void nom;
+  try { await chargeJsPDF(); } catch (e) { $('#pdfMsg').className = 'msg ko'; $('#pdfMsg').textContent = 'Le PDF ne peut pas être créé hors connexion : la page va s\'imprimer.'; window.print(); return; }
+  const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' }); let y = 18; const L = (t, s = 11, b = false) => { doc.setFont('helvetica', b ? 'bold' : 'normal'); doc.setFontSize(s); doc.splitTextToSize(plat(t), 180).forEach(l => { if (y > 280) { doc.addPage(); y = 18; } doc.text(l, 15, y); y += s * .45; }); y += 1.5; };
+  doc.setFillColor(74, 20, 140); doc.rect(0, 0, 210, 10, 'F'); L('EFIR - 1re specialite - Chapitre 2 - Carnet d\'exploration', 9); L('Reactions d\'oxydoreduction', 15, true);
+  L('Jauge de comprehension : ' + etoilesTot() + ' / 27 etoiles', 11, true);
+  PAGES.forEach((P, i) => { L(P.court + ' - ' + P.nom + (pageFaite(i) ? ' - badge gagne : ' + P.badge : ''), 12, true); P.niveaux.forEach((N, n) => { const k = i + '-' + n; L('Niveau ' + (n + 1) + ' (' + N.nom + ') : ' + ('*'.repeat(S.etoiles[k] || 0) || 'non reussi') + ' - ma reponse : ' + ((S.essais[k] || {}).v || '-') + ' ' + N.u); }); if (S.journal[P.cle]) L('Journal : ' + S.journal[P.cle]); });
+  L('QCM final : ' + (S.qcmScore != null ? S.qcmScore + ' / ' + QCM.length : 'non verifie'), 12, true); if (S.journal.bilan) L('Journal du bilan : ' + S.journal.bilan);
+  const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.text('(c) EFIR - Mme Messaoudi - Tous droits reserves - page ' + i + '/' + n, 15, 292); }
+  doc.save('Carnet_1re_ch02_oxydoreduction.pdf'); $('#pdfMsg').className = 'msg ok'; $('#pdfMsg').textContent = '✓ Carnet téléchargé : déposez-le dans le devoir Google Classroom (Ajouter › Fichier, puis Rendre).';
+}
+
+function rendu() {
+  jauge(); stepper();
+  $('#vuePage').classList.toggle('hid', !!S.bilan); $('#vueBilan').classList.toggle('hid', !S.bilan);
+  if (S.bilan) { bilan(); return; }
+  if (!pageOuverte(S.page)) S.page = 0;
+  if (!nivOuvert(S.page, S.niv[S.page])) S.niv[S.page] = 0;
+  gauche(); nivs(); niveau(); taille();
+}
+rendu(); taille(); requestAnimationFrame(boucle); init3d();
+/* protection : pas de copie hors des champs de réponse */
+document.addEventListener('contextmenu', e => { if (!e.target.closest('input,textarea')) e.preventDefault(); });
+document.addEventListener('copy', e => { if (!e.target.closest || !e.target.closest('input,textarea')) e.preventDefault(); });
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && ['s', 'u', 'p'].includes(e.key.toLowerCase())) e.preventDefault(); });
+</script>
+<script>
+  /* vecteurs : lettre + flèche combinante (U+20D7) → flèche dessinée en CSS (la flèche combinante s'affiche mal dans certaines polices) */
+  (function () {
+    var RX = /((?:Δ|Σ)?[A-Za-zΑ-ω0-9])⃗/;
+    if (!document.getElementById("efir-vec-css")) { var sv = document.createElement("style"); sv.id = "efir-vec-css"; sv.textContent = '.vec{display:inline-block;position:relative;padding-top:.18em;line-height:1}.vec::before{content:"";position:absolute;left:4%;right:6%;top:.06em;border-top:1.4px solid currentColor}.vec::after{content:"";position:absolute;right:2%;top:-.1em;width:.26em;height:.26em;border:solid currentColor;border-width:1.4px 1.4px 0 0;transform:rotate(45deg)}'; (document.head || document.documentElement).appendChild(sv); }
+    function vecDom(root) {
+      if (!root || !document.createTreeWalker) return;
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), l = [], n;
+      while ((n = w.nextNode())) if (n.nodeValue.indexOf("⃗") >= 0 && n.parentNode && !/^(SCRIPT|STYLE|TEXTAREA|OPTION|TITLE)$/.test(n.parentNode.nodeName) && !(n.parentNode.closest && n.parentNode.closest("svg"))) l.push(n);
+      l.forEach(function (t) {
+        var s = t.nodeValue, f = document.createDocumentFragment(), m;
+        while ((m = RX.exec(s))) { if (m.index) f.appendChild(document.createTextNode(s.slice(0, m.index))); var sp = document.createElement("span"); sp.className = "vec"; sp.textContent = m[1]; f.appendChild(sp); s = s.slice(m.index + m[0].length); }
+        if (s) f.appendChild(document.createTextNode(s.replace(/⃗/g, "")));
+        t.parentNode.replaceChild(f, t);
+      });
+    }
+    var en = false, mo = new MutationObserver(function () { if (en) return; en = true; try { vecDom(document.body); } finally { en = false; } });
+    function go() { vecDom(document.body); mo.observe(document.body, { childList: true, subtree: true, characterData: true }); }
+    if (document.body) go(); else document.addEventListener("DOMContentLoaded", go);
+  })();
+</script>
+</body>
+</html>

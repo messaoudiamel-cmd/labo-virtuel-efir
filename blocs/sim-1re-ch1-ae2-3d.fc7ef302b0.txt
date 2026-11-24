@@ -1,0 +1,258 @@
+<!--efir1re:AE2 · Dosage spectrophotométrique 3D-->
+window.EFIR_RETOUR = "premiere/matiere/La%20mole";
+
+// ====================================================================
+// Ch. 1 · AE2 · Dosage spectrophotométrique : principe et limites (sirop de menthe)
+// ====================================================================
+// ====================================================================
+// Module commun : TP de spectrophotométrie (dosage par étalonnage)
+// ====================================================================
+function makeSpectroTP(cfg) {
+  const SP = cfg.species;
+  const shape = (sp, l) => { const w = l < sp.lmax ? sp.wl : sp.wr; return Math.exp(-Math.pow((l - sp.lmax) / w, 2)) + (sp.extra ? sp.extra(l) : 0); };
+  const sol = id => cfg.solutions.find(s => s.id === id);
+  const Atrue = (s, l, th) => (s.sp || SP).k * s.c * shape(s.sp || SP, l) * th;
+  const Ameas = (s, l, th) => { let a = Atrue(s, l, th); if (a > 2.8) a = 2.8 + (a - 2.8) * .3; return a; };
+  const fmtA = a => a > 3 ? 'saturation' : a.toFixed(3).replace('.', ',');
+  let spec, cuves = {}, selSol = null, S = null;
+  const fresh = () => ({ lambda: cfg.lambda0 || 500, blank: null, thick: 1, meas: [], spectra: [], prep: false });
+  const colorOf = s => { const sp = s.sp || SP; const a = Math.min(1, sp.k * s.c * (sp.vis || 1)); return { c: new THREE.Color(0xffffff).lerp(new THREE.Color(sp.color), Math.min(1, a * 1.3)), o: .15 + .7 * a }; };
+  const avail = s => !s.after || S[s.after];
+
+  const TP = Object.assign({
+    epi: ['blouse', 'gants', 'lunettes'],
+    views: { ensemble: [[0, 1.1, 2.4], [0, .15, 0]] },
+    viewbar: [['Zoom spectrophotomètre', () => flyTo([.1, .6, .95], [0, .12, -.1])], ['Zoom cuves', () => flyTo([0, .45, 1.05], [0, .05, .35])]],
+    build() {
+      spec = makeSpectro(); spec.group.position.set(0, 0, -.15); scene.add(spec.group);
+      // support de cuves
+      const n = cfg.solutions.length; const sup = new THREE.Mesh(new THREE.BoxGeometry(n * .075 + .06, .02, .07), new THREE.MeshStandardMaterial({ color: 0xeceff1 })); sup.position.set(0, .01, .38); scene.add(sup);
+      cfg.solutions.forEach((s, i) => {
+        const col = s.c > 0 ? colorOf(s) : { c: new THREE.Color(0xe3f2fd), o: .2 };
+        const cu = makeCuve(col.c, col.o); cu.home = new THREE.Vector3(-(n - 1) * .075 / 2 + i * .075, .02, .38); cu.group.position.copy(cu.home); scene.add(cu.group);
+        const lb = label(s.short || s.id, { size: 30, scale: .0009 }); lb.position.y = .14; cu.group.add(lb);
+        cu.group.userData.onPick = () => pick(s.id); LAB.pick.push(cu.group); cuves[s.id] = cu;
+      });
+      if (cfg.build3d) cfg.build3d();
+      this.resetScene(); this.buildPanel();
+    },
+    resetScene() {
+      S = fresh(); selSol = null;
+      cfg.solutions.forEach(s => { const cu = cuves[s.id]; if (cu) { cu.group.visible = avail(s); cu.group.position.copy(cu.home); } });
+      if (cfg.reset3d) cfg.reset3d(S);
+      if (spec) spec.screen.set([`λ = ${S.lambda} nm`, 'A = ----']);
+      if ($('#spLam')) { $('#spLam').value = S.lambda; this.refreshPanel(); drawAll(); }
+    },
+    buildPanel() {
+      const box = $('#actions');
+      box.append(
+        h('h3', {}, '1. Régler le spectrophotomètre'),
+        h('div', { class: 'row' }, h('label', { for: 'spLam' }, 'Longueur d\'onde λ : '), h('input', { type: 'range', id: 'spLam', min: 400, max: 800, step: 5, value: S.lambda, style: 'flex:1', oninput: e => { $('#spLamV').textContent = e.target.value + ' nm'; }, onchange: e => act({ t: 'lambda', v: +e.target.value }) }), h('b', { id: 'spLamV' }, S.lambda + ' nm')),
+        h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { id: 'bBlank', onclick: () => act({ t: 'blank' }) }, 'Faire le blanc (cuve d\'eau distillée)'),
+          cfg.thickness ? h('button', { id: 'bThick', onclick: () => act({ t: 'thick', v: S.thick === 1 ? 2 : 1 }) }, 'Épaisseur : 1 cuve') : null),
+        h('h3', {}, '2. Choisir une cuve'),
+        h('div', { class: 'tubesel', id: 'spSel' }),
+        h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { class: 'go', id: 'bMes', onclick: () => selSol && act({ t: 'mes', sol: selSol }) }, 'Mesurer l\'absorbance'), h('button', { id: 'bSpec', onclick: () => selSol && act({ t: 'spectre', sol: selSol }) }, 'Tracer son spectre (400 → 800 nm)')),
+        cfg.prepButton ? h('h3', {}, '3. ' + cfg.prepTitle) : null,
+        cfg.prepButton ? h('button', { class: 'go', id: 'bPrep2', onclick: () => act({ t: 'prep' }) }, cfg.prepButton) : null,
+        h('h3', {}, 'Ranger'),
+        h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Vider les cuves dans le bidon'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 Vider à l\'évier')));
+      const cS = chartCard('Spectres d\'absorption', 'chSpec'), cE = chartCard('Droite d\'étalonnage A = f(C)', 'chEt');
+      const tb = h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'spTab' })));
+      sideCard(cS); sideCard(cE); sideCard(tb);
+      new ResizeObserver(() => drawAll()).observe($('#chEt'));
+      this.refreshPanel();
+    },
+    refreshPanel() {
+      const box = $('#spSel'); if (!box) return; box.innerHTML = '';
+      cfg.solutions.forEach(s => { if (avail(s)) box.append(h('button', { class: s.id === selSol ? 'on' : '', onclick: () => pick(s.id) }, s.name)); });
+      const ok = !BUSY; $('#bMes').disabled = !ok || !selSol; $('#bSpec').disabled = !ok || !selSol; $('#bBlank').disabled = !ok; $('#spLam').disabled = !ok;
+      if ($('#bThick')) { $('#bThick').disabled = !ok; $('#bThick').textContent = 'Épaisseur traversée : ' + (S.thick === 1 ? '1 cuve' : '2 cuves'); }
+      if ($('#bPrep2')) $('#bPrep2').disabled = !ok || S.prep;
+      const t = $('#spTab'); t.innerHTML = '<thead><tr><th>Solution</th><th>C</th><th>λ (nm)</th>' + (cfg.thickness ? '<th>Épaisseur</th>' : '') + '<th>A</th></tr></thead>';
+      const tb = h('tbody'); S.meas.forEach(m => { const s = sol(m.sol); tb.append(h('tr', { html: `<td>${s.name}</td><td>${s.known === false ? '?' : cfg.cfmt(s.c)}</td><td>${m.l}</td>` + (cfg.thickness ? `<td>${m.th}</td>` : '') + `<td><b>${fmtA(m.A)}</b></td>` })); });
+      if (!S.meas.length) tb.append(h('tr', {}, h('td', { colspan: 5, class: 'note' }, 'Aucune mesure.'))); t.append(tb);
+    },
+    refresh() { this.refreshPanel(); },
+    async doAction(a) {
+      if (a.t === 'lambda') { S.lambda = a.v; $('#spLam').value = a.v; $('#spLamV').textContent = a.v + ' nm'; spec.screen.set([`λ = ${a.v} nm`, S.blank === a.v ? 'A = 0,000' : 'faire le blanc']); say(`Longueur d'onde réglée sur ${a.v} nm. Il faut refaire le blanc.`); drawAll(); return; }
+      if (a.t === 'blank') { await inSpectro(null); S.blank = S.lambda; spec.screen.set([`λ = ${S.lambda} nm`, 'A = 0,000']); say(`Blanc fait à ${S.lambda} nm avec une cuve d'eau distillée : l'appareil affiche A = 0.`); step('blanc'); return; }
+      if (a.t === 'thick') { S.thick = a.v; say(a.v === 2 ? 'Deux cuves l\'une derrière l\'autre : la lumière traverse une épaisseur double de solution.' : 'Une seule cuve : épaisseur normale (1 cm).'); return; }
+      if (a.t === 'mes') {
+        const s = sol(a.sol); if (!s || !avail(s)) return false;
+        if (S.blank !== S.lambda) { say('<b>Attention :</b> fais d\'abord le blanc à cette longueur d\'onde.'); return false; }
+        await inSpectro(a.sol);
+        const A = Ameas(s, S.lambda, S.thick);
+        spec.screen.set([`λ = ${S.lambda} nm`, A > 3 ? 'A > 3 (SAT)' : 'A = ' + fmtA(A)]);
+        S.meas = S.meas.filter(m => !(m.sol === a.sol && m.l === S.lambda && m.th === S.thick)); S.meas.push({ sol: a.sol, l: S.lambda, th: S.thick, A });
+        const msg = `${s.name} à ${S.lambda} nm${S.thick === 2 ? ' (2 cuves)' : ''} : A = ${fmtA(A)}${A > 3 ? ' : l\'appareil sature' : ''}.`;
+        observe(msg); say(msg); checkSteps(); drawAll(); return;
+      }
+      if (a.t === 'spectre') {
+        const s = sol(a.sol); if (S.blank == null) { say('Fais d\'abord le blanc (le spectrophotomètre le refait ensuite automatiquement à chaque longueur d\'onde).'); return false; }
+        await inSpectro(a.sol);
+        if (!S.spectra.includes(a.sol)) S.spectra.push(a.sol);
+        if (!INSTANT) { for (let l = 400; l <= 800; l += 20) { spec.screen.set([`λ = ${l} nm`, 'A = ' + fmtA(Ameas(s, l, 1))]); drawAll(l); await wait(60); } }
+        drawAll();
+        const sp = s.sp || SP; observe(`Spectre de ${s.name} : maximum d'absorption vers ${sp.lmax} nm.`); say(`Spectre tracé : le maximum d'absorption est vers ${sp.lmax} nm.`);
+        checkSteps(); return;
+      }
+      if (a.t === 'prep') { await cfg.prep(S, INSTANT); S.prep = true; cfg.solutions.forEach(s => { if (cuves[s.id]) cuves[s.id].group.visible = avail(s); }); step('prep'); return; }
+      if (a.t === 'vider') {
+        if (a.where === 'evier') { ST.evier++; observe('Vidage des cuves à l\'évier (interdit).'); say('<b>Interdit !</b> Les solutions de colorant vont dans le bidon de récupération.'); }
+        else { ST.bidon++; step('vider'); say('Cuves vidées dans le bidon de récupération et rincées.'); }
+        return;
+      }
+    },
+    selected() { return null; },
+    async demo() {
+      say('Démonstration : on règle λ, on fait le blanc puis on mesure une solution étalon.');
+      flyTo([.1, .6, .95], [0, .12, -.1]);
+      await act({ t: 'lambda', v: cfg.lambdaGood }, { record: false }); await wait(500);
+      await act({ t: 'blank' }, { record: false }); await wait(500);
+      pick(cfg.solutions[1].id); await act({ t: 'mes', sol: cfg.solutions[1].id }, { record: false }); await wait(1200);
+      await act({ t: 'spectre', sol: cfg.solutions[1].id }, { record: false }); await wait(1500);
+    },
+  }, cfg.tp);
+
+  function pick(id) { selSol = id; Object.entries(cuves).forEach(([k, c]) => c.group.position.y = c.home.y + (k === id ? .03 : 0)); TP.refreshPanel(); say(`Cuve choisie : ${sol(id).name}.`); }
+  async function inSpectro(id) {
+    const cu = id ? cuves[id] : cuves[cfg.blankId]; if (!cu) return;
+    const p0 = cu.group.position.clone(), up = new THREE.Vector3(p0.x, .45, p0.z), sl = new THREE.Vector3(.16, .45, -.19), dn = new THREE.Vector3(.16, .12, -.19);
+    await tween(.35, p => cu.group.position.lerpVectors(p0, up, ease(p)));
+    await tween(.45, p => cu.group.position.lerpVectors(up, sl, ease(p)));
+    await tween(.3, p => cu.group.position.lerpVectors(sl, dn, ease(p)));
+    await tween(.25, p => spec.lid.rotation.x = -1.1 * (1 - p));
+    await wait(450);
+    await tween(.25, p => spec.lid.rotation.x = -1.1 * p);
+    await tween(.3, p => cu.group.position.lerpVectors(dn, sl, ease(p)));
+    await tween(.45, p => cu.group.position.lerpVectors(sl, up, ease(p)));
+    await tween(.35, p => cu.group.position.lerpVectors(up, p0, ease(p)));
+    spec.lid.rotation.x = 0;
+  }
+  function checkSteps() {
+    const std = cfg.solutions.filter(s => s.std);
+    if (S.spectra.some(id => (sol(id).sp || SP) === SP)) step('spectre');
+    const at = l => std.every(s => S.meas.some(m => m.sol === s.id && m.l === l && m.th === 1));
+    if (at(cfg.lambdaGood)) step('gamme');
+    if (cfg.lambdaAlt && at(cfg.lambdaAlt)) step('lalt');
+    const u = cfg.unknownId; const um = S.meas.find(m => m.sol === u && m.l === cfg.lambdaGood && m.th === 1);
+    if (um && um.A <= Math.max(...std.map(s => Ameas(s, cfg.lambdaGood, 1))) * 1.05) step('inconnue');
+    if (cfg.thickness) { const byS = {}; S.meas.forEach(m => { const k = m.sol + '@' + m.l; (byS[k] = byS[k] || new Set()).add(m.th); }); if (Object.values(byS).some(s => s.size === 2)) step('epaisseur'); }
+  }
+  function drawAll(sweep) {
+    const cS = $('#chSpec'), cE = $('#chEt'); if (!cS || !cE) return;
+    const curves = S.spectra.map((id, i) => { const s = sol(id); const pts = []; for (let l = 400; l <= (sweep && id === S.spectra[S.spectra.length - 1] ? sweep : 800); l += 5) pts.push([l - 400, Math.min(3, Ameas(s, l, 1))]); return { pts, color: ['#2F5DA8', '#C62828', '#2E7D32', '#E65100'][i % 4] }; });
+    const ymS = Math.max(.2, ...curves.flatMap(c => c.pts.map(p => p[1]))) * 1.1;
+    drawChart(cS, { xmax: 400, ymax: ymS, xlabel: 'λ (nm)', ylabel: 'A', xfmt: x => 400 + x, yfmt: y => y.toFixed(2), curves, marks: [[S.lambda - 400, 0, '#999']] });
+    $('#chSpecInfo').innerHTML = S.spectra.length ? S.spectra.map((id, i) => `<span style="color:${['#2F5DA8', '#C62828', '#2E7D32', '#E65100'][i % 4]}">■</span> ${sol(id).name}`).join(' · ') + ` · trait gris : λ réglée (${S.lambda} nm)` : 'Choisis une cuve et clique sur « Tracer son spectre ».';
+    const l = S.lambda; const pts = S.meas.filter(m => m.l === l && m.th === 1 && sol(m.sol).std && m.A <= 3).map(m => [sol(m.sol).c * cfg.cscale, m.A]);
+    const um = S.meas.find(m => m.sol === cfg.unknownId && m.l === l && m.th === 1);
+    const xm = cfg.cmax * cfg.cscale, ym = Math.max(.1, ...pts.map(p => p[1]), um ? Math.min(um.A, 3) : 0) * 1.15;
+    const k = drawChart(cE, { pts, xmax: xm, ymax: ym, fit: true, xlabel: cfg.clabel, ylabel: `A (λ = ${l} nm)`, yfmt: y => y.toFixed(ym < .1 ? 3 : 2), marks: um && pts.length >= 2 ? [[Math.min(xm, um.A / (pts.reduce((s, [x, y]) => s + x * y, 0) / pts.reduce((s, [x]) => s + x * x, 0))), Math.min(um.A, ym)]] : [] });
+    $('#chEtInfo').innerHTML = pts.length >= 2 ? `Droite passant par l'origine : A = ${(k).toPrecision(4).replace('.', ',')} × C (C en ${cfg.cunitScaled}).` + (um ? ` Point orange : ${sol(cfg.unknownId).name}, A = ${fmtA(um.A)}.` : '') : 'Mesure au moins deux solutions étalons à la même longueur d\'onde pour tracer la droite.';
+  }
+  TP.drawAll = drawAll; TP.Ameas = Ameas; TP.sol = sol;
+  return TP;
+}
+
+const BP = { name: 'bleu patenté', lmax: 640, wl: 48, wr: 29.4, k: 89936, color: 0x1565c0, vis: 1e-0, extra: l => .06 * Math.exp(-Math.pow((l - 410) / 25, 2)) };
+const BB2 = { name: 'bleu brillant', lmax: 630, wl: 48, wr: 26, k: 89936, color: 0x1e5bd6, extra: l => .05 * Math.exp(-Math.pow((l - 410) / 25, 2)) };
+const C_SIROP = 2.95e-5;
+const fmtC = c => { if (!c) return '0'; const e = Math.floor(Math.log10(c)); const m = c / Math.pow(10, e); return `${m.toFixed(1).replace('.', ',')}×10${String(e).replace('-', '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d])}`; };
+const stds = [2e-6, 4e-6, 6e-6, 8e-6, 10e-6];
+const A640 = c => (BP.k * c).toFixed(3).replace('.', ','); const A700 = c => (BP.k * c * (Math.exp(-Math.pow(60 / BP.wr, 2)) + BP.extra(700))).toFixed(3).replace('.', ',');
+const optsA = [...stds.map(A640), A640(C_SIROP / 5), '2,653'];
+const opts7 = [...new Set([...stds.map(A700), A700(C_SIROP / 5)])];
+// la vue colorée des cuves : intensité visuelle ramenée à la gamme
+BP.vis = 1 / (BP.k * 1.2e-5);
+let diluG = null;
+const TP12 = makeSpectroTP({
+  species: BP, lambda0: 500, lambdaGood: 640, lambdaAlt: 700, thickness: true, blankId: 'eau', unknownId: 'dil',
+  cscale: 1e6, cmax: 1.2e-5, clabel: 'C (×10⁻⁶ mol·L⁻¹)', cunitScaled: '10⁻⁶ mol·L⁻¹', cfmt: fmtC,
+  solutions: [
+    { id: 'eau', short: 'Eau', name: 'Eau distillée', c: 0 },
+    ...stds.map((c, i) => ({ id: 'S' + (i + 1), short: 'S' + (i + 1), name: `Étalon S${i + 1}`, c, std: true })),
+    { id: 'S6', short: 'S6', name: 'Étalon S6', c: 1e-4 },
+    { id: 'S7', short: 'S7', name: 'Étalon S7', c: 1e-3 },
+    { id: 'sirop', short: 'Sirop', name: 'Sirop de menthe pur', c: C_SIROP, known: false },
+    { id: 'dil', short: 'Dilué', name: 'Sirop dilué 5 fois', c: C_SIROP / 5, known: false, after: 'prep' },
+    { id: 'bb', short: 'B.brill.', name: 'Bleu brillant (étalon)', c: 6e-6, sp: BB2 },
+  ],
+  prepTitle: 'Diluer le sirop 5 fois', prepButton: 'Pipette jaugée 20,0 mL de sirop → fiole jaugée 100,0 mL, compléter avec de l\'eau',
+  build3d() {
+    const pip = makeVessel({ cap: 20, r: .012, hgt: .22, kind: 'becher', label: 'Pipette jaugée 20,0 mL' }); pip.group.position.set(.75, .1, .2); scene.add(pip.group);
+    const fi = makeFlask(100, 'Fiole jaugée 100,0 mL'); fi.group.position.set(1.0, 0, .15); scene.add(fi.group);
+    const sb = makeBottle('Sirop de menthe', 0x1f7a3a, { cap: 0x2e7d32 }); sb.position.set(.75, 0, -.25); scene.add(sb);
+    diluG = { pip, fi };
+  },
+  reset3d() { if (diluG) { diluG.fi.setVolume(0); diluG.pip.setVolume(0); } },
+  async prep(S, instant) {
+    const { pip, fi } = diluG; say('Dilution : 20,0 mL de sirop prélevés à la pipette jaugée, versés dans la fiole jaugée de 100,0 mL, puis on complète avec de l\'eau distillée jusqu\'au trait de jauge.');
+    if (!instant) flyTo([.9, .55, .9], [.9, .12, .1]);
+    pip.setColor(0x1f7a3a, .6); await tween(.8, p => pip.setVolume(20 * p));
+    fi.setColor(0x1f7a3a, .55); await tween(1, p => { pip.setVolume(20 * (1 - p)); fi.setVolume(20 * p); });
+    await tween(1.4, p => { fi.setVolume(20 + 80 * p); fi.mat.opacity = .55 - .3 * p; });
+    observe('Sirop dilué 5 fois : 20,0 mL de sirop dans une fiole jaugée de 100,0 mL complétée jusqu\'au trait de jauge.');
+  },
+  tp: {
+    id: 'p1_ch01_ae2', code: 'AE2', short: 'Dosage spectrophotométrique 3D',
+    kicker: 'EFIR · 1re spé · Chapitre 1 · Activité expérimentale AE2 · Simulation 3D',
+    title: 'Dosage spectrophotométrique : principe et limites (le sirop de menthe)',
+    problem: 'Quelle est la concentration en colorant bleu patenté E131 d\'un sirop de menthe, et quelles sont les limites d\'un dosage par spectrophotométrie ?',
+    mots: `<p><b>Absorbance A</b> : grandeur sans unité liée à la proportion de lumière absorbée. <b>Spectre d'absorption</b> : A en fonction de λ.<br>
+    <b>Faire le blanc</b> : régler A = 0 avec une cuve d'eau distillée à la longueur d'onde choisie.<br>
+    <b>Loi de Beer-Lambert</b> : pour des solutions peu concentrées, A = k × C (et A est proportionnelle à l'épaisseur traversée).<br>
+    <b>Gamme étalon</b> : solutions de concentrations connues. <b>DJA</b> du bleu patenté : 5 mg par jour et par kg de masse corporelle ; M(E131) = 560,0 g·mol⁻¹.</p>`,
+    aide: `<p><b>Défi 1</b> : trace les spectres du sirop, du bleu patenté (un étalon) et du bleu brillant ; compare les λ<sub>max</sub>.<br>
+    <b>Défi 2</b> : mesure la même solution avec 1 cuve puis 2 cuves.<br>
+    <b>Défi 3</b> : à 640 nm, fais le blanc puis mesure S1 à S5 : la droite d'étalonnage se trace. Mesure le sirop : trop absorbant ? Dilue-le 5 fois puis mesure le sirop dilué. Essaie aussi S6 et S7.<br>
+    <b>Défi 4</b> : recommence la gamme à 700 nm et compare.</p>`,
+    protocol: [
+      { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes.' },
+      { id: 'blanc', q: 'Défi 1', html: 'Régler λ et faire le blanc avec la cuve d\'eau distillée.' },
+      { id: 'spectre', q: 'Défi 1', html: 'Tracer le spectre d\'absorption du bleu patenté, du sirop et du bleu brillant.' },
+      { id: 'epaisseur', q: 'Défi 2', html: 'Mesurer une même solution avec une épaisseur de 1 cuve puis de 2 cuves.' },
+      { id: 'gamme', q: 'Défi 3', html: 'À 640 nm : mesurer l\'absorbance des étalons S1 à S5.' },
+      { id: 'prep', q: 'Défi 3', html: 'Le sirop pur sature : le diluer 5 fois.' },
+      { id: 'inconnue', q: 'Défi 3', html: 'Mesurer le sirop dilué à 640 nm et lire sa concentration sur la droite.' },
+      { id: 'lalt', q: 'Défi 4', html: 'Refaire la gamme S1 à S5 à 700 nm.' },
+      { id: 'tableau', html: 'Compléter le tableau de résultats puis le vérifier.' },
+      { id: 'extra', html: 'Répondre aux questions (concentration, DJA).' },
+      { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+      { id: 'vider', html: 'Vider les cuves dans le bidon de récupération.' },
+      { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+    ],
+    table: {
+      rowTitle: 'Solution',
+      rows: [...stds.map((c, i) => ({ label: `S${i + 1} (${fmtC(c)} mol·L⁻¹)`, ans: [i, i] })), { label: 'Sirop dilué 5 fois', ans: [5, opts7.indexOf(A700(C_SIROP / 5))] }],
+      cols: [{ title: 'A à 640 nm', options: optsA }, { title: 'A à 700 nm', options: [...opts7] }],
+    },
+    extraTitle: 'Questions',
+    extra: [
+      { q: 'Défi 1', num: true, text: 'Longueur d\'onde du maximum d\'absorption du bleu patenté : λ<sub>max</sub> =', unit: 'nm', ans: 640, tol: .01 },
+      { q: 'Défi 1', text: 'Le sirop contient-il du bleu patenté ?', options: ['Oui : son spectre a le même maximum, à 640 nm', 'Non : il contient du bleu brillant (630 nm)', 'On ne peut pas savoir'], ans: 0 },
+      { q: 'Défi 2', text: 'Quand l\'épaisseur de solution traversée double, l\'absorbance…', options: ['ne change pas', 'double', 'est divisée par deux'], ans: 1 },
+      { q: 'Défi 3', text: 'Pourquoi faut-il diluer le sirop ?', options: ['Son absorbance (≈ 2,7) sort de la gamme étalon (A ≤ 0,90) où la droite est valable', 'Pour économiser le sirop', 'Pour changer sa couleur'], ans: 0 },
+      { q: 'Défi 3', num: true, text: 'Concentration du sirop dilué (lecture sur la droite à 640 nm) : C =', unit: 'mol·L⁻¹ (ex. 5,9e-6)', ans: C_SIROP / 5, tol: .06 },
+      { q: 'Défi 3', num: true, text: 'Concentration du sirop de menthe : C<sub>sirop</sub> =', unit: 'mol·L⁻¹', ans: C_SIROP, tol: .06 },
+      { q: 'Défi 4', text: 'Quelle longueur d\'onde choisir pour le dosage ?', options: ['700 nm', '640 nm : A y est maximale, les écarts entre étalons sont grands et la mesure plus précise', 'N\'importe laquelle'], ans: 1 },
+      { q: 'DJA', num: true, text: 'Un enfant de 40 kg boit des verres contenant 20 mL de sirop. Nombre de verres pour atteindre la DJA (M = 560,0 g·mol⁻¹) :', unit: 'verres', ans: 0.2 / (C_SIROP * 560 * 0.020), tol: .06 },
+    ],
+    conclusion: {
+      q: 'Principe et limites du dosage spectrophotométrique :',
+      options: [
+        'On mesure l\'absorbance d\'étalons à la longueur d\'onde du maximum d\'absorption ; la droite A = k×C permet de lire la concentration de la solution, à condition que son absorbance reste dans la gamme étalon (sinon on la dilue).',
+        'L\'absorbance est la même à toutes les longueurs d\'onde, il suffit d\'une seule mesure.',
+        'On peut doser une solution très concentrée sans la diluer, la droite est valable pour toutes les concentrations.',
+        'L\'absorbance ne dépend pas de l\'épaisseur de solution traversée.',
+      ], ans: 0,
+    },
+  },
+});
+startTP(TP12);
+
+
+
+/*lien-reel-tle-ch2-spectro*/;(function(){var f=function(){if(document.getElementById("efir-lien-reel-tle-ch2-spectro"))return;var d=document.createElement("div");d.innerHTML="<div id=\"efir-lien-reel-tle-ch2-spectro\" style=\"margin:10px 0;padding:10px 14px;border:1px solid #E9D5FF;border-left:5px solid #C2185B;border-radius:12px;background:#F8F6FA;color:#1F1630;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font:15px/1.4 'Atkinson Hyperlegible',system-ui,sans-serif\"><span style=\"flex:1 1 260px\">\ud83e\uddea <b>Paillasse r\u00e9aliste</b> : un dosage par \u00e9talonnage avec un spectrophotom\u00e8tre de paillasse dont on voit l'int\u00e9rieur (lampe, r\u00e9seau, fente, cuve, d\u00e9tecteur).</span><a href=\"#\" onclick=\"try{parent.location.hash='tle-ch2-spectro'}catch(e){};return false\" style=\"background:#4A148C;color:#fff;border-radius:10px;padding:9px 14px;font-weight:700;text-decoration:none\">Ouvrir la paillasse r\u00e9aliste \u2192</a></div><!--/lien-reel-->";var b=d.firstChild,h=document.querySelector("header");if(h)h.appendChild(b);else document.body.insertBefore(b,document.body.firstChild);};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",f):f();})();/*/lien-reel-tle-ch2-spectro*/
+</script></body></html>

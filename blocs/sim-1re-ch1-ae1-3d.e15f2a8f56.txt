@@ -1,0 +1,243 @@
+<!--efir1re:AE1 · Prélever une quantité de matière 3D-->
+window.EFIR_RETOUR = "premiere/matiere/La%20mole";
+
+// ====================================================================
+// Ch. 1 · AE1 · Prélever une quantité de matière (le « liquide étonnant »)
+// ====================================================================
+const M_ASC = 176.0, C_H2O2 = 0.89;
+let bal, coupelle, powder, BA, BB, BC, BG, E100, E10, chronoScr;
+const W = { m: 0, eau: 0, vA: 0, vKI: 0, vH: 0, vE: 0 };   // valeurs en cours de réglage
+let S1 = null; // état chimique
+function fresh1() { return { tare: false, pese: null, eauA: null, A: false, vA: null, vKI: null, B: false, vH: null, vE: null, thio: false, C: false, mix: false, bleu: false, gouttes: 0 }; }
+
+const C1A1 = {
+  id: 'p1_ch01_ae1', code: 'AE1', short: 'Prélever une quantité de matière 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 1 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Prélever une quantité de matière : le « liquide étonnant »',
+  problem: 'Un protocole donne les quantités de matière à mélanger (en mol). Comment prélever concrètement une quantité de matière d\'une espèce chimique solide, liquide ou en solution ?',
+  mots: `<p><b>Quantité de matière n</b> (mol) ; <b>masse molaire M</b> (g·mol⁻¹) : masse d'une mole d'entités ; <b>masse volumique ρ</b> (g·mL⁻¹) ;
+  <b>concentration en quantité de matière C</b> (mol·L⁻¹).<br><b>Tarer</b> : remettre l'affichage de la balance à zéro avec la coupelle posée.<br>
+  <b>Thiodène</b> : indicateur qui devient bleu foncé en présence de diiode.</p>
+  <p>Données : ρ(eau) = 1,0 g·mL⁻¹ ; M(H) = 1,0 g·mol⁻¹ ; M(O) = 16,0 g·mol⁻¹ ; M(C₆H₈O₆) = 176,0 g·mol⁻¹ ; C₂ = 0,89 mol·L⁻¹ en peroxyde d'hydrogène.</p>`,
+  aide: `<p>Le protocole demande : <b>solution A</b> = 1,7×10⁻³ mol d'acide ascorbique dans 3,3 mol d'eau ; <b>solution B</b> = 6 mL de A + 50 mL de solution d'iodure (C₁ = 1,0×10⁻¹ mol·L⁻¹) ;
+  <b>solution C</b> = 1,3×10⁻² mol de peroxyde d'hydrogène + 30 mL d'eau + une pointe de thiodène. On mélange ensuite B et C, on attend, puis on ajoute quelques gouttes de A.<br>
+  Commence par calculer les masses et volumes (cadre « Questions »), puis règle chaque prélèvement avec les boutons + et −.</p>`,
+  views: { ensemble: [[0, 1.15, 3.1], [0, .2, -.05]] },
+  viewbar: [['Zoom balance', () => flyTo([-1.1, .55, .75], [-1.1, .08, .05])], ['Zoom éprouvettes', () => flyTo([-.05, .55, .75], [-.05, .15, -.25])], ['Zoom grand bécher', () => flyTo([.95, .5, .85], [.95, .1, .2])]],
+  protocol: [
+    { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes.' },
+    { id: 'extra', q: 'Q1-2', html: 'Calculer la masse d\'acide ascorbique, le volume d\'eau et le volume d\'eau oxygénée (cadre « Questions »).' },
+    { id: 'pese', q: 'Q3', html: 'Solution A : tarer la balance puis peser l\'acide ascorbique et le verser dans le bécher A.' },
+    { id: 'eauA', q: 'Q3', html: 'Solution A : mesurer l\'eau distillée à l\'éprouvette et la verser dans le bécher A.' },
+    { id: 'solB', q: 'Q3', html: 'Solution B : 6 mL de A (éprouvette de 10 mL) + 50 mL de solution d\'iodure.' },
+    { id: 'solC', q: 'Q3', html: 'Solution C : eau oxygénée + 30 mL d\'eau + une pointe de thiodène.' },
+    { id: 'melange', q: 'Q4', html: 'Mélanger B et C dans le grand bécher, patienter et observer.' },
+    { id: 'gouttes', q: 'Q4', html: 'Ajouter quelques gouttes de solution A et observer à nouveau.' },
+    { id: 'tableau', html: 'Compléter le tableau des prélèvements puis le vérifier.' },
+    { id: 'conclusion', q: 'Q5', html: 'Choisir puis rédiger ta conclusion : comment prélever une quantité de matière ?' },
+    { id: 'vider', html: 'Vider la verrerie dans le bidon de récupération.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  table: {
+    rowTitle: 'Prélèvement',
+    rows: [
+      { label: 'Acide ascorbique (solide)', ans: [0, 0, 0] }, { label: 'Eau distillée (solution A)', ans: [1, 1, 1] },
+      { label: 'Solution A (pour B)', ans: [1, 2, 2] }, { label: 'Solution d\'iodure (pour B)', ans: [1, 1, 3] },
+      { label: 'Eau oxygénée (pour C)', ans: [1, 1, 4] }, { label: 'Eau distillée (pour C)', ans: [1, 1, 5] },
+    ],
+    cols: [
+      { title: 'Grandeur mesurée', options: ['masse', 'volume'] },
+      { title: 'Instrument', options: ['balance + coupelle', 'éprouvette graduée 100 mL', 'éprouvette graduée 10 mL'] },
+      { title: 'Valeur', options: ['0,30 g', '59 mL', '6 mL', '50 mL', '15 mL', '30 mL'] },
+    ],
+  },
+  extraTitle: 'Questions (à faire avant de manipuler)',
+  extra: [
+    { q: 'Q1', text: 'Masse volumique :', options: ['ρ = m × V', 'ρ = m / V', 'ρ = V / m'], ans: 1 },
+    { q: 'Q1', text: 'Masse molaire :', options: ['M = m / n', 'M = n / m', 'M = m × n'], ans: 0 },
+    { q: 'Q1', text: 'Concentration en quantité de matière :', options: ['C = n × V', 'C = V / n', 'C = n / V<sub>solution</sub>'.replace(/<[^>]+>/g, '')], ans: 2 },
+    { q: 'Q2', num: true, text: 'Masse d\'acide ascorbique à peser (n = 1,7×10⁻³ mol) : m =', unit: 'g', ans: .30, tol: .04 },
+    { q: 'Q2', num: true, text: 'Masse molaire de l\'eau : M(H₂O) =', unit: 'g·mol⁻¹', ans: 18.0, tol: .01 },
+    { q: 'Q2', num: true, text: 'Volume d\'eau distillée pour la solution A (n = 3,3 mol) : V =', unit: 'mL', ans: 59, tol: .03 },
+    { q: 'Q2', num: true, text: 'Volume d\'eau oxygénée (n = 1,3×10⁻² mol ; C₂ = 0,89 mol·L⁻¹) : V =', unit: 'mL', ans: 15, tol: .05 },
+    { q: 'Q4', text: 'Pourquoi ce liquide est-il dit « étonnant » ?', options: ['Il dégage un gaz', 'Il devient brusquement bleu foncé après une attente, se décolore quand on ajoute A puis se recolore', 'Il change de couleur progressivement'], ans: 1 },
+  ],
+  conclusion: {
+    q: 'Q5 · Comment prélever une quantité de matière n d\'une espèce chimique ?',
+    options: [
+      'Solide : on pèse m = n × M. Liquide pur : on mesure V = n × M / ρ. Soluté en solution : on mesure V = n / C.',
+      'On mesure toujours un volume V = n × M.',
+      'Solide : on pèse m = n / M. Soluté en solution : on mesure V = n × C.',
+      'On compte les entités une par une.',
+    ], ans: 0,
+  },
+  build() {
+    bal = makeBalance(); bal.group.position.set(-1.1, 0, .05); scene.add(bal.group);
+    coupelle = new THREE.Mesh(new THREE.CylinderGeometry(.06, .045, .015, 4), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .8 }));
+    coupelle.rotation.y = Math.PI / 4; coupelle.position.set(-1.45, .008, .3); scene.add(coupelle);
+    powder = new THREE.Mesh(new THREE.ConeGeometry(.02, .012, 16), new THREE.MeshStandardMaterial({ color: 0xfbfbf3, roughness: 1 })); powder.visible = false; scene.add(powder);
+    const pot = makeBottle('Acide ascorbique\nC₆H₈O₆ (solide)', 0xfbfbf3, { cap: 0xf9a825 }); pot.scale.setScalar(.7); pot.position.set(-1.5, 0, -.35); scene.add(pot);
+    BA = makeVessel({ cap: 100, r: .055, hgt: .12, grad: 20, label: 'Bécher A' }); BA.group.position.set(-.55, 0, .25);
+    BB = makeVessel({ cap: 100, r: .055, hgt: .12, grad: 20, label: 'Bécher B' }); BB.group.position.set(-.05, 0, .3);
+    BC = makeVessel({ cap: 50, r: .045, hgt: .09, grad: 10, label: 'Bécher C' }); BC.group.position.set(.4, 0, .3);
+    BG = makeVessel({ cap: 250, r: .08, hgt: .17, grad: 50, label: 'Grand bécher' }); BG.group.position.set(.95, 0, .2);
+    E100 = makeVessel({ cap: 100, r: .022, hgt: .34, kind: 'eprouvette', grad: 2, label: 'Éprouvette\n100 mL' }); E100.group.position.set(-.3, .012, -.22);
+    E10 = makeVessel({ cap: 10, r: .011, hgt: .2, kind: 'eprouvette', grad: .2, label: 'Éprouvette\n10 mL' }); E10.group.position.set(.15, .012, -.22);
+    [BA, BB, BC, BG, E100, E10].forEach(v => scene.add(v.group));
+    [['Eau distillée', 0xe3f2fd, -.85, 0x1565c0], ['Iodure de potassium\nK⁺ + I⁻ (C₁)', 0xf7f7f0, -.05, 0x6a1b9a], ['Eau oxygénée\nH₂O₂ (C₂)', 0xf5f5f5, .5, 0x8d6e63]].forEach(([t, c, x, cap], k) => {
+      const b = makeBottle(t, c, { cap, brown: k === 2 }); b.position.set(x, 0, -.62); scene.add(b);
+    });
+    const th = makeBottle('Thiodène', 0xfff8e1, { cap: 0x0d47a1 }); th.scale.setScalar(.6); th.position.set(1.0, 0, -.45); scene.add(th);
+    chronoScr = makeScreen(.22, .06, { px: 320, text: '00,0 s', bg: '#1d2433', fg: '#ffd54f' }); chronoScr.mesh.position.set(.95, .32, .2); scene.add(chronoScr.mesh); chronoScr.mesh.visible = false;
+    LAB.tick.push(() => chronoScr.mesh.lookAt(camera.position));
+    const bid = new THREE.Mesh(new THREE.BoxGeometry(.3, .36, .2), new THREE.MeshStandardMaterial({ color: 0xffb74d })); bid.position.set(1.55, .18, -.5); scene.add(bid);
+    const bl = label('Bidon de\nrécupération', { size: 30, scale: .0012 }); bl.position.set(1.55, .5, -.5); scene.add(bl);
+    this.resetScene(); this.buildPanel();
+  },
+  resetScene() {
+    S1 = fresh1(); Object.assign(W, { m: 0, eau: 0, vA: 0, vKI: 0, vH: 0, vE: 0 });
+    if (!BA) return;
+    [BA, BB, BC, BG, E100, E10].forEach(v => { v.setVolume(0); v.setColor(0xdde8f0, .4); });
+    coupelle.position.set(-1.45, .008, .3); powder.visible = false; bal.mass = 0; bal.tare = 0; bal.show(); chronoScr.mesh.visible = false;
+    this.refreshPanel && $('#p1') && this.refreshPanel();
+  },
+  buildPanel() {
+    const box = $('#actions');
+    const dose = (id, unit, steps, dec) => h('div', { class: 'row', style: 'margin:4px 0' }, ...steps.map(([t, d]) => h('button', { 'data-g': id, onclick: () => adjust(id, d) }, t)), h('b', { id: 'd_' + id, style: 'margin-left:6px' }, '0 ' + unit));
+    box.append(
+      h('div', { id: 'p1' },
+        h('h3', {}, 'Solution A'),
+        h('button', { id: 'bTare', onclick: () => act({ t: 'tare' }) }, '⚖ Poser la coupelle et tarer'),
+        dose('m', 'g', [['+ grosse pointe', .05], ['+ petite pointe', .01], ['− un peu', -.01]]),
+        h('button', { class: 'go', id: 'bPese', onclick: () => act({ t: 'pese', m: +W.m.toFixed(2) }) }, 'Verser le solide dans le bécher A'),
+        h('div', { class: 'note', style: 'margin-top:6px' }, 'Eau distillée (éprouvette 100 mL) :'),
+        dose('eau', 'mL', [['+10', 10], ['+1', 1], ['−1', -1]]),
+        h('button', { class: 'go', id: 'bEauA', onclick: () => act({ t: 'eauA', v: W.eau }) }, 'Verser l\'eau dans le bécher A et agiter'),
+        h('h3', {}, 'Solution B'),
+        h('div', { class: 'note' }, 'Solution A (éprouvette 10 mL) :'), dose('vA', 'mL', [['+1', 1], ['−1', -1]]),
+        h('div', { class: 'note' }, 'Solution d\'iodure (éprouvette 100 mL) :'), dose('vKI', 'mL', [['+10', 10], ['+1', 1], ['−1', -1]]),
+        h('button', { class: 'go', id: 'bB', onclick: () => act({ t: 'B', vA: W.vA, vKI: W.vKI }) }, 'Verser les deux prélèvements dans le bécher B'),
+        h('h3', {}, 'Solution C'),
+        h('div', { class: 'note' }, 'Eau oxygénée (éprouvette 100 mL) :'), dose('vH', 'mL', [['+10', 10], ['+1', 1], ['−1', -1]]),
+        h('div', { class: 'note' }, 'Eau distillée (éprouvette 100 mL) :'), dose('vE', 'mL', [['+10', 10], ['+1', 1], ['−1', -1]]),
+        h('label', { style: 'display:block;font-size:14px;margin:4px 0' }, h('input', { type: 'checkbox', id: 'cThio' }), ' ajouter une pointe de spatule de thiodène'),
+        h('button', { class: 'go', id: 'bC', onclick: () => act({ t: 'C', vH: W.vH, vE: W.vE, thio: $('#cThio').checked }) }, 'Préparer la solution C'),
+        h('h3', {}, 'Le liquide étonnant'),
+        h('div', { class: 'row' }, h('button', { class: 'go', id: 'bMix', onclick: () => act({ t: 'mix' }) }, 'Verser B et C dans le grand bécher'), h('button', { id: 'bGout', onclick: () => act({ t: 'gouttes' }) }, 'Ajouter quelques gouttes de A')),
+        h('h3', {}, 'Ranger'),
+        h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Vider dans le bidon'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 Vider à l\'évier'))));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const u = { m: 'g', eau: 'mL', vA: 'mL', vKI: 'mL', vH: 'mL', vE: 'mL' };
+    for (const k in u) { const e = $('#d_' + k); if (e) e.textContent = (k === 'm' ? W.m.toFixed(2).replace('.', ',') : W[k]) + ' ' + u[k]; }
+    const en = (sel, ok) => $$(sel).forEach(b => b.disabled = BUSY || !ok);
+    en('#bTare', !S1.tare); en('[data-g="m"]', S1.tare && S1.pese == null); en('#bPese', S1.tare && S1.pese == null && W.m > 0);
+    en('[data-g="eau"]', S1.pese != null && S1.eauA == null); en('#bEauA', S1.pese != null && S1.eauA == null && W.eau > 0);
+    en('[data-g="vA"]', S1.A && !S1.B); en('[data-g="vKI"]', S1.A && !S1.B); en('#bB', S1.A && !S1.B && W.vA > 0 && W.vKI > 0);
+    en('[data-g="vH"]', !S1.C); en('[data-g="vE"]', !S1.C); en('#bC', !S1.C && W.vH > 0); en('#cThio', !S1.C);
+    en('#bMix', S1.B && S1.C && !S1.mix); en('#bGout', S1.bleu && S1.A);
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    if (a.t === 'tare') {
+      say('On pose la coupelle sur le plateau puis on appuie sur « Tare ».');
+      const p0 = coupelle.position.clone(), p1 = new THREE.Vector3(-1.1, bal.plateY + .008, .02);
+      await tween(.8, p => coupelle.position.lerpVectors(p0, p1, ease(p)).setY(p1.y + Math.sin(p * Math.PI) * .12));
+      bal.mass = 1.32; bal.show(); await wait(500); bal.tare = 1.32; bal.show(); S1.tare = true; return;
+    }
+    if (a.t === 'pese') {
+      S1.pese = a.m; W.m = a.m; bal.mass = 1.32 + a.m; bal.show(); powder.visible = true; powder.position.set(-1.1, bal.plateY + .02, .02); powder.scale.setScalar(Math.max(.3, Math.sqrt(a.m / .3)));
+      const p0 = coupelle.position.clone(), top = new THREE.Vector3(-.55 + .07, BA.top() + .06, .25);
+      await tween(.9, p => { coupelle.position.lerpVectors(p0, top, ease(p)); powder.position.copy(coupelle.position).add(new THREE.Vector3(0, .012, 0)); });
+      await tween(.4, p => { coupelle.rotation.z = -1.2 * p; powder.position.y -= .004; });
+      powder.visible = false; BA.setColor(0xf7f7f7, .5); BA.setVolume(2);
+      await tween(.6, p => { coupelle.rotation.z = -1.2 * (1 - p); coupelle.position.lerpVectors(top, new THREE.Vector3(-1.45, .008, .3), ease(p)); });
+      bal.mass = 0; bal.tare = 0; bal.show();
+      const ok = Math.abs(a.m - .30) <= .01;
+      observe(`Masse d'acide ascorbique pesée : ${a.m.toFixed(2).replace('.', ',')} g${ok ? '' : ' (attendu : 0,30 g)'}.`);
+      say(ok ? 'Masse correcte : 0,30 g d\'acide ascorbique dans le bécher A.' : `Tu as pesé ${a.m.toFixed(2).replace('.', ',')} g : vérifie ton calcul m = n × M.`);
+      step('pese'); return;
+    }
+    if (a.t === 'eauA') {
+      S1.eauA = a.v; E100.setColor(0xe3f2fd, .35); E100.setVolume(a.v); W.eau = a.v;
+      await pourVessel(E100, BA, a.v); BA.setVolume(a.v + 2); BA.setColor(0xf2f7fb, .3);
+      await shakeV(BA); S1.A = true;
+      observe(`Eau distillée mesurée pour la solution A : ${a.v} mL${Math.abs(a.v - 59) <= 1 ? '' : ' (attendu : 59 mL)'}.`);
+      say('Solution A prête : l\'acide ascorbique est dissous dans l\'eau.'); step('eauA'); return;
+    }
+    if (a.t === 'B') {
+      S1.B = true; S1.vA = a.vA; S1.vKI = a.vKI;
+      E10.setColor(0xf2f7fb, .35); E10.setVolume(a.vA); BA.setVolume(BA.vol - a.vA); await pourVessel(E10, BB, a.vA, 0xf2f7fb, .3);
+      E100.setColor(0xf7f7f0, .35); E100.setVolume(a.vKI); await pourVessel(E100, BB, a.vKI, 0xf7f7f0, .3);
+      observe(`Solution B : ${a.vA} mL de solution A + ${a.vKI} mL de solution d'iodure${a.vA === 6 && a.vKI === 50 ? '' : ' (attendu : 6 mL + 50 mL)'}.`);
+      say('Solution B prête (incolore).'); step('solB'); return;
+    }
+    if (a.t === 'C') {
+      S1.C = true; S1.vH = a.vH; S1.vE = a.vE; S1.thio = a.thio;
+      E100.setColor(0xf5f5f5, .35); E100.setVolume(a.vH); await pourVessel(E100, BC, a.vH, 0xf5f5f5, .3);
+      if (a.vE > 0) { E100.setColor(0xe3f2fd, .35); E100.setVolume(a.vE); await pourVessel(E100, BC, a.vE); }
+      if (a.thio) { BC.setColor(0xf3f1e6, .38); }
+      observe(`Solution C : ${a.vH} mL d'eau oxygénée + ${a.vE} mL d'eau${a.thio ? ' + thiodène' : ' (sans thiodène)'}${a.vH === 15 && a.vE === 30 && a.thio ? '' : ' (attendu : 15 mL + 30 mL + thiodène)'}.`);
+      say('Solution C prête.'); step('solC'); return;
+    }
+    if (a.t === 'mix') {
+      S1.mix = true;
+      await pourVessel(BB, BG, BB.vol, 0xf4f6f8, .3); await pourVessel(BC, BG, BC.vol, 0xf4f6f8, .3);
+      const nAsc = (S1.pese / M_ASC) * (S1.vA / Math.max(1, S1.eauA)), nRef = (.30 / M_ASC) * (6 / 59);
+      const nH = S1.vH, tBlue = 12 * (nAsc / nRef) * (15 / Math.max(1, nH)) * (S1.vKI > 0 ? 50 / S1.vKI : 99);
+      chronoScr.mesh.visible = true; say('On patiente en observant le mélange… (le chronomètre est lancé)');
+      if (INSTANT) { finishBlue(); return; }
+      const t0 = performance.now(); let done = false;
+      while (!done) { const t = (performance.now() - t0) / 1000 * 1.0; chronoScr.set(t.toFixed(1).replace('.', ',') + ' s'); if (t >= Math.min(tBlue, 40)) done = true; await wait(100); }
+      finishBlue(Math.min(tBlue, 40)); return;
+    }
+    if (a.t === 'gouttes') {
+      S1.gouttes++;
+      await dropInto({ group: BG.group, top: () => BG.top(), R: 0, level: BG.vol / 250 * BG.hgt * .75 }, 0xf2f7fb, 3, [.6, .55, .45]);
+      const c0 = BG.mat.color.clone();
+      await tween(.4, p => { BG.mat.color.lerpColors(c0, new THREE.Color(0xf4f6f8), p); BG.mat.opacity = lerp(.92, .3, p); });
+      say('Le mélange se décolore aussitôt… puis redevient bleu quelques secondes plus tard.');
+      await wait(3500);
+      await tween(.25, p => { BG.mat.color.lerpColors(new THREE.Color(0xf4f6f8), c0, p); BG.mat.opacity = lerp(.3, .92, p); });
+      observe('Après ajout de quelques gouttes de A : le mélange se décolore aussitôt, puis redevient brusquement bleu foncé quelques secondes plus tard.');
+      step('gouttes'); return;
+    }
+    if (a.t === 'vider') {
+      if (!S1.A && !S1.C) { say('Il n\'y a rien à vider.'); return false; }
+      if (a.where === 'evier') { ST.evier++; observe('Vidage de la verrerie à l\'évier (interdit).'); say('<b>Interdit !</b> Le mélange contient du diiode et du thiodène : il va dans le bidon de récupération.'); }
+      else { ST.bidon++; step('vider'); say('Verrerie vidée dans le bidon de récupération.'); }
+      await tween(.8, p => [BA, BB, BC, BG].forEach(v => v.setVolume(v.vol * (1 - p))));
+      this.resetScene(); return;
+    }
+  },
+  async demo() {
+    say('Démonstration : préparation de la solution A.'); flyTo([-1.1, .55, .75], [-1.1, .08, .05]);
+    await act({ t: 'tare' }, { record: false });
+    for (let i = 0; i < 6; i++) { adjust('m', .05); await wait(250); }
+    await act({ t: 'pese', m: .30 }, { record: false });
+    flyTo([-.4, .5, .9], [-.4, .12, 0]);
+    for (const d of [10, 10, 10, 10, 10, 9]) { adjust('eau', d); await wait(200); }
+    await act({ t: 'eauA', v: 59 }, { record: false });
+    say('Ensuite : solutions B et C, puis le mélange. À toi de jouer !'); await wait(1500);
+  },
+};
+function finishBlue(t) {
+  S1.bleu = true; const blue = S1.thio ? 0x0a0930 : 0xb8862b;
+  BG.setColor(blue, S1.thio ? .97 : .6);
+  const msg = S1.thio ? `Après ${t ? t.toFixed(0) : 'quelques'} s, le mélange incolore devient brusquement bleu foncé.` : `Après ${t ? t.toFixed(0) : 'quelques'} s, le mélange devient brusquement jaune-brun (sans thiodène, pas de couleur bleue).`;
+  observe(msg); say(msg + ' Ajoute maintenant quelques gouttes de solution A.'); step('melange');
+}
+function adjust(k, d) {
+  if (BUSY) return;
+  const max = { m: 1.5, eau: 100, vA: 10, vKI: 100, vH: 100, vE: 100 }[k];
+  W[k] = Math.max(0, Math.min(max, +(W[k] + d).toFixed(2)));
+  if (k === 'm') { bal.mass = 1.32 + W.m; bal.show(); powder.visible = W.m > 0; powder.position.set(-1.1, bal.plateY + .02, .02); powder.scale.setScalar(Math.max(.3, Math.sqrt(W.m / .3))); }
+  else if (k === 'vA') { E10.setColor(0xf2f7fb, .35); E10.setVolume(W.vA); }
+  else { E100.setColor({ eau: 0xe3f2fd, vKI: 0xf7f7f0, vH: 0xf5f5f5, vE: 0xe3f2fd }[k], .35); E100.setVolume(W[k]); }
+  C1A1.refreshPanel();
+}
+async function shakeV(V) { const g = V.group, r0 = g.rotation.y; await tween(1, p => g.rotation.y = r0 + Math.sin(p * 25) * .25 * (1 - p)); }
+startTP(C1A1);
+
+</script></body></html>

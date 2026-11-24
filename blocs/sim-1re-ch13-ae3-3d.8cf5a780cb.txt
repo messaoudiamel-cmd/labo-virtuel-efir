@@ -1,0 +1,143 @@
+<!--efir1re:AE3 · Rendement photovoltaïque 3D-->
+window.EFIR_RETOUR = "premiere/energie/%C3%89nergie%20des%20syst%C3%A8mes%20%C3%A9lectriques";
+
+// ====================================================================
+// Ch. 13 · AE3 · Rendement de panneaux photovoltaïques
+// ====================================================================
+// ====================================================================
+// Module commun : appareils électriques (multimètres, fils, rhéostat)
+// ====================================================================
+function eWire(pts, col = 0xc62828, r = .0018) { return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 40, r, 6), new THREE.MeshStandardMaterial({ color: col, roughness: .5 })); }
+function makeMeter(name, o = {}) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(.09, .03, .14), new THREE.MeshStandardMaterial({ color: o.color || 0xffca28, roughness: .6 })); body.position.y = .015; g.add(body);
+  const sc = makeScreen(.07, .03, { px: 280, text: o.text || '----', bg: '#0f2a1a', fg: '#7CFC9A' }); const bez = new THREE.Mesh(new THREE.BoxGeometry(.085, .045, .012), new THREE.MeshStandardMaterial({ color: 0x37474f })); bez.rotation.x = -.9; bez.position.set(0, .045, -.045); g.add(bez); sc.mesh.rotation.x = -.9; sc.mesh.position.set(0, .0495, -.04); g.add(sc.mesh);
+  const dial = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .006, 24), new THREE.MeshStandardMaterial({ color: 0x37474f })); dial.position.set(0, .033, .025); g.add(dial);
+  for (const [x, c] of [[-.025, 0x212121], [.025, 0xc62828]]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, .008, 12), new THREE.MeshStandardMaterial({ color: c })); t.position.set(x, .034, .058); g.add(t); }
+  const l = label(name, { size: 22, scale: .0007 }); l.position.set(0, .1, -.05); g.add(l);
+  return { group: g, screen: sc, set: t => sc.set(t) };
+}
+function makeRheostat(name = 'Conducteur ohmique\nde résistance réglable') {
+  const g = new THREE.Group();
+  const coil = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .2, 32), new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: .6, roughness: .45 })); coil.rotation.z = Math.PI / 2; coil.position.y = .04; g.add(coil);
+  for (const x of [-.11, .11]) { const e = new THREE.Mesh(new THREE.BoxGeometry(.015, .07, .06), new THREE.MeshStandardMaterial({ color: 0x37474f })); e.position.set(x, .035, 0); g.add(e); }
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(.22, .006, .006), new THREE.MeshStandardMaterial({ color: 0x90a4ae, metalness: .8 })); bar.position.set(0, .075, 0); g.add(bar);
+  const cur = new THREE.Mesh(new THREE.BoxGeometry(.02, .02, .03), new THREE.MeshStandardMaterial({ color: 0x212121 })); cur.position.set(0, .07, 0); g.add(cur);
+  const l = label(name, { size: 22, scale: .0007 }); l.position.set(0, .13, 0); g.add(l);
+  return { group: g, setPos(f) { cur.position.x = -.09 + .18 * f; } };
+}
+
+const LUX = 320, ISC = .58, VOC = 7.05, AV = .6, SCELL = .065 * .05, PLUM = LUX * .05 * SCELL;
+const RL = [0, 1, 2.2, 4.7, 6.8, 8.2, 10, 12, 15, 22, 47, Infinity]; // kΩ
+let lux18, amp18, volt18, S18 = null;
+const fresh18 = () => ({ lamp: false, lux: false, built: false, R: 10, pts: [] });
+const f18 = (v, n = 2) => v.toFixed(n).replace('.', ',');
+const Icell = U => ISC * (1 - Math.exp((U - VOC) / AV)); // mA
+function solve18(R) { if (!S18.lamp) return { U: 0, I: 0 }; if (R === 0) return { U: 0, I: ISC }; if (!isFinite(R)) return { U: VOC, I: 0 }; let a = 0, b = VOC; for (let k = 0; k < 60; k++) { const m = (a + b) / 2; if (m - R * Icell(m) > 0) b = m; else a = m; } const U = (a + b) / 2; return { U: +U.toFixed(2), I: +(U / R).toFixed(3) }; }
+const C18 = {
+  id: 'p1_ch13_ae3', code: 'AE3', short: 'Rendement photovoltaïque 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 13 · Activité expérimentale AE3 · Simulation 3D',
+  title: 'Rendement de panneaux photovoltaïques',
+  problem: 'De plus en plus d\'habitations s\'équipent de panneaux photovoltaïques. Comment déterminer le rendement d\'un convertisseur comme une cellule photovoltaïque ?',
+  mots: `<p><b>Rendement</b> d'un convertisseur : η = 𝒫<sub>exploitable</sub> / 𝒫<sub>entrante</sub> (sans unité, toujours inférieur ou égal à 1 ; souvent exprimé en %).<br>
+  <b>Puissance lumineuse reçue</b> : 𝒫<sub>lum</sub> = ℰ<sub>éclair</sub> × S, avec ℰ<sub>éclair</sub> l'éclairement en W·m⁻² et S la surface utile en m².<br>
+  Pour la lampe utilisée : 1,0 lux ↔ 5,0 × 10⁻² W·m⁻².<br>
+  Cellule photovoltaïque : surface utile 6,5 cm × 5,0 cm. Puissance électrique fournie : 𝒫<sub>élec</sub> = U × I.</p>`,
+  aide: `<p>1. Allume la lampe (distance d fixe) et mesure l'éclairement avec le luxmètre.<br>
+  2. Réalise le montage : cellule, ampèremètre (mA) et conducteur ohmique réglable en série ; voltmètre aux bornes de la cellule.<br>
+  3. Fais varier la résistance et note U et I. Calcule 𝒫<sub>élec</sub> = U × I.<br>
+  4. Lis 𝒫<sub>élec,max</sub> sur le graphique 𝒫<sub>élec</sub> = f(U) et calcule le rendement maximal.</p>`,
+  views: { ensemble: [[0, .55, .85], [0, .08, 0]] },
+  viewbar: [['Zoom cellule et luxmètre', () => flyTo([-.12, .3, .4], [-.12, .05, 0])], ['Zoom appareils', () => flyTo([.2, .3, .45], [.2, .03, .1])]],
+  protocol: [
+    { id: 'lux', q: 'Q2', html: 'Allumer la lampe (distance fixe) et mesurer l\'éclairement reçu par la cellule.' },
+    { id: 'montage', q: 'Q2a', html: 'Réaliser le montage électrique.' },
+    { id: 'mesures', q: 'Q2b', html: 'Relever au moins 8 couples (U ; I), du court-circuit au circuit ouvert.' },
+    { id: 'graphe', q: 'Q2b', html: 'Tracer 𝒫<sub>élec</sub> = f(U) et lire la puissance maximale.' },
+    { id: 'tableau', html: 'Compléter la chaîne de puissance puis la vérifier.' },
+    { id: 'extra', q: 'Q1-4', html: 'Calculer le rendement maximal et répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'ne pas regarder directement la lampe ; la lampe chauffe, ne pas la toucher',
+  table: { rowTitle: 'Chaîne de puissance de la cellule', rows: [{ label: 'Puissance reçue (entrante)', ans: [0] }, { label: 'Puissance utile (exploitable)', ans: [1] }, { label: 'Puissance perdue', ans: [2] }],
+    cols: [{ title: 'Forme', options: ['puissance lumineuse', 'puissance électrique', 'puissance thermique'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q3', num: true, text: 'Éclairement en W·m⁻² : ℰ<sub>éclair</sub> =', unit: 'W·m⁻²', ans: LUX * .05, tol: .02 },
+    { q: 'Q3', num: true, text: 'Puissance lumineuse reçue par la cellule : 𝒫<sub>lum</sub> =', unit: 'W', ans: PLUM, tol: .03 },
+    { q: 'Q2b', num: true, text: 'Puissance électrique maximale lue sur ton graphique : 𝒫<sub>élec,max</sub> =', unit: 'W', get ans() { const p = S18 && S18.pts.length ? Math.max(...S18.pts.map(q => q.U * q.I)) / 1000 : NaN; return p; }, tol: .06 },
+    { q: 'Q3', num: true, text: 'Rendement maximal de la cellule (en %) : η =', unit: '%', get ans() { const p = S18 && S18.pts.length ? Math.max(...S18.pts.map(q => q.U * q.I)) / 1000 : NaN; return p / PLUM * 100; }, tol: .08 },
+    { q: 'Q4', text: 'Les panneaux d\'une maison ne la rendent pas toujours autonome car…', options: ['le rendement est faible et l\'éclairement varie (nuit, nuages, saison, orientation)', 'les panneaux produisent trop d\'énergie', 'le rendement est de 100 %'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Le rendement d\'un convertisseur est le rapport de la puissance exploitable à la puissance entrante : η = 𝒫élec,max / (ℰéclair × S). Pour la cellule étudiée, il ne vaut que quelques % : l\'essentiel de la puissance lumineuse est perdu sous forme thermique.', 'Le rendement d\'une cellule photovoltaïque est proche de 100 %.', 'La puissance électrique fournie ne dépend pas de la résistance branchée.', 'Le rendement est le rapport de la puissance entrante à la puissance utile.'], ans: 0 },
+  build() {
+    const cv = document.createElement('canvas'); cv.width = 260; cv.height = 200; const c = cv.getContext('2d'); c.fillStyle = '#0d2a6b'; c.fillRect(0, 0, 260, 200); c.strokeStyle = '#90a4c8'; c.lineWidth = 2; for (let x = 0; x <= 260; x += 26) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 200); c.stroke(); } for (let y = 0; y <= 200; y += 50) { c.beginPath(); c.moveTo(0, y); c.lineTo(260, y); c.stroke(); }
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace;
+    const cell = new THREE.Mesh(new THREE.BoxGeometry(.065, .006, .05), [0, 0, new THREE.MeshStandardMaterial({ map: tx, roughness: .3, metalness: .3 }), 0, 0, 0].map(m => m || new THREE.MeshStandardMaterial({ color: 0x455a64 }))); cell.position.set(-.12, .02, 0); scene.add(cell);
+    const sup = new THREE.Mesh(new THREE.BoxGeometry(.09, .017, .07), new THREE.MeshStandardMaterial({ color: 0x546e7a })); sup.position.set(-.12, .0085, 0); scene.add(sup);
+    const cl = label('Cellule photovoltaïque\n(6,5 cm × 5,0 cm)', { size: 22, scale: .0007 }); cl.position.set(-.13, .035, .085); scene.add(cl);
+    const lamp = new THREE.Group(); lamp.position.set(-.12, 0, -.12); scene.add(lamp);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .32, 10), new THREE.MeshStandardMaterial({ color: 0x37474f })); pole.position.y = .16; lamp.add(pole);
+    const bas = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .015, 24), new THREE.MeshStandardMaterial({ color: 0x37474f })); bas.position.y = .0075; lamp.add(bas);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, .13, 10), new THREE.MeshStandardMaterial({ color: 0x37474f })); arm.rotation.x = Math.PI / 2; arm.position.set(0, .32, .065); lamp.add(arm);
+    const shade = new THREE.Mesh(new THREE.ConeGeometry(.045, .05, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0xffb300, side: THREE.DoubleSide })); shade.position.set(0, .3, .12); lamp.add(shade);
+    this.bulb = new THREE.Mesh(new THREE.SphereGeometry(.018, 16, 12), new THREE.MeshStandardMaterial({ color: 0xfffde7, emissive: 0x000000 })); this.bulb.position.set(0, .285, .12); lamp.add(this.bulb);
+    this.light = new THREE.SpotLight(0xfff3c4, 0, .6, .6, .5); this.light.position.set(-.12, .285, 0); this.light.target.position.set(-.12, 0, 0); scene.add(this.light, this.light.target);
+    const dl = label('Lampe (distance d fixe)', { size: 22, scale: .0007 }); dl.position.set(0, .37, .05); lamp.add(dl);
+    const lb = new THREE.Mesh(new THREE.BoxGeometry(.05, .02, .08), new THREE.MeshStandardMaterial({ color: 0xeceff1 })); lb.position.set(-.27, .01, .02); scene.add(lb);
+    lux18 = makeScreen(.045, .02, { px: 220, text: '---- lx', bg: '#0f2a1a', fg: '#7CFC9A' }); lux18.mesh.rotation.x = -Math.PI / 2; lux18.mesh.position.set(-.27, .021, .03); scene.add(lux18.mesh);
+    this.sensor = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .01, 20), new THREE.MeshStandardMaterial({ color: 0xfafafa })); this.sensor.position.set(-.27, .005, -.06); scene.add(this.sensor);
+    const ll = label('Luxmètre', { size: 22, scale: .0007 }); ll.position.set(-.27, .06, .02); scene.add(ll);
+    amp18 = makeMeter('Ampèremètre (mA)'); amp18.group.position.set(.07, 0, -.1); scene.add(amp18.group);
+    volt18 = makeMeter('Voltmètre (V)'); volt18.group.position.set(.07, 0, .17); scene.add(volt18.group);
+    this.rh = makeRheostat('Conducteur ohmique\nde résistance réglable'); this.rh.group.position.set(.3, 0, .02); scene.add(this.rh.group);
+    this.wires = new THREE.Group(); scene.add(this.wires); const Y = .012;
+    this.wires.add(eWire([[-.09, .022, -.02], [-.02, Y, -.08], [.045, .034, -.04]]), eWire([[.095, .034, -.04], [.18, Y, -.05], [.2, .04, 0]]), eWire([[.4, .04, 0], [.42, Y, .25], [-.1, Y, .25], [-.15, .022, .02]], 0x212121), eWire([[.045, .034, .228], [-.05, Y, .15], [-.15, .022, .015]], 0x212121), eWire([[.095, .034, .228], [0, Y, .1], [-.09, .022, .015]]));
+    sideCard(chartCard('𝒫élec = f(U)', 'chP18'));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'mTab18' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  show() { const s = S18, m = solve18(s.R); this.bulb.material.emissive.setHex(s.lamp ? 0xfff176 : 0); this.light.intensity = s.lamp ? 2.5 : 0; this.wires.visible = s.built; amp18.set(s.built ? f18(m.I, 3) + ' mA' : '----'); volt18.set(s.built ? f18(m.U) + ' V' : '----'); lux18.set(s.lux ? (s.lamp ? LUX : 0) + ' lx' : '---- lx'); this.rh.setPos(isFinite(s.R) ? Math.min(1, s.R / 47) : 1); },
+  resetScene() { S18 = fresh18(); if (!amp18) return; this.show(); this.drawData(); if ($('#q18')) this.refreshPanel(); },
+  drawData() {
+    const s = S18, t = $('#mTab18'); if (!t) return;
+    t.innerHTML = '<thead><tr><th>R (kΩ)</th><th>U (V)</th><th>I (mA)</th><th>𝒫élec = U × I (mW)</th></tr></thead><tbody>' + (s.pts.map(p => `<tr><td>${isFinite(p.R) ? f18(p.R, 1) : 'infinie'}</td><td>${f18(p.U)}</td><td>${f18(p.I, 3)}</td><td>${f18(p.U * p.I)}</td></tr>`).join('') || '<tr><td colspan="4">Aucune mesure.</td></tr>') + '</tbody>';
+    const pts = s.pts.map(p => [p.U, p.U * p.I]); drawChart($('#chP18'), { xmax: 8, ymax: 4, xlabel: 'U (V)', ylabel: 'Pélec (mW)', pts, curves: pts.length >= 3 ? [{ pts: [...pts].sort((a, b) => a[0] - b[0]), color: '#2F5DA8' }] : [] });
+    const mx = pts.length ? pts.reduce((a, b) => b[1] > a[1] ? b : a) : null;
+    $('#chP18Info').innerHTML = mx ? `Puissance la plus grande mesurée : <b>${f18(mx[1])} mW</b> pour U = ${f18(mx[0])} V.` : 'Note tes mesures pour tracer la courbe.';
+    if (s.pts.length >= 8) step('graphe');
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('h3', {}, '1. Éclairement'),
+      h('div', { class: 'row' }, B('l1', '💡 Allumer la lampe', { t: 'lamp' }), B('l2', 'Mesurer l\'éclairement au luxmètre', { t: 'lux' })),
+      h('h3', {}, '2. Montage et mesures'),
+      h('div', { class: 'row' }, B('k0', '🔌 Réaliser le montage', { t: 'build' })),
+      h('div', { class: 'row' }, h('span', {}, 'R :'), ...RL.map((R, i) => B('q' + i, R === 0 ? '0 (court-circuit)' : isFinite(R) ? f18(R, 1).replace(',0', '') + ' kΩ' : 'infinie (circuit ouvert)', { t: 'R', R: isFinite(R) ? R : 'inf' }))),
+      h('div', { class: 'row' }, B('n1', '✍ Noter (U ; I)', { t: 'note' }), B('n2', 'Effacer mes mesures', { t: 'clear' })),
+      h('div', { id: 'q18', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S18, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok), m = solve18(s.R);
+    en('#l1', !s.lamp); en('#l2', s.lamp && !s.lux); en('#k0', !s.built); RL.forEach((R, i) => { en('#q' + i, s.built); $('#q' + i).classList.toggle('on', s.R === R); });
+    en('#n1', s.built && s.lamp && !s.pts.some(p => p.R === s.R)); en('#n2', s.pts.length > 0);
+    $('#q18').innerHTML = (s.lux ? `Éclairement : <b>${LUX} lux</b> · ` : '') + (s.built ? `R = ${isFinite(s.R) ? f18(s.R, 1) + ' kΩ' : 'infinie'} → U = <b>${f18(m.U)} V</b> ; I = <b>${f18(m.I, 3)} mA</b> ; 𝒫 = ${f18(m.U * m.I)} mW` : 'Montage non réalisé.');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S18;
+    if (a.t === 'lamp') { s.lamp = true; this.show(); say('Lampe allumée, à distance fixe de la cellule.'); return; }
+    if (a.t === 'lux') { s.lux = true; if (!INSTANT) { const p0 = this.sensor.position.clone(), p1 = new THREE.Vector3(-.12, .03, 0); await tween(.7, p => this.sensor.position.lerpVectors(p0, p1, ease(p))); lux18.set(LUX + ' lx'); await wait(800); await tween(.6, p => this.sensor.position.lerpVectors(p1, p0, ease(p))); } this.show(); step('lux'); say(`Éclairement au niveau de la cellule : ${LUX} lux.`); return; }
+    if (a.t === 'build') { s.built = true; this.show(); step('montage'); say('Montage réalisé : cellule, ampèremètre et conducteur ohmique réglable en série ; voltmètre aux bornes de la cellule.'); return; }
+    if (a.t === 'R') { s.R = a.R === 'inf' ? Infinity : a.R; this.show(); const m = solve18(s.R); say(`R = ${isFinite(s.R) ? f18(s.R, 1) + ' kΩ' : 'infinie'} : U = ${f18(m.U)} V ; I = ${f18(m.I, 3)} mA.`); return; }
+    if (a.t === 'note') { const m = solve18(s.R); s.pts.push({ R: s.R, ...m }); s.pts.sort((x, y) => x.U - y.U); this.drawData(); if (s.pts.length >= 8 && s.pts.some(p => p.R === 0) && s.pts.some(p => !isFinite(p.R))) step('mesures'); say(`Mesure notée : U = ${f18(m.U)} V ; I = ${f18(m.I, 3)} mA ; 𝒫 = ${f18(m.U * m.I)} mW.`); return; }
+    if (a.t === 'clear') { s.pts = []; this.drawData(); say('Mesures effacées.'); return; }
+  },
+  async demo() { say('Démonstration : lampe, éclairement et montage.'); await act({ t: 'lamp' }, { record: false }); await act({ t: 'lux' }, { record: false }); await act({ t: 'build' }, { record: false }); await act({ t: 'R', R: 10 }, { record: false }); await wait(1200); say('À toi : fais varier R et note U et I.'); await wait(1200); },
+};
+startTP(C18);
+
+</script></body></html>

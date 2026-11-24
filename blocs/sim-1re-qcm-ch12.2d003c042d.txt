@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labo virtuel · QCM Ch. 12 · Mouvements d'un système</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Charte EFIR 2026-2027 « React » : bleu marine #1A237E, gris Tailwind, encadrés arrondis, avertissements orange */
+:root {
+  --bg: #F9FAFB; --surface: #ffffff; --surface-2: #F3F4F6; --ink: #1F2937; --muted: #6B7280; --soft: #4B5563; --line: #E5E7EB; --line-2: #D1D5DB;
+  --navy: #1A237E; --navy-soft: #E8EAF6; --ok: #166534; --ok-soft: #ECFDF3; --ko: #B42318; --ko-soft: #FEF3F2;
+  --warn-bg: #FFF7ED; --warn-line: #FED7AA; --warn-ico: #EA580C; --warn-ink: #9A3412; --call-bg: #EFF6FF; --call-line: #DBEAFE; --call-ink: #1E3A8A;
+  --font: "Inter", "Segoe UI", system-ui, sans-serif; --r: 8px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1424; --surface: #161C30; --surface-2: #1D2440; --ink: #E5E7EB; --muted: #9CA3AF; --soft: #C3C8D4; --line: #2A3352; --line-2: #3A4466;
+  --navy: #A5B4FC; --navy-soft: #232B52; --ok: #86EFAC; --ok-soft: #12291D; --ko: #FCA5A5; --ko-soft: #321717;
+  --warn-bg: #2B1E12; --warn-line: #6B3E17; --warn-ico: #FB923C; --warn-ink: #FDBA74; --call-bg: #142040; --call-line: #263E70; --call-ink: #BFD3FF; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0F1424; --surface: #161C30; --surface-2: #1D2440; --ink: #E5E7EB; --muted: #9CA3AF; --soft: #C3C8D4; --line: #2A3352; --line-2: #3A4466;
+  --navy: #A5B4FC; --navy-soft: #232B52; --ok: #86EFAC; --ok-soft: #12291D; --ko: #FCA5A5; --ko-soft: #321717;
+  --warn-bg: #2B1E12; --warn-line: #6B3E17; --warn-ico: #FB923C; --warn-ink: #FDBA74; --call-bg: #142040; --call-line: #263E70; --call-ink: #BFD3FF; color-scheme: dark; }
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.5;
+  padding: 18px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 16px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(1.35rem, 3.6vw, 1.8rem); font-weight: 800; color: var(--navy); line-height: 1.2; }
+h2 { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+h2 .pas { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: var(--surface); display: grid; place-items: center; font-size: .85rem; font-weight: 800; }
+p { margin: 0; }
+sub, sup { font-size: .72em; line-height: 0; }
+a.retour { justify-self: start; font-weight: 700; color: var(--navy); text-decoration: none; }
+.haut { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+.type { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .8rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--soft); }
+.type::before { content: ""; width: 5px; height: 15px; border-radius: 3px; background: var(--navy); }
+.type .pastille { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: .78rem; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; }
+.prof { color: var(--muted); font-size: .92rem; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 12px; min-width: 0; }
+.box.hl { background: var(--surface-2); border-color: var(--line-2); }
+.box.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+.box.call { background: var(--call-bg); border-color: var(--call-line); color: var(--call-ink); }
+.titre-box { font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--navy); }
+.warn .titre-box { color: var(--warn-ink); }
+ul.regles { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: .95rem; }
+.champs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+label.ch { display: grid; gap: 4px; font-size: .88rem; font-weight: 600; color: var(--soft); }
+input[type=text], input[type=password] { font: inherit; font-size: 1rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; width: 100%; min-width: 0; }
+.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.mode { font: inherit; text-align: left; cursor: pointer; background: var(--surface); color: var(--ink); border: 1.5px solid var(--line-2); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 4px; }
+.mode b { color: var(--navy); }
+.mode span { font-size: .88rem; color: var(--muted); }
+.mode[aria-pressed="true"] { border-color: var(--navy); background: var(--navy-soft); box-shadow: inset 0 0 0 1px var(--navy); }
+button.btn { font: inherit; font-weight: 700; border-radius: 6px; padding: 9px 16px; cursor: pointer; border: 1.5px solid var(--navy); background: var(--navy); color: var(--surface); }
+button.btn.ghost { background: transparent; color: var(--navy); }
+button.btn.danger { background: transparent; color: var(--ko); border-color: var(--ko); }
+button.btn[disabled] { opacity: .45; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, .opt:focus-within { outline: 3px solid var(--navy); outline-offset: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.msg { font-size: .92rem; min-height: 1.2em; }
+.msg.err { color: var(--ko); font-weight: 600; }
+.msg.ok { color: var(--ok); font-weight: 600; }
+/* barre fixe pendant le QCM */
+.barre { position: sticky; top: 0; z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+.barre .prog { flex: 1 1 160px; min-width: 0; display: grid; gap: 4px; font-size: .85rem; color: var(--soft); }
+.barre .tr { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.barre .tr i { display: block; height: 100%; width: 0; background: var(--navy); transition: width .25s; }
+.chrono { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--navy); }
+.chrono.bas { color: var(--ko); }
+/* questions */
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; margin: 0; min-width: 0; }
+.q legend { padding: 0; display: contents; }
+.q .en { display: flex; gap: 10px; align-items: baseline; font-weight: 600; }
+.q .num { flex: none; min-width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: var(--surface); display: inline-grid; place-items: center; font-size: .82rem; font-weight: 800; }
+.q .tq { font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 4px; padding: 1px 6px; justify-self: start; }
+.opts { display: grid; gap: 6px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; cursor: pointer; background: var(--surface); }
+.opt input { margin-top: 4px; accent-color: var(--navy); flex: none; }
+.opt:hover { border-color: var(--navy); }
+.opt.choisi { border-color: var(--navy); background: var(--navy-soft); }
+.opt.juste { border-color: var(--ok); background: var(--ok-soft); }
+.opt.faux { border-color: var(--ko); background: var(--ko-soft); }
+.opt .lettre { font-weight: 800; color: var(--navy); flex: none; }
+.expl { font-size: .92rem; border-left: 3px solid var(--line-2); padding: 4px 0 4px 10px; color: var(--soft); }
+.expl.ok { border-left-color: var(--ok); } .expl.ko { border-left-color: var(--ko); }
+.q.verrou .opt { cursor: default; }
+/* résultat */
+.score { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center; }
+.score .big { font-size: 2.4rem; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; line-height: 1; }
+.tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.tuiles div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: .85rem; color: var(--muted); }
+.tuiles b { display: block; font-size: 1.25rem; color: var(--ink); }
+textarea.code { width: 100%; font: .78rem ui-monospace, Menlo, Consolas, monospace; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px; }
+.foot { color: var(--muted); font-size: .78rem; text-align: center; letter-spacing: .08em; text-transform: uppercase; border-top: 1px solid var(--line); padding-top: 8px; }
+[hidden] { display: none !important; }
+.nuc { display: inline-flex; flex-direction: column; align-items: flex-end; vertical-align: .62em; line-height: 1; font-size: .68em; margin-right: 1px; }
+.nuc sup, .nuc sub { font-size: 1em; line-height: 1; vertical-align: baseline; position: static; }
+/* vecteurs : flèche dessinée en CSS (la flèche combinante U+20D7 s'affiche mal selon les polices) */
+.vec { display: inline-block; position: relative; padding-top: .3em; line-height: 1; }
+.vec::before { content: ""; position: absolute; left: .08em; right: .12em; top: .14em; border-top: 1.4px solid currentColor; }
+.vec::after { content: ""; position: absolute; right: 0; top: calc(.14em + .7px); border-left: .3em solid currentColor; border-top: .14em solid transparent; border-bottom: .14em solid transparent; transform: translateY(-50%); }
+@media (prefers-reduced-motion: reduce) { .barre .tr i { transition: none; } }
+@media print { .barre, .actions, a.retour, #accueil { display: none !important; } body { background: #fff; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="retour" href="#" id="retour">← Retour</a>
+  <div class="haut"><span>Physique-chimie • Mme Messaoudi</span><span>Année 2026-2027</span></div>
+  <h1 id="titre"></h1>
+  <p class="type" id="typeligne"></p>
+  <p class="prof">Professeure : <b>Mme Messaoudi</b> · EFIR · 2026-2027</p>
+
+  <!-- 1. Avant de commencer -->
+  <section class="box" id="accueil" aria-labelledby="h-acc">
+    <h2 id="h-acc"><span class="pas">1</span>Avant de commencer</h2>
+    <div class="champs">
+      <label class="ch">Nom et prénom<input type="text" id="nom" autocomplete="name" maxlength="60"></label>
+      <label class="ch">Classe<input type="text" id="classe" maxlength="20" placeholder="ex. 1re 3"></label>
+    </div>
+    <div class="modes" role="group" aria-label="Choix du mode">
+      <button class="mode" type="button" id="m-ent" aria-pressed="false"><b>Entraînement</b><span>Correction après chaque réponse, autant d'essais que vous voulez. Rien n'est envoyé.</span></button>
+      <button class="mode" type="button" id="m-eval" aria-pressed="false"><b>Évaluation</b><span id="m-eval-txt"></span></button>
+    </div>
+    <div class="box warn" id="regles-eval" hidden>
+      <p class="titre-box">⚠ Règles de l'évaluation</p>
+      <ul class="regles" id="regles"></ul>
+    </div>
+    <label class="ch" id="code-l" hidden>Code donné par le professeur<input type="password" id="code" autocomplete="off" maxlength="20"></label>
+    <div class="actions"><button class="btn" type="button" id="go">Commencer le QCM</button></div>
+    <p class="msg" id="msg-acc" role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- 2. Le QCM -->
+  <section id="quiz" hidden aria-labelledby="h-quiz" style="display:grid;gap:12px">
+    <div class="barre"><div class="prog"><span id="prog-t"></span><div class="tr"><i id="prog-i"></i></div></div><span class="chrono" id="chrono" aria-live="off"></span></div>
+    <h2 id="h-quiz"><span class="pas">2</span><span id="h-quiz-t">Répondez aux questions</span></h2>
+    <div id="questions" style="display:grid;gap:12px"></div>
+    <div class="box hl">
+      <div class="actions"><button class="btn" type="button" id="fin">Terminer et voir mon résultat</button><button class="btn ghost" type="button" id="recommencer" hidden>Recommencer l'entraînement</button></div>
+      <p class="msg" id="msg-fin" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- 3. Résultat -->
+  <section class="box" id="resultat" hidden aria-labelledby="h-res">
+    <h2 id="h-res"><span class="pas">3</span>Mon résultat</h2>
+    <div class="score"><span class="big" id="r-note"></span><p id="r-phrase"></p></div>
+    <div class="tuiles" id="r-tuiles"></div>
+    <div class="box call"><p id="r-envoi">Préparation de votre bilan PDF…</p></div>
+    <div class="actions">
+      <button class="btn" type="button" id="crpdf">⬇ Télécharger mon compte rendu (PDF)</button>
+      <button class="btn ghost" type="button" id="renvoi">📄 Télécharger mon bilan</button>
+      <button class="btn ghost" type="button" id="voircorr">Voir la correction détaillée</button>
+      <button class="btn ghost" type="button" id="sentrainer">S'entraîner à nouveau</button>
+    </div>
+    <p class="msg" id="crnote" role="status" aria-live="polite"></p>
+    <div id="zone-code" hidden style="display:grid;gap:6px"><p class="prof">Si le PDF ne se télécharge pas, copiez ce code et collez-le dans le devoir Google Classroom (commentaire privé).</p>
+      <textarea class="code" id="code-suivi" rows="3" readonly></textarea><div class="actions"><button class="btn ghost" type="button" id="copier">Copier le code</button></div></div>
+  </section>
+
+  <p class="foot">EFIR · Physique-chimie • Mme Messaoudi · <span id="foot-niv"></span> · Année 2026-2027</p>
+</div>
+
+<script>
+/* Banque de questions écrite à partir des flashcards du chapitre (la première proposition est la bonne ; l'ordre est mélangé à l'affichage) */
+window.QCM = {
+ "id": "1re-qcm-ch12",
+ "fichier": "QCM_1re_Ch12",
+ "titre": "QCM d'évaluation · Mouvements d'un système (Première, ch. 12)",
+ "court": "QCM Ch. 12 · Mouvements d'un système",
+ "niveau": "1re spécialité",
+ "chapitre": 12,
+ "retour": "premiere/mouvement",
+ "code": "1CH12",
+ "questions": [
+  {
+   "id": "vcol",
+   "type": "Cours",
+   "q": "La formule de la vitesse moyenne vue au collège est :",
+   "r": [
+    "<i>v</i> = <i>d</i> / Δ<i>t</i>",
+    "<i>v</i> = <i>d</i> × Δ<i>t</i>",
+    "<i>v</i> = Δ<i>t</i> / <i>d</i>",
+    "<i>v</i> = <i>m</i> × <i>d</i>"
+   ],
+   "x": "<i>v</i> = <i>d</i>/Δ<i>t</i>."
+  },
+  {
+   "id": "vinst",
+   "type": "Cours",
+   "q": "Sur une chronophotographie, le vecteur vitesse au point M<sub><i>i</i></sub> est approché par :",
+   "r": [
+    "<i>v</i>⃗<sub><i>i</i></sub> = <span class=\"vec\">M<sub><i>i</i></sub>M<sub><i>i</i>+1</sub></span> / Δ<i>t</i>",
+    "<i>v</i>⃗<sub><i>i</i></sub> = <span class=\"vec\">M<sub><i>i</i></sub>M<sub><i>i</i>+1</sub></span> × Δ<i>t</i>",
+    "<i>v</i>⃗<sub><i>i</i></sub> = Δ<i>t</i> / M<sub><i>i</i></sub>M<sub><i>i</i>+1</sub>",
+    "<i>v</i>⃗<sub><i>i</i></sub> = <i>v</i>⃗<sub><i>i</i>+1</sub> − <i>v</i>⃗<sub><i>i</i></sub>"
+   ],
+   "x": "Vecteur déplacement entre deux positions successives divisé par la durée Δ<i>t</i> qui les sépare."
+  },
+  {
+   "id": "dv",
+   "type": "Cours",
+   "q": "Le vecteur variation de vitesse au point M<sub><i>i</i></sub> s'écrit :",
+   "r": [
+    "Δ<i>v</i>⃗<sub><i>i</i></sub> = <i>v</i>⃗<sub><i>i</i></sub> − <i>v</i>⃗<sub><i>i</i>−1</sub>",
+    "Δ<i>v</i>⃗<sub><i>i</i></sub> = <i>v</i>⃗<sub><i>i</i></sub> + <i>v</i>⃗<sub><i>i</i>−1</sub>",
+    "Δ<i>v</i>⃗<sub><i>i</i></sub> = <i>v</i>⃗<sub><i>i</i></sub> × Δ<i>t</i>",
+    "Δ<i>v</i>⃗<sub><i>i</i></sub> = <i>v</i>⃗<sub><i>i</i>−1</sub> − <i>v</i>⃗<sub><i>i</i></sub>"
+   ],
+   "x": "Δ<i>v</i>⃗<sub><i>i</i></sub> = <i>v</i>⃗<sub><i>i</i></sub> − <i>v</i>⃗<sub><i>i</i>−1</sub>."
+  },
+  {
+   "id": "newton",
+   "type": "Cours",
+   "q": "Forme approchée de la deuxième loi de Newton vue en Première :",
+   "r": [
+    "Σ<i>F</i>⃗ = <i>m</i> × Δ<i>v</i>⃗ / Δ<i>t</i>",
+    "Σ<i>F</i>⃗ = Δ<i>v</i>⃗ / (<i>m</i> × Δ<i>t</i>)",
+    "Σ<i>F</i>⃗ = <i>m</i> × <i>v</i>⃗",
+    "Σ<i>F</i>⃗ = <i>m</i> × Δ<i>t</i> / Δ<i>v</i>⃗"
+   ],
+   "x": "Σ<i>F</i>⃗ = <i>m</i> Δ<i>v</i>⃗/Δ<i>t</i>."
+  },
+  {
+   "id": "inertie",
+   "type": "Cours",
+   "q": "Si Σ<i>F</i>⃗ = <i>0</i>⃗, alors…",
+   "r": [
+    "le système est immobile ou en mouvement rectiligne uniforme (principe d'inertie)",
+    "le système accélère",
+    "le système tombe en chute libre",
+    "le système décrit un cercle"
+   ],
+   "x": "Somme des forces nulle ⇒ Δ<i>v</i>⃗ = <i>0</i>⃗ : vitesse constante."
+  },
+  {
+   "id": "dvnul",
+   "type": "Savoir-faire",
+   "q": "Si le vecteur variation de vitesse est nul, alors…",
+   "r": [
+    "le système est immobile ou en mouvement rectiligne uniforme",
+    "la somme des forces est forcément non nulle",
+    "le mouvement est circulaire uniforme",
+    "le système ralentit"
+   ],
+   "x": "Pas de variation de vitesse : vitesse constante en direction, sens et valeur."
+  },
+  {
+   "id": "masse",
+   "type": "Savoir-faire",
+   "q": "À forces égales, si la masse <i>m</i> du système augmente, la variation de vitesse…",
+   "r": [
+    "diminue",
+    "augmente",
+    "ne change pas",
+    "change de sens"
+   ],
+   "x": "Δ<i>v</i>⃗ = (Δ<i>t</i>/<i>m</i>) Σ<i>F</i>⃗ : elle est inversement proportionnelle à <i>m</i>."
+  },
+  {
+   "id": "x3",
+   "type": "Savoir-faire",
+   "q": "Si la somme des forces est multipliée par 3, à masse constante (même Δ<i>t</i>), la variation du vecteur vitesse…",
+   "r": [
+    "est multipliée par 3",
+    "est divisée par 3",
+    "est multipliée par 9",
+    "ne change pas"
+   ],
+   "x": "Δ<i>v</i>⃗ est proportionnel à Σ<i>F</i>⃗."
+  },
+  {
+   "id": "2m",
+   "type": "Savoir-faire",
+   "q": "La même force est appliquée pendant la même durée à deux corps au repos, de masses <i>m</i> (corps 1) et 2<i>m</i> (corps 2). La vitesse atteinte par le corps 1 est…",
+   "r": [
+    "le double de celle du corps 2",
+    "la moitié de celle du corps 2",
+    "égale à celle du corps 2",
+    "le quadruple de celle du corps 2"
+   ],
+   "x": "Δ<i>v</i> = <i>F</i>Δ<i>t</i>/<i>m</i> : le corps deux fois moins lourd va deux fois plus vite."
+  },
+  {
+   "id": "sens",
+   "type": "Savoir-faire",
+   "q": "Le vecteur variation de vitesse Δ<i>v</i>⃗ a…",
+   "r": [
+    "même direction et même sens que la somme des forces Σ<i>F</i>⃗",
+    "la direction de Σ<i>F</i>⃗ mais le sens opposé",
+    "une direction perpendiculaire à Σ<i>F</i>⃗",
+    "toujours la direction de la vitesse"
+   ],
+   "x": "D'après la deuxième loi de Newton, Δ<i>v</i>⃗ et Σ<i>F</i>⃗ sont colinéaires et de même sens."
+  },
+  {
+   "id": "chute",
+   "type": "Savoir-faire",
+   "q": "Lors d'une chute libre, le vecteur Δ<i>v</i>⃗ est…",
+   "r": [
+    "vertical, vers le bas",
+    "vertical, vers le haut",
+    "horizontal",
+    "nul"
+   ],
+   "x": "Seul le poids agit : Δ<i>v</i>⃗ a la direction et le sens du poids."
+  },
+  {
+   "id": "resultante",
+   "type": "Savoir-faire",
+   "q": "La <b>résultante des forces</b> est…",
+   "r": [
+    "la somme vectorielle des forces appliquées au système",
+    "la plus grande des forces appliquées",
+    "la somme des valeurs des forces",
+    "la force de frottement"
+   ],
+   "x": "Σ<i>F</i>⃗ : somme des vecteurs forces."
+  },
+  {
+   "id": "somme",
+   "type": "Cours",
+   "q": "Comment construit-on graphiquement la somme de deux vecteurs ?",
+   "r": [
+    "On les place bout à bout (l'origine du second à l'extrémité du premier)",
+    "On les place origine contre origine et on trace le vecteur qui relie leurs extrémités",
+    "On additionne leurs longueurs sur une même droite",
+    "On trace la bissectrice de l'angle qu'ils forment"
+   ],
+   "x": "Méthode « tête à queue » (relation de Chasles)."
+  },
+  {
+   "id": "oppose",
+   "type": "Cours",
+   "q": "Comment obtient-on graphiquement le vecteur −<i>v</i>⃗ ?",
+   "r": [
+    "Même direction, même longueur, sens opposé à <i>v</i>⃗",
+    "Même sens, longueur divisée par 2",
+    "Direction perpendiculaire à <i>v</i>⃗",
+    "Même vecteur décalé"
+   ],
+   "x": "On prend <i>v</i>⃗ dans l'autre sens."
+  },
+  {
+   "id": "graph",
+   "type": "Savoir-faire",
+   "q": "Méthode graphique : en M<sub><i>i</i></sub>, comment trace-t-on le vecteur vitesse ?",
+   "r": [
+    "Sa valeur est M<sub><i>i</i></sub>M<sub><i>i</i>+1</sub>/Δ<i>t</i> ; on le trace à l'échelle, tangent à la trajectoire, dans le sens du mouvement",
+    "Sa valeur est M<sub><i>i</i></sub>M<sub><i>i</i>+1</sub> × Δ<i>t</i> ; on le trace perpendiculaire à la trajectoire",
+    "On le trace vers le centre de la trajectoire",
+    "On le trace vertical, quelle que soit la trajectoire"
+   ],
+   "x": "Mesurer <i>d</i>, déterminer Δ<i>t</i>, calculer <i>v</i> = <i>d</i>/Δ<i>t</i>, choisir une échelle et tracer le vecteur tangent à la trajectoire."
+  },
+  {
+   "id": "coord",
+   "type": "Savoir-faire",
+   "q": "Méthode des coordonnées : avec M<sub><i>i</i></sub>(<i>x</i><sub><i>i</i></sub> ; <i>y</i><sub><i>i</i></sub>) et M<sub><i>i</i>+1</sub>(<i>x</i><sub><i>i</i>+1</sub> ; <i>y</i><sub><i>i</i>+1</sub>), la coordonnée <i>v</i><sub><i>x</i></sub> de la vitesse vaut :",
+   "r": [
+    "(<i>x</i><sub><i>i</i>+1</sub> − <i>x</i><sub><i>i</i></sub>) / Δ<i>t</i>",
+    "(<i>x</i><sub><i>i</i>+1</sub> + <i>x</i><sub><i>i</i></sub>) / Δ<i>t</i>",
+    "(<i>x</i><sub><i>i</i>+1</sub> − <i>x</i><sub><i>i</i></sub>) × Δ<i>t</i>",
+    "(<i>y</i><sub><i>i</i>+1</sub> − <i>y</i><sub><i>i</i></sub>) / Δ<i>t</i>"
+   ],
+   "x": "<i>v</i><sub><i>x</i></sub> = (<i>x</i><sub><i>i</i>+1</sub> − <i>x</i><sub><i>i</i></sub>)/Δ<i>t</i> et <i>v</i><sub><i>y</i></sub> = (<i>y</i><sub><i>i</i>+1</sub> − <i>y</i><sub><i>i</i></sub>)/Δ<i>t</i>."
+  }
+ ]
+};
+</script>
+<script>
+/* ===== Réglages de l'évaluation (modifiables par le professeur) ===== */
+const REGLAGES = {
+  duree: 25,              /* minutes ; 0 = pas de minuteur */
+  tentatives: 1,          /* nombre de tentatives en mode évaluation, par élève et par navigateur */
+  code: "",  /* code à donner en classe pour lancer l'évaluation ("" = pas de code) */
+  correction: true,       /* true : l'élève voit la correction détaillée après l'envoi */
+  nbQuestions: 0          /* 0 = toutes les questions ; sinon tirage au sort de n questions parmi la banque */
+};
+/* ===== Moteur du QCM ===== */
+(function () {
+const VEC = h => String(h).replace(/(<i>[^<]*<\/i>|[A-Za-z0-9]+)\u20D7/g, '<span class="vec">$1</span>');
+window.QCM.questions.forEach(q => { q.q = VEC(q.q); q.r = q.r.map(VEC); q.x = VEC(q.x); });
+const Q = window.QCM, $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const CLE = "efir-qcm-" + Q.id, fr = (x, d = 1) => Number(x).toFixed(d).replace(".", ",").replace(/,0$/, "");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const sansBalise = h => { const d = document.createElement("div"); d.innerHTML = h; d.querySelectorAll(".nuc").forEach(n => n.replaceWith("(" + n.querySelector("sup").textContent + ";" + n.querySelector("sub").textContent + ")")); d.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); return d.textContent.replace(/\s+/g, " ").trim(); };
+const melange = l => { const a = l.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const LET = "ABCD";
+
+/* état sauvegardé : { tentatives: [...résultats], cours: { mode, nom, classe, ordre, opts, rep, t0, sorties } } */
+let E = { tentatives: [], cours: null };
+try { const o = JSON.parse(localStorage.getItem(CLE)); if (o && Array.isArray(o.tentatives)) E = o; } catch (e) {}
+const sauve = () => { try { localStorage.setItem(CLE, JSON.stringify(E)); } catch (e) {} };
+
+/* en-tête */
+document.title = "Labo virtuel · " + Q.court;
+$("#titre").textContent = Q.titre.replace(/ \(.*\)$/, "");
+$("#typeligne").innerHTML = `QCM d'évaluation <span style="color:var(--line-2)">•</span> Chapitre ${Q.chapitre}<span class="pastille">${Q.questions.length} questions · issues des flashcards</span>`;
+$("#foot-niv").textContent = Q.niveau;
+$("#retour").addEventListener("click", e => { e.preventDefault(); try { parent.location.hash = Q.retour; } catch (x) { location.hash = ""; } });
+const nbQ = REGLAGES.nbQuestions > 0 ? Math.min(REGLAGES.nbQuestions, Q.questions.length) : Q.questions.length;
+$("#m-eval-txt").textContent = `${nbQ} questions${REGLAGES.duree ? ", " + REGLAGES.duree + " min" : ""}, ${REGLAGES.tentatives} tentative${REGLAGES.tentatives > 1 ? "s" : ""}. Note dans votre bilan PDF, à déposer sur Classroom.`;
+$("#regles").innerHTML = [
+  `${nbQ} questions, une seule bonne réponse par question ; les questions et les propositions sont dans un ordre différent pour chaque élève.`,
+  REGLAGES.duree ? `Durée : ${REGLAGES.duree} minutes. À la fin du temps, l'évaluation se termine automatiquement.` : "",
+  `${REGLAGES.tentatives} tentative${REGLAGES.tentatives > 1 ? "s" : ""} seulement. Une réponse non cochée compte 0.`,
+  "Restez sur cette page : chaque sortie (autre onglet, autre application) est notée dans votre bilan.",
+  "À la fin, téléchargez votre bilan PDF et déposez-le dans le devoir Google Classroom."].filter(Boolean).map(t => `<li>${t}</li>`).join("");
+
+let mode = "";
+function choisirMode(m) { mode = m; $("#m-ent").setAttribute("aria-pressed", m === "ent"); $("#m-eval").setAttribute("aria-pressed", m === "eval");
+  $("#regles-eval").hidden = m !== "eval"; $("#code-l").hidden = m !== "eval" || !REGLAGES.code; $("#msg-acc").textContent = ""; $("#msg-acc").className = "msg"; }
+$("#m-ent").onclick = () => choisirMode("ent"); $("#m-eval").onclick = () => choisirMode("eval");
+const dit = (el, t, c) => { el.textContent = t; el.className = "msg" + (c ? " " + c : ""); };
+const evalFaites = () => E.tentatives.filter(t => t.mode === "eval").length;
+
+$("#go").onclick = () => {
+  const nom = $("#nom").value.trim(), cl = $("#classe").value.trim(), m = $("#msg-acc");
+  if (!mode) return dit(m, "Choisissez d'abord un mode : Entraînement ou Évaluation.", "err");
+  if (mode === "eval") {
+    if (!nom) { $("#nom").focus(); return dit(m, "Écrivez votre nom et prénom.", "err"); }
+    if (!cl) { $("#classe").focus(); return dit(m, "Écrivez votre classe.", "err"); }
+    if (evalFaites() >= REGLAGES.tentatives) return dit(m, "Vous avez déjà utilisé votre tentative d'évaluation. Votre résultat est affiché plus bas.", "err");
+    if (REGLAGES.code && $("#code").value.trim().toUpperCase() !== REGLAGES.code.toUpperCase()) { $("#code").focus(); return dit(m, "Code incorrect : demandez-le à votre professeur.", "err"); }
+  }
+  const choix = melange(Q.questions.map((_, i) => i)).slice(0, mode === "eval" ? nbQ : Q.questions.length);
+  E.cours = { mode, nom, classe: cl, ordre: choix, opts: choix.map(() => melange([0, 1, 2, 3])), rep: choix.map(() => null), t0: Date.now(), sorties: 0, essais: choix.map(() => 0) };
+  sauve(); lancer();
+};
+
+/* affichage des questions */
+let minuteur = 0;
+function lancer() {
+  const C = E.cours; $("#accueil").hidden = true; $("#resultat").hidden = true; $("#quiz").hidden = false;
+  $("#h-quiz-t").textContent = C.mode === "eval" ? `Évaluation · ${C.nom} (${C.classe})` : "Entraînement : correction immédiate";
+  $("#fin").hidden = C.mode !== "eval"; $("#recommencer").hidden = C.mode === "eval";
+  $("#questions").innerHTML = C.ordre.map((qi, k) => { const q = Q.questions[qi];
+    return `<fieldset class="q" id="q${k}"><legend><span class="tq">${esc(q.type)}</span><span class="en"><span class="num">${k + 1}</span><span>${q.q}</span></span></legend>
+      <div class="opts">${C.opts[k].map((o, j) => `<label class="opt"><input type="radio" name="r${k}" value="${o}"><span class="lettre">${LET[j]}</span><span>${q.r[o]}</span></label>`).join("")}</div>
+      <p class="expl" hidden></p></fieldset>`; }).join("");
+  C.ordre.forEach((_, k) => { const fs = $("#q" + k);
+    fs.querySelectorAll("input").forEach(inp => inp.addEventListener("change", () => repondre(k, +inp.value)));
+    if (C.rep[k] != null) { const inp = fs.querySelector(`input[value="${C.rep[k]}"]`); if (inp) inp.checked = true; marquer(k); } });
+  progres();
+  clearInterval(minuteur);
+  if (C.mode === "eval" && REGLAGES.duree) { const tic = () => { const reste = C.t0 + REGLAGES.duree * 60000 - Date.now();
+      if (reste <= 0) { clearInterval(minuteur); $("#chrono").textContent = "0:00"; terminer(true); return; }
+      const s = Math.ceil(reste / 1000); $("#chrono").textContent = `⏱ ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; $("#chrono").classList.toggle("bas", s <= 120); };
+    tic(); minuteur = setInterval(tic, 1000); } else $("#chrono").textContent = C.mode === "eval" ? "" : "Mode entraînement";
+}
+function repondre(k, o) { const C = E.cours; if (!C) return;
+  if (C.mode === "ent" && C.rep[k] === 0) return; /* déjà juste : verrouillée */
+  C.rep[k] = o; C.essais[k]++; sauve(); marquer(k); progres(); }
+function marquer(k) { const C = E.cours, fs = $("#q" + k), q = Q.questions[C.ordre[k]];
+  fs.querySelectorAll(".opt").forEach(l => { const v = +l.querySelector("input").value; l.classList.toggle("choisi", v === C.rep[k]); l.classList.remove("juste", "faux"); });
+  if (C.mode !== "ent" || C.rep[k] == null) return;
+  const lab = fs.querySelector(`input[value="${C.rep[k]}"]`).closest(".opt"), ok = C.rep[k] === 0, ex = fs.querySelector(".expl");
+  lab.classList.add(ok ? "juste" : "faux"); ex.hidden = false; ex.className = "expl " + (ok ? "ok" : "ko");
+  ex.innerHTML = ok ? `<b>✓ Juste.</b> ${q.x}` : "<b>✗ Pas tout à fait.</b> Relisez la flashcard et essayez une autre proposition.";
+  if (ok) { fs.classList.add("verrou"); fs.querySelectorAll("input").forEach(i => i.disabled = true); } }
+function progres() { const C = E.cours, n = C.rep.filter(r => r != null).length, t = C.ordre.length;
+  const j = C.mode === "ent" ? C.rep.filter(r => r === 0).length : 0;
+  $("#prog-t").textContent = C.mode === "ent" ? `${j} / ${t} questions réussies` : `${n} / ${t} questions répondues`;
+  $("#prog-i").style.width = (100 * (C.mode === "ent" ? j : n) / t) + "%"; }
+$("#recommencer").onclick = () => { E.cours = null; sauve(); $("#quiz").hidden = true; $("#accueil").hidden = false; choisirMode("ent"); };
+
+/* sorties de page pendant l'évaluation */
+let horsPage = false;
+const sortie = () => { const C = E.cours; if (!C || C.mode !== "eval" || horsPage) return; horsPage = true; C.sorties++; sauve(); };
+document.addEventListener("visibilitychange", () => { if (document.hidden) sortie(); else horsPage = false; });
+
+/* fin de l'évaluation */
+let confirme = false;
+$("#fin").onclick = () => { const C = E.cours, vides = C.rep.filter(r => r == null).length;
+  if (vides && !confirme) { confirme = true; dit($("#msg-fin"), `Il reste ${vides} question${vides > 1 ? "s" : ""} sans réponse. Cliquez de nouveau pour terminer quand même.`, "err"); setTimeout(() => { confirme = false; }, 6000); return; }
+  terminer(false); };
+function terminer(auto) {
+  const C = E.cours; if (!C || C.mode !== "eval") return; clearInterval(minuteur);
+  const det = C.ordre.map((qi, k) => { const q = Q.questions[qi], r = C.rep[k];
+    return { id: q.id, type: q.type, q: q.q, ok: r === 0, rep: r == null ? null : q.r[r], lettre: r == null ? "–" : LET[C.opts[k].indexOf(r)], bonne: q.r[0], bonneL: LET[C.opts[k].indexOf(0)], x: q.x }; });
+  const justes = det.filter(d => d.ok).length, note = Math.round(justes / det.length * 20 * 2) / 2;
+  const res = { mode: "eval", nom: C.nom, classe: C.classe, t0: C.t0, t1: Date.now(), justes, n: det.length, note, sorties: C.sorties, auto, det,
+    repondues: C.rep.filter(r => r != null).length };
+  E.tentatives.push(res); E.cours = null; sauve(); afficherResultat(res, true);
+}
+
+/* résultat, envoi au professeur (bilan PDF + code TPEFIR1 lu par l'Espace professeur) */
+function codeSuivi(r) {
+  const parts = ["Cours", "Savoir-faire"].map(t => { const l = r.det.filter(d => d.type === t); return [t, l.filter(d => d.ok).length, l.length]; }).filter(p => p[2]);
+  const err = []; if (r.sorties) err.push(`a quitté la page du QCM ${r.sorties} fois`); if (r.auto) err.push("n'a pas terminé dans le temps (fin automatique)");
+  if (r.repondues < r.n) err.push(`a laissé ${r.n - r.repondues} question${r.n - r.repondues > 1 ? "s" : ""} sans réponse`);
+  const o = { v: 1, tp: Q.fichier, titre: Q.titre, eleve: r.nom, classe: r.classe, t0: r.t0, t1: r.t1, note: r.note, av: Math.round(r.repondues / r.n * 100) / 100,
+    parties: parts, erreurs: err, conc: `QCM : ${r.justes} réponses justes sur ${r.n}.`,
+    j: r.det.map((d, k) => [r.t1 - (r.det.length - k) * 1000, "q", d.id, sansBalise(d.q).slice(0, 90), d.ok ? 1 : 0, d.rep == null ? "Pas de réponse" : (d.ok ? "Juste : " : "Faux : ") + sansBalise(d.rep).slice(0, 140)]) };
+  return { code: "TPEFIR1:" + btoa(unescape(encodeURIComponent(JSON.stringify(o)))), err };
+}
+async function envoyer(r) {
+  const zone = $("#r-envoi"), { code, err } = codeSuivi(r); $("#code-suivi").value = code;
+  let base = ""; try { base = window.top.location.origin; } catch (e) { base = location.origin; }
+  if (false) { zone.textContent = "Envoi automatique impossible hors du site en ligne : copiez le code ci-dessous et envoyez-le à votre professeur."; $("#zone-code").hidden = false; return false; }
+  const champs = { eleve: r.nom, classe: r.classe, tp: Q.titre, note: fr(r.note) + " / 20", avancement: Math.round(r.repondues / r.n * 100) + " %",
+    erreurs: err.length ? err.map(x => "L'élève " + x).join(" | ") : "aucune", reponses_fausses: String(r.n - r.justes), temps: Math.max(1, Math.round((r.t1 - r.t0) / 60000)) + " min",
+    detail: r.det.map((d, k) => `${k + 1}. ${d.ok ? "juste" : "faux"} · ${sansBalise(d.q).slice(0, 70)} · réponse : ${d.rep == null ? "aucune" : sansBalise(d.rep)}`).join("\n"),
+    conclusion: `QCM : ${r.justes} / ${r.n} réponses justes${r.sorties ? ` · ${r.sorties} sortie(s) de page` : ""}`, date: new Date(r.t1).toLocaleString("fr-FR"), code };
+  zone.textContent = "Préparation de votre bilan PDF…";
+  try { const x = await (window.EFIR_BILAN || window.top.EFIR_BILAN)(champs);
+    if (!x.ok) throw new Error(x.status);
+    r.envoye = Date.now(); sauve(); zone.textContent = `✓ Bilan PDF téléchargé (${fr(r.note)} / 20) : déposez-le dans le devoir Google Classroom.`; return true; }
+  catch (e) { zone.textContent = "Le PDF n'a pas pu être créé : cliquez de nouveau sur « Télécharger mon bilan » ou copiez le code ci-dessous dans le devoir Classroom."; $("#zone-code").hidden = false; return false; }
+}
+let courant = null;
+function afficherResultat(r, envoiAuto) {
+  courant = r; $("#accueil").hidden = true; $("#quiz").hidden = true; $("#resultat").hidden = false;
+  $("#r-note").textContent = fr(r.note) + " / 20";
+  $("#r-phrase").innerHTML = `<b>${esc(r.nom)}</b> (${esc(r.classe)}) · ${r.justes} réponse${r.justes > 1 ? "s" : ""} juste${r.justes > 1 ? "s" : ""} sur ${r.n}.` + (r.auto ? "<br>Temps écoulé : l'évaluation s'est terminée automatiquement." : "");
+  const parts = ["Cours", "Savoir-faire"].map(t => { const l = r.det.filter(d => d.type === t); return l.length ? `<div><b>${l.filter(d => d.ok).length} / ${l.length}</b>Questions de ${t.toLowerCase()}</div>` : ""; }).join("");
+  $("#r-tuiles").innerHTML = parts + `<div><b>${Math.max(1, Math.round((r.t1 - r.t0) / 60000))} min</b>Durée</div><div><b>${r.sorties}</b>Sortie${r.sorties > 1 ? "s" : ""} de page</div>`;
+  $("#voircorr").hidden = !REGLAGES.correction;
+  /* questions affichées en lecture seule */
+  $("#fin").hidden = true; $("#recommencer").hidden = true; $("#msg-fin").textContent = ""; $("#chrono").textContent = "Terminé"; $("#chrono").classList.remove("bas");
+  $("#h-quiz-t").textContent = `Évaluation terminée · ${r.nom}`;
+  $("#quiz").querySelector(".barre").hidden = true;
+  $("#questions").hidden = true;
+  $("#r-envoi").textContent = r.envoye ? `✓ Bilan PDF téléchargé le ${new Date(r.envoye).toLocaleString("fr-FR")} : déposez-le dans le devoir Google Classroom.` : "Cliquez sur « Télécharger mon bilan », puis déposez le PDF dans le devoir Google Classroom.";
+  $("#resultat").scrollIntoView({ block: "start" });
+}
+$("#sentrainer").onclick = () => { $("#resultat").hidden = true; $("#quiz").hidden = true; $("#fin").closest(".box").hidden = false; $("#questions").hidden = false; $("#quiz").querySelector(".barre").hidden = false; $("#accueil").hidden = false; choisirMode("ent"); $("#accueil").scrollIntoView({ block: "start" }); };
+$("#renvoi").onclick = () => courant && envoyer(courant);
+$("#copier").onclick = () => { const ta = $("#code-suivi"); ta.select(); try { navigator.clipboard.writeText(ta.value).then(() => dit($("#crnote"), "✓ Code copié : collez-le dans le devoir Google Classroom.", "ok")); } catch (e) { document.execCommand("copy"); } };
+$("#voircorr").onclick = () => { const r = courant; if (!r) return;
+  $("#quiz").hidden = false; $("#fin").closest(".box").hidden = true; $("#questions").hidden = false; $("#h-quiz-t").textContent = "Correction détaillée";
+  $("#questions").innerHTML = r.det.map((d, k) => `<fieldset class="q verrou"><legend><span class="tq">${esc(d.type)}</span><span class="en"><span class="num">${k + 1}</span><span>${d.q}</span></span></legend>
+    <div class="opts">${d.rep == null ? '<p class="opt faux">Pas de réponse.</p>' : `<p class="opt ${d.ok ? "juste" : "faux"}"><span class="lettre">${d.ok ? "✓" : "✗"}</span><span>Votre réponse : ${d.rep}</span></p>`}
+    ${d.ok ? "" : `<p class="opt juste"><span class="lettre">✓</span><span>Bonne réponse : ${d.bonne}</span></p>`}</div><p class="expl ${d.ok ? "ok" : "ko"}">${d.x}</p></fieldset>`).join("");
+  $("#questions").scrollIntoView({ block: "start" }); };
+
+/* ---------- compte rendu PDF (jsPDF 2.5.1, chargé à la demande) ---------- */
+const W1252 = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
+const SUP = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁺": "+", "⁻": "-", "−": "-", "→": "->", "✓": "(juste)", "✗": "(faux)", "≤": "<=", "≥": ">=", "≈": "~", "≠": "!=", "α": "alpha", "Δ": "Delta ", "Σ": "somme ", "ℓ": "l", "×": "x", "⃗": "", "⇄": "<=>", "⇔": "<=>", "√": "racine", "π": "pi", "ρ": "rho", "λ": "lambda", "σ": "sigma", "τ": "tau", "θ": "theta", "γ": "gamma", "χ": "khi", "Π": "Pi", "Φ": "Phi", "ν": "nu", "ε": "epsilon", "Ω": "ohm", "χ": "khi", "₀": "0", "₁": "1", "₂": "2", "δ": "delta", "η": "eta", "ω": "omega", "β": "beta", "′": "'", "∞": "infini", "⊕": "(+)", "⊖": "(-)", "≠": "!=", "∈": "dans", "⏱": "", "⚠": "", " ": " ", " ": " " };
+const txt = s => [...String(s).replace(/\s+/g, " ").trim()].map(c => SUP[c] != null ? SUP[c] : c).join("").split("").filter(c => c.charCodeAt(0) < 256 || W1252.includes(c)).join("").replace(/ {2,}/g, " ").trim();
+const plat = h => { const d = document.createElement("div"); d.innerHTML = h; d.querySelectorAll(".nuc").forEach(n => n.replaceWith("(" + n.querySelector("sup").textContent + ";" + n.querySelector("sub").textContent + ")")); d.querySelectorAll("sup").forEach(s => s.replaceWith("^" + s.textContent)); return d.textContent; };
+function chargerJsPDF() { if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = () => window.jspdf ? ok(window.jspdf) : ko(); s.onerror = ko; document.head.appendChild(s); }); }
+function faitPDF(r) {
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" }), X = 16, Lg = 178, BAS = 280; let y = 16;
+  const NAVY = [26, 35, 126], INK = [31, 41, 55], GRIS = [107, 114, 128], VERT = [22, 101, 52], ROUGE = [180, 35, 24];
+  const place = h => { if (y + h > BAS) { doc.addPage(); y = 16; } };
+  const ligne = (t, o = {}) => { doc.setFont("helvetica", o.b ? "bold" : "normal"); doc.setFontSize(o.s || 10); doc.setTextColor(...(o.c || INK));
+    const lh = (o.s || 10) * .43, ls = doc.splitTextToSize(txt(t), Lg - (o.ind || 0)); ls.forEach(l => { place(lh); doc.text(l, X + (o.ind || 0), y); y += lh; }); y += o.ap == null ? 1 : o.ap; };
+  doc.setFillColor(...NAVY); doc.rect(0, 0, 210, 7, "F");
+  ligne("PHYSIQUE-CHIMIE - MME MESSAOUDI · ANNÉE 2026-2027", { s: 7.5, c: GRIS, ap: 2 });
+  ligne(Q.titre, { b: 1, s: 15, c: NAVY, ap: 1.5 });
+  ligne(`QCM D'ÉVALUATION · CHAPITRE ${Q.chapitre} · ${Q.niveau.toUpperCase()}`, { b: 1, s: 8.5, c: GRIS, ap: 3 });
+  ligne(`Élève : ${r.nom}   ·   Classe : ${r.classe}   ·   ${new Date(r.t1).toLocaleString("fr-FR")}`, { b: 1, s: 10.5, ap: 1.5 });
+  ligne(`Note : ${fr(r.note)} / 20   (${r.justes} réponses justes sur ${r.n})`, { b: 1, s: 13, c: NAVY, ap: 1.5 });
+  const parts = ["Cours", "Savoir-faire"].map(t => { const l = r.det.filter(d => d.type === t); return l.length ? `${t} : ${l.filter(d => d.ok).length} / ${l.length}` : ""; }).filter(Boolean).join("   ·   ");
+  ligne(`${parts}   ·   Durée : ${Math.max(1, Math.round((r.t1 - r.t0) / 60000))} min   ·   Sorties de page : ${r.sorties}${r.auto ? "   ·   Fin automatique (temps écoulé)" : ""}`, { s: 9, c: GRIS, ap: 3 });
+  doc.setDrawColor(229, 231, 235); doc.setLineWidth(.5); doc.line(X, y, X + Lg, y); y += 5;
+  r.det.forEach((d, k) => { place(18);
+    ligne(`${k + 1}. ${plat(d.q)}`, { b: 1, s: 9.8, ap: .8 });
+    ligne(d.rep == null ? "Votre réponse : aucune (faux)" : `Votre réponse (${d.lettre}) : ${plat(d.rep)}  ${d.ok ? "(juste)" : "(faux)"}`, { s: 9.4, ind: 4, c: d.ok ? VERT : ROUGE, ap: .6 });
+    if (!d.ok && REGLAGES.correction) ligne(`Bonne réponse (${d.bonneL}) : ${plat(d.bonne)}`, { s: 9.4, ind: 4, c: VERT, ap: .6 });
+    y += 2.2; });
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) { doc.setPage(p); doc.setDrawColor(229, 231, 235); doc.line(X, 285, X + Lg, 285); doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(...GRIS);
+    doc.text(txt("EFIR · PHYSIQUE-CHIMIE - MME MESSAOUDI"), X, 289); doc.text(txt(`${Q.niveau.toUpperCase()} · ${r.nom}`), 105, 289, { align: "center" }); doc.text(`${p} / ${n}`, X + Lg, 289, { align: "right" }); }
+  const nomF = r.nom.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "") || "eleve";
+  doc.save(`${Q.fichier}_compte_rendu_${nomF}.pdf`);
+}
+$("#crpdf").onclick = () => { const r = courant, note = $("#crnote"); if (!r) return; $("#crpdf").disabled = true; dit(note, "Préparation du PDF…");
+  chargerJsPDF().then(() => { faitPDF(r); dit(note, "✓ PDF téléchargé : déposez-le dans votre devoir Google Classroom (Ajouter > Fichier, puis Rendre).", "ok"); })
+    .catch(() => { dit(note, "Le PDF n'a pas pu être préparé (connexion ?). Utilisez Imprimer > Enregistrer au format PDF.", "err"); $("#voircorr").click(); window.print(); })
+    .finally(() => { $("#crpdf").disabled = false; }); };
+
+/* reprise après rechargement */
+const der = E.tentatives.filter(t => t.mode === "eval").slice(-1)[0];
+if (E.cours) { $("#nom").value = E.cours.nom; $("#classe").value = E.cours.classe; lancer(); }
+else if (der && evalFaites() >= REGLAGES.tentatives) { $("#nom").value = der.nom; $("#classe").value = der.classe; afficherResultat(der, false); }
+})();
+</script>
+</body>
+</html>

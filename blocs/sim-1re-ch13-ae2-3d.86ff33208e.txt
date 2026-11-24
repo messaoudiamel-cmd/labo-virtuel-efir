@@ -1,0 +1,137 @@
+<!--efir1re:AE2 · Effet Joule 3D-->
+window.EFIR_RETOUR = "premiere/energie/%C3%89nergie%20des%20syst%C3%A8mes%20%C3%A9lectriques";
+
+// ====================================================================
+// Ch. 13 · AE2 · Chauffage par effet Joule
+// ====================================================================
+// ====================================================================
+// Module commun : appareils électriques (multimètres, fils, rhéostat)
+// ====================================================================
+function eWire(pts, col = 0xc62828, r = .0018) { return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 40, r, 6), new THREE.MeshStandardMaterial({ color: col, roughness: .5 })); }
+function makeMeter(name, o = {}) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(.09, .03, .14), new THREE.MeshStandardMaterial({ color: o.color || 0xffca28, roughness: .6 })); body.position.y = .015; g.add(body);
+  const sc = makeScreen(.07, .03, { px: 280, text: o.text || '----', bg: '#0f2a1a', fg: '#7CFC9A' }); const bez = new THREE.Mesh(new THREE.BoxGeometry(.085, .045, .012), new THREE.MeshStandardMaterial({ color: 0x37474f })); bez.rotation.x = -.9; bez.position.set(0, .045, -.045); g.add(bez); sc.mesh.rotation.x = -.9; sc.mesh.position.set(0, .0495, -.04); g.add(sc.mesh);
+  const dial = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .006, 24), new THREE.MeshStandardMaterial({ color: 0x37474f })); dial.position.set(0, .033, .025); g.add(dial);
+  for (const [x, c] of [[-.025, 0x212121], [.025, 0xc62828]]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, .008, 12), new THREE.MeshStandardMaterial({ color: c })); t.position.set(x, .034, .058); g.add(t); }
+  const l = label(name, { size: 22, scale: .0007 }); l.position.set(0, .1, -.05); g.add(l);
+  return { group: g, screen: sc, set: t => sc.set(t) };
+}
+function makeRheostat(name = 'Conducteur ohmique\nde résistance réglable') {
+  const g = new THREE.Group();
+  const coil = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .2, 32), new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: .6, roughness: .45 })); coil.rotation.z = Math.PI / 2; coil.position.y = .04; g.add(coil);
+  for (const x of [-.11, .11]) { const e = new THREE.Mesh(new THREE.BoxGeometry(.015, .07, .06), new THREE.MeshStandardMaterial({ color: 0x37474f })); e.position.set(x, .035, 0); g.add(e); }
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(.22, .006, .006), new THREE.MeshStandardMaterial({ color: 0x90a4ae, metalness: .8 })); bar.position.set(0, .075, 0); g.add(bar);
+  const cur = new THREE.Mesh(new THREE.BoxGeometry(.02, .02, .03), new THREE.MeshStandardMaterial({ color: 0x212121 })); cur.position.set(0, .07, 0); g.add(cur);
+  const l = label(name, { size: 22, scale: .0007 }); l.position.set(0, .13, 0); g.add(l);
+  return { group: g, setPos(f) { cur.position.x = -.09 + .18 * f; } };
+}
+
+const M_EAU = .2, C_EAU2 = 4185, C_CAL = 80, H_LOSS = .05, TI = 20, TF = 30;
+const RS17 = [2, 4, 6], IS17 = [2, 3, 4];
+let th17, chr17, amp17, volt17, gen17, coil17, S17 = null;
+const fresh17 = () => ({ R: 4, I: 2, fresh: true, T: TI, res: [], on: false });
+const f17 = (v, n = 1) => v.toFixed(n).replace('.', ',');
+function heatTime(P) { let T = TI, t = 0; const C = M_EAU * C_EAU2 + C_CAL, dt = .5; while (T < TF && t < 1e5) { T += (P - H_LOSS * (T - TI)) / C * dt; t += dt; } return Math.round(t); }
+const mmss = t => `${String(Math.floor(t / 60)).padStart(2, '0')} min ${String(Math.round(t % 60)).padStart(2, '0')} s`;
+const C17 = {
+  id: 'p1_ch13_ae2', code: 'AE2', short: 'Effet Joule 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 13 · Activité expérimentale AE2 · Simulation 3D',
+  title: 'Chauffage par effet Joule',
+  problem: 'Un thermoplongeur chauffe l\'eau grâce à un matériau résistif parcouru par un courant. De quelles grandeurs l\'énergie thermique fournie par un conducteur ohmique dépend-elle ?',
+  mots: `<p><b>Effet Joule</b> : un conducteur ohmique parcouru par un courant électrique s'échauffe ; il convertit de l'énergie électrique en énergie thermique.<br>
+  <b>Calorimètre</b> : récipient qui isole thermiquement son contenu de l'extérieur.<br>
+  <b>Énergie thermique reçue par l'eau</b> : Q = m × c<sub>eau</sub> × (θ<sub>f</sub> − θ<sub>i</sub>), avec c<sub>eau</sub> = 4 185 J·kg⁻¹·°C⁻¹.<br>
+  <b>Énergie électrique</b> : ℰ<sub>élec</sub> = P × Δt avec P = U × I ; pour un conducteur ohmique, U = R × I.<br>
+  Matériel : résistances chauffantes immergeables de 2,0 Ω, 4,0 Ω et 6,0 Ω ; générateur réglable ; ampèremètre ; voltmètre ; chronomètre ; 200 mL d'eau mesurés à l'éprouvette graduée.</p>`,
+  aide: `<p>1. Verse 200 g d'eau à 20 °C dans le calorimètre, choisis une résistance R et règle l'intensité I.<br>
+  2. Lance le chauffage et le chronomètre ; arrête à θ = 30 °C et note la durée Δt.<br>
+  3. Pour étudier l'influence de R : garde la même intensité I et change de résistance. Pour l'influence de I : garde la même résistance.<br>
+  4. Renouvelle l'eau (à 20 °C) avant chaque nouvelle mesure.</p>`,
+  views: { ensemble: [[0, .55, .9], [0, .08, 0]] },
+  viewbar: [['Zoom calorimètre', () => flyTo([0, .32, .45], [0, .12, 0])], ['Zoom appareils', () => flyTo([.25, .3, .45], [.25, .05, .05])]],
+  protocol: [
+    { id: 'eau', q: 'Q2', html: 'Verser 200 g d\'eau à 20 °C dans le calorimètre et y plonger la résistance chauffante.' },
+    { id: 'R', q: 'Q2', html: 'Même intensité I, résistances différentes : mesurer la durée Δt pour chauffer l\'eau de 20 à 30 °C.' },
+    { id: 'I', q: 'Q2', html: 'Même résistance R, intensités différentes : mesurer Δt.' },
+    { id: 'tableau', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q1-5', html: 'Établir ℰ = R × I² × Δt et répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: ['blouse', 'lunettes'], secu: '',
+  table: { rowTitle: 'Modification', rows: [{ label: 'R augmente (I constante)', ans: [0] }, { label: 'I augmente (R constante)', ans: [0] }, { label: 'R est multipliée par 2 (I constante)', ans: [2] }, { label: 'I est multipliée par 2 (R constante)', ans: [3] }],
+    cols: [{ title: 'Durée Δt de chauffage', options: ['Δt diminue', 'Δt augmente', 'Δt est divisée par 2', 'Δt est divisée par 4'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q1', text: 'Le thermoplongeur convertit…', options: ['de l\'énergie électrique en énergie thermique', 'de l\'énergie thermique en énergie électrique', 'de l\'énergie lumineuse en énergie électrique'], ans: 0 },
+    { q: 'Q3a', text: 'L\'énergie électrique reçue par un conducteur ohmique de résistance R pendant Δt vaut…', options: ['ℰ = R × I² × Δt', 'ℰ = R × I × Δt', 'ℰ = R² × I × Δt', 'ℰ = U / I × Δt'], ans: 0 },
+    { q: 'Q3b', num: true, text: 'Énergie reçue par 200 g d\'eau qui passe de 20 à 30 °C : Q =', unit: 'J', ans: .2 * 4185 * 10, tol: .02 },
+    { q: 'Q4a', num: true, text: 'Durée pour chauffer 200 g d\'eau de 20 à 90 °C avec un thermoplongeur de 120 W : Δt =', unit: 's', ans: .2 * 4185 * 70 / 120, tol: .03 },
+    { q: 'Q4b', text: 'En réalité, la durée de chauffage est plus longue car…', options: ['l\'eau cède une partie de l\'énergie reçue au milieu extérieur', 'la résistance diminue', 'l\'eau ne reçoit aucune énergie'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['L\'énergie thermique fournie par un conducteur ohmique par effet Joule vaut ℰ = R × I² × Δt : elle augmente avec la résistance R, avec l\'intensité I (au carré) et avec la durée de fonctionnement Δt.', 'L\'énergie fournie ne dépend que de la durée.', 'Plus la résistance est grande, plus le chauffage est lent (à intensité égale).', 'L\'énergie fournie est proportionnelle à I, pas à I².'], ans: 0 },
+  build() {
+    const cal = new THREE.Group(); scene.add(cal);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(.07, .065, .17, 40, 1, true), new THREE.MeshStandardMaterial({ color: 0xeceff1, metalness: .6, roughness: .25, side: THREE.DoubleSide, transparent: true, opacity: .55 })); body.position.y = .085; cal.add(body);
+    const bot = new THREE.Mesh(new THREE.CylinderGeometry(.065, .065, .01, 40), new THREE.MeshStandardMaterial({ color: 0xb0bec5 })); bot.position.y = .005; cal.add(bot);
+    this.water = new THREE.Mesh(new THREE.CylinderGeometry(.062, .06, .1, 40), new THREE.MeshStandardMaterial({ color: 0x81d4fa, transparent: true, opacity: .45, depthWrite: false })); this.water.position.y = .06; cal.add(this.water);
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(.074, .074, .012, 40), new THREE.MeshStandardMaterial({ color: 0x546e7a })); lid.position.y = .176; cal.add(lid);
+    const cl = label('Calorimètre', { size: 24, scale: .0008 }); cl.position.set(.02, .24, 0); cal.add(cl);
+    coil17 = new THREE.Mesh(new THREE.TorusKnotGeometry(.02, .004, 64, 8, 2, 7), new THREE.MeshStandardMaterial({ color: 0x9e9e9e, metalness: .7, emissive: 0x000000 })); coil17.position.set(.015, .05, 0); cal.add(coil17);
+    for (const x of [.008, .025]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.002, .002, .15, 6), new THREE.MeshStandardMaterial({ color: 0x9e9e9e })); r.position.set(x, .13, 0); cal.add(r); }
+    const stir = new THREE.Mesh(new THREE.CylinderGeometry(.0025, .0025, .2, 6), new THREE.MeshStandardMaterial({ color: 0x795548 })); stir.position.set(-.035, .12, .02); cal.add(stir);
+    const probe = new THREE.Mesh(new THREE.CylinderGeometry(.002, .002, .18, 6), new THREE.MeshStandardMaterial({ color: 0x90a4ae, metalness: .8 })); probe.position.set(-.02, .13, -.03); cal.add(probe);
+    const tb = new THREE.Mesh(new THREE.BoxGeometry(.09, .045, .02), new THREE.MeshStandardMaterial({ color: 0x37474f })); tb.position.set(-.16, .2, -.03); scene.add(tb);
+    th17 = makeScreen(.08, .033, { px: 260, text: '20,0 °C', bg: '#263238', fg: '#ffeb3b' }); th17.mesh.position.set(-.16, .2, -.019); scene.add(th17.mesh);
+    const tl = label('Thermomètre', { size: 22, scale: .0007 }); tl.position.set(-.16, .25, -.03); scene.add(tl);
+    const cb = new THREE.Mesh(new THREE.BoxGeometry(.09, .04, .02), new THREE.MeshStandardMaterial({ color: 0x1565c0 })); cb.position.set(-.16, .12, -.03); scene.add(cb);
+    chr17 = makeScreen(.08, .03, { px: 280, text: '00 min 00 s', bg: '#e3f2fd', fg: '#0d47a1' }); chr17.mesh.position.set(-.16, .12, -.019); scene.add(chr17.mesh);
+    const chl = label('Chronomètre', { size: 22, scale: .0007 }); chl.position.set(-.16, .155, -.03); scene.add(chl);
+    gen17 = makeMeter('Générateur réglable', { color: 0x37474f }); gen17.group.position.set(.3, 0, -.12); scene.add(gen17.group);
+    amp17 = makeMeter('Ampèremètre'); amp17.group.position.set(.17, 0, .14); scene.add(amp17.group);
+    volt17 = makeMeter('Voltmètre'); volt17.group.position.set(.36, 0, .14); scene.add(volt17.group);
+    const Y = .01; scene.add(eWire([[.008, .2, 0], [.1, .22, -.05], [.27, .04, -.07]]), eWire([[.025, .2, 0], [.12, .15, .1], [.15, .035, .2]], 0x212121), eWire([[.195, .035, .2], [.3, Y, .05], [.32, .04, -.07]], 0x212121), eWire([[.335, .035, .2], [.2, .12, .05], [.03, .19, 0]]), eWire([[.385, .035, .2], [.42, .1, .05], [.33, .045, -.07]], 0x212121));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'rTab17' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  show() { const s = S17; th17.set(f17(s.T) + ' °C'); amp17.set(s.on ? f17(s.I, 2) + ' A' : '0,00 A'); volt17.set(s.on ? f17(s.R * s.I, 2) + ' V' : '0,00 V'); gen17.set(f17(s.R * s.I, 1) + ' V'); coil17.material.emissive.setHex(s.on ? 0x5a1a00 : 0); this.water.visible = s.fresh !== null; },
+  resetScene() { S17 = fresh17(); if (!th17) return; chr17.set('00 min 00 s'); this.show(); this.drawRes(); if ($('#q17')) this.refreshPanel(); },
+  drawRes() { const t = $('#rTab17'); if (!t) return; t.innerHTML = '<thead><tr><th>R (Ω)</th><th>I (A)</th><th>U (V)</th><th>P = U × I (W)</th><th>Δt (20 → 30 °C)</th></tr></thead><tbody>' + (S17.res.map(r => `<tr><td>${f17(r.R)}</td><td>${f17(r.I)}</td><td>${f17(r.R * r.I)}</td><td>${f17(r.R * r.I * r.I, 0)}</td><td>${r.dt} s</td></tr>`).join('') || '<tr><td colspan="5">Aucune mesure.</td></tr>') + '</tbody>'; },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, h('span', {}, 'Résistance R :'), ...RS17.map(R => B('R' + R, f17(R) + ' Ω', { t: 'R', R }))),
+      h('div', { class: 'row' }, h('span', {}, 'Intensité I :'), ...IS17.map(I => B('I' + I, f17(I) + ' A', { t: 'I', I }))),
+      h('div', { class: 'row' }, B('h1', '🔥 Lancer le chauffage et le chronomètre', { t: 'heat' }), B('h2', '💧 Renouveler l\'eau (200 g à 20 °C)', { t: 'water' })),
+      h('div', { id: 'q17', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S17, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    RS17.forEach(R => { en('#R' + R, true); $('#R' + R).classList.toggle('on', s.R === R); }); IS17.forEach(I => { en('#I' + I, true); $('#I' + I).classList.toggle('on', s.I === I); });
+    en('#h1', s.fresh); en('#h2', !s.fresh);
+    $('#q17').innerHTML = `R = <b>${f17(s.R)} Ω</b> ; I = <b>${f17(s.I)} A</b> → U = R × I = ${f17(s.R * s.I)} V ; P = ${f17(s.R * s.I * s.I, 0)} W · eau : ${s.fresh ? '200 g à 20 °C' : `à ${f17(s.T)} °C (à renouveler)`}`;
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S17;
+    if (a.t === 'R') { s.R = a.R; this.show(); say(`Résistance chauffante de ${f17(a.R)} Ω immergée.`); return; }
+    if (a.t === 'I') { s.I = a.I; this.show(); say(`Générateur réglé pour que I = ${f17(a.I)} A.`); return; }
+    if (a.t === 'water') { s.fresh = true; s.T = TI; chr17.set('00 min 00 s'); this.show(); step('eau'); say('Eau renouvelée : 200 g d\'eau à 20,0 °C dans le calorimètre.'); return; }
+    if (a.t === 'heat') {
+      if (!s.fresh) return false; step('eau');
+      const P = s.R * s.I * s.I, dt = heatTime(P); s.on = true; this.show();
+      if (!INSTANT) { flyTo([0, .32, .45], [0, .12, 0]); await tween(Math.min(4, 1.2 + dt / 400), p => { const t = p * dt; s.T = TI + (TF - TI) * p; th17.set(f17(s.T) + ' °C'); chr17.set(mmss(t)); }); }
+      s.T = TF; s.on = false; s.fresh = false; chr17.set(mmss(dt)); this.show();
+      s.res.push({ R: s.R, I: s.I, dt }); this.drawRes();
+      const sameI = s.res.filter(r => r.I === s.I), sameR = s.res.filter(r => r.R === s.R);
+      if (new Set(sameI.map(r => r.R)).size >= 2) step('R'); if (new Set(sameR.map(r => r.I)).size >= 2) step('I');
+      const msg = `R = ${f17(s.R)} Ω, I = ${f17(s.I)} A (P = ${f17(P, 0)} W) : l'eau passe de 20 à 30 °C en Δt = ${dt} s (${mmss(dt)}).`; observe(msg); say(msg + ' Renouvelle l\'eau avant la mesure suivante.'); return;
+    }
+  },
+  async demo() { say('Démonstration : R = 4 Ω, I = 2 A.'); await act({ t: 'R', R: 4 }, { record: false }); await act({ t: 'I', I: 2 }, { record: false }); await act({ t: 'heat' }, { record: false }); await wait(1200); say('À toi : fais varier R à I constante, puis I à R constante.'); await wait(1200); },
+};
+startTP(C17);
+
+</script></body></html>

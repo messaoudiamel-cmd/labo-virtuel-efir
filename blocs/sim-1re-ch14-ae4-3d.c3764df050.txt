@@ -1,0 +1,156 @@
+<!--efir1re:AD2 · Saut à l'élastique et énergie mécanique 3D-->
+window.EFIR_RETOUR = "premiere/energie/Aspects%20%C3%A9nerg%C3%A9tiques%20des%20ph%C3%A9nom%C3%A8nes%20m%C3%A9caniques";
+
+// ====================================================================
+// Ch. 14 · Activité 4 (documentaire, manuel Hachette p. 260) · L'énergie mécanique en l'absence de frottements
+// Modélisation d'un saut à l'élastique : balle lestée accrochée à un élastique en haut d'une rampe.
+// Modèle : phase 1 chute libre (élastique non tendu, 0,6 s) ; phase 2 élastique tendu (force k × allongement).
+// Paramètres choisis pour retrouver le graphique du manuel : ℰm ≈ 43 J, fin de phase 1 à 0,6 s, ℰc + ℰp ≈ 5 J à t = 1,0 s.
+// ====================================================================
+// ====================================================================
+// Module commun : pointage vidéo simulé et énergies (Ec, Ep, Em)
+// ====================================================================
+const GG14 = 9.81;
+// données brutes [{t, x, y}] → ajoute v (dérivée centrée, comme un logiciel de pointage) et les énergies
+function energize(raw, m) {
+  return raw.map((p, i) => {
+    const a = raw[Math.max(0, i - 1)], b = raw[Math.min(raw.length - 1, i + 1)], dt = b.t - a.t;
+    const v = Math.hypot(b.x - a.x, b.y - a.y) / dt;
+    const Ec = .5 * m * v * v, Ep = m * GG14 * p.y; return { ...p, v, Ec, Ep, Em: Ec + Ep };
+  }).slice(1, -1);
+}
+function energyChart(cv, data, o = {}) {
+  if (!data.length) { drawChart(cv, { xmax: o.tmax || 2, ymax: o.ymax || .1, xlabel: 't (s)', ylabel: 'Énergie (J)', pts: [] }); return; }
+  const tmax = o.tmax || Math.ceil(data[data.length - 1].t * 5) / 5, ymax = o.ymax || Math.max(...data.map(d => d.Em)) * 1.25;
+  drawChart(cv, { xmax: tmax, ymax, xlabel: 't (s)', ylabel: 'Énergie (J)', pts: [], curves: [{ pts: data.map(d => [d.t, d.Ec]), color: '#E65100' }, { pts: data.map(d => [d.t, d.Ep]), color: '#2F5DA8' }, { pts: data.map(d => [d.t, d.Em]), color: '#2e7d32' }], xfmt: x => x.toFixed(2).replace('.', ','), yfmt: y => y.toPrecision(2).replace('.', ',') });
+}
+const LEG14 = '<span style="color:#E65100">■ ℰc</span> &nbsp; <span style="color:#2F5DA8">■ ℰp</span> &nbsp; <span style="color:#2e7d32">■ ℰm = ℰc + ℰp</span>';
+function energyTable(data, n = 3) {
+  const f = (v, k) => v.toFixed(k).replace('.', ',');
+  return '<thead><tr><th>t (s)</th><th>x (m)</th><th>y (m)</th><th>v (m·s⁻¹)</th><th>ℰc (J)</th><th>ℰp (J)</th><th>ℰm (J)</th></tr></thead><tbody>' + data.map(d => `<tr><td>${f(d.t, 2)}</td><td>${f(d.x, 3)}</td><td>${f(d.y, 3)}</td><td>${f(d.v, 3)}</td><td>${f(d.Ec, n)}</td><td>${f(d.Ep, n)}</td><td>${f(d.Em, n)}</td></tr>`).join('') + '</tbody>';
+}
+
+const H4 = 4.1, M4 = 43 / (GG14 * 4.1), L04 = .5 * GG14 * .36, K4 = 18, DT4 = .04, TF4 = 1.04;
+function simulate4() {
+  let z = H4, v = 0, t = 0, next = 0; const h = .0002, out = [];
+  while (t <= TF4 + 1e-9) {
+    if (t >= next - 1e-9) { const nz = Math.sin(next * 61.3) * .004; out.push({ t: +next.toFixed(2), x: 0, y: +(z + nz).toFixed(4), ela: Math.max(0, H4 - z - L04) }); next += DT4; }
+    const ext = Math.max(0, H4 - z - L04), a = -GG14 + K4 * ext / M4; v += a * h; z += v * h; t += h;
+  }
+  return out;
+}
+let ball4, elas4, dots4, S4 = null, DATA4 = null;
+const fresh4 = () => ({ film: false, energ: false, phases: false });
+const f4 = (v, n = 2) => v.toFixed(n).replace('.', ',');
+const C4 = {
+  id: 'p1_ch14_ae4', code: 'AD2', short: 'Saut à l\'élastique 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 14 · Activité documentaire AD2 · Simulation 3D',
+  title: 'L\'énergie mécanique en l\'absence de frottements : le saut à l\'élastique',
+  problem: 'Accroché à un élastique, le sauteur se laisse tomber dans le vide. Que permet l\'exploitation de la conservation de l\'énergie mécanique ?',
+  mots: `<p><b>Énergie potentielle de pesanteur</b> : ℰ<sub>p</sub> = m × g × z (z sur un axe vertical orienté vers le haut ; ℰ<sub>p</sub> = 0 au niveau du sol).<br>
+  <b>Énergie potentielle élastique</b> ℰ<sub>éla</sub> : énergie que possède le système quand l'élastique est tendu ; elle dépend de l'allongement de l'élastique.<br>
+  <b>Énergie mécanique</b> : ℰ<sub>m</sub> = ℰ<sub>c</sub> + ℰ<sub>p</sub> + ℰ<sub>éla</sub>. Toutes ces énergies s'expriment en joule (J).<br>
+  On néglige l'action de l'air pendant la chute. Caméra : une image toutes les 40 ms.</p>`,
+  aide: `<p>1. Lâche la balle sans vitesse et filme sa chute jusqu'au point le plus bas.<br>
+  2. Trace ℰ<sub>c</sub>, ℰ<sub>p</sub> et ℰ<sub>c</sub> + ℰ<sub>p</sub> en fonction du temps (doc. B du manuel).<br>
+  3. Repère les deux phases : élastique non tendu (ℰ<sub>c</sub> + ℰ<sub>p</sub> constante), puis élastique tendu (ℰ<sub>c</sub> + ℰ<sub>p</sub> diminue).<br>
+  4. Si ℰ<sub>m</sub> reste constante : ℰ<sub>éla</sub> = ℰ<sub>m</sub> − (ℰ<sub>c</sub> + ℰ<sub>p</sub>). Lis les valeurs sur le graphique à t = 1,0 s.</p>`,
+  views: { ensemble: [[0, 2.3, 7.4], [0, 2.1, 0]] },
+  viewbar: [['Zoom balle', () => flyTo([.8, 1.6, 3.4], [0, 1.4, 0])]],
+  protocol: [
+    { id: 'film', q: 'Q2', html: 'Lâcher la balle lestée sans vitesse et filmer sa chute.' },
+    { id: 'energ', q: 'Q2', html: 'Tracer ℰ<sub>c</sub>, ℰ<sub>p</sub> et ℰ<sub>c</sub> + ℰ<sub>p</sub> en fonction du temps.' },
+    { id: 'phases', q: 'Q1-2', html: 'Repérer les deux phases du mouvement et les interactions de la balle.' },
+    { id: 'tableau', q: 'Q1-3', html: 'Compléter le tableau des deux phases puis le vérifier.' },
+    { id: 'extra', q: 'Q2-5', html: 'Discuter l\'hypothèse, calculer ℰ<sub>éla</sub> à t = 1,0 s et répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'activité documentaire : aucune manipulation dangereuse',
+  table: { rowTitle: 'Phase du mouvement', rows: [{ label: 'Phase 1 (élastique non tendu)', ans: [0, 0] }, { label: 'Phase 2 (élastique tendu)', ans: [1, 1] }],
+    cols: [{ title: 'La balle est en interaction avec…', options: ['la Terre seulement', 'la Terre et l\'élastique', 'l\'élastique seulement'] }, { title: 'ℰc + ℰp', options: ['reste constante', 'diminue', 'augmente'] }] },
+  extraTitle: 'Questions',
+  extra: [
+    { q: 'Q2', text: 'Au cours de la phase 1, la courbe qui augmente est celle de…', options: ['l\'énergie cinétique ℰ<sub>c</sub> (la vitesse augmente)', 'l\'énergie potentielle de pesanteur ℰ<sub>p</sub>', 'l\'énergie mécanique'], ans: 0 },
+    { q: 'Q2', num: true, text: 'La phase 1 se termine à la date t ≈', unit: 's', ans: .6, tol: .08 },
+    { q: 'Q3', text: 'Peut-on négliger l\'action de l\'air pendant la phase 1 ?', options: ['Oui : ℰ<sub>c</sub> + ℰ<sub>p</sub> reste pratiquement constante, aucune énergie n\'est perdue par frottement', 'Non : ℰ<sub>c</sub> + ℰ<sub>p</sub> diminue fortement', 'Non : la balle est en chute libre'], ans: 0 },
+    { q: 'Q4', num: true, text: 'Énergie mécanique de la balle (lue pendant la phase 1) : ℰ<sub>m</sub> ≈', unit: 'J', ans: 43, tol: .06 },
+    { q: 'Q4', num: true, text: 'À t = 1,0 s : ℰ<sub>éla</sub> = ℰ<sub>m</sub> − (ℰ<sub>c</sub> + ℰ<sub>p</sub>) ≈', unit: 'J', ans: 38, tol: .07 },
+    { q: 'Q5', text: 'Exploiter la conservation de l\'énergie mécanique permet…', options: ['de déterminer une vitesse, une altitude ou une énergie inconnue (ici ℰ<sub>éla</sub>), et de vérifier la présence ou non de frottements', 'seulement de calculer la masse du système', 'de mesurer la durée de la chute'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['En l\'absence de frottements, l\'énergie mécanique ℰm = ℰc + ℰp + ℰéla se conserve : pendant la phase 2, la diminution de ℰc + ℰp correspond à l\'énergie stockée par l\'élastique (ℰéla ≈ 38 J à t = 1,0 s).', 'L\'énergie mécanique diminue pendant la phase 2 à cause des frottements de l\'air.', 'L\'élastique fournit de l\'énergie cinétique à la balle pendant toute la chute.', 'L\'énergie potentielle de pesanteur reste constante pendant la chute.'], ans: 0 },
+  build() {
+    const mur = new THREE.Mesh(new THREE.BoxGeometry(3.2, H4 + .3, .25), new THREE.MeshStandardMaterial({ color: 0xd9786a, roughness: .9 })); mur.position.set(0, (H4 + .3) / 2, -.55); scene.add(mur);
+    for (let k = 1; k < 18; k++) { const r = new THREE.Mesh(new THREE.BoxGeometry(3.2, .012, .01), new THREE.MeshBasicMaterial({ color: 0xb85a4e })); r.position.set(0, k * .24, -.42); scene.add(r); }
+    const rampe = new THREE.Mesh(new THREE.BoxGeometry(3.4, .08, .5), new THREE.MeshStandardMaterial({ color: 0x546e7a, metalness: .5 })); rampe.position.set(0, H4 + .34, -.3); scene.add(rampe);
+    const sol = new THREE.Mesh(new THREE.BoxGeometry(5, .04, 3), new THREE.MeshStandardMaterial({ color: 0x9e9e9e })); sol.position.set(0, -.02, .4); scene.add(sol);
+    const crochet = new THREE.Mesh(new THREE.TorusGeometry(.05, .012, 8, 16), new THREE.MeshStandardMaterial({ color: 0x263238 })); crochet.position.set(0, H4 + .26, 0); scene.add(crochet);
+    elas4 = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 1, 8), new THREE.MeshStandardMaterial({ color: 0x212121 })); scene.add(elas4);
+    ball4 = new THREE.Mesh(new THREE.SphereGeometry(.09, 24, 16), new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: .4 })); scene.add(ball4);
+    const cv = document.createElement('canvas'); cv.width = 64; cv.height = 1024; const c = cv.getContext('2d'); c.fillStyle = '#fffde7'; c.fillRect(0, 0, 64, 1024); c.fillStyle = '#1d2433'; c.font = '600 22px Inter';
+    for (let k = 0; k <= 40; k++) { const y = 1024 - 8 - k * 24.6; c.fillRect(0, y, k % 5 ? 14 : 30, k % 5 ? 2 : 4); if (k % 5 === 0) c.fillText(String(k / 10).replace('.', ','), 30, y + 8); }
+    const tx = new THREE.CanvasTexture(cv); tx.colorSpace = THREE.SRGBColorSpace; const reg = new THREE.Mesh(new THREE.PlaneGeometry(.16, 4.1), new THREE.MeshStandardMaterial({ map: tx })); reg.position.set(-1.25, 2.05, -.41); scene.add(reg);
+    const zl = label('z (m)', { size: 22, scale: .0016 }); zl.position.set(-1.25, 4.35, -.4); scene.add(zl);
+    const cam = new THREE.Mesh(new THREE.BoxGeometry(.25, .16, .18), new THREE.MeshStandardMaterial({ color: 0x212121 })); cam.position.set(1.8, 1.6, 2.6); scene.add(cam);
+    const cl = label('Caméra (25 images/s)', { size: 22, scale: .0016 }); cl.position.set(1.8, 1.95, 2.6); scene.add(cl);
+    dots4 = new THREE.Group(); scene.add(dots4);
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Énergies en fonction du temps'), h('canvas', { id: 'chE4', style: 'width:100%;display:block;border:1px solid var(--line);border-radius:8px' }), h('div', { class: 'note', id: 'chE4Info' })));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Tableau du pointage'), h('div', { class: 'tblwrap', style: 'max-height:240px;overflow:auto' }, h('table', { class: 'tbl', id: 'pTab4' }))));
+    DATA4 = simulate4(); this.resetScene(); this.buildPanel();
+  },
+  place(z) { ball4.position.set(0, z, 0); const top = H4 + .22, len = Math.max(.05, top - z - .09); elas4.scale.y = len; elas4.position.set(0, top - len / 2, 0); elas4.material.color.set(top - z > L04 + .09 ? 0xc62828 : 0x212121); },
+  resetScene() { S4 = fresh4(); if (!ball4) return; dots4.clear(); this.place(H4); this.drawData(); if ($('#q4p')) this.refreshPanel(); },
+  drawData() {
+    const s = S4; if (!$('#pTab4')) return;
+    const d = s.film && s.energ ? energize(DATA4, M4) : null;
+    $('#pTab4').innerHTML = s.film ? (d ? '<thead><tr><th>t (s)</th><th>z (m)</th><th>v (m·s⁻¹)</th><th>ℰc (J)</th><th>ℰp (J)</th><th>ℰc + ℰp (J)</th></tr></thead><tbody>' + d.map(q => `<tr><td>${f4(q.t)}</td><td>${f4(q.y, 3)}</td><td>${f4(q.v)}</td><td>${f4(q.Ec, 1)}</td><td>${f4(q.Ep, 1)}</td><td>${f4(q.Em, 1)}</td></tr>`).join('') + '</tbody>'
+      : '<thead><tr><th>t (s)</th><th>z (m)</th></tr></thead><tbody>' + DATA4.map(p => `<tr><td>${f4(p.t)}</td><td>${f4(p.y, 3)}</td></tr>`).join('') + '</tbody>') : '<tbody><tr><td>Aucune acquisition.</td></tr></tbody>';
+    const o = { xmax: 1, ymax: 50, xlabel: 't (s)', ylabel: 'Énergies (J)', pts: [], xfmt: x => f4(x, 1), yfmt: y => f4(y, 0) };
+    if (d) o.curves = [{ pts: d.map(q => [q.t, q.Ec]), color: '#E65100' }, { pts: d.map(q => [q.t, q.Ep]), color: '#c2185b' }, { pts: d.map(q => [q.t, q.Em]), color: '#2e7d32' }];
+    if (d && s.phases) o.marks = [[.6, 0, '#4a148c']];
+    drawChart($('#chE4'), o);
+    $('#chE4Info').innerHTML = d ? '<span style="color:#E65100">■ ℰc</span> &nbsp; <span style="color:#c2185b">■ ℰp</span> &nbsp; <span style="color:#2e7d32">■ ℰc + ℰp</span>' + (s.phases ? '<br>Trait violet : fin de la phase 1 (l\'élastique commence à se tendre).' : '') : 'Filme la chute puis trace les énergies.';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('div', { class: 'row' }, B('g1', '🎥 Lâcher la balle et filmer', { t: 'film' })),
+      h('div', { class: 'row' }, B('g2', '📈 Tracer ℰc, ℰp et ℰc + ℰp', { t: 'energ' })),
+      h('div', { class: 'row' }, B('g3', '🔍 Repérer les deux phases', { t: 'phases' })),
+      h('div', { id: 'q4p', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S4, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#g1', true); en('#g2', s.film && !s.energ); en('#g3', s.energ && !s.phases);
+    $('#q4p').innerHTML = 'Balle lestée lâchée sans vitesse sous la rampe (z ≈ 4,1 m) · élastique accroché en haut de la rampe' + (s.film ? ' · acquisition faite (une position toutes les 40 ms)' : '');
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S4;
+    if (a.t === 'film') {
+      s.film = true; s.energ = false; s.phases = false; dots4.clear();
+      const addDot = p => { const d = new THREE.Mesh(new THREE.SphereGeometry(.02, 8, 6), new THREE.MeshBasicMaterial({ color: 0x1A237E })); d.position.set(.18, p.y, 0); dots4.add(d); };
+      if (!INSTANT) { flyTo([0, 2.3, 7.4], [0, 2.1, 0]); let k = 0; await tween(TF4 * 3, p => { const t = p * TF4, i = Math.min(DATA4.length - 1, Math.round(t / DT4)); this.place(DATA4[i].y); while (k <= i) addDot(DATA4[k++]); }); }
+      else DATA4.forEach(addDot);
+      this.place(DATA4[DATA4.length - 1].y); this.drawData(); step('film');
+      say('Acquisition terminée : la balle tombe, l\'élastique (en rouge quand il est tendu) freine sa chute jusqu\'au point le plus bas.'); return;
+    }
+    if (a.t === 'energ') {
+      if (!s.film) return false; s.energ = true; this.drawData(); step('energ');
+      const d = energize(DATA4, M4), i6 = d.findIndex(q => q.t >= .6 - 1e-9), i10 = d.length - 1;
+      const msg = `ℰc + ℰp ≈ ${f4(d[0].Em, 0)} J reste constante jusqu'à t ≈ 0,6 s, puis diminue : ${f4(d[i10].Em, 1)} J à t = ${f4(d[i10].t)} s (ℰc ≈ ${f4(d[i10].Ec, 1)} J ; ℰp ≈ ${f4(d[i10].Ep, 1)} J).`;
+      observe(msg); say(msg); void i6; return;
+    }
+    if (a.t === 'phases') {
+      if (!s.energ) return false; s.phases = true; this.drawData(); step('phases');
+      const msg = 'Phase 1 (0 à 0,6 s) : élastique non tendu, la balle n\'interagit qu\'avec la Terre. Phase 2 (après 0,6 s) : l\'élastique se tend et agit aussi sur la balle.';
+      observe(msg); say(msg); return;
+    }
+  },
+  async demo() { say('Démonstration : lâcher et filmer la balle.'); await act({ t: 'film' }, { record: false }); await act({ t: 'energ' }, { record: false }); await wait(1500); say('À toi : repère les deux phases et complète le tableau.'); await wait(1200); },
+};
+startTP(C4);
+
+
+</script></body></html>

@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pointage vidéo et tableur-grapheur · EFIR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F8F6FA; --bg-2: #E9E4F0; --surface: #ffffff; --ink: #24112F; --muted: #5E4D6B; --line: #E1BEE7; --line-soft: #F3E5F5;
+  --btn: #4A148C; --btn-h: #380E6B; --accent: #C2185B; --ok: #1B7F4B; --ok-soft: #E6F4EC; --warn: #B42318; --warn-soft: #FDECEA;
+  --font-d: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; --font-b: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%); min-height: 100%; }
+body { margin: 0; min-height: 100vh; font: 16px/1.5 var(--font-b); color: var(--ink); background: transparent; }
+button, input, select, textarea { font: inherit; color: inherit; }
+h1, h2, h3 { font-family: var(--font-d); margin: 0; line-height: 1.2; }
+a { color: var(--btn); }
+.haut { background: #1A0B2E; color: #fff; padding: 14px max(16px, env(safe-area-inset-left)) 16px; }
+.haut .in { max-width: 1280px; margin: 0 auto; display: grid; gap: 6px; }
+.retour { color: #F4B4C1; text-decoration: none; font-weight: 700; font-size: .9rem; justify-self: start; }
+.retour:hover { text-decoration: underline; }
+.kick { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: #D1C4E9; font-weight: 700; }
+.haut h1 { font-size: clamp(1.4rem, 3.4vw, 2rem); background: linear-gradient(90deg, #fff, #F4B4C1 70%, #D1C4E9); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.haut p { margin: 0; color: #D1D5DB; font-size: .95rem; max-width: 70ch; }
+main { max-width: 1280px; margin: 0 auto; padding: 16px max(16px, env(safe-area-inset-left)) 48px; display: grid; gap: 16px; }
+.onglets { display: flex; flex-wrap: wrap; gap: 8px; }
+.onglets button { border: 1.5px solid var(--line); background: var(--surface); color: var(--btn); font-weight: 700; border-radius: 999px; padding: 8px 18px; cursor: pointer; }
+.onglets button[aria-selected="true"] { background: var(--btn); border-color: var(--btn); color: #fff; }
+.onglets button:hover { border-color: var(--btn); }
+.vue[hidden] { display: none !important; }
+.carte { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.carte h2 { font-size: 1.1rem; color: var(--btn); }
+.carte h3 { font-size: 1rem; color: var(--btn); }
+.deux { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .deux { grid-template-columns: minmax(0, 1fr); } }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--btn); background: var(--btn); color: #fff; font-weight: 700; border-radius: 10px; padding: 7px 14px; cursor: pointer; transition: background .15s; font-size: .93rem; }
+.btn:hover { background: var(--btn-h); border-color: var(--btn-h); }
+.btn.ghost { background: var(--surface); color: var(--btn); border-color: var(--line); }
+.btn.ghost:hover { border-color: var(--btn); background: var(--line-soft); }
+.btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.danger { background: var(--surface); color: var(--warn); border-color: #f2b8b5; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:focus-visible, .onglets button:focus-visible { outline: 3px solid #F4B4C1; outline-offset: 2px; }
+.rang { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+label.ch { display: inline-flex; gap: 6px; align-items: center; font-size: .92rem; color: var(--muted); }
+input[type="number"], input[type="text"], select, textarea { border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; background: #fff; min-width: 0; }
+input[type="number"] { width: 6.5em; }
+input:focus, select:focus, textarea:focus { outline: 2px solid #CE93D8; outline-offset: 0; border-color: #CE93D8; }
+.petit { font-size: .86rem; color: var(--muted); margin: 0; }
+.ok { color: var(--ok); background: var(--ok-soft); border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: .92rem; }
+.err { color: var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 6px 10px; font-size: .9rem; }
+.ok:empty, .err:empty { display: none; }
+/* étapes */
+.etapes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; list-style: none; padding: 0; margin: 0; counter-reset: e; }
+.etapes li { counter-increment: e; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 8px; font-size: .82rem; color: var(--muted); display: flex; gap: 6px; align-items: center; min-width: 0; }
+.etapes li::before { content: counter(e); flex: none; width: 1.6em; height: 1.6em; border-radius: 50%; display: grid; place-items: center; background: var(--line-soft); color: var(--btn); font-weight: 700; }
+.etapes li.fait::before { content: "✓"; background: var(--ok); color: #fff; }
+.etapes li.cours { border-color: var(--btn); color: var(--ink); font-weight: 700; box-shadow: 0 0 0 2px #E1BEE7; }
+@media (max-width: 640px) { .etapes li span { display: none; } .etapes li.cours span { display: inline; } .etapes { grid-template-columns: repeat(5, auto); } }
+.consigne { background: var(--line-soft); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; }
+.consigne b { color: var(--btn); }
+/* zone vidéo */
+.ecran { position: relative; background: #1A0B2E; border-radius: 12px; overflow: hidden; touch-action: none; }
+.ecran canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+.ecran .vide { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: #D1C4E9; padding: 20px; pointer-events: none; }
+.ecran .vide[hidden] { display: none; }
+.lecteur { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.lecteur input[type="range"] { width: 100%; accent-color: var(--btn); }
+.lecteur .num { font-variant-numeric: tabular-nums; font-size: .9rem; color: var(--muted); white-space: nowrap; }
+.mini { max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; font-variant-numeric: tabular-nums; }
+th, td { border-bottom: 1px solid var(--line-soft); padding: 4px 8px; text-align: right; white-space: nowrap; }
+th { position: sticky; top: 0; background: #F3E5F5; color: var(--btn); font-weight: 700; z-index: 1; }
+th small { font-weight: 400; color: var(--muted); }
+td:first-child, th:first-child { text-align: center; color: var(--muted); }
+th.calc { background: #FCE4EC; color: var(--accent); }
+.tab { max-height: 460px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+.tab td input { width: 6.5em; border: 0; background: transparent; text-align: right; padding: 2px 0; border-radius: 0; }
+.tab td input:focus { outline: 2px solid #CE93D8; background: #fff; }
+.tab td.c { color: var(--accent); }
+.liste { display: grid; gap: 6px; }
+.ligne { display: grid; grid-template-columns: 5.5em 4.5em minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+.ligne.p { grid-template-columns: 5.5em minmax(0, 1fr) 4.5em auto; }
+.ligne input { width: 100%; }
+.ligne .x { border: 0; background: none; color: var(--warn); cursor: pointer; font-size: 1.1rem; padding: 2px 6px; }
+.ligne .e { grid-column: 1 / -1; }
+.graphe { position: relative; }
+.graphe canvas { display: block; width: 100%; height: 400px; background: #fff; border: 1px solid var(--line); border-radius: 10px; touch-action: none; }
+.bulle { position: absolute; pointer-events: none; background: #1A0B2E; color: #fff; font-size: .8rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -130%); }
+.bulle[hidden] { display: none; }
+.ords { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.res { background: var(--line-soft); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; }
+.res .eq { font: 700 1.05rem var(--font-b); color: var(--btn); overflow-wrap: anywhere; }
+.res table { width: auto; }
+.res td, .res th { text-align: left; background: none; position: static; }
+dialog { border: 1px solid var(--line); border-radius: 14px; padding: 16px; max-width: min(560px, calc(100vw - 32px)); width: 100%; }
+dialog::backdrop { background: rgba(26,11,46,.5); }
+dialog textarea { width: 100%; min-height: 160px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem; }
+.aide { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; }
+.aide summary { cursor: pointer; font-weight: 700; color: var(--btn); padding: 10px 0; }
+.aide ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 4px; font-size: .93rem; }
+.aide code, .petit code { background: var(--line-soft); border-radius: 4px; padding: 0 4px; font-size: .9em; }
+.envoi { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.envoi label { display: grid; gap: 2px; font-size: .86rem; color: var(--muted); font-weight: 700; }
+.envoi textarea { grid-column: 1 / -1; min-height: 70px; }
+#code-zone[hidden] { display: none; }
+#code-zone textarea { width: 100%; font: .78rem ui-monospace, Menlo, Consolas, monospace; }
+.secu { border-left: 4px solid var(--accent); }
+</style>
+</head>
+<body>
+<header class="haut"><div class="in">
+  <a class="retour" href="#" id="retour">← Outils numériques</a>
+  <span class="kick">EFIR · Outils et méthodes · Mécanique</span>
+  <h1>Pointage vidéo et tableur-grapheur</h1>
+  <p>Pointez un objet image par image sur une vidéo, puis exploitez les mesures : grandeurs calculées, graphiques et modélisation.</p>
+</div></header>
+<main>
+  <nav class="onglets" role="tablist" aria-label="Parties de l'outil">
+    <button role="tab" id="o-pointage" aria-selected="true" aria-controls="v-pointage">🎬 1. Pointage vidéo</button>
+    <button role="tab" id="o-tableur" aria-selected="false" aria-controls="v-tableur">📊 2. Tableur-grapheur</button>
+    <button role="tab" id="o-envoi" aria-selected="false" aria-controls="v-envoi">📤 3. Rendre mon travail</button>
+  </nav>
+
+  <!-- ===================== POINTAGE ===================== -->
+  <section class="vue" id="v-pointage" role="tabpanel" aria-labelledby="o-pointage">
+    <div class="carte" style="margin-bottom:16px">
+      <ol class="etapes" id="etapes">
+        <li><span>Charger la vidéo</span></li><li><span>Étalonner</span></li><li><span>Placer l'origine</span></li><li><span>Pointer l'objet</span></li><li><span>Exploiter</span></li>
+      </ol>
+    </div>
+    <div class="deux">
+      <div class="carte">
+        <div class="ecran" id="ecran"><canvas id="cv" width="960" height="540" aria-label="Image de la vidéo : cliquez pour pointer"></canvas>
+          <div class="vide" id="vide"><div><b>Aucune vidéo</b><br>Chargez une vidéo (MP4, WebM, MOV) ou ouvrez la vidéo d'exemple.</div></div></div>
+        <div class="lecteur">
+          <div class="rang"><button class="btn ghost" id="b-m10" title="Reculer de 10 images">⏮</button><button class="btn ghost" id="b-m1" title="Image précédente">◀</button></div>
+          <input type="range" id="curseur" min="0" max="0" value="0" aria-label="Image de la vidéo">
+          <div class="rang"><button class="btn ghost" id="b-p1" title="Image suivante">▶</button><button class="btn ghost" id="b-p10" title="Avancer de 10 images">⏭</button></div>
+        </div>
+        <div class="rang" style="justify-content:space-between"><span class="num petit" id="info-img">Image 0 / 0 · t = 0 s</span><span class="petit">Astuce : la loupe en haut à droite aide à viser le centre de l'objet.</span></div>
+      </div>
+      <div style="display:grid;gap:16px">
+        <div class="carte">
+          <div class="consigne"><span class="kick" style="color:var(--accent)" id="et-num">Étape 1 / 5</span><b id="et-titre">Charger la vidéo</b><span id="et-texte" class="petit"></span></div>
+          <div class="rang" id="z-charger">
+            <label class="btn">📂 Choisir une vidéo<input type="file" id="fichier" accept="video/*" hidden></label>
+            <button class="btn ghost" id="b-exemple">🏀 Vidéo d'exemple (lancer)</button>
+          </div>
+          <div class="rang">
+            <label class="ch">Images par seconde du fichier <input type="number" id="fps" value="30" min="1" max="1000" step="1"></label>
+          </div>
+          <div class="rang">
+            <label class="ch"><input type="checkbox" id="ralenti"> Vidéo au ralenti, filmée à</label>
+            <input type="number" id="fps-reel" value="240" min="1" max="10000" step="1" aria-label="Images par seconde réelles"><span class="petit">images/s</span>
+          </div>
+          <div class="rang">
+            <button class="btn ghost" id="b-etalon">📏 Étalonner</button>
+            <label class="ch">longueur réelle <input type="number" id="longueur" value="1" min="0" step="any"> m</label>
+          </div>
+          <div class="rang">
+            <button class="btn ghost" id="b-origine">✛ Placer l'origine</button>
+            <button class="btn ghost on" id="b-pointer">🎯 Pointer</button>
+            <label class="ch">avancer de <input type="number" id="pas" value="1" min="1" max="50" step="1" style="width:4em"> image(s) après chaque clic</label>
+          </div>
+          <div class="ok" id="valide" role="status"></div>
+          <div class="rang">
+            <button class="btn ghost" id="b-annuler">↶ Annuler le dernier point</button>
+            <button class="btn danger" id="b-effacer-pts">Effacer les points</button>
+          </div>
+        </div>
+        <div class="carte">
+          <h3>Mesures du pointage</h3>
+          <div class="mini"><table id="t-pts"><thead><tr><th>n°</th><th>t <small>(s)</small></th><th>x <small>(m)</small></th><th>y <small>(m)</small></th></tr></thead><tbody></tbody></table></div>
+          <button class="btn" id="b-envoyer">📊 Exploiter dans le tableur-grapheur</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TABLEUR-GRAPHEUR ===================== -->
+  <section class="vue" id="v-tableur" role="tabpanel" aria-labelledby="o-tableur" hidden>
+    <div class="deux">
+      <div style="display:grid;gap:16px;min-width:0">
+        <div class="carte">
+          <h2>Graphique</h2>
+          <div class="rang"><label class="ch">Abscisse <select id="g-x"></select></label><span class="petit">Ordonnées :</span><div class="ords" id="g-y"></div></div>
+          <div class="graphe"><canvas id="gr" aria-label="Graphique des mesures"></canvas><div class="bulle" id="bulle" hidden></div></div>
+          <div class="rang"><label class="ch"><input type="checkbox" id="g-zero"> Inclure l'origine (0 ; 0)</label><label class="ch"><input type="checkbox" id="g-lier"> Relier les points</label><button class="btn ghost" id="b-png">🖼 Enregistrer l'image</button></div>
+        </div>
+        <div class="carte">
+          <h2>Modélisation</h2>
+          <div class="rang">
+            <label class="ch">Grandeur à modéliser <select id="m-y"></select></label>
+            <label class="ch">Modèle <select id="m-type"></select></label>
+          </div>
+          <div class="rang" id="m-libre-z" hidden><label class="ch" style="flex:1">Formule <input type="text" id="m-libre" placeholder="ex. a*t^2+b*t+c" style="flex:1;min-width:12em"></label></div>
+          <div class="rang"><label class="ch">de <input type="number" id="m-min" step="any" placeholder="début"></label><label class="ch">à <input type="number" id="m-max" step="any" placeholder="fin"></label><span class="petit">(laisser vide : tous les points)</span></div>
+          <div class="rang"><button class="btn" id="b-modeliser">📈 Modéliser</button><button class="btn ghost" id="b-suppr-mod">Retirer le modèle</button></div>
+          <div class="err" id="m-err"></div>
+          <div id="m-res"></div>
+        </div>
+      </div>
+      <div style="display:grid;gap:16px;min-width:0">
+        <div class="carte">
+          <h2>Tableau de valeurs</h2>
+          <div class="tab"><table id="t-data"></table></div>
+          <div class="rang">
+            <button class="btn ghost" id="b-ligne">+ Ligne</button>
+            <button class="btn ghost" id="b-colonne">+ Grandeur mesurée</button>
+            <button class="btn ghost" id="b-coller">📋 Coller des données</button>
+          </div>
+          <div class="rang">
+            <label class="btn ghost">📂 Ouvrir un CSV<input type="file" id="f-csv" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+            <button class="btn ghost" id="b-csv">⬇ Exporter en CSV</button>
+            <button class="btn danger" id="b-vider">Tout effacer</button>
+          </div>
+        </div>
+        <div class="carte">
+          <h2>Grandeurs calculées</h2>
+          <div class="rang">
+            <button class="btn ghost" id="pre-v">Vitesses vx, vy, v</button>
+            <button class="btn ghost" id="pre-a">Accélérations ax, ay</button>
+            <button class="btn ghost" id="pre-e">Énergies Ec, Epp, Em</button>
+          </div>
+          <div class="liste" id="l-calc"></div>
+          <button class="btn ghost" id="b-calc">+ Nouvelle grandeur calculée</button>
+          <p class="petit">Opérations : <code>+ - * / ^</code>, fonctions <code>sqrt</code>, <code>exp</code>, <code>ln</code>, <code>log</code>, <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>abs</code>, constante <code>pi</code>. Dérivée : <code>deriv(x, t)</code> (pente entre le point précédent et le point suivant).</p>
+          <h3>Paramètres (constantes)</h3>
+          <div class="liste" id="l-param"></div>
+          <button class="btn ghost" id="b-param">+ Nouveau paramètre</button>
+        </div>
+      </div>
+    </div>
+    <details class="aide" style="margin-top:16px"><summary>❓ Aide : exploiter un pointage</summary><ul>
+      <li>Le bouton « Vitesses » ajoute <code>vx = deriv(x, t)</code>, <code>vy = deriv(y, t)</code> et <code>v = sqrt(vx^2 + vy^2)</code>. La vitesse au point n est calculée avec les points n−1 et n+1 : elle n'existe donc ni au premier ni au dernier point.</li>
+      <li>Le bouton « Énergies » ajoute la masse <code>m</code> et <code>g</code> en paramètres : modifiez la masse avant d'interpréter.</li>
+      <li>Pour modéliser, choisissez la grandeur et un modèle : les paramètres sont ajustés par la méthode des moindres carrés et R² indique la qualité de l'accord (proche de 1 : bon accord).</li>
+      <li>Formule libre : écrivez le modèle avec la grandeur en abscisse et des lettres pour les paramètres, par exemple <code>a*t^2+b*t+c</code> ou <code>A*exp(-t/tau)</code>.</li>
+      <li>Pour coller des données d'un tableur, copiez les colonnes (avec la ligne des noms) et utilisez « Coller des données ».</li>
+    </ul></details>
+  </section>
+
+  <!-- ===================== RENDRE ===================== -->
+  <section class="vue" id="v-envoi" role="tabpanel" aria-labelledby="o-envoi" hidden>
+    <div class="carte" style="max-width:820px">
+      <h2>Rendre mon travail au professeur</h2>
+      <p class="petit">Votre tableau de mesures, vos grandeurs calculées, vos modélisations et votre commentaire figurent dans votre bilan PDF. Téléchargez-le et déposez-le dans le devoir Google Classroom (Ajouter › Fichier, puis Rendre).</p>
+      <div class="envoi">
+        <label>Nom et prénom<input type="text" id="e-nom" autocomplete="name"></label>
+        <label>Classe<input type="text" id="e-classe" placeholder="ex. TS2"></label>
+        <label>Titre de l'activité<input type="text" id="e-titre" placeholder="ex. Chute parabolique"></label>
+        <label style="grid-column:1/-1">Mon commentaire et ma conclusion<textarea id="e-comm" placeholder="Ce que je constate sur les graphiques, le modèle retenu et sa signification physique…"></textarea></label>
+      </div>
+      <div class="rang">
+        <button class="btn" id="b-envoi-prof">📄 Télécharger mon bilan</button>
+        <button class="btn ghost" id="b-pdf">⬇ Télécharger mon travail (PDF)</button>
+      </div>
+      <div class="ok" id="e-ok" role="status"></div>
+      <div class="err" id="e-err"></div>
+      <div id="code-zone" hidden><p class="petit">Si le PDF ne se télécharge pas, copiez ce code et collez-le dans le devoir Google Classroom (commentaire privé).</p><textarea id="e-code" rows="3" readonly></textarea><button class="btn ghost" id="b-copier">Copier le code</button></div>
+    </div>
+    <div class="carte secu" style="max-width:820px;margin-top:16px"><h3>Rappel</h3><p class="petit">Votre travail est enregistré automatiquement dans ce navigateur (sauf la vidéo, à recharger si besoin). Sur un ordinateur partagé, cliquez sur « Tout effacer » dans le tableur une fois votre travail rendu.</p></div>
+  </section>
+</main>
+
+<dialog id="dlg-coller"><form method="dialog" style="display:grid;gap:10px">
+  <h3>Coller des données</h3>
+  <p class="petit">Collez des colonnes copiées d'un tableur ou d'un fichier texte. La première ligne contient les noms (par exemple <code>t</code>, <code>x</code>, <code>y</code>). Les décimales avec une virgule sont acceptées.</p>
+  <textarea id="txt-coller" placeholder="t	x	y&#10;0	0	0&#10;0,04	0,05	0,08"></textarea>
+  <div class="rang"><button class="btn" value="ok" id="ok-coller">Remplacer le tableau</button><button class="btn ghost" value="annuler">Annuler</button></div>
+</form></dialog>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const CLE = "efir-pointage-v1";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+/* nombres à la française */
+function fmt(v, p = 4) {
+  if (v === null || v === undefined || !isFinite(v)) return "";
+  if (v === 0) return "0";
+  const a = Math.abs(v); let s;
+  if (a >= 1e5 || a < 1e-3) s = v.toExponential(p - 1).replace(/\.?0+e/, "e").replace("e+", "e");
+  else s = String(Number(v.toPrecision(p)));
+  return s.replace(".", ",");
+}
+const num = s => { if (typeof s === "number") return s; s = String(s).trim().replace(/\s/g, "").replace(",", "."); if (s === "") return NaN; const v = Number(s); return isFinite(v) ? v : NaN; };
+
+/* ======================= Expressions (sans eval) ======================= */
+const FN = { sqrt: Math.sqrt, exp: Math.exp, ln: Math.log, log: Math.log10, sin: Math.sin, cos: Math.cos, tan: Math.tan, abs: Math.abs, asin: Math.asin, acos: Math.acos, atan: Math.atan };
+function lexer(src) {
+  const T = []; let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    if (/\s/.test(c)) { i++; continue; }
+    let m = /^(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?/.exec(src.slice(i));
+    if (m) { T.push({ k: "n", v: Number(m[0]) }); i += m[0].length; continue; }
+    m = /^[A-Za-z_][A-Za-z0-9_]*/.exec(src.slice(i));
+    if (m) { T.push({ k: "id", v: m[0] }); i += m[0].length; continue; }
+    if ("+-*/^(),".includes(c)) { T.push({ k: c }); i++; continue; }
+    if (c === "²") { T.push({ k: "^" }, { k: "n", v: 2 }); i++; continue; }
+    throw new Error("Caractère non reconnu : « " + c + " »");
+  }
+  return T;
+}
+function parse(src) {
+  const T = lexer(src); let p = 0;
+  const voit = k => T[p] && T[p].k === k, prend = k => { if (!voit(k)) throw new Error(k === ")" ? "Parenthèse fermante manquante" : "Formule incomplète"); return T[p++]; };
+  function expr() { let a = terme(); while (voit("+") || voit("-")) { const o = T[p++].k; a = { o, a, b: terme() }; } return a; }
+  function terme() { let a = unaire(); while (voit("*") || voit("/")) { const o = T[p++].k; a = { o, a, b: unaire() }; } return a; }
+  function unaire() { if (voit("-")) { p++; return { o: "neg", a: unaire() }; } if (voit("+")) { p++; return unaire(); } return puiss(); }
+  function puiss() { const a = prim(); if (voit("^")) { p++; return { o: "^", a, b: unaire() }; } return a; }
+  function prim() {
+    if (voit("n")) return { o: "n", v: T[p++].v };
+    if (voit("(")) { p++; const e = expr(); prend(")"); return e; }
+    if (voit("id")) { const n = T[p++].v;
+      if (voit("(")) { p++; const args = [expr()]; while (voit(",")) { p++; args.push(expr()); } prend(")");
+        if (n === "deriv") { if (args.length !== 2) throw new Error("deriv s'écrit deriv(grandeur, variable)"); return { o: "deriv", a: args[0], b: args[1] }; }
+        if (!FN[n]) throw new Error("Fonction inconnue : " + n); if (args.length !== 1) throw new Error(n + " prend un seul argument"); return { o: "f", f: n, a: args[0] }; }
+      return { o: "id", n }; }
+    throw new Error(p >= T.length ? "Formule incomplète" : "Formule mal écrite");
+  }
+  if (!T.length) throw new Error("Formule vide");
+  const e = expr(); if (p < T.length) throw new Error("Formule mal écrite près de « " + (T[p].v ?? T[p].k) + " »"); return e;
+}
+function idents(e, s = new Set()) { if (!e) return s; if (e.o === "id") s.add(e.n); idents(e.a, s); idents(e.b, s); return s; }
+/* évaluation vectorielle : une valeur est un nombre ou un tableau (une colonne) */
+function map2(a, b, f) {
+  const A = Array.isArray(a), B = Array.isArray(b);
+  if (!A && !B) return f(a, b);
+  const n = A ? a.length : b.length, r = new Array(n);
+  for (let i = 0; i < n; i++) r[i] = f(A ? a[i] : a, B ? b[i] : b);
+  return r;
+}
+const map1 = (a, f) => Array.isArray(a) ? a.map(f) : f(a);
+function evalue(e, env) {
+  switch (e.o) {
+    case "n": return e.v;
+    case "id": if (e.n === "pi") return Math.PI; if (!(e.n in env)) throw new Error("Grandeur inconnue : " + e.n); return env[e.n];
+    case "neg": return map1(evalue(e.a, env), x => -x);
+    case "+": return map2(evalue(e.a, env), evalue(e.b, env), (x, y) => x + y);
+    case "-": return map2(evalue(e.a, env), evalue(e.b, env), (x, y) => x - y);
+    case "*": return map2(evalue(e.a, env), evalue(e.b, env), (x, y) => x * y);
+    case "/": return map2(evalue(e.a, env), evalue(e.b, env), (x, y) => x / y);
+    case "^": return map2(evalue(e.a, env), evalue(e.b, env), (x, y) => Math.pow(x, y));
+    case "f": return map1(evalue(e.a, env), FN[e.f]);
+    case "deriv": { const A = evalue(e.a, env), V = evalue(e.b, env);
+      if (!Array.isArray(A) || !Array.isArray(V)) throw new Error("deriv s'applique à des colonnes du tableau");
+      const n = A.length, d = new Array(n).fill(NaN);
+      for (let i = 1; i < n - 1; i++) d[i] = (A[i + 1] - A[i - 1]) / (V[i + 1] - V[i - 1]);
+      return d; }
+  }
+  throw new Error("Formule mal écrite");
+}
+
+/* ======================= État ======================= */
+let S = {
+  cols: [{ nom: "t", unite: "s", v: [] }, { nom: "x", unite: "m", v: [] }, { nom: "y", unite: "m", v: [] }], // grandeurs mesurées
+  calc: [],                       // { nom, unite, f }
+  params: [],                     // { nom, val, unite }
+  gx: "t", gy: ["x", "y"], zero: false, lier: false,
+  modeles: {},                    // nom de la grandeur -> { type, libre, min, max, x, p:{}, r2, expr }
+  eleve: { nom: "", classe: "", titre: "", comm: "" },
+  pointage: { fps: 30, ralenti: false, fpsReel: 240, longueur: 1, etalon: [], origine: null, pts: [], pas: 1, source: "" },
+  debut: Date.now()
+};
+try { const o = JSON.parse(localStorage.getItem(CLE)); if (o && o.cols) S = Object.assign(S, o, { pointage: Object.assign(S.pointage, o.pointage || {}) }); } catch (e) {}
+let tSauve = 0; function sauve() { clearTimeout(tSauve); tSauve = setTimeout(() => { try { localStorage.setItem(CLE, JSON.stringify(S)); } catch (e) {} }, 300); }
+
+/* ======================= Onglets ======================= */
+function onglet(id) {
+  ["pointage", "tableur", "envoi"].forEach(k => { $("#o-" + k).setAttribute("aria-selected", k === id); $("#v-" + k).hidden = k !== id; });
+  if (id === "tableur") { majTableur(); }
+  if (id === "pointage") dessine();
+}
+["pointage", "tableur", "envoi"].forEach(k => $("#o-" + k).onclick = () => onglet(k));
+$("#retour").onclick = e => { e.preventDefault(); try { parent.location.hash = "outils"; } catch (x) { location.hash = ""; } };
+
+/* ======================= POINTAGE VIDÉO ======================= */
+const P = S.pointage, cv = $("#cv"), cx = cv.getContext("2d");
+const img = document.createElement("canvas"), ix = img.getContext("2d"); // image courante à la taille réelle
+let video = null, exemple = false, nImages = 0, iCour = 0, mode = "pointer", survol = null, attente = [];
+
+function dtImage() { return 1 / (P.ralenti ? P.fpsReel : P.fps); }
+function regle() { // mètres par pixel
+  if (P.etalon.length < 2 || !(P.longueur > 0)) return null;
+  const [a, b] = P.etalon, d = Math.hypot(b[0] - a[0], b[1] - a[1]); return d > 2 ? P.longueur / d : null;
+}
+function mesures() {
+  const k = regle(), o = P.origine; if (!k || !o) return [];
+  const pts = P.pts.slice().sort((a, b) => a.i - b.i); if (!pts.length) return [];
+  const i0 = pts[0].i, dt = dtImage();
+  return pts.map(q => ({ t: (q.i - i0) * dt, x: (q.x - o[0]) * k, y: -(q.y - o[1]) * k, i: q.i }));
+}
+
+/* vidéo d'exemple : balle lancée, filmée à 30 images/s, règle de 1,00 m au sol */
+const EX = { w: 960, h: 540, fps: 30, n: 24, ech: 640, x0: 150, y0: 432, v0: 3.3, a: 58 * Math.PI / 180, g: 9.81 };
+function dessineExemple(i) {
+  const c = ix, W = EX.w, H = EX.h; img.width = W; img.height = H;
+  const gr = c.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, "#d9d4e6"); gr.addColorStop(1, "#bfb6d3"); c.fillStyle = gr; c.fillRect(0, 0, W, H);
+  c.fillStyle = "#cfc5e0"; for (let k = 0; k < W; k += 80) c.fillRect(k, 0, 2, 470); // mur carrelé
+  for (let k = 0; k < 470; k += 80) c.fillRect(0, k, W, 2);
+  c.fillStyle = "#8d7aa8"; c.fillRect(0, 470, W, H - 470); // sol
+  // règle de 1,00 m
+  const rx = 150, ry = 482, L = EX.ech; c.fillStyle = "#f5d76e"; c.fillRect(rx, ry, L, 22); c.strokeStyle = "#5b4a1a"; c.lineWidth = 1;
+  for (let k = 0; k <= 100; k++) { const x = rx + L * k / 100; c.beginPath(); c.moveTo(x + .5, ry); c.lineTo(x + .5, ry + (k % 10 ? 6 : k % 50 ? 10 : 14)); c.stroke(); }
+  c.fillStyle = "#3d300c"; c.font = "bold 12px sans-serif"; c.fillText("0", rx + 2, ry + 20); c.fillText("50 cm", rx + L / 2 + 3, ry + 20); c.fillText("1 m", rx + L - 26, ry + 20);
+  // balle
+  const t = i / EX.fps, X = EX.v0 * Math.cos(EX.a) * t, Y = EX.v0 * Math.sin(EX.a) * t - EX.g * t * t / 2;
+  let px = EX.x0 + X * EX.ech, py = EX.y0 - Y * EX.ech; if (py > EX.y0 + 24) py = EX.y0 + 24;
+  c.fillStyle = "rgba(0,0,0,.18)"; c.beginPath(); c.ellipse(px, 472, 18, 5, 0, 0, 7); c.fill();
+  const b = c.createRadialGradient(px - 6, py - 6, 2, px, py, 16); b.addColorStop(0, "#ffb38a"); b.addColorStop(1, "#d2541b"); c.fillStyle = b; c.beginPath(); c.arc(px, py, 15, 0, 7); c.fill();
+  c.strokeStyle = "rgba(60,20,0,.5)"; c.lineWidth = 1.5; c.beginPath(); c.arc(px, py, 15, 0, 7); c.stroke(); c.beginPath(); c.moveTo(px - 15, py); c.lineTo(px + 15, py); c.stroke();
+  c.fillStyle = "#3d2b55"; c.font = "13px sans-serif"; c.fillText("Vidéo d'exemple · 30 images par seconde", 14, 22);
+}
+function ouvreExemple() {
+  if (video) { URL.revokeObjectURL(video.src); video = null; }
+  exemple = true; P.source = "exemple"; P.fps = EX.fps; P.ralenti = false; $("#fps").value = 30; $("#ralenti").checked = false;
+  nImages = EX.n; img.width = EX.w; img.height = EX.h; cv.width = EX.w; cv.height = EX.h; P.longueur = 1; $("#longueur").value = 1;
+  $("#curseur").max = nImages - 1; va(0); valide("Vidéo d'exemple chargée : étalonnez avec la règle jaune de 1 m.");
+}
+$("#b-exemple").onclick = () => { if (P.pts.length && !confirm("Changer de vidéo efface les points déjà placés. Continuer ?")) return; P.pts = []; P.etalon = []; P.origine = null; ouvreExemple(); majPts(); };
+$("#fichier").onchange = e => {
+  const f = e.target.files[0]; if (!f) return; e.target.value = "";
+  if (P.pts.length && !confirm("Changer de vidéo efface les points déjà placés. Continuer ?")) return;
+  P.pts = []; P.etalon = []; P.origine = null; exemple = false; P.source = f.name;
+  if (video) URL.revokeObjectURL(video.src);
+  video = document.createElement("video"); video.muted = true; video.playsInline = true; video.preload = "auto"; video.src = URL.createObjectURL(f);
+  video.onloadedmetadata = () => { img.width = video.videoWidth; img.height = video.videoHeight; cv.width = video.videoWidth; cv.height = video.videoHeight;
+    nImages = Math.max(1, Math.floor(video.duration * P.fps)); $("#curseur").max = nImages - 1; va(0); valide("Vidéo chargée : " + f.name); majPts(); };
+  video.onerror = () => erreurVideo();
+};
+function erreurVideo() { valide(""); alert("Cette vidéo ne peut pas être lue par le navigateur. Essayez un fichier MP4 (H.264) ou WebM."); }
+let charge = Promise.resolve();
+function va(i) {
+  if (!nImages) return; iCour = Math.max(0, Math.min(nImages - 1, Math.round(i))); $("#curseur").value = iCour;
+  if (exemple) { dessineExemple(iCour); dessine(); return; }
+  if (!video) return;
+  const cible = (iCour + 0.5) / P.fps;
+  charge = charge.then(() => new Promise(ok => { let fini = false; const fin = () => { if (fini) return; fini = true; ix.drawImage(video, 0, 0, img.width, img.height); dessine(); ok(); };
+    video.addEventListener("seeked", fin, { once: true }); setTimeout(fin, 1500); video.currentTime = Math.min(cible, Math.max(0, video.duration - 0.001)); }));
+}
+$("#curseur").oninput = e => va(+e.target.value);
+$("#b-m1").onclick = () => va(iCour - 1); $("#b-p1").onclick = () => va(iCour + 1); $("#b-m10").onclick = () => va(iCour - 10); $("#b-p10").onclick = () => va(iCour + 10);
+addEventListener("keydown", e => { if ($("#v-pointage").hidden || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if (e.key === "ArrowRight") { va(iCour + 1); e.preventDefault(); } if (e.key === "ArrowLeft") { va(iCour - 1); e.preventDefault(); } });
+$("#fps").onchange = e => { P.fps = Math.max(1, num(e.target.value) || 30); if (video) { nImages = Math.max(1, Math.floor(video.duration * P.fps)); $("#curseur").max = nImages - 1; } majPts(); };
+$("#ralenti").onchange = e => { P.ralenti = e.target.checked; majPts(); };
+$("#fps-reel").onchange = e => { P.fpsReel = Math.max(1, num(e.target.value) || 240); majPts(); };
+$("#longueur").onchange = e => { P.longueur = num(e.target.value); majPts(); };
+$("#pas").onchange = e => { P.pas = Math.max(1, Math.round(num(e.target.value) || 1)); };
+function choisitMode(m) { mode = m; attente = []; $("#b-etalon").classList.toggle("on", m === "etalon"); $("#b-origine").classList.toggle("on", m === "origine"); $("#b-pointer").classList.toggle("on", m === "pointer"); etapes(); dessine(); }
+$("#b-etalon").onclick = () => choisitMode("etalon"); $("#b-origine").onclick = () => choisitMode("origine"); $("#b-pointer").onclick = () => choisitMode("pointer");
+$("#b-annuler").onclick = () => { if (!P.pts.length) return; const d = P.pts.reduce((a, b) => b.ordre > a.ordre ? b : a); P.pts.splice(P.pts.indexOf(d), 1); va(d.i); majPts(); };
+$("#b-effacer-pts").onclick = () => { if (P.pts.length && confirm("Effacer tous les points pointés ?")) { P.pts = []; majPts(); } };
+function valide(t) { $("#valide").textContent = t ? "Action validée ! " + t : ""; }
+
+function versImage(ev) { const r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) * cv.width / r.width, (ev.clientY - r.top) * cv.height / r.height]; }
+cv.addEventListener("pointermove", ev => { survol = versImage(ev); dessine(); });
+cv.addEventListener("pointerleave", () => { survol = null; dessine(); });
+cv.addEventListener("pointerdown", ev => {
+  if (!nImages) return; ev.preventDefault(); const q = versImage(ev); survol = q;
+  if (mode === "etalon") { attente.push(q); if (attente.length === 2) { P.etalon = attente; attente = []; valide("Étalon placé : vérifiez sa longueur réelle (" + fmt(P.longueur) + " m), puis placez l'origine."); choisitMode(P.origine ? "pointer" : "origine"); majPts(); } dessine(); return; }
+  if (mode === "origine") { P.origine = q; valide("Origine placée : x vers la droite, y vers le haut. Pointez maintenant l'objet."); choisitMode("pointer"); majPts(); return; }
+  const ordre = P.pts.reduce((m, p) => Math.max(m, p.ordre || 0), 0) + 1;
+  const k = P.pts.findIndex(p => p.i === iCour); const pt = { i: iCour, x: q[0], y: q[1], ordre };
+  if (k >= 0) P.pts[k] = pt; else P.pts.push(pt);
+  majPts(); if (iCour + P.pas < nImages) va(iCour + P.pas); else dessine();
+});
+
+function dessine() {
+  const W = cv.width, H = cv.height; cx.clearRect(0, 0, W, H);
+  $("#vide").hidden = !!nImages; if (!nImages) { cx.fillStyle = "#1A0B2E"; cx.fillRect(0, 0, W, H); etapes(); return; }
+  cx.drawImage(img, 0, 0, W, H);
+  const u = Math.max(1, W / 640); // épaisseur adaptée à la taille de la vidéo
+  // étalon
+  const E = mode === "etalon" ? attente.concat(survol && attente.length === 1 ? [survol] : []) : P.etalon;
+  if (E.length) { cx.strokeStyle = "#00E5FF"; cx.fillStyle = "#00E5FF"; cx.lineWidth = 3 * u; cx.beginPath(); cx.moveTo(E[0][0], E[0][1]); if (E[1]) cx.lineTo(E[1][0], E[1][1]); cx.stroke();
+    E.forEach(p => { cx.beginPath(); cx.arc(p[0], p[1], 5 * u, 0, 7); cx.fill(); });
+    if (E[1] && mode !== "etalon") { cx.font = `bold ${14 * u}px sans-serif`; cx.fillText(fmt(P.longueur) + " m", (E[0][0] + E[1][0]) / 2 + 6 * u, (E[0][1] + E[1][1]) / 2 - 8 * u); } }
+  // repère
+  if (P.origine) { const [ox, oy] = P.origine, L = Math.min(W, H) * .16; cx.strokeStyle = "#FF4081"; cx.fillStyle = "#FF4081"; cx.lineWidth = 2.5 * u;
+    fleche(ox, oy, ox + L, oy, u); fleche(ox, oy, ox, oy - L, u); cx.font = `bold ${15 * u}px sans-serif`; cx.fillText("x", ox + L + 4 * u, oy + 5 * u); cx.fillText("y", ox - 5 * u, oy - L - 8 * u); cx.fillText("O", ox - 16 * u, oy + 16 * u); }
+  // points
+  const pts = P.pts.slice().sort((a, b) => a.i - b.i);
+  pts.forEach((p, n) => { const cur = p.i === iCour; cx.strokeStyle = cur ? "#FFEB3B" : "#E040FB"; cx.lineWidth = 2 * u; const r = 7 * u;
+    cx.beginPath(); cx.moveTo(p.x - r, p.y); cx.lineTo(p.x + r, p.y); cx.moveTo(p.x, p.y - r); cx.lineTo(p.x, p.y + r); cx.stroke();
+    cx.beginPath(); cx.arc(p.x, p.y, r * .55, 0, 7); cx.stroke(); });
+  // loupe
+  if (survol) { const z = 3, R = Math.round(Math.min(W, H) * .14), sx = survol[0], sy = survol[1], dx = W - 2 * R - 10 * u, dy = 10 * u;
+    cx.save(); cx.beginPath(); cx.arc(dx + R, dy + R, R, 0, 7); cx.clip(); cx.fillStyle = "#000"; cx.fillRect(dx, dy, 2 * R, 2 * R);
+    cx.drawImage(img, sx - R / z, sy - R / z, 2 * R / z, 2 * R / z, dx, dy, 2 * R, 2 * R);
+    cx.strokeStyle = "rgba(255,64,129,.95)"; cx.lineWidth = 1.5 * u; cx.beginPath(); cx.moveTo(dx + R, dy); cx.lineTo(dx + R, dy + 2 * R); cx.moveTo(dx, dy + R); cx.lineTo(dx + 2 * R, dy + R); cx.stroke(); cx.restore();
+    cx.strokeStyle = "#fff"; cx.lineWidth = 2 * u; cx.beginPath(); cx.arc(dx + R, dy + R, R, 0, 7); cx.stroke(); }
+  const t = P.pts.length ? (iCour - Math.min(...P.pts.map(p => p.i))) * dtImage() : iCour * dtImage();
+  $("#info-img").textContent = `Image ${iCour + 1} / ${nImages} · t = ${fmt(t, 3)} s`;
+  etapes();
+}
+function fleche(x0, y0, x1, y1, u) { const a = Math.atan2(y1 - y0, x1 - x0), h = 10 * u; cx.beginPath(); cx.moveTo(x0, y0); cx.lineTo(x1, y1); cx.stroke();
+  cx.beginPath(); cx.moveTo(x1, y1); cx.lineTo(x1 - h * Math.cos(a - .4), y1 - h * Math.sin(a - .4)); cx.lineTo(x1 - h * Math.cos(a + .4), y1 - h * Math.sin(a + .4)); cx.closePath(); cx.fill(); }
+
+const ETAPES = [
+  ["Charger la vidéo", "Choisissez votre vidéo ou ouvrez la vidéo d'exemple. Indiquez le nombre d'images par seconde du fichier (et la cadence réelle si elle a été filmée au ralenti)."],
+  ["Étalonner", "Cliquez sur « Étalonner », puis sur les deux extrémités d'un objet de longueur connue (la règle). Indiquez sa longueur réelle en mètres."],
+  ["Placer l'origine", "Cliquez sur « Placer l'origine », puis à l'endroit choisi comme origine O du repère (souvent la position de départ de l'objet)."],
+  ["Pointer l'objet", "Placez-vous sur la première image du mouvement et cliquez au centre de l'objet. La vidéo avance toute seule : pointez image après image (au moins 5 points)."],
+  ["Exploiter", "Vos mesures sont prêtes. Cliquez sur « Exploiter dans le tableur-grapheur » pour calculer les vitesses, tracer les graphiques et modéliser."]
+];
+function etapes() {
+  const fait = [!!nImages, !!regle(), !!P.origine, P.pts.length >= 5, envoye]; let e = fait.indexOf(false); if (e < 0) e = 4;
+  $$("#etapes li").forEach((li, k) => { li.classList.toggle("fait", fait[k]); li.classList.toggle("cours", k === e); });
+  $("#et-num").textContent = `Étape ${e + 1} / 5`; $("#et-titre").textContent = ETAPES[e][0]; $("#et-texte").textContent = ETAPES[e][1];
+}
+let envoye = false;
+function majPts() {
+  const M = mesures(), tb = $("#t-pts tbody");
+  if (!regle() || !P.origine) tb.innerHTML = `<tr><td colspan="4" style="text-align:center;white-space:normal">${P.pts.length} point(s) pointé(s). ${!regle() ? "Étalonnez" : "Placez l'origine"} pour obtenir x et y en mètres.</td></tr>`;
+  else tb.innerHTML = M.map((m, n) => `<tr><td>${n + 1}</td><td>${fmt(m.t)}</td><td>${fmt(m.x)}</td><td>${fmt(m.y)}</td></tr>`).join("") || `<tr><td colspan="4" style="text-align:center">Aucun point</td></tr>`;
+  $("#b-envoyer").disabled = M.length < 3; dessine(); sauve();
+}
+$("#b-envoyer").onclick = () => {
+  const M = mesures(); if (M.length < 3) return;
+  const autres = S.cols.filter(c => !["t", "x", "y"].includes(c.nom) && c.v.some(v => isFinite(v)));
+  if (autres.length && !confirm("Le tableau contient d'autres mesures. Les remplacer par celles du pointage ?")) return;
+  S.cols = [{ nom: "t", unite: "s", v: M.map(m => m.t) }, { nom: "x", unite: "m", v: M.map(m => m.x) }, { nom: "y", unite: "m", v: M.map(m => m.y) }];
+  if (!S.calc.length) preVitesses();
+  S.gx = "t"; S.gy = ["x", "y"]; S.modeles = {}; envoye = true; sauve(); onglet("tableur");
+};
+
+/* ======================= TABLEUR ======================= */
+function nLignes() { return Math.max(0, ...S.cols.map(c => c.v.length)); }
+let calcErr = {}, envCache = {};
+function calcule() {
+  const n = nLignes(), env = {}; calcErr = {};
+  S.params.forEach(p => { env[p.nom] = num(p.val); });
+  S.cols.forEach(c => { const v = c.v.slice(); while (v.length < n) v.push(NaN); env[c.nom] = v.map(x => (x === null || x === "") ? NaN : num(x)); });
+  S.calc.forEach(c => { try { if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(c.nom)) throw new Error("Nom invalide (lettres, chiffres, _)"); let r = evalue(parse(c.f), env);
+      if (!Array.isArray(r)) r = new Array(n).fill(r); env[c.nom] = r.map(x => isFinite(x) ? x : NaN); } catch (e) { calcErr[c.nom] = e.message; env[c.nom] = new Array(n).fill(NaN); } });
+  envCache = env; return env;
+}
+function toutes() { return S.cols.map(c => ({ nom: c.nom, unite: c.unite, calc: false })).concat(S.calc.map(c => ({ nom: c.nom, unite: c.unite, calc: true }))); }
+const uniteDe = nom => (toutes().find(c => c.nom === nom) || {}).unite || "";
+function majTableur() { calcule(); tableau(); listes(); selecteurs(); graphe(); resultats(); sauve(); }
+function tableau() {
+  const env = envCache, n = nLignes(), G = toutes();
+  let h = `<thead><tr><th>n°</th>${G.map(c => `<th class="${c.calc ? "calc" : ""}">${esc(c.nom)}${c.unite ? ` <small>(${esc(c.unite)})</small>` : ""}</th>`).join("")}</tr></thead><tbody>`;
+  for (let i = 0; i < n; i++) h += `<tr><td>${i + 1}</td>${G.map((c, k) => c.calc ? `<td class="c">${fmt(env[c.nom][i])}</td>` : `<td><input data-c="${k}" data-i="${i}" value="${fmt(num(S.cols[k].v[i] ?? NaN), 5)}" inputmode="decimal" aria-label="${esc(c.nom)} ligne ${i + 1}"></td>`).join("")}</tr>`;
+  if (!n) h += `<tr><td colspan="${G.length + 1}" style="text-align:center;white-space:normal">Tableau vide : pointez une vidéo, collez des données ou ajoutez des lignes.</td></tr>`;
+  $("#t-data").innerHTML = h + "</tbody>";
+}
+$("#t-data").addEventListener("change", e => { const t = e.target; if (!t.dataset.c) return; const c = S.cols[+t.dataset.c]; const i = +t.dataset.i; while (c.v.length <= i) c.v.push(NaN); c.v[i] = num(t.value); majTableur(); });
+$("#b-ligne").onclick = () => { const n = nLignes(); S.cols.forEach(c => { while (c.v.length < n) c.v.push(NaN); c.v.push(NaN); }); majTableur(); const ins = $$("#t-data input"); if (ins.length) ins[ins.length - S.cols.length].focus(); };
+$("#b-colonne").onclick = () => { const nom = (prompt("Nom de la grandeur mesurée (ex. U, I, m) :") || "").trim(); if (!nom) return;
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(nom)) return alert("Le nom doit commencer par une lettre et ne contenir que des lettres, chiffres ou _."); if (toutes().some(c => c.nom === nom)) return alert("Cette grandeur existe déjà.");
+  const u = (prompt("Unité de " + nom + " (laisser vide si aucune) :") || "").trim(); S.cols.push({ nom, unite: u, v: [] }); majTableur(); };
+$("#b-vider").onclick = () => { if (!confirm("Effacer tout le tableau, les grandeurs calculées, les paramètres et les modèles ?")) return;
+  S.cols = [{ nom: "t", unite: "s", v: [] }, { nom: "x", unite: "m", v: [] }, { nom: "y", unite: "m", v: [] }]; S.calc = []; S.params = []; S.modeles = {}; S.gy = ["x", "y"]; S.gx = "t"; majTableur(); };
+function listes() {
+  $("#l-calc").innerHTML = S.calc.map((c, k) => `<div class="ligne" data-k="${k}"><input aria-label="Nom" value="${esc(c.nom)}" data-f="nom"><input aria-label="Unité" placeholder="unité" value="${esc(c.unite)}" data-f="unite"><input aria-label="Formule" value="${esc(c.f)}" data-f="f" placeholder="formule"><button class="x" title="Supprimer" aria-label="Supprimer ${esc(c.nom)}">✕</button>${calcErr[c.nom] ? `<div class="e err">${esc(c.nom)} : ${esc(calcErr[c.nom])}</div>` : ""}</div>`).join("") || `<p class="petit">Aucune grandeur calculée.</p>`;
+  $("#l-param").innerHTML = S.params.map((p, k) => `<div class="ligne p" data-k="${k}"><input aria-label="Nom" value="${esc(p.nom)}" data-f="nom"><input aria-label="Valeur" value="${esc(p.val)}" data-f="val" inputmode="decimal"><input aria-label="Unité" placeholder="unité" value="${esc(p.unite)}" data-f="unite"><button class="x" title="Supprimer" aria-label="Supprimer ${esc(p.nom)}">✕</button></div>`).join("") || `<p class="petit">Aucun paramètre.</p>`;
+}
+function editeListe(sel, arr) {
+  $(sel).addEventListener("change", e => { const l = e.target.closest(".ligne"); if (!l || !e.target.dataset.f) return; const o = arr()[+l.dataset.k], f = e.target.dataset.f;
+    if (f === "nom") { const ancien = o.nom; S.gy = S.gy.map(y => y === ancien ? e.target.value.trim() : y); if (S.gx === ancien) S.gx = e.target.value.trim(); }
+    o[f] = e.target.value.trim(); majTableur(); });
+  $(sel).addEventListener("click", e => { if (!e.target.classList.contains("x")) return; const l = e.target.closest(".ligne"); arr().splice(+l.dataset.k, 1); majTableur(); });
+}
+editeListe("#l-calc", () => S.calc); editeListe("#l-param", () => S.params);
+function nomLibre(base) { let n = base, k = 2; while (toutes().some(c => c.nom === n) || S.params.some(p => p.nom === n)) n = base + k++; return n; }
+$("#b-calc").onclick = () => { S.calc.push({ nom: nomLibre("G"), unite: "", f: "" }); majTableur(); const ins = $$("#l-calc .ligne"); ins[ins.length - 1].querySelector('[data-f="f"]').focus(); };
+$("#b-param").onclick = () => { S.params.push({ nom: nomLibre("k"), val: "1", unite: "" }); majTableur(); };
+const aCalc = nom => S.calc.some(c => c.nom === nom) || S.cols.some(c => c.nom === nom);
+function ajoute(nom, unite, f) { if (!aCalc(nom)) S.calc.push({ nom, unite, f }); }
+function preVitesses() { ajoute("vx", "m/s", "deriv(x, t)"); ajoute("vy", "m/s", "deriv(y, t)"); ajoute("v", "m/s", "sqrt(vx^2 + vy^2)"); }
+$("#pre-v").onclick = () => { preVitesses(); majTableur(); };
+$("#pre-a").onclick = () => { preVitesses(); ajoute("ax", "m/s²", "deriv(vx, t)"); ajoute("ay", "m/s²", "deriv(vy, t)"); majTableur(); };
+$("#pre-e").onclick = () => { preVitesses(); if (!S.params.some(p => p.nom === "m")) S.params.push({ nom: "m", val: "0,058", unite: "kg" }); if (!S.params.some(p => p.nom === "g")) S.params.push({ nom: "g", val: "9,81", unite: "N/kg" });
+  ajoute("Ec", "J", "0.5*m*v^2"); ajoute("Epp", "J", "m*g*y"); ajoute("Em", "J", "Ec + Epp"); S.gx = "t"; S.gy = ["Ec", "Epp", "Em"]; majTableur(); };
+
+/* coller / CSV */
+function litTexte(txt) {
+  const L = txt.replace(/\r/g, "").split("\n").filter(l => l.trim()); if (L.length < 2) throw new Error("Il faut une ligne de noms et au moins une ligne de valeurs.");
+  const sep = L[0].includes("\t") ? "\t" : L[0].includes(";") ? ";" : ",";
+  const noms = L[0].split(sep).map(s => s.trim().replace(/^"|"$/g, ""));
+  const cols = noms.map(h => { const m = /^([^()\[\]]+?)\s*[\(\[]\s*([^)\]]*)[\)\]]\s*$/.exec(h); let nom = (m ? m[1] : h).trim().replace(/[^A-Za-z0-9_]/g, "_"); if (!/^[A-Za-z_]/.test(nom)) nom = "c_" + nom; return { nom, unite: m ? m[2].trim() : "", v: [] }; });
+  L.slice(1).forEach(l => { const v = l.split(sep); cols.forEach((c, k) => c.v.push(num((v[k] || "").replace(/^"|"$/g, "")))); });
+  return cols;
+}
+$("#b-coller").onclick = () => { $("#txt-coller").value = ""; $("#dlg-coller").showModal(); };
+$("#dlg-coller").addEventListener("close", () => { if ($("#dlg-coller").returnValue !== "ok") return;
+  try { const c = litTexte($("#txt-coller").value); S.cols = c; S.calc = S.calc.filter(x => !c.some(y => y.nom === x.nom)); S.gx = c[0].nom; S.gy = c.slice(1, 3).map(x => x.nom); S.modeles = {}; majTableur(); } catch (e) { alert(e.message); } });
+$("#f-csv").onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { try { const c = litTexte(String(r.result).replace(/^﻿/, "")); S.cols = c; S.gx = c[0].nom; S.gy = c.slice(1, 3).map(x => x.nom); S.modeles = {}; majTableur(); } catch (x) { alert(x.message); } }; r.readAsText(f); e.target.value = ""; };
+function texteCSV() { const env = calcule(), G = toutes(), n = nLignes();
+  const l = [G.map(c => c.nom + (c.unite ? " (" + c.unite + ")" : "")).join(";")];
+  for (let i = 0; i < n; i++) l.push(G.map(c => fmt(env[c.nom][i], 6)).join(";")); return l.join("\r\n"); }
+function telecharge(blob, nom) { const u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = nom; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 3000); }
+$("#b-csv").onclick = () => telecharge(new Blob(["﻿" + texteCSV()], { type: "text/csv;charset=utf-8" }), "mesures_" + (S.eleve.titre || "pointage").replace(/[^\wÀ-ÿ-]+/g, "_") + ".csv");
+
+/* ======================= GRAPHIQUE ======================= */
+const COUL = ["#4A148C", "#C2185B", "#00838F", "#E65100", "#2E7D32", "#5D4037"];
+function selecteurs() {
+  const G = toutes(); if (!G.some(c => c.nom === S.gx)) S.gx = G[0] ? G[0].nom : ""; S.gy = S.gy.filter(y => G.some(c => c.nom === y));
+  $("#g-x").innerHTML = G.map(c => `<option ${c.nom === S.gx ? "selected" : ""}>${esc(c.nom)}</option>`).join("");
+  $("#g-y").innerHTML = G.filter(c => c.nom !== S.gx).map(c => `<label class="ch"><input type="checkbox" value="${esc(c.nom)}" ${S.gy.includes(c.nom) ? "checked" : ""}> ${esc(c.nom)}</label>`).join("");
+  const my = $("#m-y").value; $("#m-y").innerHTML = S.gy.map(y => `<option ${y === my ? "selected" : ""}>${esc(y)}</option>`).join("") || "<option value=''>— cochez une ordonnée —</option>";
+  $("#g-zero").checked = !!S.zero; $("#g-lier").checked = !!S.lier;
+}
+$("#g-x").onchange = e => { S.gx = e.target.value; S.gy = S.gy.filter(y => y !== S.gx); S.modeles = {}; majTableur(); };
+$("#g-y").onchange = e => { const v = e.target.value; S.gy = e.target.checked ? S.gy.concat(v) : S.gy.filter(y => y !== v); majTableur(); };
+$("#g-zero").onchange = e => { S.zero = e.target.checked; graphe(); sauve(); };
+$("#g-lier").onchange = e => { S.lier = e.target.checked; graphe(); sauve(); };
+function graduations(a, b, n) { if (a === b) { a -= 1; b += 1; } const pas0 = (b - a) / n, p = Math.pow(10, Math.floor(Math.log10(pas0))), r = pas0 / p, pas = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * p;
+  const d = Math.floor(a / pas) * pas, f = Math.ceil(b / pas) * pas, t = []; for (let v = d; v <= f + pas / 2; v += pas) t.push(Math.abs(v) < pas * 1e-9 ? 0 : v); return { d, f, pas, t }; }
+const gr = $("#gr"), gx = gr.getContext("2d"); let geo = null;
+function graphe() {
+  const dpr = window.devicePixelRatio || 1, W = gr.clientWidth || 600, H = gr.clientHeight || 400; gr.width = W * dpr; gr.height = H * dpr; gx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  gx.clearRect(0, 0, W, H); gx.fillStyle = "#fff"; gx.fillRect(0, 0, W, H);
+  const env = envCache, X = env[S.gx] || [], Ys = S.gy.map(y => ({ nom: y, v: env[y] || [] }));
+  const xs = [], ys = []; Ys.forEach(s => s.v.forEach((y, i) => { if (isFinite(y) && isFinite(X[i])) { xs.push(X[i]); ys.push(y); } }));
+  Object.entries(S.modeles).forEach(([k, m]) => { if (S.gy.includes(k) && m.x === S.gx) { const c = courbe(m); c.forEach(p => { if (isFinite(p[1])) ys.push(p[1]); }); } });
+  gx.font = "13px Atkinson Hyperlegible, sans-serif";
+  if (!xs.length) { gx.fillStyle = "#5E4D6B"; gx.textAlign = "center"; gx.fillText(S.gy.length ? "Pas encore de valeurs à tracer" : "Cochez au moins une grandeur en ordonnée", W / 2, H / 2); geo = null; return; }
+  let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  if (S.zero) { x0 = Math.min(0, x0); x1 = Math.max(0, x1); y0 = Math.min(0, y0); y1 = Math.max(0, y1); }
+  const gxT = graduations(x0, x1, W < 500 ? 5 : 8), gyT = graduations(y0, y1, 6);
+  const m = { g: 64, d: 16, h: 18 + (Ys.length > 1 ? 18 : 0), b: 46 }, pw = W - m.g - m.d, ph = H - m.h - m.b;
+  const sx = v => m.g + (v - gxT.d) / (gxT.f - gxT.d) * pw, sy = v => m.h + ph - (v - gyT.d) / (gyT.f - gyT.d) * ph;
+  geo = { sx, sy, X, Ys, m, pw, ph, inv: (px, py) => [gxT.d + (px - m.g) / pw * (gxT.f - gxT.d), gyT.d + (m.h + ph - py) / ph * (gyT.f - gyT.d)] };
+  gx.strokeStyle = "#F3E5F5"; gx.lineWidth = 1; gx.fillStyle = "#5E4D6B";
+  gx.textAlign = "center"; gxT.t.forEach(v => { const p = sx(v); gx.beginPath(); gx.moveTo(p, m.h); gx.lineTo(p, m.h + ph); gx.stroke(); gx.fillText(fmt(v, 3), p, m.h + ph + 16); });
+  gx.textAlign = "right"; gyT.t.forEach(v => { const p = sy(v); gx.beginPath(); gx.moveTo(m.g, p); gx.lineTo(m.g + pw, p); gx.stroke(); gx.fillText(fmt(v, 3), m.g - 6, p + 4); });
+  gx.strokeStyle = "#7B5E95"; gx.lineWidth = 1.2; gx.strokeRect(m.g, m.h, pw, ph);
+  if (gyT.d < 0 && gyT.f > 0) { gx.strokeStyle = "#B39DDB"; gx.beginPath(); gx.moveTo(m.g, sy(0)); gx.lineTo(m.g + pw, sy(0)); gx.stroke(); }
+  if (gxT.d < 0 && gxT.f > 0) { gx.strokeStyle = "#B39DDB"; gx.beginPath(); gx.moveTo(sx(0), m.h); gx.lineTo(sx(0), m.h + ph); gx.stroke(); }
+  gx.fillStyle = "#24112F"; gx.textAlign = "center"; gx.font = "bold 13px Atkinson Hyperlegible, sans-serif";
+  gx.fillText(S.gx + (uniteDe(S.gx) ? " (" + uniteDe(S.gx) + ")" : ""), m.g + pw / 2, H - 8);
+  gx.save(); gx.translate(14, m.h + ph / 2); gx.rotate(-Math.PI / 2); gx.fillText(Ys.length === 1 ? Ys[0].nom + (uniteDe(Ys[0].nom) ? " (" + uniteDe(Ys[0].nom) + ")" : "") : [...new Set(Ys.map(s => uniteDe(s.nom)))].filter(Boolean).join(", "), 0, 0); gx.restore();
+  gx.save(); gx.beginPath(); gx.rect(m.g, m.h, pw, ph); gx.clip();
+  Ys.forEach((s, k) => { const c = COUL[k % COUL.length]; gx.strokeStyle = c; gx.fillStyle = c; gx.lineWidth = 1.6;
+    if (S.lier) { gx.beginPath(); let d = false; s.v.forEach((y, i) => { if (!isFinite(y) || !isFinite(X[i])) { d = false; return; } d ? gx.lineTo(sx(X[i]), sy(y)) : gx.moveTo(sx(X[i]), sy(y)); d = true; }); gx.stroke(); }
+    s.v.forEach((y, i) => { if (!isFinite(y) || !isFinite(X[i])) return; const a = sx(X[i]), b = sy(y), r = 4.5; gx.beginPath(); gx.moveTo(a - r, b); gx.lineTo(a + r, b); gx.moveTo(a, b - r); gx.lineTo(a, b + r); gx.stroke(); });
+    const mo = S.modeles[s.nom]; if (mo && mo.x === S.gx) { const C = courbe(mo); gx.lineWidth = 2; gx.setLineDash([]); gx.strokeStyle = c; gx.globalAlpha = .75; gx.beginPath(); let d = false;
+      C.forEach(([a, b]) => { if (!isFinite(b)) { d = false; return; } d ? gx.lineTo(sx(a), sy(b)) : gx.moveTo(sx(a), sy(b)); d = true; }); gx.stroke(); gx.globalAlpha = 1; } });
+  gx.restore();
+  if (Ys.length > 1) { let px = m.g; gx.textAlign = "left"; gx.font = "bold 12px Atkinson Hyperlegible, sans-serif"; Ys.forEach((s, k) => { gx.fillStyle = COUL[k % COUL.length]; gx.fillRect(px, 6, 12, 12); gx.fillText(s.nom, px + 16, 16); px += gx.measureText(s.nom).width + 34; }); }
+}
+gr.addEventListener("pointermove", ev => { if (!geo) return; const r = gr.getBoundingClientRect(), px = ev.clientX - r.left, py = ev.clientY - r.top; let best = null, bd = 18 * 18;
+  geo.Ys.forEach(s => s.v.forEach((y, i) => { if (!isFinite(y) || !isFinite(geo.X[i])) return; const d = (geo.sx(geo.X[i]) - px) ** 2 + (geo.sy(y) - py) ** 2; if (d < bd) { bd = d; best = { s: s.nom, i, x: geo.X[i], y }; } }));
+  const b = $("#bulle"); if (!best) { b.hidden = true; return; } b.hidden = false; b.style.left = geo.sx(best.x) + "px"; b.style.top = geo.sy(best.y) + "px";
+  b.textContent = `n°${best.i + 1} · ${S.gx} = ${fmt(best.x)} ; ${best.s} = ${fmt(best.y)}`; });
+gr.addEventListener("pointerleave", () => { $("#bulle").hidden = true; });
+addEventListener("resize", () => { if (!$("#v-tableur").hidden) graphe(); else dessine(); });
+$("#b-png").onclick = () => gr.toBlob(b => telecharge(b, "graphique_" + S.gy.join("_") + "_" + S.gx + ".png"));
+
+/* ======================= MODÉLISATION ======================= */
+const MODELES = {
+  lin: { nom: "Linéaire  y = a·x", f: "a*X" },
+  aff: { nom: "Affine  y = a·x + b", f: "a*X+b" },
+  par: { nom: "Parabole  y = a·x² + b·x + c", f: "a*X^2+b*X+c" },
+  exd: { nom: "Exponentielle  y = A·exp(−x/τ) + B", f: "A*exp(-X/tau)+B" },
+  exc: { nom: "Croissance  y = A·(1 − exp(−x/τ))", f: "A*(1-exp(-X/tau))" },
+  pui: { nom: "Puissance  y = a·xⁿ", f: "a*X^n" },
+  inv: { nom: "Inverse  y = a / x", f: "a/X" },
+  sin: { nom: "Sinusoïde  y = A·cos(2π·x/T + φ) + B", f: "A*cos(2*pi*X/T+phi)+B" },
+  libre: { nom: "Formule libre…", f: "" }
+};
+$("#m-type").innerHTML = Object.entries(MODELES).map(([k, m]) => `<option value="${k}">${m.nom}</option>`).join("");
+$("#m-type").onchange = () => { $("#m-libre-z").hidden = $("#m-type").value !== "libre"; };
+function formuleModele(type, libre, xn) { return type === "libre" ? libre : MODELES[type].f.replace(/X/g, xn); }
+function courbe(mo) { try { const e = parse(mo.expr), xs = []; const a = mo.lo, b = mo.hi; for (let k = 0; k <= 200; k++) xs.push(a + (b - a) * k / 200);
+  const env = Object.assign({}, constantes(), mo.p, { [mo.x]: xs }); const ys = evalue(e, env); return xs.map((x, k) => [x, Array.isArray(ys) ? ys[k] : ys]); } catch (e) { return []; } }
+function constantes() { const c = {}; S.params.forEach(p => { c[p.nom] = num(p.val); }); return c; }
+/* moindres carrés non linéaires (Levenberg-Marquardt, jacobien numérique) */
+function resout(A, b) { const n = b.length, M = A.map((r, i) => r.concat([b[i]]));
+  for (let c = 0; c < n; c++) { let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r; [M[c], M[p]] = [M[p], M[c]]; if (Math.abs(M[c][c]) < 1e-300) return null;
+    for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k]; } }
+  return M.map((r, i) => r[n] / r[i]); }
+function ajuste(f, noms, p0, X, Y) {
+  let p = p0.slice(), lam = 1e-3;
+  const res = q => { const r = f(q); let s = 0; for (let i = 0; i < Y.length; i++) { const d = Y[i] - r[i]; s += d * d; } return { r, s }; };
+  let cur = res(p); if (!isFinite(cur.s)) return null;
+  for (let it = 0; it < 200; it++) {
+    const J = noms.map((_, k) => { const h = 1e-6 * Math.max(Math.abs(p[k]), 1e-6), q = p.slice(); q[k] += h; const r = f(q); return r.map((v, i) => (v - cur.r[i]) / h); });
+    const JTJ = noms.map((_, a) => noms.map((_, b) => { let s = 0; for (let i = 0; i < Y.length; i++) s += J[a][i] * J[b][i]; return s; }));
+    const g = noms.map((_, a) => { let s = 0; for (let i = 0; i < Y.length; i++) s += J[a][i] * (Y[i] - cur.r[i]); return s; });
+    let ok = false;
+    for (let t = 0; t < 12; t++) { const A = JTJ.map((r, a) => r.map((v, b) => a === b ? v * (1 + lam) + 1e-30 : v)); const d = resout(A, g);
+      if (d) { const q = p.map((v, k) => v + d[k]), n = res(q); if (isFinite(n.s) && n.s <= cur.s) { const gain = cur.s - n.s; p = q; cur = n; lam = Math.max(lam / 4, 1e-12); ok = true; if (gain <= 1e-14 * (cur.s + 1e-300)) it = 1e9; break; } }
+      lam *= 8; }
+    if (!ok) break;
+  }
+  return { p, s: cur.s };
+}
+function initiales(type, noms, X, Y) {
+  const n = X.length, xm = Math.min(...X), xM = Math.max(...X), ym = Math.min(...Y), yM = Math.max(...Y), moy = Y.reduce((a, b) => a + b, 0) / n, d = { };
+  noms.forEach(k => d[k] = 1);
+  if (type === "exd") { d.B = Y[n - 1]; d.A = Y[0] - Y[n - 1] || 1; d.tau = (xM - xm) / 3 || 1; }
+  if (type === "exc") { d.A = Y[n - 1] || 1; d.tau = (xM - xm) / 3 || 1; }
+  if (type === "pui") { const P = X.map((x, i) => [x, Y[i]]).filter(([x, y]) => x > 0 && y > 0).map(([x, y]) => [Math.log(x), Math.log(y)]);
+    if (P.length >= 2) { const mx = P.reduce((s, p) => s + p[0], 0) / P.length, my = P.reduce((s, p) => s + p[1], 0) / P.length; let a = 0, b = 0; P.forEach(([u, v]) => { a += (u - mx) * (v - my); b += (u - mx) ** 2; }); d.n = b ? a / b : 1; d.a = Math.exp(my - d.n * mx); } }
+  if (type === "sin") { d.B = moy; d.A = (yM - ym) / 2 || 1; const z = []; for (let i = 1; i < n; i++) if ((Y[i - 1] - moy) * (Y[i] - moy) < 0) z.push(X[i]);
+    d.T = z.length >= 2 ? 2 * (z[z.length - 1] - z[0]) / (z.length - 1) : (xM - xm) || 1; d.phi = 0; }
+  if (type === "libre") { noms.forEach(k => { if (/^(tau|T)$/.test(k)) d[k] = (xM - xm) / 3 || 1; }); }
+  return noms.map(k => d[k]);
+}
+$("#b-modeliser").onclick = () => {
+  const ey = $("#m-err"); ey.textContent = ""; const yn = $("#m-y").value, xn = S.gx, type = $("#m-type").value;
+  if (!yn) { ey.textContent = "Cochez d'abord une grandeur en ordonnée du graphique."; return; }
+  const expr = formuleModele(type, $("#m-libre").value.trim(), xn);
+  let e; try { e = parse(expr); } catch (x) { ey.textContent = x.message; return; }
+  const C = constantes(), noms = [...idents(e)].filter(k => k !== xn && k !== "pi" && !(k in C));
+  if (toutes().some(c => noms.includes(c.nom))) { ey.textContent = "Le modèle utilise une grandeur du tableau autre que " + xn + " : " + noms.filter(k => toutes().some(c => c.nom === k)).join(", ") + "."; return; }
+  if (!noms.length) { ey.textContent = "Le modèle doit contenir au moins un paramètre à ajuster (une lettre, par exemple a)."; return; }
+  const env = envCache, lo = num($("#m-min").value), hi = num($("#m-max").value), X = [], Y = [];
+  (env[xn] || []).forEach((x, i) => { const y = env[yn][i]; if (isFinite(x) && isFinite(y) && !(x < lo) && !(x > hi)) { X.push(x); Y.push(y); } });
+  if (X.length < noms.length + 1) { ey.textContent = `Il faut au moins ${noms.length + 1} points pour ajuster ${noms.length} paramètre(s).`; return; }
+  const f = q => { const o = Object.assign({}, C, { [xn]: X }); noms.forEach((k, i) => o[k] = q[i]); const r = evalue(e, o); return Array.isArray(r) ? r : X.map(() => r); };
+  let best = null; const essais = [initiales(type, noms, X, Y)];
+  if (type === "sin" || type === "libre") for (let k = 1; k < 8; k++) { const q = essais[0].slice(); const j = noms.indexOf("phi"); if (j >= 0) { q[j] = k * Math.PI / 4; essais.push(q); } else if (type === "libre") essais.push(q.map(v => v * (k % 2 ? -1 : 1) * (1 + k / 3))); }
+  essais.forEach(p0 => { const r = ajuste(f, noms, p0, X, Y); if (r && (!best || r.s < best.s)) best = r; });
+  if (!best || best.p.some(v => !isFinite(v))) { ey.textContent = "La modélisation n'a pas abouti : essayez un autre modèle ou un intervalle différent."; return; }
+  const my = Y.reduce((a, b) => a + b, 0) / Y.length, st = Y.reduce((s, y) => s + (y - my) ** 2, 0), p = {}; noms.forEach((k, i) => p[k] = best.p[i]);
+  if (type === "sin" && p.A < 0) { p.A = -p.A; p.phi += Math.PI; } if (type === "sin") { p.phi = ((p.phi % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI; }
+  S.modeles[yn] = { type, libre: $("#m-libre").value.trim(), expr, x: xn, p, r2: st ? 1 - best.s / st : 1, n: X.length, lo: Math.min(...X), hi: Math.max(...X), y: yn };
+  majTableur(); sauve();
+};
+$("#b-suppr-mod").onclick = () => { delete S.modeles[$("#m-y").value]; majTableur(); };
+function texteModele(mo) { let s = mo.expr; return mo.y + " = " + s.replace(/\^2(?![0-9.])/g, "²").replace(/\*/g, "·").replace(/\btau\b/g, "τ").replace(/\bphi\b/g, "φ").replace(/\bpi\b/g, "π"); }
+function nomParam(k) { return k === "tau" ? "τ" : k === "phi" ? "φ" : k; }
+function uniteParam(mo, k) { const ux = uniteDe(mo.x), uy = uniteDe(mo.y);
+  if (["lin", "aff"].includes(mo.type)) return k === "a" ? (uy && ux ? uy + "/" + ux : "") : uy;
+  if (mo.type === "par") return k === "a" ? (uy && ux ? uy + "/" + ux + "²" : "") : k === "b" ? (uy && ux ? uy + "/" + ux : "") : uy;
+  if (["exd", "exc", "sin"].includes(mo.type)) return (k === "tau" || k === "T") ? ux : k === "phi" ? "rad" : uy;
+  return ""; }
+function resultats() {
+  const L = Object.values(S.modeles).filter(m => S.gy.includes(m.y) && m.x === S.gx);
+  $("#m-res").innerHTML = L.map(mo => `<div class="res"><span class="eq">${esc(texteModele(mo))}</span><table>${Object.entries(mo.p).map(([k, v]) => `<tr><th>${esc(nomParam(k))}</th><td>= ${fmt(v, 4)} ${esc(uniteParam(mo, k))}</td></tr>`).join("")}</table>
+    <span class="petit">Coefficient de détermination R² = ${fmt(mo.r2, 5)} · ${mo.n} points, ${esc(mo.x)} de ${fmt(mo.lo)} à ${fmt(mo.hi)}</span></div>`).join("");
+}
+
+/* ======================= RENDRE LE TRAVAIL ======================= */
+["nom", "classe", "titre", "comm"].forEach(k => { const el = $("#e-" + k); el.value = S.eleve[k] || ""; el.oninput = () => { S.eleve[k] = el.value; sauve(); }; });
+function resume() {
+  const env = calcule(), mods = Object.values(S.modeles);
+  return { csv: texteCSV(), calc: S.calc.map(c => `${c.nom} = ${c.f}${c.unite ? " (" + c.unite + ")" : ""}`), params: S.params.map(p => `${p.nom} = ${p.val} ${p.unite}`.trim()),
+    mods: mods.map(m => texteModele(m) + " ; " + Object.entries(m.p).map(([k, v]) => `${nomParam(k)} = ${fmt(v, 4)} ${uniteParam(m, k)}`.trim()).join(" ; ") + ` ; R² = ${fmt(m.r2, 5)}`),
+    pointage: P.source ? `Vidéo : ${P.source}, ${P.fps} images/s${P.ralenti ? " (ralenti filmé à " + P.fpsReel + " images/s)" : ""}, étalon ${fmt(P.longueur)} m, ${P.pts.length} points pointés` : "", n: nLignes() };
+}
+function verifie() { const nom = $("#e-nom").value.trim(), cl = $("#e-classe").value.trim(); $("#e-err").textContent = "";
+  if (!nom) { $("#e-err").textContent = "Écrivez d'abord votre nom et prénom."; $("#e-nom").focus(); return null; }
+  if (!cl) { $("#e-err").textContent = "Écrivez d'abord votre classe."; $("#e-classe").focus(); return null; }
+  if (!nLignes()) { $("#e-err").textContent = "Le tableau est vide : faites d'abord le pointage ou saisissez vos mesures."; return null; } return { nom, cl }; }
+function code(id, R) {
+  const titre = "Pointage vidéo et tableur-grapheur" + (S.eleve.titre ? " · " + S.eleve.titre : "");
+  const o = { v: 1, outil: 1, tp: "outil-pointage", titre, eleve: id.nom, classe: id.cl, t0: S.debut, t1: Date.now(), note: null, av: 1, parties: [], erreurs: [], conc: ((S.eleve.comm || "").trim() + "\n\n" + ["Modèles : " + (R.mods.join(" | ") || "aucun"), "Grandeurs calculées : " + (R.calc.join(" | ") || "aucune"), R.pointage].join("\n")).trim().slice(0, 1500), j: [],
+    annexes: [{ titre: "Tableau de valeurs (CSV)", texte: R.csv.slice(0, 20000) }].concat(R.calc.length ? [{ titre: "Grandeurs calculées", texte: R.calc.join("\n") + (R.params.length ? "\n\nParamètres : " + R.params.join(" ; ") : "") }] : [])
+      .concat(R.mods.length ? [{ titre: "Modélisation", texte: R.mods.join("\n") }] : []).concat(R.pointage ? [{ titre: "Pointage", texte: R.pointage }] : []) };
+  return "TPEFIR1:" + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+}
+$("#b-envoi-prof").onclick = async () => {
+  const id = verifie(); if (!id) return; const R = resume(), c = code(id, R), ok = $("#e-ok"); ok.textContent = "";
+  $("#e-code").value = c; $("#code-zone").hidden = false;
+  let base = ""; try { base = window.top.location.origin; } catch (e) { base = location.origin; }
+  if (false) { $("#e-err").textContent = "Envoi automatique impossible hors du site en ligne : copiez le code ci-dessous pour votre professeur."; return; }
+  const champs = { eleve: id.nom, classe: id.cl, tp: "Pointage vidéo et tableur-grapheur" + (S.eleve.titre ? " · " + S.eleve.titre : ""), note: "—", avancement: "100 %",
+    erreurs: "aucune", reponses_fausses: "0", temps: Math.max(1, Math.round((Date.now() - S.debut) / 60000)) + " min",
+    detail: ["Grandeurs calculées : " + (R.calc.join(" | ") || "aucune"), "Modèles : " + (R.mods.join(" | ") || "aucun"), R.pointage, "", R.csv].join("\n"), conclusion: (S.eleve.comm || "").trim() || "(non rédigée)", date: new Date().toLocaleString("fr-FR"), code: c };
+  const b = $("#b-envoi-prof"); b.disabled = true; ok.textContent = "Préparation de votre bilan PDF…";
+  try { const r = await (window.EFIR_BILAN || window.top.EFIR_BILAN)(champs);
+    if (!r.ok) throw new Error(r.status); ok.textContent = "✓ Bilan PDF téléchargé : déposez-le dans le devoir Google Classroom."; envoye = true; etapes(); }
+  catch (e) { ok.textContent = ""; $("#e-err").textContent = "Le PDF n'a pas pu être créé : copiez le code ci-dessous et collez-le dans le devoir Google Classroom."; }
+  finally { b.disabled = false; }
+};
+$("#b-copier").onclick = () => { const t = $("#e-code"); t.select(); try { navigator.clipboard.writeText(t.value).then(() => { $("#e-ok").textContent = "✓ Code copié : collez-le dans le devoir Google Classroom."; }); } catch (e) { document.execCommand("copy"); } };
+
+function chargeJsPDF() { return new Promise((ok, ko) => { if (window.jspdf) return ok(window.jspdf); const s = document.createElement("script"); s.src = "lib/jspdf-2.5.1.umd.min.js"; s.onload = () => window.jspdf ? ok(window.jspdf) : ko(); s.onerror = ko; document.head.appendChild(s); }); }
+const ascii = s => String(s).replace(/²/g, "2").replace(/³/g, "3").replace(/τ/g, "tau").replace(/φ/g, "phi").replace(/π/g, "pi").replace(/·/g, "*").replace(/−/g, "-").replace(/→/g, "->").replace(/[⁰-₟]/g, "").replace(/[^\x00-\xff]/g, "?");
+$("#b-pdf").onclick = async () => {
+  const id = verifie(); if (!id) return; $("#e-ok").textContent = "Préparation du PDF…";
+  let J; try { J = await chargeJsPDF(); } catch (e) { $("#e-ok").textContent = ""; $("#e-err").textContent = "Le générateur de PDF n'a pas pu se charger : la fenêtre d'impression s'ouvre (choisissez « Enregistrer en PDF »)."; window.print(); return; }
+  const R = resume(), doc = new J.jsPDF({ unit: "mm", format: "a4" }), W = 210, M = 15; let y = 0;
+  const bas = h => { if (y + h > 282) { doc.addPage(); y = 18; } };
+  const txt = (t, size = 10, style = "normal", col = [36, 17, 47]) => { doc.setFont("helvetica", style); doc.setFontSize(size); doc.setTextColor(...col);
+    doc.splitTextToSize(ascii(t), W - 2 * M).forEach(l => { bas(size * .45); doc.text(l, M, y); y += size * .45; }); y += 1.5; };
+  doc.setFillColor(74, 20, 140); doc.rect(0, 0, W, 24, "F"); doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(15);
+  doc.text(ascii("Pointage vidéo et tableur-grapheur"), M, 11); doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(ascii("EFIR · Physique-chimie · Mme Messaoudi · 2026-2027"), M, 18); y = 33;
+  txt(`Élève : ${id.nom} · Classe : ${id.cl}${S.eleve.titre ? " · Activité : " + S.eleve.titre : ""} · ${new Date().toLocaleDateString("fr-FR")}`, 11, "bold");
+  if (R.pointage) txt(R.pointage, 9.5);
+  graphe(); if (geo) { const im = gr.toDataURL("image/png"), r = gr.height / gr.width, w = W - 2 * M, h = Math.min(110, w * r); bas(h + 8); txt("Graphique : " + S.gy.join(", ") + " en fonction de " + S.gx, 11, "bold", [74, 20, 140]); doc.addImage(im, "PNG", M, y, h / r, h); y += h + 4; }
+  if (R.mods.length) { txt("Modélisation", 11, "bold", [74, 20, 140]); R.mods.forEach(m => txt(m, 10)); }
+  if (R.calc.length) { txt("Grandeurs calculées", 11, "bold", [74, 20, 140]); R.calc.forEach(m => txt(m, 10)); if (R.params.length) txt("Paramètres : " + R.params.join(" ; "), 10); }
+  txt("Mon commentaire et ma conclusion", 11, "bold", [74, 20, 140]); txt((S.eleve.comm || "").trim() || "(non rédigé)", 10);
+  txt("Tableau de valeurs", 11, "bold", [74, 20, 140]);
+  const G = toutes(), env = envCache, n = nLignes(), cw = Math.min(26, (W - 2 * M - 10) / G.length);
+  const ligne = (cells, gras) => { bas(5); doc.setFont("helvetica", gras ? "bold" : "normal"); doc.setFontSize(8.5); doc.setTextColor(36, 17, 47); doc.text(cells[0], M, y); cells.slice(1).forEach((c, k) => doc.text(c, M + 10 + cw * (k + 1) - 2, y, { align: "right" })); y += 4.3; };
+  ligne(["n°"].concat(G.map(c => ascii(c.nom + (c.unite ? " (" + c.unite + ")" : "")))), true);
+  for (let i = 0; i < n; i++) ligne([String(i + 1)].concat(G.map(c => fmt(env[c.nom][i]))));
+  const np = doc.getNumberOfPages(); for (let k = 1; k <= np; k++) { doc.setPage(k); doc.setFontSize(8); doc.setTextColor(120, 100, 140); doc.text(ascii(`EFIR · Labo virtuel · ${id.nom} · page ${k} / ${np}`), W / 2, 292, { align: "center" }); }
+  doc.save(("Pointage_" + (S.eleve.titre ? S.eleve.titre + "_" : "") + id.nom).replace(/[^\wÀ-ÿ-]+/g, "_") + ".pdf"); $("#e-ok").textContent = "✓ PDF téléchargé : déposez-le dans le devoir Google Classroom (Ajouter › Fichier, puis Rendre).";
+};
+
+/* ======================= Démarrage ======================= */
+$("#fps").value = P.fps; $("#ralenti").checked = P.ralenti; $("#fps-reel").value = P.fpsReel; $("#longueur").value = P.longueur; $("#pas").value = P.pas;
+if (P.source === "exemple") { ouvreExemple(); valide(""); } else if (P.source) { P.pts = []; P.etalon = []; P.origine = null; }
+majPts(); calcule(); etapes();
+window.EFIR_POINTAGE = { S, va, onglet, majTableur }; // pour les tests
+</script>
+<!--fiche-methode-->
+<style>
+#fm-btn{position:fixed;right:16px;bottom:16px;z-index:2147483000;display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:10px 16px;background:#4A148C;color:#fff;font:700 15px/1.2 "Atkinson Hyperlegible",system-ui,sans-serif;box-shadow:0 6px 20px rgba(36,19,58,.35);cursor:pointer}
+#fm-btn:hover{background:#380E6B}#fm-btn:focus-visible,#fm-fermer:focus-visible{outline:3px solid #c2185b;outline-offset:2px}
+#fm-voile{position:fixed;inset:0;background:rgba(36,19,58,.35);z-index:2147483001}
+#fm-panneau{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:#F8F6FA;z-index:2147483002;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(36,19,58,.3);transform:translateX(100%);transition:transform .3s ease}
+#fm-panneau.on{transform:none}
+#fm-tete{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid #D1C4E9;background:#fff;font:700 16px "Bricolage Grotesque","Atkinson Hyperlegible",sans-serif;color:#4A148C}
+#fm-fermer{border:1px solid #D1C4E9;background:#fff;color:#4A148C;border-radius:999px;padding:6px 14px;font:700 14px "Atkinson Hyperlegible",system-ui,sans-serif;cursor:pointer}#fm-fermer:hover{background:#EDE7F6}
+#fm-cadre{flex:1;border:0;width:100%;background:#F8F6FA}
+@media (max-width:640px){#fm-btn{right:12px;bottom:12px;padding:9px 13px;font-size:14px}}
+@media print{#fm-btn,#fm-voile,#fm-panneau{display:none!important}}
+</style>
+<button id="fm-btn" type="button" aria-haspopup="dialog" hidden>📘 Fiche méthode</button>
+<div id="fm-voile" hidden></div>
+<div id="fm-panneau" role="dialog" aria-modal="true" aria-labelledby="fm-titre" hidden><div id="fm-tete"><span id="fm-titre">📘 Fiche méthode · Pointage vidéo</span><button id="fm-fermer" type="button">✕ Fermer</button></div><iframe id="fm-cadre" name="fiche-tiroir" title="Fiche méthode"></iframe></div>
+<script>
+(function(){
+  var ID="outil-fiche-pointage",src=null;
+  try{var el=parent!==window&&parent.document.getElementById(ID);if(el){var b=atob(el.textContent.trim());src=new TextDecoder().decode(Uint8Array.from(b,function(c){return c.charCodeAt(0);}));}}catch(e){}
+  if(!src)return;
+  var bt=document.getElementById("fm-btn"),pn=document.getElementById("fm-panneau"),vo=document.getElementById("fm-voile"),cd=document.getElementById("fm-cadre"),fe=document.getElementById("fm-fermer");
+  bt.hidden=false;
+  function ouvre(){if(!cd.srcdoc)cd.srcdoc=src;pn.hidden=false;vo.hidden=false;requestAnimationFrame(function(){pn.classList.add("on");});fe.focus();}
+  function ferme(){pn.classList.remove("on");vo.hidden=true;setTimeout(function(){pn.hidden=true;},300);bt.focus();}
+  bt.onclick=ouvre;fe.onclick=ferme;vo.onclick=ferme;
+  addEventListener("keydown",function(e){if(e.key==="Escape"&&!pn.hidden)ferme();});
+})();
+</script>
+</body>
+</html>

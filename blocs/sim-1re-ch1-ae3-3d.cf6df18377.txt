@@ -1,0 +1,251 @@
+<!--efir1re:AE3 · Dosage du colorant d'un bonbon 3D-->
+window.EFIR_RETOUR = "premiere/matiere/La%20mole";
+
+// ====================================================================
+// Ch. 1 · AE3 · Dosage d'une espèce colorée : l'acide carminique d'un bonbon
+// ====================================================================
+// ====================================================================
+// Module commun : TP de spectrophotométrie (dosage par étalonnage)
+// ====================================================================
+function makeSpectroTP(cfg) {
+  const SP = cfg.species;
+  const shape = (sp, l) => { const w = l < sp.lmax ? sp.wl : sp.wr; return Math.exp(-Math.pow((l - sp.lmax) / w, 2)) + (sp.extra ? sp.extra(l) : 0); };
+  const sol = id => cfg.solutions.find(s => s.id === id);
+  const Atrue = (s, l, th) => (s.sp || SP).k * s.c * shape(s.sp || SP, l) * th;
+  const Ameas = (s, l, th) => { let a = Atrue(s, l, th); if (a > 2.8) a = 2.8 + (a - 2.8) * .3; return a; };
+  const fmtA = a => a > 3 ? 'saturation' : a.toFixed(3).replace('.', ',');
+  let spec, cuves = {}, selSol = null, S = null;
+  const fresh = () => ({ lambda: cfg.lambda0 || 500, blank: null, thick: 1, meas: [], spectra: [], prep: false });
+  const colorOf = s => { const sp = s.sp || SP; const a = Math.min(1, sp.k * s.c * (sp.vis || 1)); return { c: new THREE.Color(0xffffff).lerp(new THREE.Color(sp.color), Math.min(1, a * 1.3)), o: .15 + .7 * a }; };
+  const avail = s => !s.after || S[s.after];
+
+  const TP = Object.assign({
+    epi: ['blouse', 'gants', 'lunettes'],
+    views: { ensemble: [[0, 1.1, 2.4], [0, .15, 0]] },
+    viewbar: [['Zoom spectrophotomètre', () => flyTo([.1, .6, .95], [0, .12, -.1])], ['Zoom cuves', () => flyTo([0, .45, 1.05], [0, .05, .35])]],
+    build() {
+      spec = makeSpectro(); spec.group.position.set(0, 0, -.15); scene.add(spec.group);
+      // support de cuves
+      const n = cfg.solutions.length; const sup = new THREE.Mesh(new THREE.BoxGeometry(n * .075 + .06, .02, .07), new THREE.MeshStandardMaterial({ color: 0xeceff1 })); sup.position.set(0, .01, .38); scene.add(sup);
+      cfg.solutions.forEach((s, i) => {
+        const col = s.c > 0 ? colorOf(s) : { c: new THREE.Color(0xe3f2fd), o: .2 };
+        const cu = makeCuve(col.c, col.o); cu.home = new THREE.Vector3(-(n - 1) * .075 / 2 + i * .075, .02, .38); cu.group.position.copy(cu.home); scene.add(cu.group);
+        const lb = label(s.short || s.id, { size: 30, scale: .0009 }); lb.position.y = .14; cu.group.add(lb);
+        cu.group.userData.onPick = () => pick(s.id); LAB.pick.push(cu.group); cuves[s.id] = cu;
+      });
+      if (cfg.build3d) cfg.build3d();
+      this.resetScene(); this.buildPanel();
+    },
+    resetScene() {
+      S = fresh(); selSol = null;
+      cfg.solutions.forEach(s => { const cu = cuves[s.id]; if (cu) { cu.group.visible = avail(s); cu.group.position.copy(cu.home); } });
+      if (cfg.reset3d) cfg.reset3d(S);
+      if (spec) spec.screen.set([`λ = ${S.lambda} nm`, 'A = ----']);
+      if ($('#spLam')) { $('#spLam').value = S.lambda; this.refreshPanel(); drawAll(); }
+    },
+    buildPanel() {
+      const box = $('#actions');
+      box.append(
+        h('h3', {}, '1. Régler le spectrophotomètre'),
+        h('div', { class: 'row' }, h('label', { for: 'spLam' }, 'Longueur d\'onde λ : '), h('input', { type: 'range', id: 'spLam', min: 400, max: 800, step: 5, value: S.lambda, style: 'flex:1', oninput: e => { $('#spLamV').textContent = e.target.value + ' nm'; }, onchange: e => act({ t: 'lambda', v: +e.target.value }) }), h('b', { id: 'spLamV' }, S.lambda + ' nm')),
+        h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { id: 'bBlank', onclick: () => act({ t: 'blank' }) }, 'Faire le blanc (cuve d\'eau distillée)'),
+          cfg.thickness ? h('button', { id: 'bThick', onclick: () => act({ t: 'thick', v: S.thick === 1 ? 2 : 1 }) }, 'Épaisseur : 1 cuve') : null),
+        h('h3', {}, '2. Choisir une cuve'),
+        h('div', { class: 'tubesel', id: 'spSel' }),
+        h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { class: 'go', id: 'bMes', onclick: () => selSol && act({ t: 'mes', sol: selSol }) }, 'Mesurer l\'absorbance'), h('button', { id: 'bSpec', onclick: () => selSol && act({ t: 'spectre', sol: selSol }) }, 'Tracer son spectre (400 → 800 nm)')),
+        cfg.prepButton ? h('h3', {}, '3. ' + cfg.prepTitle) : null,
+        cfg.prepButton ? h('button', { class: 'go', id: 'bPrep2', onclick: () => act({ t: 'prep' }) }, cfg.prepButton) : null,
+        h('h3', {}, 'Ranger'),
+        h('div', { class: 'row' }, h('button', { onclick: () => act({ t: 'vider', where: 'bidon' }) }, '🛢 Vider les cuves dans le bidon'), h('button', { class: 'warn', onclick: () => act({ t: 'vider', where: 'evier' }) }, '🚰 Vider à l\'évier')));
+      const cS = chartCard('Spectres d\'absorption', 'chSpec'), cE = chartCard('Droite d\'étalonnage A = f(C)', 'chEt');
+      const tb = h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'spTab' })));
+      sideCard(cS); sideCard(cE); sideCard(tb);
+      new ResizeObserver(() => drawAll()).observe($('#chEt'));
+      this.refreshPanel();
+    },
+    refreshPanel() {
+      const box = $('#spSel'); if (!box) return; box.innerHTML = '';
+      cfg.solutions.forEach(s => { if (avail(s)) box.append(h('button', { class: s.id === selSol ? 'on' : '', onclick: () => pick(s.id) }, s.name)); });
+      const ok = !BUSY; $('#bMes').disabled = !ok || !selSol; $('#bSpec').disabled = !ok || !selSol; $('#bBlank').disabled = !ok; $('#spLam').disabled = !ok;
+      if ($('#bThick')) { $('#bThick').disabled = !ok; $('#bThick').textContent = 'Épaisseur traversée : ' + (S.thick === 1 ? '1 cuve' : '2 cuves'); }
+      if ($('#bPrep2')) $('#bPrep2').disabled = !ok || S.prep;
+      const t = $('#spTab'); t.innerHTML = '<thead><tr><th>Solution</th><th>C</th><th>λ (nm)</th>' + (cfg.thickness ? '<th>Épaisseur</th>' : '') + '<th>A</th></tr></thead>';
+      const tb = h('tbody'); S.meas.forEach(m => { const s = sol(m.sol); tb.append(h('tr', { html: `<td>${s.name}</td><td>${s.known === false ? '?' : cfg.cfmt(s.c)}</td><td>${m.l}</td>` + (cfg.thickness ? `<td>${m.th}</td>` : '') + `<td><b>${fmtA(m.A)}</b></td>` })); });
+      if (!S.meas.length) tb.append(h('tr', {}, h('td', { colspan: 5, class: 'note' }, 'Aucune mesure.'))); t.append(tb);
+    },
+    refresh() { this.refreshPanel(); },
+    async doAction(a) {
+      if (a.t === 'lambda') { S.lambda = a.v; $('#spLam').value = a.v; $('#spLamV').textContent = a.v + ' nm'; spec.screen.set([`λ = ${a.v} nm`, S.blank === a.v ? 'A = 0,000' : 'faire le blanc']); say(`Longueur d'onde réglée sur ${a.v} nm. Il faut refaire le blanc.`); drawAll(); return; }
+      if (a.t === 'blank') { await inSpectro(null); S.blank = S.lambda; spec.screen.set([`λ = ${S.lambda} nm`, 'A = 0,000']); say(`Blanc fait à ${S.lambda} nm avec une cuve d'eau distillée : l'appareil affiche A = 0.`); step('blanc'); return; }
+      if (a.t === 'thick') { S.thick = a.v; say(a.v === 2 ? 'Deux cuves l\'une derrière l\'autre : la lumière traverse une épaisseur double de solution.' : 'Une seule cuve : épaisseur normale (1 cm).'); return; }
+      if (a.t === 'mes') {
+        const s = sol(a.sol); if (!s || !avail(s)) return false;
+        if (S.blank !== S.lambda) { say('<b>Attention :</b> fais d\'abord le blanc à cette longueur d\'onde.'); return false; }
+        await inSpectro(a.sol);
+        const A = Ameas(s, S.lambda, S.thick);
+        spec.screen.set([`λ = ${S.lambda} nm`, A > 3 ? 'A > 3 (SAT)' : 'A = ' + fmtA(A)]);
+        S.meas = S.meas.filter(m => !(m.sol === a.sol && m.l === S.lambda && m.th === S.thick)); S.meas.push({ sol: a.sol, l: S.lambda, th: S.thick, A });
+        const msg = `${s.name} à ${S.lambda} nm${S.thick === 2 ? ' (2 cuves)' : ''} : A = ${fmtA(A)}${A > 3 ? ' : l\'appareil sature' : ''}.`;
+        observe(msg); say(msg); checkSteps(); drawAll(); return;
+      }
+      if (a.t === 'spectre') {
+        const s = sol(a.sol); if (S.blank == null) { say('Fais d\'abord le blanc (le spectrophotomètre le refait ensuite automatiquement à chaque longueur d\'onde).'); return false; }
+        await inSpectro(a.sol);
+        if (!S.spectra.includes(a.sol)) S.spectra.push(a.sol);
+        if (!INSTANT) { for (let l = 400; l <= 800; l += 20) { spec.screen.set([`λ = ${l} nm`, 'A = ' + fmtA(Ameas(s, l, 1))]); drawAll(l); await wait(60); } }
+        drawAll();
+        const sp = s.sp || SP; observe(`Spectre de ${s.name} : maximum d'absorption vers ${sp.lmax} nm.`); say(`Spectre tracé : le maximum d'absorption est vers ${sp.lmax} nm.`);
+        checkSteps(); return;
+      }
+      if (a.t === 'prep') { await cfg.prep(S, INSTANT); S.prep = true; cfg.solutions.forEach(s => { if (cuves[s.id]) cuves[s.id].group.visible = avail(s); }); step('prep'); return; }
+      if (a.t === 'vider') {
+        if (a.where === 'evier') { ST.evier++; observe('Vidage des cuves à l\'évier (interdit).'); say('<b>Interdit !</b> Les solutions de colorant vont dans le bidon de récupération.'); }
+        else { ST.bidon++; step('vider'); say('Cuves vidées dans le bidon de récupération et rincées.'); }
+        return;
+      }
+    },
+    selected() { return null; },
+    async demo() {
+      say('Démonstration : on règle λ, on fait le blanc puis on mesure une solution étalon.');
+      flyTo([.1, .6, .95], [0, .12, -.1]);
+      await act({ t: 'lambda', v: cfg.lambdaGood }, { record: false }); await wait(500);
+      await act({ t: 'blank' }, { record: false }); await wait(500);
+      pick(cfg.solutions[1].id); await act({ t: 'mes', sol: cfg.solutions[1].id }, { record: false }); await wait(1200);
+      await act({ t: 'spectre', sol: cfg.solutions[1].id }, { record: false }); await wait(1500);
+    },
+  }, cfg.tp);
+
+  function pick(id) { selSol = id; Object.entries(cuves).forEach(([k, c]) => c.group.position.y = c.home.y + (k === id ? .03 : 0)); TP.refreshPanel(); say(`Cuve choisie : ${sol(id).name}.`); }
+  async function inSpectro(id) {
+    const cu = id ? cuves[id] : cuves[cfg.blankId]; if (!cu) return;
+    const p0 = cu.group.position.clone(), up = new THREE.Vector3(p0.x, .45, p0.z), sl = new THREE.Vector3(.16, .45, -.19), dn = new THREE.Vector3(.16, .12, -.19);
+    await tween(.35, p => cu.group.position.lerpVectors(p0, up, ease(p)));
+    await tween(.45, p => cu.group.position.lerpVectors(up, sl, ease(p)));
+    await tween(.3, p => cu.group.position.lerpVectors(sl, dn, ease(p)));
+    await tween(.25, p => spec.lid.rotation.x = -1.1 * (1 - p));
+    await wait(450);
+    await tween(.25, p => spec.lid.rotation.x = -1.1 * p);
+    await tween(.3, p => cu.group.position.lerpVectors(dn, sl, ease(p)));
+    await tween(.45, p => cu.group.position.lerpVectors(sl, up, ease(p)));
+    await tween(.35, p => cu.group.position.lerpVectors(up, p0, ease(p)));
+    spec.lid.rotation.x = 0;
+  }
+  function checkSteps() {
+    const std = cfg.solutions.filter(s => s.std);
+    if (S.spectra.some(id => (sol(id).sp || SP) === SP)) step('spectre');
+    const at = l => std.every(s => S.meas.some(m => m.sol === s.id && m.l === l && m.th === 1));
+    if (at(cfg.lambdaGood)) step('gamme');
+    if (cfg.lambdaAlt && at(cfg.lambdaAlt)) step('lalt');
+    const u = cfg.unknownId; const um = S.meas.find(m => m.sol === u && m.l === cfg.lambdaGood && m.th === 1);
+    if (um && um.A <= Math.max(...std.map(s => Ameas(s, cfg.lambdaGood, 1))) * 1.05) step('inconnue');
+    if (cfg.thickness) { const byS = {}; S.meas.forEach(m => { const k = m.sol + '@' + m.l; (byS[k] = byS[k] || new Set()).add(m.th); }); if (Object.values(byS).some(s => s.size === 2)) step('epaisseur'); }
+  }
+  function drawAll(sweep) {
+    const cS = $('#chSpec'), cE = $('#chEt'); if (!cS || !cE) return;
+    const curves = S.spectra.map((id, i) => { const s = sol(id); const pts = []; for (let l = 400; l <= (sweep && id === S.spectra[S.spectra.length - 1] ? sweep : 800); l += 5) pts.push([l - 400, Math.min(3, Ameas(s, l, 1))]); return { pts, color: ['#2F5DA8', '#C62828', '#2E7D32', '#E65100'][i % 4] }; });
+    const ymS = Math.max(.2, ...curves.flatMap(c => c.pts.map(p => p[1]))) * 1.1;
+    drawChart(cS, { xmax: 400, ymax: ymS, xlabel: 'λ (nm)', ylabel: 'A', xfmt: x => 400 + x, yfmt: y => y.toFixed(2), curves, marks: [[S.lambda - 400, 0, '#999']] });
+    $('#chSpecInfo').innerHTML = S.spectra.length ? S.spectra.map((id, i) => `<span style="color:${['#2F5DA8', '#C62828', '#2E7D32', '#E65100'][i % 4]}">■</span> ${sol(id).name}`).join(' · ') + ` · trait gris : λ réglée (${S.lambda} nm)` : 'Choisis une cuve et clique sur « Tracer son spectre ».';
+    const l = S.lambda; const pts = S.meas.filter(m => m.l === l && m.th === 1 && sol(m.sol).std && m.A <= 3).map(m => [sol(m.sol).c * cfg.cscale, m.A]);
+    const um = S.meas.find(m => m.sol === cfg.unknownId && m.l === l && m.th === 1);
+    const xm = cfg.cmax * cfg.cscale, ym = Math.max(.1, ...pts.map(p => p[1]), um ? Math.min(um.A, 3) : 0) * 1.15;
+    const k = drawChart(cE, { pts, xmax: xm, ymax: ym, fit: true, xlabel: cfg.clabel, ylabel: `A (λ = ${l} nm)`, yfmt: y => y.toFixed(ym < .1 ? 3 : 2), marks: um && pts.length >= 2 ? [[Math.min(xm, um.A / (pts.reduce((s, [x, y]) => s + x * y, 0) / pts.reduce((s, [x]) => s + x * x, 0))), Math.min(um.A, ym)]] : [] });
+    $('#chEtInfo').innerHTML = pts.length >= 2 ? `Droite passant par l'origine : A = ${(k).toPrecision(4).replace('.', ',')} × C (C en ${cfg.cunitScaled}).` + (um ? ` Point orange : ${sol(cfg.unknownId).name}, A = ${fmtA(um.A)}.` : '') : 'Mesure au moins deux solutions étalons à la même longueur d\'onde pour tracer la droite.';
+  }
+  TP.drawAll = drawAll; TP.Ameas = Ameas; TP.sol = sol;
+  return TP;
+}
+
+const AC = { name: 'acide carminique', lmax: 520, wl: 50, wr: 42, k: 0.0298, color: 0xc2185b };
+AC.vis = 1 / (AC.k * 30);
+const CB = 14.4; // mg/L dans la fiole de 50,0 mL
+const stds3 = [5, 10, 15, 20, 25];
+const fA = c => (AC.k * c).toFixed(3).replace('.', ',');
+let bonG = null;
+const TP13 = makeSpectroTP({
+  species: AC, lambda0: 650, lambdaGood: 520, blankId: 'eau', unknownId: 'bon',
+  cscale: 1, cmax: 30, clabel: 'Cm (mg·L⁻¹)', cunitScaled: 'mg·L⁻¹', cfmt: c => String(c).replace('.', ',') + ' mg·L⁻¹',
+  solutions: [
+    { id: 'eau', short: 'Eau', name: 'Eau distillée', c: 0 },
+    ...stds3.map((c, i) => ({ id: 'S' + (i + 1), short: 'S' + (i + 1), name: `Étalon S${i + 1}`, c, std: true })),
+    { id: 'bon', short: 'Bonbon', name: 'Solution du bonbon', c: CB, known: false, after: 'prep' },
+  ],
+  prepTitle: 'Extraire le colorant du bonbon', prepButton: 'Dissoudre l\'enrobage dans 20 mL d\'eau, retirer le bonbon, transvaser dans la fiole de 50,0 mL et compléter',
+  build3d() {
+    const be = makeVessel({ cap: 50, r: .045, hgt: .09, grad: 10, label: 'Bécher 50 mL' }); be.group.position.set(.7, 0, .2); scene.add(be.group);
+    const fi = makeFlask(50, 'Fiole jaugée 50,0 mL'); fi.group.position.set(1.0, 0, .1); scene.add(fi.group);
+    const bon = new THREE.Mesh(new THREE.SphereGeometry(.022, 24, 16), new THREE.MeshStandardMaterial({ color: 0xd32f2f, roughness: .3 })); bon.scale.y = .55; scene.add(bon);
+    const pl = label('Bonbon', { size: 30, scale: .001 }); scene.add(pl);
+    bonG = { be, fi, bon, pl };
+  },
+  reset3d() { if (!bonG) return; const { be, fi, bon, pl } = bonG; be.setVolume(0); fi.setVolume(0); bon.visible = true; bon.material.color.set(0xd32f2f); bon.position.set(.75, .012, .45); pl.position.set(.75, .08, .45); pl.visible = true; },
+  async prep(S, instant) {
+    const { be, fi, bon, pl } = bonG;
+    if (!instant) flyTo([.85, .5, .9], [.85, .08, .15]);
+    say('On place le bonbon dans environ 20 mL d\'eau distillée et on agite : l\'enrobage coloré se dissout.');
+    be.setColor(0xe3f2fd, .25); await tween(.8, p => be.setVolume(20 * p));
+    const p0 = bon.position.clone(), p1 = new THREE.Vector3(.7, .015, .2); pl.visible = false;
+    await tween(.8, p => bon.position.lerpVectors(p0, p1, ease(p)).setY(.015 + Math.sin(p * Math.PI) * .15));
+    const c0 = new THREE.Color(0xe3f2fd), c1 = new THREE.Color(0xc2185b);
+    await tween(2.5, p => { be.mat.color.lerpColors(c0, c1, p); be.mat.opacity = .25 + .3 * p; bon.material.color.lerpColors(new THREE.Color(0xd32f2f), new THREE.Color(0x5d4037), p); });
+    say('On retire le bonbon avec une pince, puis on verse la solution dans la fiole jaugée de 50,0 mL en rinçant le bécher.');
+    await tween(.7, p => bon.position.lerpVectors(p1, new THREE.Vector3(.5, .015, .45), ease(p)).setY(.015 + Math.sin(p * Math.PI) * .2));
+    fi.setColor(0xc2185b, .55); await tween(1, p => { be.setVolume(20 * (1 - p)); fi.setVolume(20 * p); });
+    say('On complète avec de l\'eau distillée jusqu\'au trait de jauge et on homogénéise.');
+    await tween(1.3, p => { fi.setVolume(20 + 30 * p); fi.mat.opacity = .55 - .2 * p; });
+    observe('Enrobage du bonbon dissous dans environ 20 mL d\'eau, solution transvasée dans une fiole jaugée de 50,0 mL complétée jusqu\'au trait de jauge : solution rose-rouge.');
+  },
+  tp: {
+    id: 'p1_ch01_ae3', code: 'AE3', short: 'Dosage de l\'acide carminique 3D',
+    kicker: 'EFIR · 1re spé · Chapitre 1 · Activité expérimentale AE3 · Simulation 3D',
+    title: 'Dosage d\'une espèce colorée en solution : le colorant d\'un bonbon',
+    problem: 'Le colorant rouge E120 (acide carminique) est extrait d\'un insecte, la cochenille. Combien de cochenilles faut-il pour colorer un bonbon ?',
+    mots: `<p><b>Acide carminique</b> : espèce colorée rouge, soluble dans l'eau, présente uniquement dans l'enrobage du bonbon.<br>
+    <b>Concentration en masse Cm</b> (mg·L⁻¹) : masse de soluté par litre de solution, m = Cm × V.<br>
+    <b>Donnée</b> : il faut environ 15 000 cochenilles pour obtenir 15 g d'acide carminique.</p>`,
+    aide: `<p>1. Trace le spectre d'un étalon pour trouver la longueur d'onde à choisir.<br>2. Règle λ, fais le blanc, mesure S1 à S5 : la droite d'étalonnage se trace.<br>
+    3. Extrais le colorant du bonbon, puis mesure la solution obtenue à la même longueur d'onde.<br>4. Lis Cm sur la droite, calcule la masse dans 50,0 mL puis le nombre de cochenilles.</p>`,
+    protocol: [
+      { id: 'epi', html: 'Mettre la blouse, les gants et les lunettes.' },
+      { id: 'blanc', html: 'Régler λ et faire le blanc avec la cuve d\'eau distillée.' },
+      { id: 'spectre', html: 'Tracer le spectre d\'un étalon pour choisir la longueur d\'onde de travail.' },
+      { id: 'gamme', html: 'À 520 nm : mesurer l\'absorbance des étalons S1 à S5.' },
+      { id: 'prep', html: 'Extraire le colorant de l\'enrobage du bonbon (fiole jaugée de 50,0 mL).' },
+      { id: 'inconnue', html: 'Mesurer l\'absorbance de la solution du bonbon à 520 nm.' },
+      { id: 'tableau', html: 'Compléter le tableau de résultats puis le vérifier.' },
+      { id: 'extra', html: 'Calculer la masse d\'acide carminique et le nombre de cochenilles.' },
+      { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+      { id: 'vider', html: 'Vider les cuves dans le bidon de récupération.' },
+      { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+    ],
+    table: {
+      rowTitle: 'Solution (λ = 520 nm)',
+      rows: [...stds3.map((c, i) => ({ label: `S${i + 1} (${c} mg·L⁻¹)`, ans: [i] })), { label: 'Solution du bonbon', ans: [5] }],
+      cols: [{ title: 'Absorbance A', options: [...stds3.map(fA), fA(CB)] }],
+    },
+    extraTitle: 'Questions',
+    extra: [
+      { num: true, text: 'Longueur d\'onde de travail (maximum d\'absorption) : λ =', unit: 'nm', ans: 520, tol: .02 },
+      { text: 'La solution paraît rouge-rose car l\'acide carminique absorbe surtout…', options: ['le rouge', 'le vert (vers 520 nm), couleur complémentaire du rouge-magenta', 'toutes les couleurs'], ans: 1 },
+      { num: true, text: 'Concentration en masse de la solution du bonbon (lecture sur la droite) : Cm =', unit: 'mg·L⁻¹', ans: CB, tol: .05 },
+      { num: true, text: 'Masse d\'acide carminique dans le bonbon (V = 50,0 mL) : m =', unit: 'mg', ans: CB * .05, tol: .06 },
+      { num: true, text: 'Nombre de cochenilles correspondant (15 000 cochenilles pour 15 g) :', unit: 'cochenille(s)', ans: CB * .05 * 1e-3 * 1000, tol: .08 },
+      { text: 'Le résultat est-il cohérent ?', options: ['Oui : moins d\'une cochenille par bonbon, un insecte colore donc environ un bonbon', 'Non : il faudrait des milliers de cochenilles par bonbon', 'On ne peut rien conclure'], ans: 0 },
+    ],
+    conclusion: {
+      q: 'Comment a-t-on déterminé la quantité de colorant du bonbon ?',
+      options: [
+        'En pesant le bonbon avant et après dissolution.',
+        'Par un dosage par étalonnage : absorbances des étalons à 520 nm, droite A = k × Cm, lecture de Cm de la solution du bonbon, puis m = Cm × V.',
+        'En mesurant l\'absorbance à n\'importe quelle longueur d\'onde, sans étalons.',
+        'En comptant les cochenilles au microscope.',
+      ], ans: 1,
+    },
+  },
+});
+startTP(TP13);
+
+
+
+/*lien-reel-tle-ch2-spectro*/;(function(){var f=function(){if(document.getElementById("efir-lien-reel-tle-ch2-spectro"))return;var d=document.createElement("div");d.innerHTML="<div id=\"efir-lien-reel-tle-ch2-spectro\" style=\"margin:10px 0;padding:10px 14px;border:1px solid #E9D5FF;border-left:5px solid #C2185B;border-radius:12px;background:#F8F6FA;color:#1F1630;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font:15px/1.4 'Atkinson Hyperlegible',system-ui,sans-serif\"><span style=\"flex:1 1 260px\">\ud83e\uddea <b>Paillasse r\u00e9aliste</b> : un dosage par \u00e9talonnage avec un spectrophotom\u00e8tre de paillasse dont on voit l'int\u00e9rieur (lampe, r\u00e9seau, fente, cuve, d\u00e9tecteur).</span><a href=\"#\" onclick=\"try{parent.location.hash='tle-ch2-spectro'}catch(e){};return false\" style=\"background:#4A148C;color:#fff;border-radius:10px;padding:9px 14px;font-weight:700;text-decoration:none\">Ouvrir la paillasse r\u00e9aliste \u2192</a></div><!--/lien-reel-->";var b=d.firstChild,h=document.querySelector("header");if(h)h.appendChild(b);else document.body.insertBefore(b,document.body.firstChild);};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",f):f();})();/*/lien-reel-tle-ch2-spectro*/
+</script></body></html>

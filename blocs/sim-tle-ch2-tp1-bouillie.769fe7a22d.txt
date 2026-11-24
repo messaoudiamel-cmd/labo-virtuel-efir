@@ -1,0 +1,1271 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dosage de la bouillie bordelaise · Labo virtuel EFIR</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<script src="lib/three-r128.min.js"></script>
+<script>window.CFG={mode:"bb",etiq:["S₄","S₃","S₂","S₁","S₀","B"],rack:"Étalons S₄ à S₀ + bouillie B"};</script>
+<style>:root{--fond:#F8F6FA;--fond2:#E9E4F0;--prune:#4A148C;--prune2:#380E6B;--p100:#F3E5F5;--p200:#E1BEE7;--rose:#C2185B;--lav:#7E57C2;--encre:#1F1630;--gris:#5b5368;--vert:#2E7D32;--vert-f:#E8F5E9;--ambre:#FFF8E1}
+*{box-sizing:border-box}
+html,body{margin:0;background:linear-gradient(180deg,var(--fond),var(--fond2)) fixed;color:var(--encre);font:15px/1.5 "Atkinson Hyperlegible",Arial,sans-serif}
+button{font:inherit;cursor:pointer}
+.page{max-width:1280px;margin:0 auto;padding:16px}
+.carte{background:#fff;border:1px solid var(--p200);border-radius:18px;box-shadow:0 4px 18px rgba(74,20,140,.07)}
+.tete{padding:16px 20px;display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.tete .fil{font-size:13px;font-weight:700;color:var(--gris)}
+.tete h1{margin:4px 0 2px;font-size:25px;color:var(--prune);line-height:1.2}
+.tete .notion{font-size:14px;color:var(--gris)}
+.pastille{background:var(--p100);border:1px solid var(--p200);color:var(--prune);font-weight:700;border-radius:999px;padding:6px 14px;font-size:14px;white-space:nowrap}
+.frise{display:flex;gap:6px;margin:12px 0;overflow-x:auto;padding-bottom:2px}
+.frise span{flex:1 0 auto;font-size:13px;padding:7px 10px;border-radius:10px;background:#fff;border:1px solid var(--p200);color:var(--gris);white-space:nowrap}
+.frise span.fait{background:var(--vert-f);border-color:#A5D6A7;color:var(--vert)}
+.frise span.ici{background:var(--prune);border-color:var(--prune);color:#fff;font-weight:700}
+.grille{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:0;overflow:hidden}
+.scene{position:relative;min-height:560px;background:linear-gradient(180deg,#F8F6FA,#E9E4F0);border-right:1px solid var(--p100)}
+.scene canvas.gl{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+.scene canvas.gl:active{cursor:grabbing}
+.badge{position:absolute;left:12px;top:12px;z-index:3;background:var(--prune);color:#fff;font-weight:700;font-size:13px;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(74,20,140,.25)}
+.outils3d{position:absolute;right:10px;top:10px;z-index:3;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:70%}
+.outils3d button{background:rgba(255,255,255,.92);border:1px solid var(--p200);color:var(--prune);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700}
+.outils3d button.on{background:var(--prune);color:#fff;border-color:var(--prune)}
+.vues{position:absolute;left:10px;bottom:10px;z-index:3;display:flex;gap:6px;flex-wrap:wrap}
+.vues button{background:rgba(255,255,255,.92);border:1px solid var(--p200);color:var(--prune);border-radius:10px;padding:5px 10px;font-size:13px}
+.schema{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:14px;background:#fff}
+.schema svg{width:100%;height:100%;max-height:640px}
+.secours{position:absolute;left:12px;right:12px;top:48px;z-index:4;display:none;background:var(--ambre);border:1px solid #FFE082;border-radius:12px;padding:8px 12px;font-size:13px}
+.assistant{padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.etape-titre{display:flex;gap:12px;align-items:center}
+.etape-titre .num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--prune);color:#fff;font-weight:700;display:grid;place-items:center}
+.etape-titre h2{margin:0;font-size:19px;color:var(--encre)}
+.desc{font-size:15px}
+.desc .note{display:block;margin-top:8px;background:var(--p100);border-radius:10px;padding:8px 10px;font-size:14px}
+.reglages{display:grid;gap:10px;background:#FBF9FD;border:1px solid var(--p100);border-radius:12px;padding:10px 12px}
+.reglages label{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14px;font-weight:700}
+.reglages label output{color:var(--prune);font-variant-numeric:tabular-nums}
+.reglages label input,.reglages label select{grid-column:1/-1;width:100%;accent-color:var(--prune)}
+.reglages select{padding:6px;border-radius:8px;border:1px solid var(--p200);font:inherit}
+.reglages small{grid-column:1/-1;font-weight:400;color:var(--gris);font-size:12.5px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--prune);color:#fff;border:0;border-radius:12px;padding:10px 16px;font-weight:700;transition:background .15s}
+.btn:hover{background:var(--prune2)}
+.btn:disabled{background:#B9A6D3;cursor:not-allowed}
+.btn.sec{background:#fff;color:var(--prune);border:1px solid var(--p200)}
+.btn.sec:hover{background:var(--p100)}
+.btn.petit{padding:7px 11px;font-size:14px}
+.pas{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:14px}
+.pas select{padding:6px;border-radius:8px;border:1px solid var(--p200);font:inherit}
+.ok{display:none;background:var(--vert-f);color:var(--vert);border:1px solid #A5D6A7;border-radius:12px;padding:9px 12px;font-weight:700}
+.ok.vu{display:block}
+.alerte{display:none;background:#FFEBEE;color:#B71C1C;border:1px solid #FFCDD2;border-radius:12px;padding:9px 12px;font-size:14px}
+.alerte.vu{display:block}
+.nav{display:flex;gap:10px;margin-top:auto;padding-top:6px}
+.nav .btn{flex:1}
+.suivi{margin-top:14px;padding:16px 18px}
+.suivi h3{margin:0 0 10px;color:var(--prune);font-size:18px}
+.tuiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tuile{border:1px solid var(--p200);border-radius:14px;padding:10px 12px;background:#FBF9FD}
+.tuile small{display:block;color:var(--gris);font-size:13px}
+.tuile b{font-size:24px;font-variant-numeric:tabular-nums;color:var(--encre)}
+.tuile.m b{color:var(--prune)}.tuile.c b{color:var(--rose)}
+.suivi-bas{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;margin-top:12px}
+.graphe{border:1px solid var(--p100);border-radius:14px;padding:6px;background:#fff}
+.graphe canvas{width:100%;height:300px;display:block}
+.legende{display:flex;gap:14px;font-size:13px;color:var(--gris);padding:2px 8px 4px;flex-wrap:wrap}
+.legende i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.phase{display:inline-block;font-weight:700;border-radius:999px;padding:5px 14px;border:1px solid var(--p200);background:var(--p100);color:var(--prune)}
+.phase.eq{background:#FCE4EC;border-color:#F8BBD0;color:var(--rose)}
+.phase.apres{background:#EDE7F6;border-color:#D1C4E9;color:#4527A0}
+.equation{font-size:19px;margin:10px 0 6px}
+.interp{font-size:15px}
+.ions{display:grid;gap:6px;margin:10px 0}
+.ion{display:grid;grid-template-columns:62px 1fr 92px;gap:8px;align-items:center;font-size:14px}
+.ion .barre{height:14px;border-radius:7px;background:var(--p100);overflow:hidden}
+.ion .barre i{display:block;height:100%;border-radius:7px;transition:width .4s}
+.ion span:last-child{text-align:right;font-variant-numeric:tabular-nums;color:var(--gris);font-size:13px}
+.petit-texte{font-size:13.5px;color:var(--gris)}
+.securite{margin-top:14px;background:var(--ambre);border:1px solid #FFE082;border-left:5px solid #F9A825;border-radius:14px;padding:12px 16px}
+.securite h3{margin:0 0 6px;font-size:16px;color:#8D5A00}
+.securite ul{margin:0;padding-left:20px;font-size:14px}
+.pied{text-align:center;font-size:12px;color:var(--gris);padding:14px}
+sub,sup{font-size:.72em;line-height:0}
+@media (max-width:900px){
+ .grille{grid-template-columns:1fr}
+ .scene{min-height:440px;border-right:0;border-bottom:1px solid var(--p100)}
+ .tuiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .suivi-bas{grid-template-columns:1fr}
+ .tete h1{font-size:21px}
+}
+.graphe canvas#gSpectre,.graphe canvas#gEtal{height:250px}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:10px}
+.graphe canvas#gRoue{height:190px}
+.graphe canvas#gLoupe{height:190px}
+.cuve-choix{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
+.cuve-choix svg{flex:none;background:#fff;border:1px solid var(--p100);border-radius:10px}
+.mesures{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;font-variant-numeric:tabular-nums}
+.mesures th,.mesures td{border:1px solid var(--p100);padding:5px 8px;text-align:center}
+.mesures th{background:var(--p100);color:var(--prune)}
+.mesures tr.s td{color:var(--rose);font-weight:700}
+.interp{margin-top:10px}
+#zEtal .btn.fait{background:var(--vert-f);color:var(--vert);border:1px solid #A5D6A7}
+@media (max-width:900px){.duo{grid-template-columns:1fr}}
+/* ===== Disposition « poste de travail » aérée, en colonnes sur le même plan =====
+   en haut : les parties du TP (01 à 04) · à gauche : l'étape, les réglages et l'action ·
+   au centre : le matériel, avec les résultats et la formule juste dessous · à droite : la courbe et l'analyse */
+body.poste{--esp:12px}
+body.poste .page{max-width:none;display:flex;flex-direction:column;gap:var(--esp);padding:var(--esp)}
+body.poste .carte{border-radius:20px;box-shadow:0 2px 14px rgba(74,20,140,.06)}
+/* en-tête */
+body.poste .tete{padding:10px 16px;align-items:center;flex-wrap:nowrap;gap:14px;position:relative}
+body.poste .tete-txt{flex:1 1 auto;min-width:0}
+body.poste .tete .fil{font-size:11.5px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.poste .tete h1{font-size:19px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.poste .tete .notion{display:none}
+body.poste .retour{margin:0!important;padding:5px 12px!important;font-size:13px!important}
+.parties{display:flex;gap:8px;flex:none;overflow-x:auto;scrollbar-width:none}
+.parties span{display:inline-flex;align-items:baseline;gap:7px;padding:8px 14px;border-radius:12px;border:1px solid var(--p200);background:#fff;color:var(--gris);font-size:14px;font-weight:700;white-space:nowrap}
+.parties span b{font-size:13px;color:var(--lav);letter-spacing:.04em}
+.parties span.fait{background:var(--p100);color:var(--prune)}
+.parties span.fait b::after{content:" ✓";color:var(--vert)}
+.parties span.ici{background:var(--prune);border-color:var(--prune);color:#fff;box-shadow:0 3px 10px rgba(74,20,140,.25)}
+.parties span.ici b{color:#E1BEE7}
+body.poste .pastille{font-size:13px;padding:6px 12px}
+.secu-btn{flex:none}
+.secu-btn summary{list-style:none;cursor:pointer;font-weight:700;font-size:13px;color:#8D5A00;background:var(--ambre);border:1px solid #FFE082;border-radius:999px;padding:6px 12px;white-space:nowrap}
+.secu-btn summary::-webkit-details-marker{display:none}
+.secu-btn[open] .securite{position:absolute;right:12px;top:calc(100% + 8px);z-index:30;width:min(430px,calc(100vw - 40px));margin:0;box-shadow:0 12px 30px rgba(31,22,48,.2)}
+/* colonnes */
+body.poste .trois{display:grid;gap:var(--esp);min-height:0}
+body.poste .col-action{padding:22px 22px 14px;display:flex;flex-direction:column;gap:14px}
+.sur-titre{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--rose)}
+body.poste .etape-titre{gap:12px;align-items:flex-start;margin-top:-6px}
+body.poste .etape-titre .num{width:30px;height:30px;font-size:14px;margin-top:1px}
+body.poste .etape-titre h2{font-size:19px;line-height:1.3}
+body.poste .desc{font-size:15.5px;line-height:1.6;color:var(--encre)}
+body.poste .desc .note{font-size:14px}
+body.poste .reglages{background:#FBF9FD;border-radius:14px;padding:14px;gap:14px}
+body.poste .reglages label{font-size:14px}
+body.poste .reglages small{font-size:12.5px;line-height:1.45}
+body.poste #action{width:100%;padding:12px 16px;font-size:15.5px}
+body.poste .pas{gap:8px}
+body.poste .col-action .lien-recom{order:9}
+body.poste .col-action .nav{order:10;margin-top:auto;position:sticky;bottom:-14px;background:#fff;padding:10px 0 14px;z-index:2}
+.lien-recom{align-self:flex-start;background:none;border:0;color:var(--gris);font-size:13px;text-decoration:underline;padding:2px 0}
+body.poste .col-scene{position:relative;overflow:hidden;display:flex;flex-direction:column;padding:0}
+body.poste .scene{flex:1;min-height:300px;border:0;border-radius:20px 20px 0 0}
+.resultats{padding:14px 16px 16px;border-top:1px solid var(--p100);display:grid;gap:10px;background:#fff}
+body.poste .resultats .tuiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+body.poste .tuile{padding:8px 12px;border-radius:14px;display:flex;flex-direction:column;justify-content:space-between;min-height:62px}
+body.poste .tuile small{font-size:12px;line-height:1.3}
+body.poste .tuile b{font-size:21px;line-height:1.2}
+.formule{font-size:16px;font-weight:700;color:var(--prune2);background:#FBF9FD;border:1px solid var(--p100);border-left:4px solid var(--prune);border-radius:12px;padding:9px 14px;line-height:1.5}
+.formule .sep{color:var(--lav);margin:0 10px;font-weight:400}
+body.poste .col-mesure{margin:0;padding:18px 18px 14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+body.poste .col-mesure h3{margin:0;font-size:16px}
+body.poste .bloc{display:flex;flex-direction:column;gap:10px}
+body.poste .graphe{border-radius:14px}
+body.poste .graphe .zone{position:relative;height:clamp(200px,36vh,360px)}
+body.poste .graphe .zone canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+body.poste .graphe .loupe-zone{height:150px}
+body.poste .duo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+body.poste .duo .zone{height:170px}
+body.poste .equation{font-size:16px;margin:0}
+body.poste .ion{grid-template-columns:54px 1fr 84px}
+body.poste .pied{padding:0;font-size:11px}
+body.poste .securite{margin:0}
+/* ordinateur : tout tient dans l'écran, seules les colonnes latérales défilent si besoin */
+@media (min-width:760px){
+ body.poste .page{height:100vh;height:100dvh;min-height:430px}
+ body.poste .trois{flex:1;grid-template-columns:minmax(280px,22%) minmax(0,1fr) minmax(320px,28%)}
+ body.poste .col-action,body.poste .col-mesure{overflow-y:auto;scrollbar-width:thin}
+ body.poste .scene{min-height:0}
+}
+@media (min-width:760px) and (max-width:1250px){
+ body.poste .trois{grid-template-columns:minmax(230px,25%) minmax(0,1fr) minmax(250px,28%)}
+ body.poste .tete .fil{display:none}
+ .parties span{padding:7px 10px;font-size:13px}
+}
+@media (min-width:760px) and (max-height:800px){
+ body.poste{--esp:10px}
+ body.poste .graphe .zone{height:clamp(180px,34vh,280px)}
+ body.poste .col-action{padding:18px 18px 12px;gap:12px}
+ body.poste .tuile{min-height:56px;padding:6px 10px}
+ body.poste .tuile b{font-size:19px}
+ .formule{font-size:15px;padding:7px 12px}
+}
+/* téléphone et tablette : le matériel et ses résultats, puis l'action, puis la courbe */
+@media (max-width:759px){
+ body.poste .tete{flex-wrap:wrap}
+ body.poste .tete-txt{flex-basis:calc(100% - 120px)}
+ .parties{order:3;flex:1 1 100%}
+ body.poste .pastille{order:2}
+ body.poste .trois{grid-template-columns:minmax(0,1fr)}
+ body.poste .col-scene{order:-1}
+ body.poste .scene{height:50vh;min-height:280px;max-height:480px;flex:none}
+ body.poste .resultats .tuiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.poste .graphe .zone{height:240px}
+ body.poste .badge{display:none}
+ body.poste .outils3d{max-width:100%;left:8px;right:8px;top:8px;justify-content:flex-start}
+ body.poste .outils3d button,body.poste .vues button{font-size:12px;padding:4px 9px}
+ body.poste .col-action .nav{bottom:0}
+ .formule{font-size:14.5px}
+}
+body.poste .frise[hidden]{display:none!important}
+body.poste .nav .btn{white-space:nowrap;padding:11px 10px}
+body.poste .tuile b{white-space:nowrap;font-size:clamp(16px,1.45vw,21px)}
+body.poste #zLambda .pas .btn{padding:6px 10px;font-size:13px}
+@media (max-width:759px){
+ body.poste .tete{gap:8px 10px;padding:10px 12px}
+ body.poste .tete-txt{flex-basis:100%}
+ body.poste .tete .fil{display:none}
+ body.poste .tete h1{white-space:normal;font-size:18px;line-height:1.25}
+ .parties span{padding:6px 10px;font-size:13px}
+ body.poste .tuile{min-height:0;padding:6px 10px}
+ body.poste .tuile small{font-size:11.5px}
+ body.poste .tuile b{font-size:18px}
+ body.poste .col-action{padding:16px}
+}
+body.poste #tS{white-space:normal;font-size:15px;line-height:1.25}
+@media (min-width:760px) and (max-height:800px){ body.poste #lNote{display:none} }
+@media (max-width:759px){ body.poste .pastille{order:1;margin-right:auto} body.poste .secu-btn{order:2} }
+/* écrans compacts (zoom Windows 125 % ou 150 %, petits portables) : tout reste visible */
+@media (min-width:760px) and (max-width:1100px){
+ .parties span{padding:6px 9px;font-size:12.5px} .parties span b{font-size:12px}
+ body.poste .tete h1{font-size:17px}
+ body.poste .col-action{padding:14px 14px 10px;gap:10px}
+ body.poste .col-mesure{padding:12px}
+ body.poste .resultats{padding:10px 12px 12px}
+ body.poste .resultats .tuiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ body.poste .vues button{font-size:12px;padding:4px 8px}
+ body.poste .outils3d button{font-size:12px;padding:4px 9px}
+ body.poste .badge{display:none}
+ .formule{font-size:13.5px}
+}
+@media (min-width:760px) and (max-height:620px){
+ body.poste{--esp:8px}
+ body.poste .tete{padding:6px 12px}
+ body.poste .tete .fil{display:none}
+ body.poste .tete h1{font-size:16px}
+ .parties span{padding:5px 9px}
+ body.poste .col-action{padding:12px 14px 8px;gap:9px}
+ body.poste .etape-titre h2{font-size:16.5px}
+ body.poste .desc{font-size:14.5px;line-height:1.5}
+ body.poste .reglages{padding:10px;gap:9px}
+ body.poste #action{padding:9px 12px;font-size:14.5px}
+ body.poste .nav .btn{padding:8px 10px}
+ body.poste .resultats{padding:8px 12px 10px;gap:7px}
+ body.poste .tuile{min-height:0;padding:4px 9px}
+ body.poste .tuile small{font-size:11px}
+ body.poste .tuile b{font-size:17px}
+ .formule{font-size:13px;padding:5px 10px}
+ body.poste .graphe .zone{height:clamp(150px,40vh,230px)}
+ body.poste .pied{display:none}
+}
+body.poste .nav .btn{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media (min-width:760px) and (max-width:1100px){ body.poste .nav .btn{font-size:12.5px;padding:9px 4px} }
+@media (min-width:760px) and (max-height:620px){
+ body.poste .resultats .tuiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+ body.poste .tuile small{font-size:10.5px;line-height:1.2}
+ body.poste .tuile b{font-size:15px}
+}
+body.poste .btn:disabled{background:#C9B8DE!important;color:#fff!important;border-color:#C9B8DE!important;cursor:not-allowed;box-shadow:none}
+body.poste .btn.sec:disabled{background:#fff!important;color:#B9A6D3!important;border:1px solid var(--p100)!important}
+/* marque © en bas de l'écran : la disposition lui laisse sa ligne, sans débordement */
+body.poste #efir-copyright{padding:0 12px 4px!important;font-size:11px!important;line-height:16px!important}
+@media (min-width:760px){ body.poste .page{height:calc(100vh - 20px);height:calc(100dvh - 20px);min-height:410px} }
+/* en-tête : les onglets des parties défilent plutôt que de pousser la page */
+body.poste .parties{flex:none}
+body.poste .tete-txt{flex:1 1 0;min-width:0}
+@media (min-width:760px) and (max-width:1100px){ body.poste .tete .pastille{display:none} }
+/* onglets des parties : en manque de place, seul l'onglet en cours garde son nom (jamais de mot coupé) */
+.parties span .nom{font-style:normal}
+@media (min-width:760px) and (max-width:1500px){ .parties span:not(.ici) .nom{display:none} .parties span:not(.ici){padding-left:11px;padding-right:11px} }
+/* bas à droite libre (badge de l'hébergeur) ; tableau non sélectionnable par mégarde */
+@media (min-width:760px){ body.poste .col-mesure{padding-bottom:58px} }
+body.poste .mesures{user-select:none;-webkit-user-select:none}
+/* portable : « Précédent » devient une flèche, « Suivant » garde son texte entier */
+@media (min-width:760px) and (max-width:1500px){
+ body.poste .nav #prec{flex:0 0 52px;padding:9px 0;font-size:18px!important}
+ body.poste .nav #prec .txt{display:none}
+ body.poste .nav #suiv{flex:1 1 auto}
+}
+.saisie{display:grid;gap:8px}.saisie label{display:grid;gap:4px;font-weight:700;color:var(--prune)}.saisie input,.saisie select{font:inherit;font-size:16px;padding:7px 10px;border:1px solid var(--p200);border-radius:10px;background:#fff;color:#1F1630;min-width:0}.saisie table.dil{border-collapse:collapse;font-size:14px;width:100%}.saisie table.dil th,.saisie table.dil td{border:1px solid var(--p200);padding:4px 5px;text-align:center}.saisie table.dil input{width:64px;padding:4px 6px;font-size:15px}/*efir-confort*/body.poste #a11y-in{flex:none;margin:0!important;padding:0!important;width:36px;height:36px;justify-content:center;gap:0}body.poste #a11y-in span{display:none}.retour{flex:none;white-space:nowrap;display:inline-block;margin-bottom:6px;font-weight:700;color:var(--prune);text-decoration:none;border:1px solid var(--p200);border-radius:999px;padding:4px 12px;font-size:14px;background:var(--p100)}@media (max-width:759px){body.poste .tete{flex-wrap:wrap!important}body.poste .tete-txt{flex:1 1 100%!important;order:10;min-width:0!important}body.poste .tete h1{white-space:normal!important;word-break:normal!important;overflow-wrap:normal!important}body.poste .tete nav.parties{order:11;flex:1 1 100%!important;min-width:0;max-width:100%;overflow-x:auto;flex-wrap:nowrap!important;scrollbar-width:none}body.poste .tete nav.parties span{flex:none}}</style></head>
+<body class="poste">
+<div class="page">
+  <header class="carte tete"><a class="retour" href="#" onclick="try{parent.location.hash='terminale/matiere/M%C3%A9thodes%20physiques%20d\'analyse'}catch(e){};return false">← Retour au chapitre</a>
+    <div class="tete-txt">
+      <div class="fil">EFIR · Terminale spécialité · Chapitre 2 · AE4 · Expérimentale</div>
+      <h1>Dosage par étalonnage de la bouillie bordelaise</h1>
+      <div class="notion">Problématique : cette bouillie bordelaise peut-elle être utilisée en agriculture biologique ? · Notions : dilution, spectre d'absorption, couleur, loi de Beer-Lambert, domaine de validité</div>
+    </div>
+    <nav class="parties" id="parties"></nav><nav class="frise" hidden></nav>
+    <span class="pastille" id="etapeN">Étape 1 / 13</span>
+    <details class="secu-btn"><summary>⚠️ Sécurité</summary>
+      <aside class="securite"><h3>⚠️ Rappel de sécurité</h3><ul>
+        <li>Blouse, gants et lunettes : le sulfate de cuivre est <b>nocif</b> s'il est avalé et <b>irritant</b> pour les yeux et la peau.</li>
+        <li>On pèse les cristaux sur un verre de montre, avec une spatule, jamais à la main.</li>
+        <li>On ne pipette jamais à la bouche : pipette jaugée et poire à pipeter.</li>
+        <li>On tient la cuve <b>par ses faces dépolies</b> et on ne verse jamais de liquide dans le compartiment de l'appareil.</li>
+        <li>Les ions cuivre(II) sont <b>toxiques pour les organismes aquatiques</b> : toutes les solutions vont dans le bidon de récupération, jamais dans l'évier.</li></ul></aside>
+    </details>
+  </header>
+
+  <main class="trois">
+    <section class="carte col-action assistant" aria-label="Étape et action">
+      <div class="sur-titre" id="surTitre"></div><div class="etape-titre"><span class="num" id="num">1</span><h2 id="etTitre"></h2></div>
+      <div class="desc" id="etDesc"></div>
+      <div class="reglages" id="regl" style="display:none"></div>
+      <div class="reglages saisie" id="zSaisie" style="display:none"></div>
+      <div class="reglages" id="zLambda" style="display:none">
+        <label>Longueur d'onde λ <output id="oL"></output><input id="rL" type="range" min="400" max="900" step="1" value="500"></label>
+        <div class="pas"><button class="btn petit sec" id="lMoins">λ −1 nm</button><button class="btn petit sec" id="lPlus">λ +1 nm</button><button class="btn petit sec" id="bMode">A ↔ %T</button></div>
+        <small id="lNote"></small>
+      </div>
+      <div class="reglages" id="zCuve" style="display:none">
+        <div class="cuve-choix">
+          <svg id="svgCuve" viewBox="0 0 220 120" width="160" height="88"></svg>
+          <div><span class="petit-texte">Vue de dessus, faisceau de gauche à droite.</span><br><button class="btn petit sec" id="tourner">↻ Tourner d'un quart de tour</button></div>
+        </div>
+      </div>
+      <div class="reglages" id="zEtal" style="display:none">
+        <div class="pas" id="boutonsSol"></div>
+        <small>Du moins concentré (S₄) au plus concentré (S₀), en rinçant la cuve avec la solution suivante.</small>
+      </div>
+      <button class="btn" id="action"></button>
+      <div class="alerte" id="alerte"></div>
+      <div class="ok" id="ok">✓ Action validée !</div>
+      <div class="interp" id="interp"></div>
+      <div class="nav"><button class="btn sec" id="prec" aria-label="Précédent"><span class="ico">←</span><span class="txt"> Précédent</span></button><button class="btn" id="suiv">Suivant →</button></div>
+      <button class="lien-recom" id="recommencer">↺ Recommencer l'activité</button>
+    </section>
+
+    <section class="carte col-scene" aria-label="Spectrophotomètre en 3D">
+      <div class="scene" id="scene">
+        <span class="badge">↻ Glissez pour tourner</span>
+        <div class="outils3d"><button id="b3d" class="on">3D</button><button id="b2d">Schéma 2D</button><button id="bEt" class="on">🏷 Étiquettes</button></div>
+        <div class="vues"><button data-v="ensemble">Ensemble</button><button data-v="appareil">Afficheur</button><button data-v="compartiment">Compartiment</button><button data-v="interieur">Intérieur</button><button data-v="portoir">Étalons</button></div>
+        <div class="secours" id="secours">La 3D n'est pas disponible sur cet appareil : le schéma 2D la remplace, toutes les étapes restent possibles.</div>
+        <div class="schema" id="schema"><svg id="svg2d" viewBox="0 0 520 520" font-family="Atkinson Hyperlegible, Arial, sans-serif"></svg></div>
+      </div>
+      <div class="resultats">
+      <div class="tuiles">
+        <div class="tuile"><small>Longueur d'onde λ (nm)</small><b id="tL">—</b></div>
+        <div class="tuile m"><small>Absorbance A</small><b id="tA">—</b></div>
+        <div class="tuile c"><small>Transmittance T = I / I₀</small><b id="tT">—</b></div>
+        <div class="tuile"><small>Dans la cuve</small><b id="tS">vide</b></div>
+      </div>
+      <div class="formule" id="formule"></div>
+      </div>
+    </section>
+
+    <section class="carte col-mesure suivi" aria-label="Mesure en direct">
+      <h3>Courbe et analyse</h3>
+      <div class="bloc">
+        <div class="graphe plein"><div class="zone"><canvas id="gSpectre"></canvas></div>
+          <div class="legende"><span><i style="background:#4A148C"></i>spectre A(λ) de S₀</span><span><i style="background:#C2185B"></i>λ réglée</span></div></div>
+      </div>
+      <div class="bloc">
+        <div class="graphe plein"><div class="zone"><canvas id="gEtal"></canvas></div>
+          <div class="legende"><span><i style="background:#4A148C"></i>étalons</span><span><i style="background:#C2185B"></i>bouillie B</span><span>— A = k·C</span></div></div>
+        <div class="tab-zone"><table class="mesures" id="tab"><thead><tr><th>Solution</th><th>C (<span class="uC"></span>)</th><th>A mesurée</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="bloc">
+        <div class="duo">
+          <div class="graphe"><div class="zone"><canvas id="gRoue"></canvas></div><div class="legende"><b style="color:#4A148C">Cercle chromatique</b><span id="legRoue"></span></div></div>
+          <div class="graphe"><div class="zone"><canvas id="gLoupe"></canvas></div><div class="legende"><b style="color:#4A148C">🔍 Dans la cuve</b><span>A = log(I₀ / I)</span></div></div>
+        </div>
+      </div>
+      <p class="petit-texte" id="infos"></p>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ===== Cadrage automatique de la scène 3D (commun aux paillasses réalistes) =====
+   - facteur(nom) : distance multipliée pour que, dans la vue « ensemble », tout le matériel ET ses étiquettes
+     tiennent dans le cadre, quelle que soit la forme du panneau (portable, grand écran, téléphone) ;
+     pour les vues rapprochées, simple correction selon le rapport largeur/hauteur.
+   - etiquettes(cam, liste) : chaque étiquette reste entièrement visible (elle se décale vers l'intérieur). */
+const CADRAGE = (function () {
+  const T = window.THREE, v = () => new T.Vector3();
+  function boite(scene, exclure) {
+    const B = new T.Box3(), b = new T.Box3(), s = v(); scene.updateMatrixWorld(true);
+    scene.traverse(o => {
+      if (!o.isMesh || o.isSprite) return; let p = o; while (p) { if (p.visible === false || (exclure && exclure(p))) return; p = p.parent; }
+      b.setFromObject(o); if (b.isEmpty()) return; b.getSize(s); if (Math.max(s.x, s.z) > 90 || s.y > 140) return; B.union(b);
+    });
+    return B;
+  }
+  function pose(c, V, d) { c.position.set(V.cx + d * Math.sin(V.ph) * Math.sin(V.th), V.cy + d * Math.cos(V.ph), V.cz + d * Math.sin(V.ph) * Math.cos(V.th)); c.lookAt(V.cx, V.cy, V.cz); c.updateMatrixWorld(true); }
+  function demi(cam, s) { const t = Math.tan(cam.fov * Math.PI / 360); return [.5 * s.scale.x / (t * cam.aspect), .5 * s.scale.y / t]; }
+  /* plus petite distance telle que la boîte et les étiquettes tiennent dans le cadre */
+  function distance(cam, V, B, etiq) {
+    const pts = []; for (let i = 0; i < 8; i++) pts.push([new T.Vector3(i & 1 ? B.max.x : B.min.x, i & 2 ? B.max.y : B.min.y, i & 4 ? B.max.z : B.min.z), .92, .86]);
+    (etiq || []).forEach(s => { if (!s.visible) return; const [hx, hy] = demi(cam, s); pts.push([s.getWorldPosition(v()), .97 - .6 * hx, .95 - .6 * hy]); });
+    const c = cam.clone(); let lo = 4, hi = 700;
+    for (let k = 0; k < 28; k++) {
+      const d = (lo + hi) / 2; pose(c, V, d); let ok = true;
+      for (const [p, mx, my] of pts) { const q = p.clone().project(c); if (q.z > 1 || Math.abs(q.x) > Math.max(.2, mx) || Math.abs(q.y) > Math.max(.2, my)) { ok = false; break; } }
+      if (ok) hi = d; else lo = d;
+    }
+    return hi;
+  }
+  function etiquettes(cam, liste, H) {
+    const q = v(), f = 1;
+    liste.forEach(s => {
+      if (!s.visible) return; s.center.set(.5, .5);
+      if (!s.userData.base) s.userData.base = [s.scale.x, s.scale.y]; s.scale.set(s.userData.base[0] * f, s.userData.base[1] * f, 1); s.getWorldPosition(q).project(cam); const [hx, hy] = demi(cam, s);
+      const mx = .985 - hx, my = .97 - hy;
+      if (q.x > mx) s.center.x = Math.min(1.5, .5 + (q.x - mx) / (2 * hx)); else if (q.x < -mx) s.center.x = Math.max(-.5, .5 + (q.x + mx) / (2 * hx));
+      if (q.y > my) s.center.y = Math.min(1.5, .5 + (q.y - my) / (2 * hy)); else if (q.y < -my) s.center.y = Math.max(-.5, .5 + (q.y + my) / (2 * hy));
+    });
+  }
+  /* vue d'ensemble : centre la caméra sur le matériel et règle la distance ; renvoie le facteur de distance */
+  function ensemble(cam, scene, V, cible, exclure) {
+    const B = boite(scene, exclure); if (B.isEmpty()) return 1; const c = B.getCenter(v());
+    const W = Object.assign({}, V, { cx: c.x, cy: c.y - (B.max.y - B.min.y) * .03, cz: c.z });
+    Object.assign(cible, { cx: W.cx, cy: W.cy, cz: W.cz }); return distance(cam, W, B, null) / V.d;
+  }
+  return { boite, distance, etiquettes, ensemble };
+})();
+
+/* ===== Modèle de spectrophotométrie (loi de Beer-Lambert) : ions cuivre(II) de la bouillie bordelaise =====
+   A(λ) = ε(λ) · ℓ · C ; ε(λ) modélisé par une somme de bandes gaussiennes (données de la littérature, arrondies). */
+const SPECTRO = (function () {
+  const ESPECES = {
+    cuso4: {
+      nom: "Ions cuivre(II) Cu²⁺ (sulfate de cuivre)", court: "Cu²⁺", unite: "mol·L⁻¹", f: 1, couleurPercue: "bleu clair (cyan)",
+      /* bande large des ions Cu²⁺(aq) : maximum vers 805 nm, ε ≈ 12,6 L·mol⁻¹·cm⁻¹ (d'où A ≈ 1,26 pour 0,10 mol·L⁻¹) */
+      bandes: [[805, 12.6, 95]], gamme: [0.005, 0.010, 0.020, 0.050, 0.100], inconnue: 0.0204,
+      contexte: "La bouillie bordelaise doit sa couleur bleue aux ions cuivre(II) Cu²⁺(aq) du sulfate de cuivre."
+    }
+  };
+  const LMIN = 400, LMAX = 900;
+  function eps(sp, l) { return ESPECES[sp].bandes.reduce((s, [m, e, w]) => s + e * Math.exp(-.5 * Math.pow((l - m) / w, 2)), 0); }
+  function A(sp, C, l, lc) { return eps(sp, l) * (lc || 1) * C * ESPECES[sp].f; }
+  function lmax(sp) { let b = 400, m = 0; for (let l = LMIN; l <= LMAX; l++) { const e = eps(sp, l); if (e > m) { m = e; b = l; } } return b; }
+  /* couleur transmise (sRGB) d'une solution, épaisseur ℓ (cm) : on intègre grossièrement 3 bandes */
+  function couleur(sp, C, lc) {
+    const ch = [[610, 650], [520, 570], [440, 480]].map(([a, b]) => { let t = 0, n = 0; for (let l = a; l <= b; l += 5) { t += Math.pow(10, -A(sp, C, l, lc)); n++; } return t / n; });
+    return ch.map(t => Math.round(255 * Math.pow(Math.max(0, Math.min(1, t)), 1 / 1.6)));
+  }
+  /* couleur d'une longueur d'onde (pour le faisceau) */
+  function rgbLambda(l) {
+    l = Math.min(770, l); /* au-delà de 780 nm (proche infrarouge, invisible) : faisceau rouge sombre */
+    let r = 0, g = 0, b = 0;
+    if (l < 440) { r = -(l - 440) / 60; b = 1; } else if (l < 490) { g = (l - 440) / 50; b = 1; } else if (l < 510) { g = 1; b = -(l - 510) / 20; }
+    else if (l < 580) { r = (l - 510) / 70; g = 1; } else if (l < 645) { r = 1; g = -(l - 645) / 65; } else r = 1;
+    const k = l < 420 ? .3 + .7 * (l - 380) / 40 : l > 700 ? .3 + .7 * (780 - l) / 80 : 1;
+    return [r, g, b].map(v => Math.round(255 * Math.pow(Math.max(0, v * k), .8)));
+  }
+  return { ESPECES, eps, A, lmax, couleur, rgbLambda, LMIN, LMAX };
+})();
+
+/* ===== Scène 3D réaliste : spectrophotomètre UV-visible de paillasse (three.js r128) =====
+   Unités : cm. Boîtier en biseau, afficheur LCD, clavier à membrane, compartiment à cuve à capot,
+   cuves de 1 cm en plastique (2 faces lisses, 2 faces dépolies striées), portoir de tubes étalons,
+   et vue « intérieur » : lampe, miroir, réseau, fente, cuve, photodiode, faisceau à la longueur d'onde choisie. */
+const SCENE_SP = (function () {
+  const T = window.THREE;
+  let ok = false, R, scene, cam, hote, W = 1, H = 1;
+  const O = {}, etiq = [];
+  const VUES = {
+    ensemble: { th: .3, ph: 1.12, d: 84, cx: -6, cy: 6, cz: 3 },
+    appareil: { th: .15, ph: .95, d: 52, cx: 2, cy: 7, cz: 0 },
+    compartiment: { th: .4, ph: .55, d: 34, cx: 9, cy: 14, cz: -4 },
+    interieur: { th: .05, ph: .62, d: 50, cx: 0, cy: 8, cz: -4 },
+    portoir: { th: -.35, ph: 1.05, d: 46, cx: -24, cy: 6, cz: 4 }
+  };
+  const vue = Object.assign({ k: 1 }, VUES.ensemble), cible = Object.assign({ k: 1 }, VUES.ensemble); let vueNom = "ensemble";
+  const COMP = { x: 9, z: -5, yFond: 7.2, yFaisceau: 9.2 }; // compartiment à cuve
+  const etat = { capot: 0, capotCible: 0, interieur: 0, intCible: 0, lambda: 630, T: 1, lampe: 0, cuve: null, cuveCoul: [230, 240, 255], cuveDansFaisceau: false, cuveSens: 0, lcd: "" };
+
+  const mat = (c, r, me, o) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: r == null ? .5 : r, metalness: me || 0 }, o || {}));
+  const verre = (op) => new T.MeshPhysicalMaterial({ color: 0xf4f8ff, roughness: .04, transparent: true, opacity: op || .22, side: T.DoubleSide, depthWrite: false, clearcoat: 1, clearcoatRoughness: .03, envMapIntensity: 1.6 });
+  function mesh(g, ma, x, y, z, ombre) { const k = new T.Mesh(g, ma); k.position.set(x || 0, y || 0, z || 0); if (ombre !== false) { k.castShadow = true; k.receiveShadow = true; } return k; }
+  function cvs(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+  function tex(cv) { const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding; t.anisotropy = 8; return t; }
+  function rondBox(w, h, d, r) {
+    const s = new T.Shape(), x = -w / 2, y = -d / 2;
+    s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + d - r); s.quadraticCurveTo(x + w, y + d, x + w - r, y + d);
+    s.lineTo(x + r, y + d); s.quadraticCurveTo(x, y + d, x, y + d - r); s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+    const g = new T.ExtrudeGeometry(s, { depth: h - .4, bevelEnabled: true, bevelThickness: .2, bevelSize: .2, bevelSegments: 3 }); g.rotateX(-Math.PI / 2); g.translate(0, .2, 0); return g;
+  }
+  function etiquette(txt, x, y, z) {
+    const cv = cvs(512, 96), c = cv.getContext("2d");
+    c.font = "700 38px Atkinson Hyperlegible, Arial, sans-serif"; const w = Math.min(500, c.measureText(txt).width + 40), x0 = (512 - w) / 2;
+    c.fillStyle = "rgba(255,255,255,.95)"; c.strokeStyle = "#4A148C"; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(x0 + 20, 10); c.arcTo(x0 + w, 10, x0 + w, 86, 20); c.arcTo(x0 + w, 86, x0, 86, 20); c.arcTo(x0, 86, x0, 10, 20); c.arcTo(x0, 10, x0 + w, 10, 20); c.fill(); c.stroke();
+    c.fillStyle = "#4A148C"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(txt, 256, 49);
+    const s = new T.Sprite(new T.SpriteMaterial({ map: tex(cv), depthTest: false, transparent: true, sizeAttenuation: false }));
+    s.scale.set(.17, .032, 1); s.position.set(x, y, z); s.renderOrder = 20; scene.add(s); etiq.push(s); return s;
+  }
+  function seg7(c, txt, x, y, h, coul) {
+    const S = { "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg", "-": "g", " ": "" };
+    const w = h * .52, e = h * .1, pas = w + h * .2; let cx = x;
+    for (let i = 0; i < txt.length; i++) {
+      const ch = txt[i]; if (ch === ".") { c.fillStyle = coul; c.fillRect(cx - h * .16, y + h - e, e, e); continue; }
+      const segs = S[ch] || "", P = { a: [cx + e, y, w - 2 * e, e], d: [cx + e, y + h - e, w - 2 * e, e], g: [cx + e, y + h / 2 - e / 2, w - 2 * e, e], f: [cx, y + e, e, h / 2 - 1.5 * e], b: [cx + w - e, y + e, e, h / 2 - 1.5 * e], e: [cx, y + h / 2 + e / 2, e, h / 2 - 1.5 * e], c: [cx + w - e, y + h / 2 + e / 2, e, h / 2 - 1.5 * e] };
+      for (const k in P) { c.fillStyle = segs.includes(k) ? coul : "rgba(29,34,21,.07)"; const [a, b, ww, hh] = P[k]; c.save(); c.translate(a + ww / 2, b + hh / 2); c.transform(1, 0, -.12, 1, 0, 0); c.fillRect(-ww / 2, -hh / 2, ww, hh); c.restore(); }
+      cx += pas;
+    }
+  }
+  function dessineLCD(l1, l2, l3) {
+    const c = O.lcdCtx, w = 1024, h = 400;
+    c.fillStyle = "#c5d3a6"; c.fillRect(0, 0, w, h);
+    c.fillStyle = "#1d2215"; c.font = "700 44px Arial"; c.textAlign = "left"; c.fillText("λ", 40, 90);
+    seg7(c, l1, 90, 40, 80, "#1d2215"); c.font = "700 36px Arial"; c.fillText("nm", 400, 112);
+    c.fillText(l2.u, 40, 250); seg7(c, l2.v, 150, 170, 120, "#1d2215");
+    c.font = "30px Arial"; c.fillText(l3, 40, 370); c.textAlign = "right"; c.fillText("ℓ = 1,00 cm", w - 40, 370);
+    O.lcdTex.needsUpdate = true;
+  }
+  function texCuve() { /* faces dépolies striées (blanc laiteux) */
+    const cv = cvs(128, 256), c = cv.getContext("2d"); c.fillStyle = "rgba(245,245,250,.92)"; c.fillRect(0, 0, 128, 256);
+    c.strokeStyle = "rgba(180,180,195,.9)"; c.lineWidth = 3; for (let y = 6; y < 256; y += 9) { c.beginPath(); c.moveTo(0, y); c.lineTo(128, y); c.stroke(); }
+    return tex(cv);
+  }
+  function construit() {
+    scene = new T.Scene();
+    const pm = new T.PMREMGenerator(R), env = new T.Scene();
+    env.add(new T.Mesh(new T.BoxGeometry(300, 300, 300), new T.MeshBasicMaterial({ color: 0xa79fb5, side: T.BackSide })));
+    [[0, 120, 0, 160, 80, 0xffffff], [-130, 40, 40, 60, 110, 0xf3eefa], [120, 50, -40, 70, 90, 0xfff6ec]].forEach(([x, y, z, w, h, col]) => { const p = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: col, side: T.DoubleSide })); p.position.set(x, y, z); p.lookAt(0, 0, 0); env.add(p); });
+    scene.environment = pm.fromScene(env, .03).texture;
+    scene.add(new T.HemisphereLight(0xffffff, 0xb9adc8, .3));
+    const sol = new T.DirectionalLight(0xfffaf3, .75); sol.position.set(30, 80, 50); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048);
+    Object.assign(sol.shadow.camera, { left: -50, right: 50, top: 50, bottom: -50, near: 10, far: 220 }); sol.shadow.bias = -.0003; scene.add(sol);
+    const pt = cvs(512, 512), pc = pt.getContext("2d"); pc.fillStyle = "#c9c2d3"; pc.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 9000; i++) { pc.fillStyle = `rgba(${Math.random() < .5 ? "255,255,255" : "90,80,110"},${Math.random() * .06})`; pc.fillRect(Math.random() * 512, Math.random() * 512, 2, 2); }
+    const ptx = tex(pt); ptx.wrapS = ptx.wrapT = T.RepeatWrapping; ptx.repeat.set(4, 2);
+    scene.add(mesh(new T.BoxGeometry(120, 3, 56), mat(0xffffff, .78, 0, { map: ptx }), -4, -1.5, 4));
+    scene.add(mesh(new T.BoxGeometry(120, 3.2, .8), mat(0x4A148C, .55), -4, -1.6, 32.4));
+
+    /* --- boîtier du spectrophotomètre (profil biseauté extrudé selon x) --- */
+    const ap = new T.Group(); scene.add(ap); O.ap = ap;
+    const pr = new T.Shape(); pr.moveTo(-13, 0); pr.lineTo(13, 0); pr.lineTo(13, 4.2); pr.quadraticCurveTo(13, 5, 12.2, 5.2); pr.lineTo(1, 8.6); pr.lineTo(-12, 12); pr.quadraticCurveTo(-13, 12.3, -13, 11.3); pr.lineTo(-13, 0);
+    const g = new T.ExtrudeGeometry(pr, { depth: 31, bevelEnabled: true, bevelThickness: .3, bevelSize: .3, bevelSegments: 3 }); g.rotateY(-Math.PI / 2); g.translate(15.5, 0, 0);
+    O.matCoque = new T.MeshPhysicalMaterial({ color: 0xd4d1d9, roughness: .45, clearcoat: .25, envMapIntensity: .7, transparent: true, opacity: 1 });
+    O.coque = mesh(g, O.matCoque); ap.add(O.coque);
+    /* bandeau prune et façade inclinée */
+    const pente = Math.atan2(8.6 - 5.2, 12.2 - 1);
+    const fac = new T.Group(); fac.position.set(-4, (5.2 + 8.6) / 2 + .32, (12.2 + 1) / 2); fac.rotation.x = pente; ap.add(fac); O.fac = fac;
+    fac.add(mesh(new T.PlaneGeometry(22, 11.6), mat(0x2d1b4e, .5), 0, 0, 0, false).rotateX(-Math.PI / 2));
+    const lc = cvs(1024, 400); O.lcdCtx = lc.getContext("2d"); O.lcdTex = tex(lc);
+    const lcd = mesh(new T.PlaneGeometry(11, 4.3), new T.MeshStandardMaterial({ map: O.lcdTex, roughness: .25, emissive: 0xffffff, emissiveMap: O.lcdTex, emissiveIntensity: .35 }), -4.4, .04, -2.6, false); lcd.rotation.x = -Math.PI / 2; fac.add(lcd);
+    fac.add(mesh(new T.BoxGeometry(11.8, .06, 5.1), mat(0x15101f, .4), -4.4, 0, -2.6, false));
+    const kb = cvs(1024, 512), kc = kb.getContext("2d"); kc.fillStyle = "#2d1b4e"; kc.fillRect(0, 0, 1024, 512);
+    const touches = [["λ ▲", "λ ▼", "MODE"], ["0 ABS / 100 %T", "SCAN", "IMPR."]];
+    touches.forEach((row, i) => row.forEach((t, j) => { const x = 40 + j * 320, y = 40 + i * 230; kc.fillStyle = j === 0 && i === 1 ? "#C2185B" : "#E1BEE7"; kc.beginPath(); kc.roundRect ? kc.roundRect(x, y, 290, 180, 24) : kc.rect(x, y, 290, 180); kc.fill(); kc.fillStyle = "#2d1b4e"; kc.font = "700 " + (t.length > 8 ? 34 : 48) + "px Arial"; kc.textAlign = "center"; kc.fillText(t, x + 145, y + 104); }));
+    const clav = mesh(new T.PlaneGeometry(9, 4.5), new T.MeshStandardMaterial({ map: tex(kb), roughness: .6 }), 6.2, .03, -2.4, false); clav.rotation.x = -Math.PI / 2; fac.add(clav);
+    const nm = cvs(1024, 96), nc = nm.getContext("2d"); nc.fillStyle = "#2d1b4e"; nc.fillRect(0, 0, 1024, 96); nc.fillStyle = "#fff"; nc.font = "700 52px Arial"; nc.textAlign = "left"; nc.fillText("SPECTROPHOTOMÈTRE  UV-VISIBLE  ·  320 – 1 000 nm", 30, 66);
+    const plq = mesh(new T.PlaneGeometry(20, 1.9), new T.MeshBasicMaterial({ map: tex(nm) }), -1, .03, 3.9, false); plq.rotation.x = -Math.PI / 2; fac.add(plq);
+    /* interrupteur à l'arrière droite + voyant */
+    O.voyant = mesh(new T.SphereGeometry(.32, 14, 10), mat(0x3a3a3a, .3, 0, { emissive: 0 }), 12.5, 3.4, 13.2, false); ap.add(O.voyant);
+    /* compartiment à cuve : cavité noire + porte-cuve + capot à charnière */
+    O.yTop = 10.6; // dessus du boîtier à l'aplomb du compartiment
+    /* compartiment à cuve surélevé : puits noir à 4 parois, support de cuve, capot à charnière */
+    const cav = new T.Group(); ap.add(cav); O.cav = cav; const hc = 4.9, yt = O.yTop;
+    const pmc = mat(0x2a2730, .55), noir = mat(0x0c0c0f, .95);
+    cav.add(mesh(new T.BoxGeometry(6.6, hc, .9), pmc, COMP.x, yt + hc / 2, COMP.z - 2.85), mesh(new T.BoxGeometry(6.6, hc, .9), pmc, COMP.x, yt + hc / 2, COMP.z + 2.85),
+      mesh(new T.BoxGeometry(.9, hc, 4.8), pmc, COMP.x - 2.85, yt + hc / 2, COMP.z), mesh(new T.BoxGeometry(.9, hc, 4.8), pmc, COMP.x + 2.85, yt + hc / 2, COMP.z));
+    cav.add(mesh(new T.BoxGeometry(4.8, .1, 4.8), noir, COMP.x, yt + .06, COMP.z, false));
+    /* porte-cuve : 2 mâchoires noires, fenêtres optiques selon x */
+    cav.add(mesh(new T.BoxGeometry(.4, 1.6, 2.2), noir, COMP.x - 1.1, yt + .9, COMP.z, false), mesh(new T.BoxGeometry(.4, 1.6, 2.2), noir, COMP.x + 1.1, yt + .9, COMP.z, false));
+    const fl = cvs(256, 64), flc = fl.getContext("2d"); flc.fillStyle = "#2a2730"; flc.fillRect(0, 0, 256, 64); flc.fillStyle = "#fff"; flc.font = "700 30px Arial"; flc.textAlign = "center"; flc.fillText("➜ faisceau ➜", 128, 42);
+    { const f = mesh(new T.PlaneGeometry(4, 1), new T.MeshBasicMaterial({ map: tex(fl) }), COMP.x, yt + hc + .01, COMP.z + 2.85, false); f.rotation.x = -Math.PI / 2; cav.add(f); }
+    const capot = new T.Group(); capot.position.set(COMP.x, yt + hc, COMP.z - 3.3); ap.add(capot); O.capot = capot;
+    capot.add(mesh(new T.BoxGeometry(6.8, .9, 6.8), mat(0x1d1a22, .4), 0, .45, 3.4));
+    capot.add(mesh(new T.BoxGeometry(2.2, .4, .5), mat(0x4A148C, .5), 0, .6, 6.9));
+    COMP.yFond = yt + .12; COMP.yFaisceau = yt + 1.5;
+    /* --- intérieur (vue « Voir l'intérieur ») --- */
+    const inn = new T.Group(); ap.add(inn); O.inn = inn; inn.visible = false;
+    const y = COMP.yFaisceau, z = COMP.z;
+    inn.add(mesh(new T.BoxGeometry(27, .3, 9), mat(0x37474f, .7), 0, y - 3, z, false));
+    /* lampe halogène (tungstène) + réflecteur */
+    O.lampe = mesh(new T.SphereGeometry(.7, 20, 14), new T.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffd36e, emissiveIntensity: 0 }), -11, y, z, false); inn.add(O.lampe);
+    inn.add(mesh(new T.CylinderGeometry(1.4, .4, 1.6, 24, 1, true), mat(0xd8dde5, .2, .9, { side: T.DoubleSide }), -12, y, z, false).rotateZ(-Math.PI / 2));
+    /* lentille, réseau, fente, photodiode */
+    { const len = mesh(new T.SphereGeometry(.9, 20, 12), verre(.5), -8, y, z, false); len.scale.set(.35, 1, 1); inn.add(len); }
+    const rc = cvs(256, 64), rcx = rc.getContext("2d"), gr = rcx.createLinearGradient(0, 0, 256, 0);
+    ["#7b1fa2", "#1e3cff", "#00bcd4", "#2ecc40", "#ffeb3b", "#ff9800", "#f44336"].forEach((col, i) => gr.addColorStop(i / 6, col)); rcx.fillStyle = gr; rcx.fillRect(0, 0, 256, 64);
+    for (let i = 0; i < 256; i += 3) { rcx.fillStyle = "rgba(255,255,255,.35)"; rcx.fillRect(i, 0, 1, 64); }
+    const reseau = mesh(new T.PlaneGeometry(2.6, 2.2), new T.MeshBasicMaterial({ map: tex(rc), side: T.DoubleSide }), -4, y, z, false); reseau.rotation.y = Math.PI / 2 - .5; inn.add(reseau); O.reseau = reseau;
+    inn.add(mesh(new T.BoxGeometry(.2, 2.6, 2.6), mat(0x222226, .6), 3, y, z, false));
+    inn.add(mesh(new T.BoxGeometry(.22, 1.0, .18), mat(0x000000, .2), 3, y, z, false).translateX(.01));
+    inn.add(mesh(new T.BoxGeometry(1.2, 1.8, 1.8), mat(0x263238, .5), 13, y, z, false));
+    inn.add(mesh(new T.PlaneGeometry(.9, .9), mat(0x1a237e, .3, .4), 12.38, y, z, false).rotateY(-Math.PI / 2));
+    /* faisceaux : blanc (lampe → réseau), éventail coloré, monochromatique (fente → cuve → détecteur) */
+    const fb = (x1, x2, col, r, op) => { const k = mesh(new T.CylinderGeometry(r, r, Math.abs(x2 - x1), 12, 1, true), new T.MeshBasicMaterial({ color: col, transparent: true, opacity: op, depthWrite: false, blending: T.AdditiveBlending }), (x1 + x2) / 2, y, z, false); k.rotation.z = Math.PI / 2; inn.add(k); return k; };
+    O.fBlanc = fb(-10.4, -4, 0xfff8e6, .35, .55);
+    O.fMono = fb(-3.9, 3, 0xff0000, .22, .8);
+    O.fCuve = fb(3, COMP.x - .65, 0xff0000, .14, .9);
+    O.fApres = fb(COMP.x + .65, 12.4, 0xff0000, .14, .9);
+    [O.fMono, O.fCuve, O.fApres].forEach(f => { f.material.blending = T.NormalBlending; });
+    const ev = cvs(256, 32), evc = ev.getContext("2d"), eg = evc.createLinearGradient(0, 0, 256, 0);
+    ["#7b1fa2", "#1e3cff", "#00bcd4", "#2ecc40", "#ffeb3b", "#ff9800", "#f44336"].forEach((col, i) => eg.addColorStop(i / 6, col)); evc.fillStyle = eg; evc.fillRect(0, 0, 256, 32);
+    const eventail = mesh(new T.PlaneGeometry(5.5, 2.6), new T.MeshBasicMaterial({ map: tex(ev), transparent: true, opacity: .55, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending }), -1.2, y, z + .8, false); eventail.rotation.x = -Math.PI / 2; eventail.rotation.z = .25; inn.add(eventail);
+    [["Lampe", -11], ["Réseau", -4], ["Fente", 3], ["Cuve", COMP.x], ["Détecteur", 13]].forEach(([t, x]) => { const s = etiquette(t, x, y + 3.2, z); s.userData.interieur = true; s.visible = false; });
+
+    /* --- cuve de 1 cm (plastique) : faces lisses selon x, faces dépolies selon z --- */
+    const cu = new T.Group(); scene.add(cu); O.cuve = cu;
+    const lisse = new T.MeshPhysicalMaterial({ color: 0xffffff, roughness: .05, transparent: true, opacity: .3, depthWrite: false, side: T.DoubleSide });
+    const depoli = new T.MeshStandardMaterial({ map: texCuve(), transparent: true, opacity: .95, roughness: .9, side: T.DoubleSide });
+    cu.add(mesh(new T.PlaneGeometry(1.25, 4.5), lisse, .625, 2.25, 0, false).rotateY(Math.PI / 2));
+    cu.add(mesh(new T.PlaneGeometry(1.25, 4.5), lisse, -.625, 2.25, 0, false).rotateY(Math.PI / 2));
+    cu.add(mesh(new T.PlaneGeometry(1.25, 4.5), depoli, 0, 2.25, .625, false));
+    cu.add(mesh(new T.PlaneGeometry(1.25, 4.5), depoli, 0, 2.25, -.625, false));
+    cu.add(mesh(new T.BoxGeometry(1.25, .12, 1.25), lisse, 0, .06, 0, false));
+    O.cuveLiq = mesh(new T.BoxGeometry(1.1, 3.2, 1.1), new T.MeshPhysicalMaterial({ color: 0xffffff, roughness: .1, transparent: true, opacity: .9, depthWrite: false }), 0, 1.75, 0, false); O.cuveLiq.renderOrder = 5; cu.add(O.cuveLiq);
+    { const ar = new T.LineSegments(new T.EdgesGeometry(new T.BoxGeometry(1.25, 4.5, 1.25)), new T.LineBasicMaterial({ color: 0x6d6a78, transparent: true, opacity: .8 })); ar.position.y = 2.25; cu.add(ar); }
+    cu.position.set(-4, 0, 16); cu.visible = false;
+    /* boîte de cuves neuves */
+    const bx = new T.Group(); bx.position.set(-11, 0, 16); scene.add(bx);
+    bx.add(mesh(new T.BoxGeometry(6, 3, 4), mat(0xffffff, .6)).translateY(1.5));
+    for (let i = 0; i < 8; i++) bx.add(mesh(new T.BoxGeometry(1.25, 2, 1.25), lisse, -2.2 + (i % 4) * 1.45, 3.6, -.8 + Math.floor(i / 4) * 1.6, false));
+    etiquette("Cuves 1 cm", -11, 8, 16);
+
+    /* --- portoir de tubes : 5 étalons + inconnue --- */
+    const rk = new T.Group(); rk.position.set(-26, 0, 4); scene.add(rk); O.rack = rk;
+    const plast = mat(0xe9e4f0, .55);
+    rk.add(mesh(new T.BoxGeometry(17, .6, 5), plast, 0, .3, 0), mesh(new T.BoxGeometry(17, .5, 5), plast, 0, 7, 0), mesh(new T.BoxGeometry(.5, 7, 4.4), plast, -8.3, 3.6, 0), mesh(new T.BoxGeometry(.5, 7, 4.4), plast, 8.3, 3.6, 0));
+    O.tubes = [];
+    for (let k = 0; k < 6; k++) {
+      const x = -6.5 + k * 2.6, t = new T.Group(); t.position.set(x, .6, 0); rk.add(t);
+      t.add(mesh(new T.CylinderGeometry(.85, .85, 11, 24, 1, true), verre(.28), 0, 6.1, 0, false), mesh(new T.SphereGeometry(.85, 20, 10, 0, 6.3, Math.PI / 2, Math.PI / 2), verre(.28), 0, .6, 0, false));
+      const l = mesh(new T.CylinderGeometry(.78, .78, 6, 20), new T.MeshPhysicalMaterial({ color: 0xffffff, roughness: .1, transparent: true, opacity: .85, depthWrite: false }), 0, 3.6, 0, false); t.add(l);
+      const lb = cvs(128, 64), lbc = lb.getContext("2d"); lbc.fillStyle = "#fff"; lbc.fillRect(0, 0, 128, 64); lbc.fillStyle = k === 5 ? "#C2185B" : "#4A148C"; lbc.font = "700 40px Arial"; lbc.textAlign = "center"; lbc.fillText(((window.CFG && CFG.etiq) || ["F1", "F2", "F3", "F4", "F5", "S"])[k], 64, 46);
+      rk.add(mesh(new T.PlaneGeometry(2, 1), new T.MeshBasicMaterial({ map: tex(lb) }), x, 7, 2.52, false));
+      O.tubes.push(l);
+    }
+    etiquette((window.CFG && CFG.rack) || "Étalons F1 à F5 + S", -26, 15, 4);
+    /* pissette + bécher poubelle */
+    const pis = new T.Group(); pis.position.set(-36, 0, -6); scene.add(pis);
+    pis.add(mesh(new T.CylinderGeometry(2.6, 2.7, 11, 36), mat(0xf7f7f7, .5, 0, { transparent: true, opacity: .9 }), 0, 5.5, 0));
+    pis.add(mesh(new T.CylinderGeometry(1.2, 1.2, 1.4, 24), mat(0x1e88e5, .5), 0, 11.7, 0));
+    pis.add(mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(0, 12.3, 0), new T.Vector3(0, 15, 0), new T.Vector3(1.5, 16.2, 0), new T.Vector3(4, 15.2, 0), new T.Vector3(5.2, 13.6, 0)]), 30, .14, 8), mat(0xeeeeee, .5)));
+    etiquette("Eau distillée", -36, 19, -6);
+    etiquette("Spectrophotomètre", 0, 17, -8);
+    etiquette("Compartiment à cuve", COMP.x + 6, O.yTop + 8.5, COMP.z + 3);
+  }
+  /* ---------- caméra ---------- */
+  function placeCam(dt) { const k = 1 - Math.exp(-dt * 7); for (const c in cible) vue[c] += (cible[c] - vue[c]) * k; const d = vue.d * vue.k; cam.position.set(vue.cx + d * Math.sin(vue.ph) * Math.sin(vue.th), vue.cy + d * Math.cos(vue.ph), vue.cz + d * Math.sin(vue.ph) * Math.cos(vue.th)); cam.lookAt(vue.cx, vue.cy, vue.cz); cam.updateMatrixWorld(); CADRAGE.etiquettes(cam, etiq, H); }
+  function facteur(n) {
+    if (n !== "ensemble") return Math.pow(Math.max(1, 1.3 / cam.aspect), .85);
+    return CADRAGE.ensemble(cam, scene, VUES.ensemble, cible, o => o === O.inn);
+  }
+  function controles(cv) {
+    const pts = new Map(); let d0 = 0;
+    cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { const [a, b] = [...pts.values()]; d0 = Math.hypot(a.x - b.x, a.y - b.y); } });
+    cv.addEventListener("pointermove", e => { const p = pts.get(e.pointerId); if (!p) return; if (pts.size === 1) { cible.th -= (e.clientX - p.x) * .006; cible.ph = Math.max(.3, Math.min(1.6, cible.ph - (e.clientY - p.y) * .005)); } p.x = e.clientX; p.y = e.clientY; if (pts.size === 2) { const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (d0) cible.d = Math.max(12, Math.min(170, cible.d * d0 / d)); d0 = d; } });
+    const fin = e => pts.delete(e.pointerId); cv.addEventListener("pointerup", fin); cv.addEventListener("pointercancel", fin);
+    cv.addEventListener("wheel", e => { e.preventDefault(); cible.d = Math.max(12, Math.min(170, cible.d * (e.deltaY > 0 ? 1.1 : .9))); }, { passive: false });
+  }
+  /* ---------- boucle ---------- */
+  let t0 = performance.now();
+  function boucle() {
+    requestAnimationFrame(boucle);
+    const now = performance.now(), dt = Math.min(.05, (now - t0) / 1000); t0 = now;
+    if (api.tick) api.tick(dt);
+    const lis = (a, b, k) => a + (b - a) * Math.min(1, dt * k);
+    etat.capot = lis(etat.capot, etat.capotCible, 5); O.capot.rotation.x = -etat.capot * 1.75;
+    etat.interieur = lis(etat.interieur, etat.intCible, 4);
+    O.matCoque.opacity = 1 - .82 * etat.interieur; O.matCoque.transparent = etat.interieur > .01; O.matCoque.depthWrite = etat.interieur < .5;
+    O.inn.visible = etat.interieur > .05; O.fac.visible = O.cav.visible = O.capot.visible = etat.interieur < .5;
+    etiq.forEach(s => { s.visible = api._etiq !== false && (s.userData.interieur ? etat.interieur > .5 : etat.interieur < .5); });
+    O.lampe.material.emissiveIntensity = etat.lampe * 2.2;
+    O.voyant.material.color.setHex(etat.lampe ? 0x66ff88 : 0x3a3a3a); O.voyant.material.emissive.setHex(etat.lampe ? 0x33ff66 : 0);
+    const c = SPECTRO.rgbLambda(etat.lambda), hex = (c[0] << 16) | (c[1] << 8) | c[2];
+    [O.fMono, O.fCuve, O.fApres].forEach(f => f.material.color.setHex(hex));
+    const on = etat.lampe > .5; O.fBlanc.visible = O.fMono.visible = O.fCuve.visible = on; O.fApres.visible = on;
+    const tr = etat.cuveDansFaisceau ? etat.T : 1; O.fApres.material.opacity = .9 * Math.max(.04, tr); O.fApres.scale.set(Math.max(.25, Math.sqrt(tr)), 1, Math.max(.25, Math.sqrt(tr)));
+    O.reseau.rotation.y = Math.PI / 2 - .5 + (etat.lambda - 550) / 1600;
+    /* cuve : déplacement vers sa cible */
+    if (etat.cuve) { const P = O.cuve.position, Q = etat.cuve, k = Math.min(1, dt * 3.5), loin = Math.hypot(P.x - Q.x, P.z - Q.z) > .2;
+      if (loin && P.y < 17.5) P.y += (18.5 - P.y) * k; else if (loin) { P.x += (Q.x - P.x) * k; P.z += (Q.z - P.z) * k; } else { P.x = Q.x; P.z = Q.z; P.y += (Q.y - P.y) * k; } }
+    O.cuve.rotation.y += ((etat.cuveSens ? Math.PI / 2 : 0) - O.cuve.rotation.y) * Math.min(1, dt * 6);
+    O.cuveLiq.visible = !!etat.cuveCoul; if (etat.cuveCoul) O.cuveLiq.material.color.setRGB(...etat.cuveCoul.map(v => v / 255)).convertSRGBToLinear();
+    placeCam(dt); R.render(scene, cam);
+  }
+  function taille() { const r = hote.getBoundingClientRect(); W = Math.max(1, r.width); H = Math.max(1, r.height); R.setSize(W, H, false); cam.aspect = W / H; cam.updateProjectionMatrix(); if (scene) { cible.k = facteur(vueNom); if (!ok) vue.k = cible.k; } }
+  const api = {
+    etat, COMP,
+    init(el) {
+      hote = el;
+      try { if (!T) throw 0; const cv = document.createElement("canvas"); cv.className = "gl"; R = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true }); if (!R.getContext()) throw 0; } catch (e) { return false; }
+      R.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); R.outputEncoding = T.sRGBEncoding; R.toneMapping = T.ACESFilmicToneMapping; R.toneMappingExposure = .92; R.shadowMap.enabled = true; R.shadowMap.type = T.PCFSoftShadowMap;
+      el.prepend(R.domElement); cam = new T.PerspectiveCamera(32, 1, .5, 900);
+      construit(); controles(R.domElement); taille(); window.addEventListener("resize", taille); if (window.ResizeObserver) new ResizeObserver(taille).observe(el);
+      dessineLCD("   ", { u: "", v: "    " }, "Appareil éteint"); ok = true; boucle(); return true;
+    },
+    vue(n) { vueNom = n; Object.assign(cible, VUES[n]); cible.k = facteur(n); },
+    etiquettes(on) { api._etiq = on; etiq.forEach(s => { if (!s.userData.interieur) s.visible = on; }); },
+    lcd(l1, l2, l3) { const k = l1 + l2.u + l2.v + l3; if (k === etat.lcd || !ok) return; etat.lcd = k; dessineLCD(l1, l2, l3); },
+    tubes(cols) { if (!ok) return; O.tubes.forEach((t, i) => t.material.color.setRGB(...cols[i].map(v => v / 255)).convertSRGBToLinear()); },
+    cuveVers(lieu) { O.cuve.visible = true; etat.cuve = lieu === "comp" ? new T.Vector3(COMP.x, COMP.yFond, COMP.z) : lieu === "tubes" ? new T.Vector3(-15, 0, 10) : new T.Vector3(-4, 0, 16); },
+    pret: () => ok
+  };
+  return api;
+})();
+
+/* ===== TP1 ch. 2 : dosage par étalonnage de la bouillie bordelaise (spectrophotométrie, ions Cu²⁺) ===== */
+(function () {
+  const $ = s => document.querySelector(s), fr = (x, d) => x.toFixed(d).replace(".", ","), f3 = x => (+x.toPrecision(3)).toString().replace(".", ",");
+  const S3 = SCENE_SP, SP = SPECTRO;
+  const P = { sp: "cuso4" };
+  const LMIN = SP.LMIN, LMAX = SP.LMAX, M_CU = 249.7;
+  /* noms de la fiche : étalons S₄ (le moins concentré) à S₀ (solution mère), bouillie B */
+  const NOM = { F1: "S₄", F2: "S₃", F3: "S₂", F4: "S₁", F5: "S₀", S: "B", eau: "eau" }, nom = s => NOM[s] || s;
+  const M = {
+    lampe: 0, chauffe: 0, L: 600, mode: "A", sens: 1, blanc: null, blancL: null, cuve: null, dansFaisceau: false,
+    Aaff: 0, Avrai: 0, spectre: [], scan: -1, pts: [], S: null, seq: [], k: null, lLock: false, capot: 0
+  };
+  let etapeI = 0; const faits = new Set(); let acc = 1;
+  const E_ = () => SP.ESPECES[P.sp];
+  const conc = sol => sol === "eau" ? 0 : sol === "S" ? E_().inconnue : E_().gamme[+sol.slice(1) - 1];
+  const PREP = [1.009, .992, 1.005, .988, 1.006]; /* écarts de préparation des étalons (pipettes, fioles) : la concentration réelle diffère un peu de l'étiquette */
+  const concVraie = sol => sol && sol[0] === "F" ? conc(sol) * PREP[+sol.slice(1) - 1] : conc(sol);
+  const SOLS = ["F1", "F2", "F3", "F4", "F5"];
+
+  /* ---------- modèle de l'appareil ----------
+     A affichée = −log10(T + lumière parasite), avec T = 10^−(A_solution + A_cuve − A_référence).
+     A_cuve : plastique + réflexions ≈ 0,045 si les faces lisses sont dans le faisceau, ≈ 0,38 (diffusion) si ce sont les faces dépolies.
+     Pendant le préchauffage, la lampe dérive. */
+  function Acuve(sens) { return sens ? .38 : .045; }
+  function Aideal() {
+    if (!M.cuve || !M.dansFaisceau) return 0;
+    const sol = M.cuve;
+    return (sol === "eau" ? 0 : SP.A(P.sp, concVraie(sol), M.L, 1)) + Acuve(M.zeroFait || etapeI >= idx("blanc") ? M.sens : 0);
+  }
+  function lecture() {
+    const ref = M.blanc != null ? M.blanc : 0;
+    const derive = .03 * (1 - M.chauffe) * Math.sin(performance.now() / 900);
+    const T = Math.pow(10, -(Aideal() - ref + derive));
+    return -Math.log10(T + 3e-4);
+  }
+  function tick(dt0) {
+    const dt = dt0 * acc;
+    if (M.lampe && M.chauffe < 1) { M.chauffe = Math.min(1, M.chauffe + dt / 8); if (M.chauffe >= 1) majEtape(); }
+    /* séquenceur d'actions (déplacements de cuve, capot, attentes) */
+    if (M.seq.length) { const s = M.seq[0]; s.t -= dt; if (s.t <= 0) { M.seq.shift(); s.f && s.f(); } }
+    /* balayage du spectre */
+    if (M.scan >= 0) {
+      M.scan += dt * 60; const l = Math.min(LMAX, LMIN + M.scan);
+      while (M.spectre.length && M.spectre[M.spectre.length - 1].l < l - 1 || !M.spectre.length) { const ll = M.spectre.length ? M.spectre[M.spectre.length - 1].l + 2 : LMIN; if (ll > l) break; M.spectre.push({ l: ll, A: SP.A(P.sp, conc("F5"), ll, 1) + (Math.random() - .5) * .003 }); }
+      M.L = Math.round(l); S3.etat.lambda = M.L;
+      if (l >= LMAX) { M.scan = -1; M.L = 600; S3.etat.lambda = 600; majEtape(); }
+      dessineSpectre();
+    }
+    /* réponse de l'appareil (1er ordre, τ ≈ 0,4 s) et rafraîchissement de l'affichage */
+    const cible = lecture(); M.Avrai += (cible - M.Avrai) * Math.min(1, dt / .4);
+    M._t = (M._t || 0) + dt;
+    if (M._t > .3) {
+      M._t = 0; M.Aaff = M.Avrai + (M.lampe ? (Math.random() - .5) * .002 : 0);
+      majAffichage();
+    }
+    S3.etat.T = Math.pow(10, -Math.max(0, M.dansFaisceau ? Aideal() : 0));
+    S3.etat.cuveDansFaisceau = M.dansFaisceau;
+    schema2D();
+  }
+  function stable() { return Math.abs(lecture() - M.Avrai) < .002; }
+  function txtA(a) { return M.mode === "A" ? (a < -.0005 ? "-" : " ") + Math.abs(a).toFixed(3) : (100 * Math.pow(10, -a)).toFixed(1).padStart(5, " "); }
+  function majAffichage() {
+    const l = String(M.L).padStart(3, " ");
+    let l3 = !M.lampe ? "Appareil éteint" : M.chauffe < 1 ? "Préchauffage de la lampe… " + Math.round(M.chauffe * 100) + " %" : M.scan >= 0 ? "SCAN 400 → 900 nm" : M.capot > .5 ? "Capot ouvert !" : !M.cuve ? "Compartiment vide" : M.blanc == null ? "Blanc non fait" : "Mesure";
+    const v = !M.lampe ? "    " : M.capot > .5 || M.scan >= 0 ? " ----" : txtA(M.Aaff);
+    S3.pret() && S3.lcd(M.lampe ? l : "   ", { u: M.mode === "A" ? "A" : "%T", v }, l3);
+    $("#tL").textContent = M.lampe ? M.L : "—";
+    const lisible = M.lampe && M.capot < .5 && M.scan < 0;
+    $("#tA").textContent = lisible ? fr(M.Aaff, 3) : "—";
+    $("#tT").textContent = lisible ? fr(Math.pow(10, -M.Aaff), 3) + " (" + fr(100 * Math.pow(10, -M.Aaff), 1) + " %)" : "—";
+    $("#tS").textContent = !M.cuve ? "vide" : M.cuve === "eau" ? "eau distillée (blanc)" : M.cuve === "S" ? "B · bouillie bordelaise" : nom(M.cuve) + " · " + fr(conc(M.cuve), 3) + " " + E_().unite;
+    dessineLoupe(); dessineRoue();
+  }
+
+  /* ---------- déplacements de la cuve ---------- */
+  function seq(...a) { M.seq.push(...a.map(([t, f]) => ({ t, f }))); }
+  function placer(sol, apres) {
+    const coul = sol === "eau" ? [236, 242, 250] : SP.couleur(P.sp, conc(sol), 1);
+    M.dansFaisceau = false;
+    seq([0, () => { S3.cuveVers("tubes"); S3.etat.capotCible = 1; M.capot = 1; }],
+      [1.4, () => { M.cuve = sol; S3.etat.cuveCoul = coul; }],
+      [.6, () => { S3.cuveVers("comp"); }],
+      [2.2, () => { S3.etat.capotCible = 0; }],
+      [.6, () => { M.capot = 0; M.dansFaisceau = true; }],
+      [1.2, () => { apres && apres(); }]);
+  }
+  function attendreStable(f) { const g = () => stable() ? f() : seq([.3, g]); seq([.3, g]); }
+
+  /* ---------- étapes ---------- */
+  const ETAPES = [
+    {
+      id: "masse", court: "Solution mère", t: "Calculer la masse de sulfate de cuivre à peser",
+      d: "On prépare V<sub>0</sub> = 100,0 mL de solution mère S<sub>0</sub> à C<sub>0</sub> = 0,10 mol·L⁻¹, avec des cristaux de sulfate de cuivre pentahydraté CuSO<sub>4</sub>,5H<sub>2</sub>O (M = 249,7 g·mol⁻¹).",
+      c: "Calculez la masse m<sub>0</sub> de cristaux à peser pour la solution mère S<sub>0</sub>.",
+      saisie: `<label>m<sub>0</sub> (en g)<input id="eM0" inputmode="decimal" autocomplete="off" placeholder="ex. 1,23"></label><small>Données : C<sub>0</sub> = 0,10 mol·L⁻¹ ; V<sub>0</sub> = 100,0 mL ; M = 249,7 g·mol⁻¹.</small>`,
+      a: "Vérifier ma réponse", vue: "ensemble",
+      fait() {
+        const v = num($("#eM0").value);
+        if (!isFinite(v)) { alerte("Écrivez la masse en grammes, par exemple 1,23."); return false; }
+        if (Math.abs(v - 2497) < 30) { alerte("Convertissez d'abord V<sub>0</sub> en litres : 100,0 mL = 0,1000 L."); return false; }
+        if (Math.abs(v - 2.497) > .03) { alerte(++nErr >= 2 ? "Aide : m<sub>0</sub> = C<sub>0</sub> × V<sub>0</sub> × M = 0,10 × 0,1000 × 249,7 = 2,5 g." : "Pas encore. Utilisez n<sub>0</sub> = C<sub>0</sub> × V<sub>0</sub>, puis m<sub>0</sub> = n<sub>0</sub> × M."); return false; }
+        nErr = 0; interpretation("Juste : m<sub>0</sub> = 0,10 × 0,1000 × 249,7 = <b>2,5 g</b> (on pèse 2,50 g sur un verre de montre, puis on dissout dans une fiole jaugée de 100,0 mL)."); return true;
+      }
+    },
+    {
+      id: "dilution", court: "Étalons", t: "Préparer les solutions étalons par dilution",
+      d: "Les étalons S<sub>1</sub> à S<sub>4</sub> se préparent à partir de S<sub>0</sub>. La quantité de soluté se conserve : C<sub>0</sub> × V<sub>mère</sub> = C<sub>fille</sub> × V<sub>fille</sub>.",
+      c: "Calculez le volume de S<sub>0</sub> à prélever pour S<sub>1</sub> et pour S<sub>4</sub>.",
+      saisie: `<table class="mesures dil"><tr><th></th><th>S<sub>1</sub></th><th>S<sub>2</sub></th><th>S<sub>3</sub></th><th>S<sub>4</sub></th></tr><tr><th>C (mol·L⁻¹)</th><td>5,0 × 10⁻²</td><td>2,0 × 10⁻²</td><td>1,0 × 10⁻²</td><td>5,0 × 10⁻³</td></tr><tr><th>Fiole (mL)</th><td>50,0</td><td>50,0</td><td>50,0</td><td>100,0</td></tr><tr><th>V(S<sub>0</sub>) (mL)</th><td><input id="eV1" inputmode="decimal" autocomplete="off" aria-label="Volume de S0 pour S1"></td><td>10,0</td><td>5,0</td><td><input id="eV4" inputmode="decimal" autocomplete="off" aria-label="Volume de S0 pour S4"></td></tr></table>`,
+      a: "Vérifier mes volumes", vue: "portoir",
+      fait() {
+        const v1 = num($("#eV1").value), v4 = num($("#eV4").value), e = [];
+        if (!(Math.abs(v1 - 25) < .2)) e.push("S<sub>1</sub> : F = C<sub>0</sub> / C<sub>1</sub> = 0,10 / 0,050 = 2, donc V(S<sub>0</sub>) = 50,0 / 2.");
+        if (!(Math.abs(v4 - 5) < .1)) e.push("S<sub>4</sub> : F = 0,10 / 0,0050 = 20, donc V(S<sub>0</sub>) = 100,0 / 20.");
+        if (e.length) { alerte(++nErr >= 2 ? e.join(" ") : "Pas encore. Calculez le facteur de dilution F = C<sub>0</sub> / C<sub>fille</sub>, puis V(S<sub>0</sub>) = V<sub>fille</sub> / F."); return false; }
+        nErr = 0; interpretation("Juste : <b>25,0 mL</b> pour S<sub>1</sub> (F = 2) et <b>5,0 mL</b> pour S<sub>4</sub> (F = 20), prélevés à la pipette jaugée. Les cinq étalons sont prêts dans le portoir."); return true;
+      }
+    },
+    {
+      id: "allumer", court: "Allumer", t: "Allumer le spectrophotomètre et le laisser chauffer",
+      d: "La lampe doit atteindre sa température de fonctionnement : on allume l'appareil une quinzaine de minutes avant les mesures (ici accéléré).",
+      a: "Allumer l'appareil", vue: "interieur",
+      fait() { M.lampe = 1; S3.etat.lampe = 1; },
+      attendre: () => M.chauffe >= 1
+    },
+    {
+      id: "spectre", court: "Spectre", t: "Tracer le spectre d'absorption des ions Cu²⁺",
+      d: "L'appareil balaie les longueurs d'onde de 400 à 900 nm en mesurant l'absorbance de la solution mère S<sub>0</sub>.",
+      a: "Placer S₀ et lancer le balayage (SCAN)", vue: "compartiment",
+      fait() {
+        M.spectre = []; M.blanc = 0; S3.etat.cuveSens = 0;
+        placer("F5", () => { M.scan = 0; S3.vue("interieur"); S3.etat.intCible = 1; });
+      },
+      attendre: () => M.spectre.length > 200 && M.scan < 0
+    },
+    {
+      id: "couleur", court: "Couleur", t: "Justifier la couleur de la solution",
+      d: "Sur le spectre, les ions Cu²⁺ absorbent surtout au-delà de 600 nm, c'est-à-dire le rouge. Sur le cercle chromatique, la couleur perçue est la couleur complémentaire de la couleur absorbée.",
+      c: "Lisez le spectre : quelle couleur est absorbée, et quelle couleur voit-on ?",
+      saisie: `<label>Couleur absorbée<select id="eAbs"><option value="">choisir…</option><option>bleu</option><option>vert</option><option>rouge</option></select></label><label>Couleur perçue<select id="ePer"><option value="">choisir…</option><option>cyan (bleu clair)</option><option>magenta</option><option>jaune</option></select></label>`,
+      a: "Vérifier", vue: "appareil",
+      fait() {
+        const a = $("#eAbs").value, p = $("#ePer").value;
+        if (a !== "rouge") { alerte("Regardez où le spectre est haut : au-delà de 600 nm, c'est le rouge (et le proche infrarouge)."); return false; }
+        if (p !== "cyan (bleu clair)") { alerte("Sur le cercle chromatique, la couleur perçue est diamétralement opposée à la couleur absorbée."); return false; }
+        interpretation("Juste : la solution absorbe le <b>rouge</b>, on la voit <b>cyan (bleu clair)</b>, la couleur complémentaire."); return true;
+      }
+    },
+    {
+      id: "lambda", court: "Choisir λ", t: "Choisir la longueur d'onde de travail",
+      d: "On règle λ au maximum d'absorption λ<sub>max</sub> : c'est là que la mesure est la plus sensible, et elle varie peu si λ est un peu décalée.",
+      c: "Placez λ au sommet du spectre (λ<sub>max</sub>) avec le curseur, puis validez.",
+      a: "Valider cette longueur d'onde", vue: "appareil", lambda: true,
+      fait() {
+        const lm = SP.lmax(P.sp), ec = Math.abs(M.L - lm);
+        if (ec > 6) {
+          const r = SP.eps(P.sp, M.L) / SP.eps(P.sp, lm);
+          alerte(`À ${M.L} nm, l'absorbance ne vaut que ${fr(100 * r, 0)} % de sa valeur maximale. Rapprochez-vous du sommet du spectre (vers 800 nm).`);
+          return false;
+        }
+        M.lLock = true; majLambda(); return true;
+      }
+    },
+    {
+      id: "blanc", court: "Blanc", t: "Faire le blanc avec le solvant",
+      d: "On remplit la cuve d'<b>eau distillée</b> (le solvant), on ferme le capot et on fait le zéro : l'absorbance de la cuve et du solvant sera retranchée des mesures suivantes.",
+      c: "Tournez la cuve pour que le faisceau traverse les <b>faces lisses</b>, puis faites le zéro avec l'eau distillée.",
+      a: "Placer la cuve d'eau et faire le zéro", vue: "compartiment", cuve: true,
+      fait() {
+        if (M.sens) { alerte("Le faisceau traverserait les <b>faces dépolies</b> : la lumière serait diffusée et la mesure faussée. Tournez la cuve d'un quart de tour."); return false; }
+        $("#tourner").disabled = true; M.blanc = null;
+        placer("eau", () => attendreStable(() => { M.blanc = Acuve(M.sens); M.blancL = M.L; M.Avrai = lecture(); M.zero = true; interpretation("Le zéro est fait : A = 0,000 avec l'eau distillée. L'absorbance mesurée ensuite sera due <b>aux seuls ions Cu²⁺</b>."); majEtape(); }));
+      },
+      attendre: () => !!M.zero
+    },
+    {
+      id: "etalons", court: "Étalons", t: "Mesurer l'absorbance des solutions étalons",
+      d: "Mesurez l'absorbance de chaque étalon, à la même longueur d'onde et dans la même cuve.",
+      c: "Mesurez A pour S<sub>4</sub> à S<sub>0</sub>, du moins concentré au plus concentré.",
+      vue: "portoir", etal: true,
+      valide: () => M.pts.length >= 5
+    },
+    {
+      id: "droite", court: "Droite", t: "Tracer la droite d'étalonnage",
+      d: "Si les points sont alignés sur une droite qui passe par l'origine, l'absorbance est proportionnelle à la concentration : c'est la loi de Beer-Lambert, A = k × C.",
+      c: "Modélisez les points par une droite passant par l'origine : A = k × C.",
+      a: "Modéliser : A = k × C", vue: "appareil",
+      fait() { return modeliser(); }
+    },
+    {
+      id: "inconnue", court: "Bouillie B", t: "Mesurer la bouillie bordelaise B",
+      d: "On mesure A<sub>B</sub> dans les mêmes conditions (même λ, même cuve, même blanc), puis on lit sa concentration sur la droite : C<sub>B</sub> = A<sub>B</sub> / k.",
+      c: "Mesurez l'absorbance A<sub>B</sub> de la bouillie bordelaise.",
+      a: "Mesurer la bouillie B", vue: "compartiment",
+      fait() { placer("S", () => attendreStable(() => { M.S = { C: E_().inconnue, A: M.Aaff }; ajouteLigne("S", null, M.Aaff); dessineEtal(); majEtape(); interpretation(`A<sub>B</sub> = ${fr(M.Aaff, 3)} : c'est bien dans le domaine des étalons (entre S<sub>4</sub> et S<sub>0</sub>), on peut lire C<sub>B</sub> sur la droite sans extrapoler.`); })); },
+      attendre: () => !!M.S
+    },
+    {
+      id: "calcul", court: "Calculer", t: "Calculer les concentrations de la bouillie",
+      d: "",
+      c: "Calculez C<sub>B</sub> = A<sub>B</sub> / k, puis la concentration en masse C<sub>m</sub> = C<sub>B</sub> × M.",
+      saisie: () => `<small>A<sub>B</sub> = <b>${M.S ? fr(M.S.A, 3) : "?"}</b> ; k = <b>${M.k ? f3(M.k) : "?"}</b> L·mol⁻¹ ; M = 249,7 g·mol⁻¹.</small><label>C<sub>B</sub> (mol·L⁻¹)<input id="eCB" inputmode="decimal" autocomplete="off" placeholder="ex. 0,0123"></label><label>C<sub>m</sub> (g·L⁻¹)<input id="eCm" inputmode="decimal" autocomplete="off" placeholder="ex. 3,1"></label><label>Utilisable en agriculture biologique (10 à 20 g·L⁻¹) ?<select id="eBio"><option value="">choisir…</option><option value="oui">oui</option><option value="non">non</option></select></label>`,
+      a: "Vérifier et conclure", vue: "ensemble",
+      fait() {
+        const Cs = M.S.A / M.k, Cm = Cs * M_CU, v = num($("#eCB").value), m = num($("#eCm").value), bio = $("#eBio").value;
+        if (!(Math.abs(v - Cs) / Cs < .04)) { alerte(++nErr >= 2 ? `Aide : C<sub>B</sub> = ${fr(M.S.A, 3)} / ${f3(M.k)} = ${f3(Cs)} mol·L⁻¹.` : "Revoyez C<sub>B</sub> = A<sub>B</sub> / k (C en mol·L⁻¹)."); return false; }
+        if (!(Math.abs(m - Cm) / Cm < .05)) { alerte("Revoyez C<sub>m</sub> = C<sub>B</sub> × M, avec M = 249,7 g·mol⁻¹."); return false; }
+        if (bio !== (Cm >= 10 && Cm <= 20 ? "oui" : "non")) { alerte("Comparez C<sub>m</sub> à la norme : entre 10 et 20 g de sulfate de cuivre par litre."); return false; }
+        nErr = 0; M.res = { Cs, Cm }; interpretation(`Juste : C<sub>B</sub> ≈ ${f3(Cs)} mol·L⁻¹ et C<sub>m</sub> ≈ ${fr(Cm, 1)} g·L⁻¹.`); return true;
+      }
+    },
+    { id: "fin", court: "Conclure", t: "Conclusion", d: "", fin: true, vue: "ensemble", fait() { } }
+  ];
+  let nErr = 0; const num = t => parseFloat(String(t || "").replace(/\s/g, "").replace(",", ".").replace(/×10\^?/, "e"));
+  const CONSIGNES = {
+    allumer: "Allumez l'appareil et attendez que la lampe soit stable.",
+    spectre: "Lancez le balayage du spectre avec la solution mère S<sub>0</sub>."
+  };
+  ETAPES.forEach(E => { if (CONSIGNES[E.id]) E.c = CONSIGNES[E.id]; });
+  function idx(id) { return ETAPES.findIndex(E => E.id === id); }
+  document.querySelector(".frise").innerHTML = ETAPES.map((E, i) => `<span>${i + 1} · ${E.court}</span>`).join("");
+  function alerte(t) { const a = $("#alerte"); a.innerHTML = "⚠️ " + t; a.classList.add("vu"); }
+  function interpretation(h) { $("#interp").innerHTML = h; }
+  function rendEtape() {
+    const E = ETAPES[etapeI];
+    $("#etapeN").textContent = "Étape " + (etapeI + 1) + " / " + ETAPES.length;
+    $("#num").textContent = etapeI + 1; $("#etTitre").textContent = E.t;
+    $("#etDesc").innerHTML = E.fin ? conclusion() : (E.c || E.d); document.body.dataset.etape = E.id;
+    $("#regl").style.display = "none";
+    const zs = $("#zSaisie"); zs.style.display = E.saisie ? "" : "none"; if (E.saisie) zs.innerHTML = typeof E.saisie === "function" ? E.saisie() : E.saisie;
+    $("#zLambda").style.display = E.lambda || E.etal ? "" : "none";
+    $("#zCuve").style.display = E.cuve ? "" : "none";
+    $("#zEtal").style.display = E.etal ? "" : "none";
+    const b = $("#action"); b.style.display = E.a ? "" : "none"; b.textContent = E.a || ""; b.disabled = faits.has(etapeI);
+    $("#alerte").classList.remove("vu"); if (!faits.has(etapeI)) interpretation("");
+    document.querySelectorAll(".frise span").forEach((s, i) => s.className = i < etapeI ? "fait" : i === etapeI ? "ici" : "");
+    if (E.vue) choisirVue(E.vue);
+    if (E.cuve && !M.zero) { S3.etat.cuveSens = M.sens; dessineCuve(); }
+    if (E.fin) { faits.add(etapeI); }
+    majLambda(); majEtape();
+  }
+  function majEtape() {
+    const E = ETAPES[etapeI]; let fini = faits.has(etapeI);
+    if (E.attendre && fini && !E.attendre()) fini = false;
+    if (E.valide) fini = E.valide();
+    $("#ok").classList.toggle("vu", !!fini && !E.fin);
+    $("#suiv").disabled = !fini || etapeI === ETAPES.length - 1;
+    $("#prec").disabled = etapeI === 0 || M.seq.length > 0;
+  }
+  setInterval(majEtape, 400);
+  $("#action").onclick = () => { const E = ETAPES[etapeI]; if (M.seq.length) return; $("#alerte").classList.remove("vu"); const r = E.fait ? E.fait() : true; if (r !== false) { faits.add(etapeI); $("#action").disabled = true; } majEtape(); };
+  $("#suiv").onclick = () => { if (etapeI < ETAPES.length - 1) { etapeI++; rendEtape(); } };
+  $("#prec").onclick = () => { if (etapeI > 0 && !M.seq.length) { etapeI--; rendEtape(); } };
+
+  /* ---------- réglage de λ ---------- */
+  function majLambda() {
+    const verrou = M.lLock || M.scan >= 0 || !M.lampe;
+    ["#rL", "#lMoins", "#lPlus"].forEach(s => $(s).disabled = verrou);
+    $("#rL").value = M.L; $("#oL").textContent = M.L + " nm";
+    $("#lNote").innerHTML = M.lLock ? "λ est verrouillée à " + M.L + " nm : la changer obligerait à refaire le blanc." : M.L > 780 ? "Au-delà de 780 nm, c'est le proche infrarouge : invisible à l'œil, mais le détecteur le mesure." : "Le curseur déplace le réseau dans l'appareil : regardez la couleur du faisceau dans « Intérieur ».";
+  }
+  function setL(l) { if (M.lLock || M.scan >= 0) return; M.L = Math.max(LMIN, Math.min(LMAX, Math.round(l))); S3.etat.lambda = M.L; majLambda(); dessineSpectre(); majAffichage(); }
+  $("#rL").oninput = e => setL(+e.target.value);
+  $("#lMoins").onclick = () => setL(M.L - 1); $("#lPlus").onclick = () => setL(M.L + 1);
+  $("#bMode").onclick = () => { M.mode = M.mode === "A" ? "T" : "A"; majAffichage(); };
+  $("#tourner").onclick = () => { M.sens = 1 - M.sens; S3.etat.cuveSens = M.sens; dessineCuve(); };
+
+  /* ---------- étalons ---------- */
+  function boutonsSol() {
+    $("#boutonsSol").innerHTML = SOLS.map(s => `<button class="btn petit sec" data-s="${s}">Mesurer ${nom(s)}</button>`).join("");
+    document.querySelectorAll("#boutonsSol button").forEach(b => b.onclick = () => {
+      if (M.seq.length) return; const s = b.dataset.s;
+      const dejaPlus = M.pts.some(p => p.C > conc(s));
+      placer(s, () => attendreStable(() => {
+        M.pts = M.pts.filter(p => p.sol !== s); M.pts.push({ sol: s, C: conc(s), A: M.Aaff }); M.pts.sort((a, b) => a.C - b.C);
+        b.classList.add("fait"); ajouteLigne(s, conc(s), M.Aaff); dessineEtal(); majEtape();
+        interpretation(`<b>${nom(s)}</b> : C = ${fr(conc(s), 3)} ${E_().unite}, A = ${fr(M.Aaff, 3)}.` + (dejaPlus ? " <i>Vous êtes passé d'une solution plus concentrée à une moins concentrée : pensez à bien rincer la cuve avec la nouvelle solution.</i>" : "") + (M.pts.length > 1 ? " Les points s'alignent sur une droite qui passe par l'origine." : ""));
+      }));
+    });
+  }
+  function ajouteLigne(s, C, A) {
+    const tb = $("#tab tbody"); let tr = tb.querySelector(`tr[data-s="${s}"]`);
+    if (!tr) { tr = document.createElement("tr"); tr.dataset.s = s; if (s === "S") tr.className = "s"; tb.appendChild(tr); }
+    tr.innerHTML = `<td>${nom(s)}</td><td>${C == null ? "?" : fr(C, C < 1 ? 3 : 2)}</td><td>${fr(A, 3)}</td>`;
+    [...tb.querySelectorAll("tr")].sort((a, b) => (a.dataset.s === "S") - (b.dataset.s === "S") || conc(a.dataset.s) - conc(b.dataset.s)).forEach(r => tb.appendChild(r));
+  }
+  function modeliser() {
+    if (M.pts.length < 3) { alerte("Il faut au moins trois étalons."); return false; }
+    let sxy = 0, sxx = 0; M.pts.forEach(p => { sxy += p.C * p.A; sxx += p.C * p.C; }); M.k = sxy / sxx;
+    const moy = M.pts.reduce((s, p) => s + p.A, 0) / M.pts.length; let ssr = 0, sst = 0; M.pts.forEach(p => { ssr += (p.A - M.k * p.C) ** 2; sst += (p.A - moy) ** 2; }); M.r2 = 1 - ssr / sst;
+    dessineEtal();
+    interpretation(`Modèle : <b>A = ${f3(M.k)} × C</b> (C en mol·L⁻¹), R² = ${fr(M.r2, 4)}. Tous les points sont sur la droite : la loi de Beer-Lambert est vérifiée sur tout le domaine des étalons (A jusqu'à 1,3 environ).`);
+    return true;
+  }
+  function conclusion() {
+    if (!M.S || !M.k) return "Terminez les mesures pour obtenir la conclusion.";
+    const Cs = M.S.A / M.k, Cm = Cs * M_CU, bio = Cm >= 10 && Cm <= 20;
+    return `<ul style="margin:0;padding-left:18px">
+      <li>À λ = ${M.L} nm : A<sub>B</sub> = ${fr(M.S.A, 3)}, donc <b>C<sub>B</sub> = A<sub>B</sub> / k = ${fr(M.S.A, 3)} / ${f3(M.k)} ≈ ${f3(Cs)} mol·L⁻¹</b>.</li>
+      <li>Concentration en masse : C<sub>m</sub> = C<sub>B</sub> × M = ${f3(Cs)} × 249,7 ≈ <b>${fr(Cm, 1)} g·L⁻¹</b>.</li>
+      <li><b>Réponse à la problématique :</b> ${bio ? "C<sub>m</sub> est entre 10 et 20 g·L⁻¹ : cette bouillie bordelaise <b>peut</b> être utilisée en agriculture biologique." : "C<sub>m</sub> est en dessous de 10 g·L⁻¹ : cette bouillie bordelaise <b>ne respecte pas</b> la norme de l'agriculture biologique (10 à 20 g·L⁻¹)."}</li>
+      <li>La loi de Beer-Lambert n'est valable que pour des solutions <b>diluées</b> (en pratique A &lt; 1,5 environ) et A<sub>B</sub> doit rester <b>dans le domaine des étalons</b>.</li></ul>`;
+  }
+  /* ---------- graphes ---------- */
+  function prepa(cv) { const r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.max(10, r.width * d); cv.height = Math.max(10, r.height * d); const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); return { c, w: r.width, h: r.height }; }
+  function axes(c, w, h, g, xmin, xmax, ymin, ymax, tx, ty, px, py, fx, fy) {
+    const X = x => g.l + (x - xmin) / (xmax - xmin) * (w - g.l - g.r), Y = y => h - g.b - (y - ymin) / (ymax - ymin) * (h - g.t - g.b);
+    c.strokeStyle = "#E1BEE7"; c.lineWidth = 1; c.fillStyle = "#5b5368"; c.font = "12px Atkinson Hyperlegible, Arial";
+    for (let x = Math.ceil(xmin / px - 1e-9) * px; x <= xmax + 1e-9; x += px) { c.beginPath(); c.moveTo(X(x), Y(ymin)); c.lineTo(X(x), Y(ymax)); c.stroke(); c.textAlign = "center"; c.fillText(fx(x), X(x), h - g.b + 15); }
+    for (let y = Math.ceil(ymin / py - 1e-9) * py; y <= ymax + 1e-9; y += py) { c.beginPath(); c.moveTo(X(xmin), Y(y)); c.lineTo(X(xmax), Y(y)); c.stroke(); c.textAlign = "right"; c.fillText(fy(y), g.l - 5, Y(y) + 4); }
+    c.fillStyle = "#4A148C"; c.font = "700 12.5px Atkinson Hyperlegible, Arial"; c.textAlign = "right"; c.fillText(tx, w - g.r, h - 4); c.textAlign = "left"; c.fillText(ty, g.l + 4, g.t - 4);
+    return { X, Y };
+  }
+  const nice = v => { const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; };
+  function dessineSpectre() {
+    const { c, w, h } = prepa($("#gSpectre")); c.clearRect(0, 0, w, h);
+    const g = { l: 48, r: 14, t: 18, b: 34 }, amax = nice(SP.A(P.sp, conc("F5"), SP.lmax(P.sp), 1) * 1.15);
+    for (let l = LMIN; l < LMAX; l += 2) { const rgb = l > 780 ? [70, 40, 40] : SP.rgbLambda(l); c.fillStyle = `rgb(${rgb})`; const x = g.l + (l - LMIN) / (LMAX - LMIN) * (w - g.l - g.r); c.fillRect(x, h - g.b + 1, (w - g.l - g.r) / ((LMAX - LMIN) / 2) + .6, 5); }
+    const py = nice(amax / 5), { X, Y } = axes(c, w, h, g, LMIN, LMAX, 0, amax, "λ (nm)", "A", 100, py, x => x.toFixed(0), y => fr(y, py < .1 ? 2 : 1));
+    if (M.spectre.length) {
+      c.beginPath(); M.spectre.forEach((p, i) => i ? c.lineTo(X(p.l), Y(p.A)) : c.moveTo(X(p.l), Y(p.A))); c.lineTo(X(M.spectre[M.spectre.length - 1].l), Y(0)); c.lineTo(X(LMIN), Y(0)); c.closePath(); c.fillStyle = "rgba(74,20,140,.08)"; c.fill();
+      c.beginPath(); M.spectre.forEach((p, i) => i ? c.lineTo(X(p.l), Y(p.A)) : c.moveTo(X(p.l), Y(p.A))); c.strokeStyle = "#4A148C"; c.lineWidth = 2.4; c.stroke();
+      if (M.scan < 0 && M.spectre.length > 200) { const lm = SP.lmax(P.sp), am = SP.A(P.sp, conc("F5"), lm, 1); c.setLineDash([4, 4]); c.strokeStyle = "#7E57C2"; c.beginPath(); c.moveTo(X(lm), Y(0)); c.lineTo(X(lm), Y(am)); c.stroke(); c.setLineDash([]); c.fillStyle = "#4A148C"; c.font = "700 12.5px Atkinson Hyperlegible, Arial"; c.textAlign = "center"; c.fillText("λmax ≈ " + lm + " nm", Math.min(w - 50, Math.max(g.l + 40, X(lm))), Y(am) - 8); }
+    }
+    if (M.lampe) { c.strokeStyle = "#C2185B"; c.lineWidth = 2; c.beginPath(); c.moveTo(X(M.L), Y(0)); c.lineTo(X(M.L), Y(amax)); c.stroke(); }
+  }
+  function dessineEtal() {
+    const { c, w, h } = prepa($("#gEtal")); c.clearRect(0, 0, w, h); const e = E_();
+    const g = { l: 48, r: 14, t: 18, b: 34 }, cmax = e.gamme[4] * 1.1, amax = nice(Math.max(.1, SP.A(P.sp, e.gamme[4], SP.lmax(P.sp), 1) * 1.12, ...M.pts.map(p => p.A * 1.1)));
+    const px = nice(cmax / 6), py = nice(amax / 5), { X, Y } = axes(c, w, h, g, 0, cmax, 0, amax, "C (" + e.unite + ")", "A", px, py, x => fr(x, px < .1 ? 2 : px < 1 ? 1 : 0), y => fr(y, py < .1 ? 2 : 1));
+    if (M.k) { c.strokeStyle = "#4A148C"; c.lineWidth = 1.6; c.beginPath(); c.moveTo(X(0), Y(0)); const xe = Math.min(cmax, amax / M.k); c.lineTo(X(xe), Y(M.k * xe)); c.stroke(); c.fillStyle = "#4A148C"; c.font = "700 12.5px Atkinson Hyperlegible, Arial"; c.textAlign = "left"; c.fillText("A = " + f3(M.k) + " × C", g.l + 10, g.t + 14); }
+    M.pts.forEach(p => { c.fillStyle = "#4A148C"; c.beginPath(); c.arc(X(p.C), Y(p.A), 4.5, 0, 7); c.fill(); });
+    if (M.S && M.k) {
+      const Cs = M.S.A / M.k; c.setLineDash([5, 4]); c.strokeStyle = "#C2185B"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(X(0), Y(M.S.A)); c.lineTo(X(Cs), Y(M.S.A)); c.lineTo(X(Cs), Y(0)); c.stroke(); c.setLineDash([]);
+      c.fillStyle = "#C2185B"; c.beginPath(); c.arc(X(Cs), Y(M.S.A), 5, 0, 7); c.fill(); c.font = "700 12.5px Atkinson Hyperlegible, Arial"; c.textAlign = "left"; c.fillText("B : C = " + fr(Cs, 4), X(Cs) + 6, Y(M.S.A) + 16);
+    } else if (M.S) { c.strokeStyle = "#C2185B"; c.setLineDash([5, 4]); c.beginPath(); c.moveTo(X(0), Y(M.S.A)); c.lineTo(X(cmax), Y(M.S.A)); c.stroke(); c.setLineDash([]); }
+  }
+  /* cercle chromatique : 6 secteurs, couleur absorbée et couleur perçue (complémentaire, diamétralement opposée) */
+  const ROUE = [["rouge", "#E53935", 610, 901], ["jaune", "#FDD835", 570, 610], ["vert", "#43A047", 500, 570], ["cyan", "#00ACC1", 490, 500], ["bleu", "#1E63E5", 420, 490], ["magenta", "#C2189B", 400, 420]];
+  function secteur(l) { return ROUE.findIndex(r => l >= r[2] && l < r[3]); }
+  function dessineRoue() {
+    const { c, w, h } = prepa($("#gRoue")); c.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2 + 2, R = Math.min(w, h) / 2 - 18, lm = SP.lmax(P.sp), ia = secteur(M.lampe ? M.L : lm), ip = (ia + 3) % 6;
+    ROUE.forEach(([n, col], i) => {
+      const a0 = -Math.PI / 2 + i * Math.PI / 3 - Math.PI / 6, a1 = a0 + Math.PI / 3;
+      c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, R, a0, a1); c.closePath(); c.fillStyle = col; c.globalAlpha = i === ia || i === ip ? 1 : .35; c.fill(); c.globalAlpha = 1;
+      if (i === ia || i === ip) { c.lineWidth = 3; c.strokeStyle = i === ia ? "#1F1630" : "#fff"; c.stroke(); }
+      const am = (a0 + a1) / 2; c.fillStyle = "#1F1630"; c.font = (i === ia || i === ip ? "700 " : "") + "11.5px Atkinson Hyperlegible, Arial"; c.textAlign = "center"; c.fillText(n, cx + Math.cos(am) * (R * .66), cy + Math.sin(am) * (R * .66) + 4);
+    });
+    const a = i => -Math.PI / 2 + i * Math.PI / 3; c.strokeStyle = "#1F1630"; c.lineWidth = 2; c.beginPath(); c.moveTo(cx + Math.cos(a(ia)) * R * .35, cy + Math.sin(a(ia)) * R * .35); c.lineTo(cx + Math.cos(a(ip)) * R * .35, cy + Math.sin(a(ip)) * R * .35); c.stroke();
+    $("#legRoue").innerHTML = `${M.lampe ? "λ = " + M.L + " nm" : "λmax"} absorbée : <b>${ROUE[ia][0]}</b> → couleur perçue : <b>${ROUE[ip][0]}</b>`;
+  }
+  /* loupe : faisceau qui traverse la cuve, molécules colorées, intensité décroissante couche par couche */
+  function dessineLoupe() {
+    const { c, w, h } = prepa($("#gLoupe")); c.clearRect(0, 0, w, h);
+    const x0 = w * .22, x1 = w * .78, y0 = 16, y1 = h - 26, rgb = SP.rgbLambda(M.L);
+    const sol = M.cuve && M.dansFaisceau ? M.cuve : null, C = sol && sol !== "eau" ? conc(sol) : 0, A = sol ? Math.max(0, Aideal() - (M.blanc || 0)) : 0;
+    const liq = sol ? (sol === "eau" ? [236, 242, 250] : SP.couleur(P.sp, C, 1)) : [255, 255, 255];
+    c.fillStyle = `rgb(${liq})`; c.fillRect(x0, y0, x1 - x0, y1 - y0); c.strokeStyle = "#9E9E9E"; c.lineWidth = 2; c.strokeRect(x0, y0, x1 - x0, y1 - y0);
+    const n = Math.round(C / E_().gamme[4] * 60); let s = 7; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    for (let i = 0; i < n; i++) { c.fillStyle = "rgba(40,20,80,.55)"; c.beginPath(); c.arc(x0 + 6 + rnd() * (x1 - x0 - 12), y0 + 6 + rnd() * (y1 - y0 - 12), 2.6, 0, 7); c.fill(); }
+    if (M.lampe) {
+      const N = 24; for (let i = 0; i < N; i++) {
+        const xa = i === 0 ? 0 : x0 + (x1 - x0) * (i - 1) / (N - 2), xb = i === N - 1 ? w : x0 + (x1 - x0) * i / (N - 2);
+        const fr0 = i === 0 ? 0 : Math.min(1, (i - 1) / (N - 2)); const I = Math.pow(10, -A * fr0);
+        c.fillStyle = `rgba(${rgb},${.15 + .75 * I})`; const hb = 6 + 10 * I; c.fillRect(xa, (y0 + y1) / 2 - hb / 2, xb - xa + .5, hb);
+      }
+      c.fillStyle = "#1F1630"; c.font = "700 12px Atkinson Hyperlegible, Arial"; c.textAlign = "left"; c.fillText("I₀", 4, (y0 + y1) / 2 - 12); c.textAlign = "right"; c.fillText("I = " + fr(100 * Math.pow(10, -A), 0) + " % de I₀", w - 4, (y0 + y1) / 2 - 14);
+    }
+    c.fillStyle = "#5b5368"; c.font = "11.5px Atkinson Hyperlegible, Arial"; c.textAlign = "center"; c.fillText("ℓ = 1,00 cm", (x0 + x1) / 2, h - 8);
+  }
+  function dessineCuve() {
+    const s = $("#svgCuve"), lis = M.sens === 0, rot = M.sens ? 90 : 0, rgb = SP.rgbLambda(M.L);
+    s.innerHTML = `<defs><pattern id="stri" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="4" fill="#eceaf2"/><path d="M0 0H4" stroke="#bdb6cc" stroke-width="1.2"/></pattern></defs>
+      <line x1="6" y1="60" x2="214" y2="60" stroke="rgb(${rgb})" stroke-width="7" opacity=".85"/><polygon points="206,52 218,60 206,68" fill="rgb(${rgb})"/>
+      <g transform="rotate(${rot} 110 60)"><rect x="80" y="30" width="60" height="60" fill="#e8f2ff" opacity=".9"/>
+      <rect x="77" y="30" width="6" height="60" fill="#d8ecff" stroke="#7aa7d9"/><rect x="137" y="30" width="6" height="60" fill="#d8ecff" stroke="#7aa7d9"/>
+      <rect x="80" y="27" width="60" height="6" fill="url(#stri)" stroke="#9a92ac"/><rect x="80" y="87" width="60" height="6" fill="url(#stri)" stroke="#9a92ac"/></g>
+      <text x="110" y="114" text-anchor="middle" font-size="12.5" font-weight="700" fill="${lis ? "#2E7D32" : "#B71C1C"}">${lis ? "✓ faces lisses dans le faisceau" : "✗ faces dépolies dans le faisceau"}</text>`;
+  }
+
+  /* ---------- schéma 2D (secours et comparaison) ---------- */
+  let sig2d = "";
+  function construitSchema() {
+    $("#svg2d").innerHTML = `
+      <rect x="10" y="60" width="500" height="250" rx="22" fill="#F3F1F6" stroke="#9e98a8" stroke-width="2"/>
+      <text x="260" y="88" text-anchor="middle" font-weight="700" fill="#4A148C" font-size="16">Spectrophotomètre (schéma de principe)</text>
+      <circle cx="58" cy="190" r="16" fill="#FFF3C4" stroke="#E0A800" stroke-width="2" id="s2lampe"/>
+      <path d="M40 168 Q24 190 40 212" fill="none" stroke="#9aa" stroke-width="4"/>
+      <line x1="74" y1="190" x2="160" y2="190" stroke="#FFE9A8" stroke-width="10" id="s2blanc"/>
+      <rect x="160" y="160" width="14" height="60" fill="url(#arc)" transform="rotate(-20 167 190)"/>
+      <defs><linearGradient id="arc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8E24AA"/><stop offset=".3" stop-color="#1E88E5"/><stop offset=".55" stop-color="#43A047"/><stop offset=".75" stop-color="#FDD835"/><stop offset="1" stop-color="#E53935"/></linearGradient></defs>
+      <path d="M174 190 L250 150 L250 230 Z" fill="url(#arc)" opacity=".35"/>
+      <rect x="248" y="150" width="6" height="34" fill="#333"/><rect x="248" y="196" width="6" height="34" fill="#333"/>
+      <line x1="254" y1="190" x2="330" y2="190" stroke="red" stroke-width="7" id="s2mono"/>
+      <rect x="330" y="150" width="50" height="80" fill="#e8f2ff" stroke="#7aa7d9" stroke-width="2"/><rect x="333" y="170" width="44" height="57" fill="#fff" id="s2liq"/>
+      <line x1="380" y1="190" x2="452" y2="190" stroke="red" stroke-width="7" id="s2apres"/>
+      <rect x="452" y="170" width="22" height="40" rx="3" fill="#263238"/>
+      <rect x="150" y="248" width="220" height="48" rx="6" fill="#c5d3a6" stroke="#1d2215" stroke-width="2"/>
+      <text x="162" y="268" font-size="13" fill="#1d2215" id="s2l">λ = — nm</text><text x="162" y="289" font-size="17" font-weight="700" fill="#1d2215" id="s2a">A = —</text>
+      <g font-size="13" fill="#4A148C" font-weight="700" text-anchor="middle"><text x="58" y="140">Lampe</text><text x="168" y="140">Réseau</text><text x="251" y="140">Fente</text><text x="355" y="140">Cuve ℓ = 1 cm</text><text x="463" y="140">Détecteur</text></g>
+      <text x="260" y="350" text-anchor="middle" font-size="14" fill="#5b5368">I₀ : intensité reçue avec le blanc · I : intensité transmise par la solution</text>
+      <text x="260" y="372" text-anchor="middle" font-size="15" font-weight="700" fill="#4A148C">A = log(I₀ / I) = ε · ℓ · C</text>`;
+  }
+  function schema2D() {
+    const k = [M.L, M.lampe, M.cuve, M.dansFaisceau, M.Aaff.toFixed(3), M.capot].join("|"); if (k === sig2d) return; sig2d = k;
+    const rgb = `rgb(${SP.rgbLambda(M.L)})`, on = M.lampe ? 1 : 0, T = M.dansFaisceau ? Math.pow(10, -Math.max(0, Aideal())) : 1;
+    $("#s2mono").setAttribute("stroke", rgb); $("#s2mono").setAttribute("opacity", on); $("#s2blanc").setAttribute("opacity", on);
+    $("#s2apres").setAttribute("stroke", rgb); $("#s2apres").setAttribute("opacity", on * Math.max(.06, T)); $("#s2apres").setAttribute("stroke-width", 2 + 5 * T);
+    $("#s2lampe").setAttribute("fill", on ? "#FFE082" : "#ddd");
+    const liq = M.cuve ? (M.cuve === "eau" ? [236, 242, 250] : SP.couleur(P.sp, conc(M.cuve), 1)) : [255, 255, 255]; $("#s2liq").setAttribute("fill", `rgb(${liq})`);
+    $("#s2l").textContent = M.lampe ? "λ = " + M.L + " nm" : "λ = — nm"; $("#s2a").textContent = M.lampe && M.capot < .5 && M.scan < 0 ? (M.mode === "A" ? "A = " + fr(M.Aaff, 3) : "T = " + fr(100 * Math.pow(10, -M.Aaff), 1) + " %") : "A = —";
+  }
+
+  /* ---------- espèce, vues, 3D/2D ---------- */
+  function majEspece() {
+    const e = E_();
+    document.querySelectorAll(".uC").forEach(u => u.textContent = e.unite);
+    S3.pret() && S3.tubes(e.gamme.concat([e.inconnue]).map(C => SP.couleur(P.sp, C, 1.6)));
+    dessineSpectre(); dessineEtal(); dessineRoue(); dessineLoupe();
+  }
+  function choisirVue(v) { if (!S3.pret()) return; S3.vue(v); S3.etat.intCible = v === "interieur" ? 1 : 0; }
+  function mode(m) {
+    const d3 = m === "3d" && S3.pret();
+    const gl = document.querySelector("#scene canvas.gl"); gl && (gl.style.visibility = d3 ? "visible" : "hidden");
+    $("#schema").style.display = d3 ? "none" : "flex"; $(".vues").style.display = d3 ? "" : "none"; $(".badge").style.display = d3 ? "" : "none";
+    $("#b3d").classList.toggle("on", d3); $("#b2d").classList.toggle("on", !d3); $("#bEt").style.display = d3 ? "" : "none";
+  }
+  $("#recommencer").onclick = () => location.reload();
+  construitSchema(); boutonsSol();
+  const ok3d = S3.init($("#scene"));
+  if (!ok3d) { $("#secours").style.display = "block"; $("#b3d").disabled = true; }
+  mode(ok3d ? "3d" : "2d");
+  $("#b3d").onclick = () => mode("3d"); $("#b2d").onclick = () => mode("2d");
+  let et = true; $("#bEt").onclick = () => { et = !et; S3.etiquettes(et); $("#bEt").classList.toggle("on", et); };
+  document.querySelectorAll(".vues button").forEach(b => b.onclick = () => choisirVue(b.dataset.v));
+  S3.etat.cuveSens = M.sens; S3.etat.lambda = M.L;
+  if (ok3d) S3.tick = tick; else { let t = performance.now(); (function f() { const n = performance.now(); tick(Math.min(.05, (n - t) / 1000)); t = n; requestAnimationFrame(f); })(); }
+  majEspece(); dessineCuve(); rendEtape(); majAffichage();
+  window.addEventListener("resize", () => { dessineSpectre(); dessineEtal(); dessineRoue(); dessineLoupe(); });
+  window.__M = M; window.__P = P; window.__go = i => { etapeI = i; rendEtape(); }; window.__acc = v => { acc = v; };
+})();
+
+/* ===== TP1 bouillie bordelaise : onglets des parties du TP, sur-titre de l'étape et formule utilisée ===== */
+(function () {
+  const mode = (window.CFG || {}).mode;
+  const PARTIES = [
+    ["Préparer les solutions", ["masse", "dilution"]],
+    ["Régler l'appareil", ["allumer", "spectre", "couleur", "lambda", "blanc"]],
+    ["Étalonner", ["etalons", "droite"]],
+    ["Doser la bouillie", ["inconnue", "calcul"]],
+    ["Conclure", ["fin"]]
+  ];
+  const FORMULE = {
+    cond: "σ = Σ λ<sub>i</sub>·[X<sub>i</sub>] <span class='sep'>•</span> à l'équivalence : n<sub>titré</sub> = C<sub>titrant</sub> · V<sub>E</sub>",
+    ph: "pH = − log [H<sub>3</sub>O<sup>+</sup>] <span class='sep'>•</span> à l'équivalence : n<sub>0</sub>(AH<sub>3</sub>) = C<sub>b</sub> · V<sub>E</sub> / 3",
+    bb: "C<sub>mère</sub> × V<sub>mère</sub> = C<sub>fille</sub> × V<sub>fille</sub> <span class='sep'>•</span> A = k · C <span class='sep'>•</span> C<sub>m</sub> = C × M",
+    spectro: "A = log (I<sub>0</sub> / I) = ε · ℓ · C = k · C <span class='sep'>•</span> C<sub>S</sub> = A<sub>S</sub> / k"
+  }[mode] || "";
+  const nav = document.getElementById("parties"), sur = document.getElementById("surTitre"), fo = document.getElementById("formule");
+  if (fo) fo.innerHTML = FORMULE;
+  if (nav) nav.innerHTML = PARTIES.map((P, i) => `<span title="${P[0]}"><b>0${i + 1}</b><i class="nom"> ${P[0]}</i></span>`).join("");
+  function maj() {
+    const id = document.body.dataset.etape, k = Math.max(0, PARTIES.findIndex(P => P[1].includes(id)));
+    if (nav) nav.querySelectorAll("span").forEach((s, i) => s.className = i < k ? "fait" : i === k ? "ici" : "");
+    if (sur) sur.textContent = "0" + (k + 1) + " / " + PARTIES[k][0];
+    const col = document.querySelector(".col-action"); if (col && col.scrollHeight > col.clientHeight) col.scrollTop = 0;
+  }
+  new MutationObserver(maj).observe(document.body, { attributes: true, attributeFilter: ["data-etape"] });
+  maj();
+})();
+
+</script>
+<script id="efir-bilan-fin-js">window.EFIR_ACT_ID="tle-ch2-tp1-bouillie";
+/* « Télécharger mon bilan » à la fin des paillasses réalistes et des TP « sondes » (© EFIR, Mme Messaoudi).
+   Paillasses : un encadré Nom / Classe / bouton apparaît à l'étape « Conclusion ».
+   TP sondes : le bouton s'ajoute à côté de « Télécharger mon compte rendu (PDF) » à la dernière étape.
+   Le PDF est créé par EFIR_BILAN (page d'accueil) ; le code TPEFIR1 est rangé dans ses propriétés pour l'Espace professeur. */
+(function () {
+  const ID = window.EFIR_ACT_ID || "activite", CT0 = "efir-bilan-t0-" + ID;
+  let t0 = Date.now(); try { t0 = +localStorage.getItem(CT0) || t0; localStorage.setItem(CT0, String(t0)); } catch (e) {}
+  const $ = s => document.querySelector(s);
+  const nu = h => String(h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const texte = el => { if (!el) return ""; const c = el.cloneNode(true); c.querySelectorAll("button,input,select,textarea,#efir-bilan-fin").forEach(e => e.remove());
+    c.querySelectorAll("h1,h2,h3,h4,p,li,tr,div,br").forEach(e => e.append("\n")); c.querySelectorAll("td,th").forEach(e => e.append(" | "));
+    return c.textContent.replace(/[ \t]+/g, " ").replace(/ \| \n/g, "\n").replace(/\n\s*\n+/g, "\n").trim(); };
+  const memo = (k, v) => { try { if (v === undefined) return localStorage.getItem("efir-eleve-" + k) || ""; localStorage.setItem("efir-eleve-" + k, v); } catch (e) { return ""; } };
+  const fr = x => typeof x === "number" ? (Math.abs(x) >= 1e4 || (x !== 0 && Math.abs(x) < 1e-3) ? x.toExponential(3) : (+x.toPrecision(4)).toString()).replace(".", ",") : String(x);
+
+  function contenu() {
+    const h1 = $("h1"), titre = nu(h1 ? h1.innerHTML : document.title) || ID, parts = [];
+    let fait = 0, n = 0;
+    const et = $("#etapeN"); const m = et && et.textContent.match(/(\d+)\s*\/\s*(\d+)/); if (m) { fait = +m[1]; n = +m[2]; }
+    /* paillasse : tableau de mesures + interprétation ; TP sondes : résultats du moteur */
+    document.querySelectorAll("table.mesures").forEach(t => { const x = texte(t); if (x) parts.push("Tableau de mesures\n" + x); });
+    try { if (typeof ETAPES !== "undefined" && ETAPES) {
+      if (ETAPES.finies && ETAPES.finies.size != null && typeof PARTIES !== "undefined") { fait = ETAPES.finies.size; n = PARTIES.length || n; }
+      if (ETAPES.res) { const r = Object.entries(ETAPES.res).filter(([k, v]) => v != null && typeof v !== "object").map(([k, v]) => k + " = " + fr(v)); if (r.length) parts.push("Résultats\n" + r.join("\n")); } } } catch (e) {}
+    try { if (typeof LAB !== "undefined" && LAB && Array.isArray(LAB.data) && LAB.data.length) parts.push("Mesures enregistrées\n" + LAB.data.slice(0, 80).map(p => Object.entries(p).filter(([k, v]) => typeof v === "number").map(([k, v]) => k + " = " + fr(v)).join(" ; ")).join("\n")); } catch (e) {}
+    const interp = texte($("#interp")); if (interp) parts.push("Dernière interprétation\n" + interp);
+    const conc = texte($("#etDesc")) || texte($(".etape.active, .etape-courante"));
+    return { titre, fait, n, detail: parts.join("\n\n"), conc };
+  }
+
+  async function telecharge(nomI, clI, dit, b) {
+    const nom = nomI ? nomI.value.trim() : "", cl = clI ? clI.value.trim() : "";
+    if (!nom) { dit("Écrivez d'abord votre nom et prénom."); nomI && nomI.focus(); return; }
+    if (!cl) { dit("Écrivez d'abord votre classe."); clI && clI.focus(); return; }
+    memo("nom", nom); memo("classe", cl);
+    const c = contenu(), t1 = Date.now(), av = c.n ? Math.min(1, c.fait / c.n) : 1;
+    const o = { v: 1, tp: "act_" + ID, titre: c.titre, eleve: nom, classe: cl, t0, t1, note: null, av: Math.round(av * 100) / 100,
+      parties: [[c.titre, c.fait, c.n || c.fait]], erreurs: [], conc: c.conc.slice(0, 1500),
+      annexes: [{ titre: "Compte rendu de l'élève", texte: (c.detail + "\n\n" + c.conc).slice(0, 6000) }], j: [] };
+    const code = "TPEFIR1:" + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+    const champs = { eleve: nom, classe: cl, tp: c.titre, note: "à corriger", avancement: Math.round(av * 100) + " %", erreurs: "—", reponses_fausses: "",
+      temps: Math.max(1, Math.round((t1 - t0) / 60000)) + " min", detail: (c.n ? `Étapes réalisées : ${c.fait} / ${c.n}\n\n` : "") + (c.detail || "—"),
+      conclusion: c.conc.slice(0, 3000) || "(conclusion vide)", date: new Date().toLocaleString("fr-FR"), code };
+    b.disabled = true; dit("Préparation de votre bilan PDF…");
+    try { const f = window.EFIR_BILAN || (window.top && window.top.EFIR_BILAN); if (!f) throw new Error("bilan"); const r = await f(champs); if (!r || !r.ok) throw new Error("pdf");
+      dit("✓ Bilan PDF téléchargé : déposez-le dans le devoir Google Classroom."); }
+    catch (e) { dit("Le PDF n'a pas pu être créé. Réessayez, ou utilisez « Télécharger mon compte rendu (PDF) » s'il est proposé."); }
+    finally { b.disabled = false; }
+  }
+
+  const CSS = `#efir-bilan-fin{margin:12px 0;padding:12px 14px;border:1px solid #E1BEE7;border-radius:12px;background:#F8F6FA}
+#efir-bilan-fin h3{margin:0 0 4px;font-size:1rem;color:#4A148C}#efir-bilan-fin p{margin:0 0 8px;font-size:.9rem}
+#efir-bilan-fin .lig{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}#efir-bilan-fin input{flex:1 1 140px;min-width:0;padding:7px 10px;border:1px solid #D1C4E9;border-radius:8px;font:inherit;background:#fff}
+.efir-bilan-btn{background:#4A148C!important;color:#fff!important;border:1px solid #4A148C!important;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+.efir-bilan-btn:hover:not([disabled]){background:#380E6B!important}.efir-bilan-btn[disabled]{opacity:.6;cursor:wait}
+#efir-bilan-note{display:block;margin-top:6px;font-size:.88rem;color:#4A148C}`;
+  const st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
+
+  /* paillasse : encadré à l'étape « Conclusion » */
+  function paillasse() {
+    const desc = $("#etDesc"); if (!desc || !document.body.dataset) return;
+    let box = $("#efir-bilan-fin"); const fin = document.body.dataset.etape === "fin";
+    if (!fin) { if (box) box.hidden = true; return; }
+    if (!box) {
+      box = document.createElement("div"); box.id = "efir-bilan-fin";
+      box.innerHTML = `<h3>📄 Mon bilan</h3><p>Écrivez votre nom et votre classe, téléchargez le bilan PDF, puis déposez-le dans le devoir Google Classroom.</p>
+        <div class="lig"><input id="eb-nom" placeholder="Nom et prénom" autocomplete="name" aria-label="Nom et prénom"><input id="eb-classe" placeholder="Classe" aria-label="Classe"></div>
+        <button type="button" class="efir-bilan-btn" id="eb-btn">📄 Télécharger mon bilan</button><span id="efir-bilan-note" role="status" aria-live="polite"></span>`;
+      const nav = desc.parentElement.querySelector(".nav"); (nav ? nav.before(box) : desc.after(box));
+      const nomI = $("#eb-nom"), clI = $("#eb-classe"); nomI.value = memo("nom"); clI.value = memo("classe");
+      $("#eb-btn").addEventListener("click", e => telecharge(nomI, clI, t => $("#efir-bilan-note").textContent = t, e.currentTarget));
+    }
+    box.hidden = false;
+  }
+  /* TP sondes : bouton à côté du compte rendu PDF */
+  function sondes() {
+    const nomI = $("#cr-nom"); if (!nomI || $("#eb-btn-s")) return;
+    const cr = [...document.querySelectorAll("button")].find(x => /Télécharger mon compte rendu/.test(x.textContent)); if (!cr) return;
+    const b = document.createElement("button"); b.type = "button"; b.id = "eb-btn-s"; b.className = cr.className + " efir-bilan-btn"; b.textContent = "📄 Télécharger mon bilan";
+    const note = document.createElement("span"); note.id = "efir-bilan-note"; note.setAttribute("role", "status");
+    cr.after(b); b.after(note);
+    if (!nomI.value) nomI.value = memo("nom"); const clI = $("#cr-classe"); if (clI && !clI.value) clI.value = memo("classe");
+    b.addEventListener("click", () => telecharge($("#cr-nom"), $("#cr-classe"), t => note.textContent = t, b));
+  }
+  const tour = () => { try { paillasse(); sondes(); } catch (e) {} };
+  new MutationObserver(tour).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-etape"] });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tour); else tour();
+})();
+
+</script>
+</body></html>

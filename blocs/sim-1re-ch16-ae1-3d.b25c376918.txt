@@ -1,0 +1,183 @@
+<!--efir1re:AE1 · Relations de conjugaison 3D-->
+window.EFIR_RETOUR = "premiere/ondes/Lentilles%20minces%20convergentes";
+
+// ====================================================================
+// Ch. 16 · AE1 · Relations pour une lentille mince convergente
+// ====================================================================
+// ====================================================================
+// Module commun : banc d'optique (objet « F » éclairé, lentille, écran, rayons)
+// positions en cm le long du banc (0 → 120), hauteurs en cm
+// ====================================================================
+const AXY = .15, BX = p => (p - 60) / 100, LD16 = 4; // hauteur de l'axe (m) ; conversion cm → m ; diamètre utile de la lentille (cm)
+function conj(obj, lens, f) { // renvoie {xA, xAp, g, real}
+  const xA = obj - lens, inv = 1 / f + 1 / xA;
+  if (Math.abs(inv) < 1e-9) return { xA, xAp: Infinity, g: Infinity, real: false };
+  const xAp = 1 / inv; return { xA, xAp, g: xAp / xA, real: xAp > 0 };
+}
+function drawF(c, cx, cy, hpx, flip, col) {
+  c.save(); c.translate(cx, cy); if (flip) c.rotate(Math.PI); c.fillStyle = col;
+  const w = hpx * .62, t = hpx * .2; c.fillRect(-w / 2, -hpx / 2, t, hpx); c.fillRect(-w / 2, -hpx / 2, w, t * .9); c.fillRect(-w / 2, -hpx * .06, w * .75, t * .85); c.restore();
+}
+function makeOptBench(o = {}) {
+  const M = (c, x = {}) => new THREE.MeshStandardMaterial({ color: c, ...x });
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(1.26, .02, .06), M(0x78909c, { metalness: .6, roughness: .4 })); rail.position.set(0, .01, 0); scene.add(rail);
+  for (let c = 0; c <= 120; c++) { const big = c % 10 === 0, mid = c % 5 === 0; const t = new THREE.Mesh(new THREE.BoxGeometry(.0012, .001, big ? .018 : mid ? .012 : .007), new THREE.MeshBasicMaterial({ color: 0x1d2433 })); t.position.set(BX(c), .0206, .03 - (big ? .009 : mid ? .006 : .0035)); scene.add(t); if (big) { const l = label(String(c), { size: 18, scale: .0005, bg: 'rgba(255,255,255,0)' }); l.position.set(BX(c), .03, .042); scene.add(l); } }
+  const rider = (col = 0x455a64, top = AXY - .03) => { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(.03, .02, .07), M(col)); b.position.y = .03; g.add(b); const r = new THREE.Mesh(new THREE.CylinderGeometry(.005, .005, top - .04, 10), M(0xb0bec5, { metalness: .8 })); r.position.y = .04 + (top - .04) / 2; g.add(r); const ix = new THREE.Mesh(new THREE.BoxGeometry(.002, .021, .004), M(0xd50000)); ix.position.set(0, .03, .036); g.add(ix); scene.add(g); return g; };
+  // source + objet
+  const objG = rider(); const lamp = new THREE.Mesh(new THREE.BoxGeometry(.08, .08, .08), M(0x263238)); lamp.position.set(-.045, AXY, 0); objG.add(lamp);
+  const ocv = document.createElement('canvas'); ocv.width = ocv.height = 128; const oc = ocv.getContext('2d'); oc.fillStyle = '#1b1b1b'; oc.fillRect(0, 0, 128, 128); drawF(oc, 64, 64, 64, false, '#fff8d0');
+  const otx = new THREE.CanvasTexture(ocv); otx.colorSpace = THREE.SRGBColorSpace; const oplate = new THREE.Mesh(new THREE.PlaneGeometry(.04, .04), new THREE.MeshBasicMaterial({ map: otx })); oplate.rotation.y = Math.PI / 2; oplate.position.set(-.004, AXY, 0); objG.add(oplate);
+  const ol = label(o.objLabel || 'Source + objet « F »', { size: 20, scale: .0006 }); ol.position.set(-.03, AXY + .07, 0); objG.add(ol);
+  // lentille
+  const lensG = rider(); const ring = new THREE.Mesh(new THREE.TorusGeometry(.026, .003, 8, 40), M(0x37474f)); ring.rotation.y = Math.PI / 2; ring.position.y = AXY; lensG.add(ring);
+  const lm = GLASS(); lm.opacity = .35; lm.color.set(0xb3e5fc); const lens = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), lm); lens.scale.set(.005, .025, .025); lens.position.y = AXY; lensG.add(lens);
+  let lensLab = null; const setLensLabel = t => { if (lensLab) lensG.remove(lensLab); lensLab = label(t, { size: 20, scale: .0006 }); lensLab.position.set(0, AXY + .05, 0); lensG.add(lensLab); };
+  // écran
+  const scrG = rider(0x455a64, AXY - .07); const frame = new THREE.Mesh(new THREE.BoxGeometry(.006, .15, .15), M(0x37474f)); frame.position.y = AXY; scrG.add(frame);
+  const scv = document.createElement('canvas'); scv.width = scv.height = 384; const sc = scv.getContext('2d'); const stx = new THREE.CanvasTexture(scv); stx.colorSpace = THREE.SRGBColorSpace;
+  const splane = new THREE.Mesh(new THREE.PlaneGeometry(.13, .13), new THREE.MeshBasicMaterial({ map: stx })); splane.rotation.y = -Math.PI / 2; splane.position.set(-.0035, AXY, 0); scrG.add(splane);
+  const sl = label(o.scrLabel || 'Écran', { size: 20, scale: .0006 }); sl.position.set(0, AXY + .095, 0); scrG.add(sl);
+  // rayons
+  const rays = new THREE.Group(); scene.add(rays);
+  const P = (x, y) => new THREE.Vector3(BX(x), AXY + y / 100, 0);
+  const seg = (pts, col, dashed) => { const g = new THREE.BufferGeometry().setFromPoints(pts.map(([x, y]) => P(x, y))); const l = new THREE.Line(g, dashed ? new THREE.LineDashedMaterial({ color: col, dashSize: .006, gapSize: .004 }) : new THREE.LineBasicMaterial({ color: col })); if (dashed) l.computeLineDistances(); rays.add(l); };
+  const dot = (x, col, txt) => { const m = new THREE.Mesh(new THREE.SphereGeometry(.0025, 10, 8), new THREE.MeshBasicMaterial({ color: col })); m.position.copy(P(x, 0)); rays.add(m); const l = label(txt, { size: 18, scale: .0004, bg: 'rgba(255,255,255,.8)' }); l.position.copy(P(x, -1.2)); rays.add(l); };
+  const B = {
+    lamp, objG, lensG, scrG, setLensLabel, screenCanvas: scv,
+    update(st) { // st = {obj, lens, scr (ou null), f, yB, rays, noScreen}
+      objG.visible = !st.hideObj; if (!st.hideObj) objG.position.x = BX(st.obj); lensG.position.x = BX(st.lens); scrG.visible = st.scr != null; if (st.scr != null) scrG.position.x = BX(st.scr);
+      const r = conj(st.obj, st.lens, st.f); B.last = r;
+      // écran
+      sc.fillStyle = '#6b7380'; sc.fillRect(0, 0, 384, 384); const pxcm = 384 / 13;
+      if (st.scr != null && st.scr > st.lens) {
+        const d = st.scr - st.lens; let blur, gs;
+        if (r.real && isFinite(r.xAp)) { blur = LD16 * Math.abs(d - r.xAp) / r.xAp; gs = r.g * d / r.xAp; } else { const xv = isFinite(r.xAp) ? r.xAp : -1e6; blur = LD16 * (d - xv) / Math.abs(xv); gs = r.g * (d - xv) / Math.abs(xv) * (isFinite(r.xAp) ? 1 : 0); }
+        const hcm = Math.abs(gs) * st.yB, bpx = blur * pxcm;
+        const spot = Math.min(13, blur + hcm); sc.save(); sc.globalAlpha = Math.min(.5, .25 + 4 / (1 + spot * spot)); const gr = sc.createRadialGradient(192, 192, 0, 192, 192, Math.max(8, spot * pxcm / 2)); gr.addColorStop(0, '#fffde7'); gr.addColorStop(1, 'rgba(255,253,231,0)'); sc.fillStyle = gr; sc.fillRect(0, 0, 384, 384); sc.restore();
+        if (hcm * pxcm > 2 && blur < 6) { sc.save(); sc.filter = `blur(${Math.min(40, bpx * .45).toFixed(1)}px)`; sc.globalAlpha = Math.max(.15, 1 / (1 + blur * .8)); drawF(sc, 192, 192, hcm * pxcm, gs < 0, '#fffde7'); sc.restore(); }
+        B.blur = blur; B.gs = gs;
+      } else { B.blur = Infinity; B.gs = 0; }
+      sc.strokeStyle = 'rgba(255,255,255,.35)'; sc.lineWidth = 1; for (let k = -6; k <= 6; k++) { sc.beginPath(); sc.moveTo(192 + k * pxcm, 186); sc.lineTo(192 + k * pxcm, 198); sc.stroke(); sc.beginPath(); sc.moveTo(186, 192 + k * pxcm); sc.lineTo(198, 192 + k * pxcm); sc.stroke(); }
+      sc.beginPath(); sc.moveTo(192, 0); sc.lineTo(192, 384); sc.moveTo(0, 192); sc.lineTo(384, 192); sc.stroke(); stx.needsUpdate = true;
+      // rayons
+      while (rays.children.length) { const c = rays.children.pop(); c.geometry && c.geometry.dispose(); }
+      rays.visible = !!st.rays && !st.hideObj; if (!rays.visible) return r;
+      const L = st.lens, f = st.f, yB = st.yB, xe = st.scr != null && st.scr > L ? st.scr : L + 45, col = 0xff9800;
+      seg([[st.obj, 0], [xe, 0]], 0x90a4ae);
+      const yAt = (x0, y0, x1, y1, x) => y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+      seg([[st.obj, yB], [L, yB], [xe, yAt(L, yB, L + f, 0, xe)]], col); // parallèle → passe par F'
+      seg([[st.obj, yB], [xe, yAt(st.obj, yB, L, 0, xe)]], col); // passe par O
+      if (Math.abs(st.obj - (L - f)) > .5 && st.obj < L - f) { const y3 = yAt(st.obj, yB, L - f, 0, L); seg([[st.obj, yB], [L, y3], [xe, y3]], 0xffc107); }
+      if (!r.real && isFinite(r.xAp)) { const xi = L + r.xAp, yi = r.g * yB; seg([[L, yB], [xi, yi]], col, true); seg([[L, 0], [xi, yi]], col, true); seg([[xi, 0], [xi, yi]], 0x2e7d32, true); }
+      dot(L - f, 0x1d2433, 'F'); dot(L + f, 0x1d2433, 'F\'');
+      return r;
+    },
+  };
+  B.card = (title = 'Écran vu de face (graduations : 1 cm)') => { scv.style.cssText = 'width:100%;max-width:340px;display:block;margin:auto;border-radius:6px'; return h('div', { class: 'card' }, h('h2', {}, title), scv); };
+  B.sideView = (a, b) => { const m = (a + b) / 2, w = Math.max(.4, (b - a) / 100 * 1.7); return flyTo([BX(m), AXY + .03, w], [BX(m), AXY, 0]); };
+  return B;
+}
+
+const F25 = 10.0, YB25 = 2.0, OBJ25 = 10;
+let OB25, S25 = null;
+const fresh25 = () => ({ lens: 35, scr: 60, rays: false, notes: [] });
+const f25 = (x, k) => (Math.abs(x) < 5e-13 ? 0 : x).toFixed(k).replace('.', ',');
+const r1 = x => Math.round(x * 10) / 10;
+const C25 = {
+  id: 'p1_ch16_ae1', code: 'AE1', short: 'Relations de conjugaison 3D',
+  kicker: 'EFIR · 1re spé · Chapitre 16 · Activité expérimentale AE1 · Simulation 3D',
+  title: 'Relations pour une lentille mince convergente',
+  problem: 'Un vidéoprojecteur forme sur un mur l\'image nette et agrandie d\'une petite image. Comment prévoir la position et la taille de l\'image d\'un objet formée par une lentille mince convergente ?',
+  mots: `<p><b>Repère</b> : origine au centre optique O de la lentille, axe orienté dans le sens de la lumière. A est le pied de l'objet, B son sommet ; A' et B' leurs images.<br>
+  <b>Relation de conjugaison</b> : 1/x<sub>A'</sub> − 1/x<sub>A</sub> = 1/f'. <b>Grandissement</b> : γ = y<sub>B'</sub>/y<sub>B</sub> = x<sub>A'</sub>/x<sub>A</sub>.<br>
+  Les abscisses x<sub>A</sub> (objet avant la lentille) sont <b>négatives</b> ; y<sub>B'</sub> est négatif si l'image est renversée.<br>
+  Objet « F » de hauteur y<sub>B</sub> = ${f25(YB25, 1)} cm, placé à la graduation ${OBJ25} cm du banc. Lentille de distance focale annoncée f' = ${f25(F25, 1)} cm.</p>`,
+  aide: `<p>1. Déplace la lentille puis l'écran jusqu'à obtenir une image <b>nette</b> sur l'écran.<br>
+  2. Note la mesure : x<sub>A</sub> = position objet − position lentille ; x<sub>A'</sub> = position écran − position lentille ; y<sub>B'</sub> lu sur l'écran gradué.<br>
+  3. Compare y<sub>B'</sub>/y<sub>B</sub> et x<sub>A'</sub>/x<sub>A</sub>, puis calcule f' avec la relation de conjugaison.<br>
+  4. Recommence pour au moins 5 positions de la lentille et calcule la moyenne de f'.</p>`,
+  views: { ensemble: [[0, .6, 1.3], [0, .08, 0]] },
+  viewbar: [['Zoom écran', () => flyTo([BX(S25 ? S25.scr : 60) - .22, AXY + .03, .06], [BX(S25 ? S25.scr : 60), AXY, 0])], ['Vue de côté (rayons)', () => OB25.sideView(OBJ25, S25.scr)]],
+  protocol: [
+    { id: 'nette', q: 'Q1', html: 'Former une image nette de l\'objet sur l\'écran.' },
+    { id: 'mesure', q: 'Q1', html: 'Noter x<sub>A</sub>, x<sub>A\'</sub> et y<sub>B\'</sub>.' },
+    { id: 'series', q: 'Q3', html: 'Recommencer pour au moins 5 positions différentes de la lentille.' },
+    { id: 'tableau', q: 'Q1-3', html: 'Compléter le tableau puis le vérifier.' },
+    { id: 'extra', q: 'Q1-4', html: 'Calculer et répondre aux questions.' },
+    { id: 'conclusion', html: 'Choisir puis rédiger ta conclusion.' },
+    { id: 'rapport', html: 'Télécharger le compte rendu (PDF) et le déposer sur Classroom.' },
+  ],
+  epi: [], secu: 'aucun produit chimique ; ne pas regarder directement la lampe ; la lampe chauffe',
+  table: { rowTitle: 'Grandeur', rows: [{ label: 'yB\' / yB', ans: [0] }, { label: 'xA\' / xA', ans: [1] }, { label: '1/xA\' − 1/xA', ans: [2] }, { label: 'Valeur moyenne de f\'', ans: [3] }],
+    cols: [{ title: 'Ce que montrent mes mesures', options: ['égal (aux erreurs près) à xA\'/xA : relation de grandissement vérifiée', 'égal (aux erreurs près) à yB\'/yB', 'constant pour toutes les positions : c\'est 1/f\'', 'proche de 10 cm, valeur annoncée par le fabricant'] }] },
+  extraTitle: 'Calculs et questions',
+  extra: [
+    { q: 'Q1', num: true, text: 'Pour xA = −25,0 cm et xA\' = 16,5 cm, calcule le rapport xA\'/xA :', unit: '', ans: 16.5 / -25, tol: .02 },
+    { q: 'Q2', num: true, text: 'Avec ta première mesure, calcule f\' grâce à la relation de conjugaison :', unit: 'cm', get ans() { const n = S25 && S25.notes[0]; return n ? 1 / (1 / n.xAp - 1 / n.xA) : NaN; }, tol: .02 },
+    { q: 'Q3', num: true, text: 'Valeur moyenne de f\' sur toutes tes mesures :', unit: 'cm', get ans() { const n = S25 && S25.notes; return n && n.length ? n.reduce((u, q) => u + 1 / (1 / q.xAp - 1 / q.xA), 0) / n.length : NaN; }, tol: .02 },
+    { q: 'Q3', num: true, text: 'Prévois la position de l\'image xA\' pour un objet à xA = −30,0 cm (f\' = 10,0 cm) :', unit: 'cm', ans: 15, tol: .02 },
+    { q: 'Q4', text: 'Dans un vidéoprojecteur, pour régler la position et la taille de l\'image, on peut…', options: ['modifier la distance entre l\'objet (la petite image) et la lentille', 'changer la couleur de la lampe', 'éloigner seulement le mur sans rien régler'], ans: 0 },
+  ],
+  conclusion: { q: 'Conclusion :', options: ['Pour une lentille mince convergente, les positions de l\'objet et de l\'image vérifient 1/xA\' − 1/xA = 1/f\' et le grandissement vaut γ = yB\'/yB = xA\'/xA : ces relations permettent de prévoir la position et la taille de l\'image.', 'xA\' + xA = f\' pour toutes les positions.', 'L\'image a toujours la même taille que l\'objet.', 'La distance focale dépend de la position de l\'objet.'], ans: 0 },
+  build() {
+    OB25 = makeOptBench(); OB25.setLensLabel(`Lentille f' = ${f25(F25, 1)} cm`);
+    sideCard(OB25.card()); sideCard(chartCard('1/xA\' en fonction de −1/xA', 'chC'));
+    sideCard(h('div', { class: 'card' }, h('h2', {}, 'Mes mesures'), h('div', { class: 'tblwrap' }, h('table', { class: 'tbl', id: 'mTab25' }))));
+    this.resetScene(); this.buildPanel();
+  },
+  place() { const s = S25; OB25.update({ obj: OBJ25, lens: s.lens, scr: s.scr, f: F25, yB: YB25, rays: s.rays }); },
+  sharp() { const s = S25, r = conj(OBJ25, s.lens, F25); return r.real && Math.abs(s.scr - s.lens - r.xAp) <= r.xAp / 40; },
+  resetScene() { S25 = fresh25(); if (!OB25) return; this.place(); this.drawData(); if ($('#q25')) this.refreshPanel(); },
+  drawData() {
+    const s = S25, t = $('#mTab25'); if (!t) return;
+    t.innerHTML = '<thead><tr><th>xA (cm)</th><th>xA\' (cm)</th><th>yB\' (cm)</th><th>yB\'/yB</th><th>xA\'/xA</th><th>f\' (cm)</th></tr></thead><tbody>' + (s.notes.map(n => `<tr><td>${f25(n.xA, 1)}</td><td>${f25(n.xAp, 1)}</td><td>${f25(n.yBp, 1)}</td><td>${f25(n.yBp / YB25, 2)}</td><td>${f25(n.xAp / n.xA, 2)}</td><td>${f25(1 / (1 / n.xAp - 1 / n.xA), 1)}</td></tr>`).join('') || '<tr><td colspan="6">Aucune mesure.</td></tr>') + '</tbody>';
+    const pts = s.notes.map(n => [-1 / n.xA, 1 / n.xAp]); let curves = [];
+    if (pts.length >= 2) { const n = pts.length, mx = pts.reduce((u, p) => u + p[0], 0) / n, my = pts.reduce((u, p) => u + p[1], 0) / n, sxx = pts.reduce((u, p) => u + (p[0] - mx) ** 2, 0); if (sxx > 0) { const k = pts.reduce((u, p) => u + (p[0] - mx) * (p[1] - my), 0) / sxx, a = my - k * mx; curves = [{ pts: [[0, a], [.1, a + k * .1]], color: '#C62828' }]; this.fit = { k, a }; } }
+    drawChart($('#chC'), { xmax: .1, ymax: .1, xlabel: '−1/xA (cm⁻¹)', ylabel: '1/xA\' (cm⁻¹)', pts, curves, xfmt: x => x.toFixed(2).replace('.', ','), yfmt: y => y.toFixed(2).replace('.', ',') });
+    $('#chCInfo').innerHTML = curves.length ? `Droite de coefficient directeur ${f25(this.fit.k, 2)} (≈ −1) et d'ordonnée à l'origine ${f25(this.fit.a, 4)} cm⁻¹ = 1/f' → f' ≈ ${f25(1 / this.fit.a, 1)} cm.` : 'Note au moins deux mesures.';
+  },
+  buildPanel() {
+    const B = (id, t, a) => h('button', { id, onclick: () => act({ ...a }) }, t);
+    $('#actions').append(
+      h('h3', {}, 'Lentille'),
+      h('div', { class: 'row' }, B('l1', '◀ −5', { t: 'mv', w: 'lens', d: -5 }), B('l2', '◀ −1', { t: 'mv', w: 'lens', d: -1 }), B('l3', '+1 ▶', { t: 'mv', w: 'lens', d: 1 }), B('l4', '+5 ▶', { t: 'mv', w: 'lens', d: 5 })),
+      h('h3', {}, 'Écran'),
+      h('div', { class: 'row' }, B('e1', '◀ −5', { t: 'mv', w: 'scr', d: -5 }), B('e2', '◀ −1', { t: 'mv', w: 'scr', d: -1 }), B('e3', '◀ −0,2', { t: 'mv', w: 'scr', d: -.2 }), B('e4', '+0,2 ▶', { t: 'mv', w: 'scr', d: .2 }), B('e5', '+1 ▶', { t: 'mv', w: 'scr', d: 1 }), B('e6', '+5 ▶', { t: 'mv', w: 'scr', d: 5 })),
+      h('div', { class: 'row' }, B('n25', '✍ Noter xA, xA\' et yB\'', { t: 'note' }), B('r25', '〽 Afficher / masquer les rayons', { t: 'rays' }), B('c25', 'Effacer', { t: 'clear' })),
+      h('div', { id: 'q25', class: 'note', style: 'margin-top:6px' }));
+    this.refreshPanel();
+  },
+  refreshPanel() {
+    const s = S25, en = (q, ok) => $$(q).forEach(b => b.disabled = BUSY || !ok);
+    en('#l1', s.lens - 5 >= 15); en('#l2', s.lens - 1 >= 15); en('#l3', s.lens + 1 < s.scr - 1); en('#l4', s.lens + 5 < s.scr - 1);
+    en('#e1', s.scr - 5 > s.lens + 1); en('#e2', s.scr - 1 > s.lens + 1); en('#e3', s.scr - .2 > s.lens + 1); en('#e4,#e5', s.scr + 1 <= 118); en('#e6', s.scr + 5 <= 118);
+    en('#n25', true); en('#r25', true); en('#c25', s.notes.length > 0);
+    const sh = this.sharp();
+    $('#q25').innerHTML = `Objet : <b>${OBJ25},0 cm</b> · lentille : <b>${f25(s.lens, 1)} cm</b> · écran : <b>${f25(s.scr, 1)} cm</b> · image ${sh ? '<b style="color:#2e7d32">nette</b>' : '<b style="color:#c62828">floue</b>'}`;
+  },
+  refresh() { this.refreshPanel(); },
+  async doAction(a) {
+    const s = S25;
+    if (a.t === 'mv') { const v0 = s[a.w], v1 = r1(v0 + a.d); if (!INSTANT) await tween(.2 + Math.abs(a.d) * .05, p => { s[a.w] = v0 + (v1 - v0) * p; this.place(); }); s[a.w] = v1; this.place(); if (this.sharp()) { step('nette'); say('L\'image est nette sur l\'écran.'); } return; }
+    if (a.t === 'rays') { s.rays = !s.rays; this.place(); if (!INSTANT && s.rays) OB25.sideView(OBJ25, s.scr); say(s.rays ? 'Rayons particuliers affichés (vue de côté). F et F\' sont les foyers.' : 'Rayons masqués.'); return; }
+    if (a.t === 'note') {
+      if (!this.sharp()) { say('L\'image n\'est pas nette : règle d\'abord la position de l\'écran.'); return; }
+      const xA = r1(OBJ25 - s.lens), xAp = r1(s.scr - s.lens), yBp = r1(OB25.gs * YB25);
+      if (s.notes.some(n => n.xA === xA)) { say('Cette position de la lentille est déjà notée : déplace la lentille.'); return; }
+      s.notes.push({ xA, xAp, yBp }); this.drawData(); step('mesure'); if (s.notes.length >= 5) step('series');
+      const msg = `xA = ${f25(xA, 1)} cm ; xA' = ${f25(xAp, 1)} cm ; yB' = ${f25(yBp, 1)} cm → yB'/yB = ${f25(yBp / YB25, 2)} ; xA'/xA = ${f25(xAp / xA, 2)} ; f' = ${f25(1 / (1 / xAp - 1 / xA), 1)} cm.`;
+      observe(msg); say(msg); return;
+    }
+    if (a.t === 'clear') { s.notes = []; this.drawData(); say('Mesures effacées.'); return; }
+  },
+  async demo() {
+    say('Démonstration : on place la lentille à 25 cm de l\'objet, puis on cherche l\'image nette en déplaçant l\'écran.');
+    await act({ t: 'rays' }, { record: false }); await wait(1500);
+    for (const d of [-5, -1, -1, -1, -.2]) await act({ t: 'mv', w: 'scr', d }, { record: false });
+    await act({ t: 'rays' }, { record: false });
+    say('À toi : obtiens une image nette et note tes mesures pour plusieurs positions de la lentille.'); await wait(1500);
+  },
+};
+startTP(C25);
+
+</script></body></html>
