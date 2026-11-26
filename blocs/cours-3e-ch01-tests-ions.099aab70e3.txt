@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carnet d'exploration · Tests d'identification des ions · EFIR</title>
+<!-- © EFIR · Mme Messaoudi — Tous droits réservés. Carnet d'exploration de 3e, chapitre 1 (tests d'identification des ions). -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--prune:#4A148C;--prune2:#7B1FA2;--rose:#C2185B;--fond:#F7F5FB;--carte:#fff;--trait:#E6DFF0;--texte:#1d1a2b;--doux:#5f5873;--or:#F9A825;--vert:#2e7d32;--rouge:#c62828;--pale:#F3EEFA}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.5 Inter,system-ui,Arial,sans-serif}
+.wrap{max-width:1150px;margin:0 auto;padding:22px 16px 30px}
+a.back{display:inline-flex;gap:6px;align-items:center;color:var(--prune2);font-weight:600;text-decoration:none;cursor:pointer}
+.kick{margin:14px 0 2px;font-size:12.5px;font-weight:700;letter-spacing:.08em;color:var(--doux);text-transform:uppercase}
+h1{margin:0 0 16px;font-size:clamp(22px,3vw,30px);line-height:1.2}
+.card{background:var(--carte);border:1px solid var(--trait);border-radius:16px;padding:16px}
+.jauge{display:flex;gap:14px;align-items:center}
+.jauge .ic{width:40px;height:40px;border-radius:10px;background:var(--pale);display:grid;place-items:center;color:var(--prune2);font-size:20px;flex:none}
+.jauge .bar{flex:1}.jauge .bar b{font-size:14px}.jauge .pc{font-weight:800;color:var(--prune2)}
+.barre{height:9px;border-radius:9px;background:#ECE8F2;margin-top:6px;overflow:hidden}.barre i{display:block;height:100%;background:linear-gradient(90deg,var(--prune2),var(--rose));width:0;transition:width .4s}
+.theme{display:flex;align-items:center;gap:12px;margin:18px 0 6px}.theme .ic{width:40px;height:40px;border-radius:10px;background:var(--pale);display:grid;place-items:center;font-size:20px}
+.theme h2{margin:0;font-size:20px}.theme p{margin:0;color:var(--doux);font-size:14px}.theme .pg{margin-left:auto;border:1px solid var(--trait);border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700;background:#fff}
+.stepper{display:grid;grid-template-columns:repeat(4,1fr);margin:14px 0 18px;position:relative}
+.stepper:before{content:"";position:absolute;left:12%;right:12%;top:24px;height:2px;background:var(--trait)}
+.st{position:relative;text-align:center;background:none;border:0;font:inherit;cursor:pointer;color:var(--doux);padding:0}
+.st .rd{width:48px;height:48px;margin:0 auto 6px;border-radius:50%;border:2px dashed #CFC5DE;background:#fff;display:grid;place-items:center;font-size:20px}
+.st b{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase}.st small{font-size:11.5px;color:#a99cc0}
+.st.on .rd{border:2.5px solid var(--prune2);color:var(--prune2)}.st.on b{color:var(--prune2)}
+.st.fait .rd{border:2.5px solid var(--vert);background:#E8F5E9}.st[disabled]{cursor:not-allowed;opacity:.7}
+.grille{display:grid;grid-template-columns:1fr 1.08fr;gap:22px;align-items:start}
+.gauche .k{font-size:12.5px;font-weight:700;letter-spacing:.08em;color:var(--prune2);text-transform:uppercase}
+.gauche h3.big{font-size:clamp(26px,3.2vw,38px);line-height:1.12;margin:10px 0 12px}.gauche h3.big span{display:block}.gauche h3.big .hl{color:var(--prune2)}
+.gauche .qq{color:var(--doux);margin:0 0 16px}
+.notion{margin:0 0 16px}.notion h4{margin:0 0 4px;font-size:16px}.notion h4 em{font-style:normal;color:var(--prune2);margin-right:8px}
+.notion p{margin:0 0 6px;color:#3c3650;font-size:15px}
+.f{padding:9px 14px;border-left:4px solid var(--prune2);background:var(--pale);border-radius:0 10px 10px 0;font-family:inherit;font-weight:600;font-size:15px}
+.nivdesc{border:1px solid #E9DDF7;background:#FBF8FF;border-radius:12px;padding:10px 14px;margin:14px 0}.nivdesc b{display:block;font-size:12px;letter-spacing:.06em;color:var(--prune2);text-transform:uppercase}
+.piege{border:1px solid #F3D27A;background:#FFF9E6;border-radius:12px;padding:10px 14px;margin:14px 0;color:#6a4b00;font-size:14.5px}.piege b{color:#8a4b00}
+.badge{border:1.5px dashed #CDBFE3;border-radius:12px;padding:10px 14px;color:var(--doux);font-size:14.5px;background:#FAF8FD}.badge.gagne{border:1.5px solid var(--vert);background:#E8F5E9;color:#1b5e20;font-weight:600}
+.nivs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.niv{border:1px solid var(--trait);background:#fff;border-radius:12px;padding:8px 10px;text-align:left;font:inherit;cursor:pointer}
+.niv small{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--doux)}.niv>span{display:block;font-weight:700;font-size:14px;color:var(--prune)}.niv .et span{display:inline}
+.niv .et{font-size:13px;color:#cfc5de;letter-spacing:2px}.niv .et .o{color:var(--or)}
+.niv.on{border:1.5px solid var(--prune2);background:#FAF5FF}.niv[disabled]{opacity:.5;cursor:not-allowed}
+.mission{display:flex;gap:12px;border:1px solid #E9DDF7;background:#FBF8FF;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.mission .pl{width:34px;height:34px;flex:none;border-radius:9px;background:var(--prune2);color:#fff;display:grid;place-items:center}
+.mission b{display:block;font-size:12px;letter-spacing:.06em;color:var(--prune2)}.mission p{margin:2px 0 0;font-size:15px}
+.scene{position:relative;height:300px;border:1px solid var(--trait);border-radius:14px;overflow:hidden;background:linear-gradient(#EEF1F7,#E7E3EE)}
+.scene canvas{display:block;width:100%;height:100%}
+.sbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--trait);background:#fff;border-radius:999px;padding:4px 12px;font:600 13px Inter,sans-serif;cursor:pointer;color:#3c3650}
+.chip.on{border-color:var(--prune2);color:var(--prune2);background:#FAF5FF}
+.mesures{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:10px}
+.mes{border:1px solid var(--trait);border-radius:10px;padding:6px 10px;background:#fff}.mes small{display:block;color:var(--doux);font-size:12px}.mes b{font-variant-numeric:tabular-nums}
+.ebars{margin-top:10px;display:grid;gap:5px}.eb{display:grid;grid-template-columns:96px 1fr 76px;align-items:center;gap:8px;font-size:13px}
+.eb i{display:block;height:12px;border-radius:6px;background:#ECE8F2;overflow:hidden}.eb i u{display:block;height:100%;text-decoration:none}
+.curseur{margin-top:12px}.curseur label{display:flex;justify-content:space-between;font-weight:600;font-size:14.5px}.curseur label b{background:var(--pale);color:var(--prune2);border-radius:8px;padding:1px 8px}
+input[type=range]{width:100%;accent-color:var(--prune2);margin-top:6px}
+.rep{margin-top:12px}.rep .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rep input[type=text]{width:140px;padding:8px 10px;border:1.5px solid #CDBFE3;border-radius:10px;font:inherit}
+.btn{min-height:42px;border-radius:12px;border:0;background:var(--prune);color:#fff;font:700 15px Inter,sans-serif;padding:8px 16px;cursor:pointer}.btn:hover{background:#380E6B}
+.btn.sec{background:#fff;color:#3c3650;border:1px solid var(--trait)}.btn.sec:hover{background:#FAF8FD}
+.btn[disabled]{background:#D9C6EE;cursor:not-allowed}
+.msg{margin-top:8px;padding:8px 12px;border-radius:10px;font-weight:600;font-size:14.5px}.msg.ok{background:#E8F5E9;color:#1b5e20}.msg.ko{background:#FFEBEE;color:#b71c1c}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--trait)}
+.journal{margin-top:22px}.journal h3{margin:0 0 8px;font-size:17px}.journal textarea{width:100%;min-height:90px;border:1px solid var(--trait);border-radius:12px;padding:10px;font:inherit;resize:vertical}
+.journal .row{display:flex;justify-content:flex-end;margin-top:8px}.journal p{color:var(--doux);font-size:13.5px;margin:8px 0 0}
+.bilan h3{margin:0 0 10px}.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.qcm .q{border:1px solid var(--trait);border-radius:12px;padding:10px 12px;margin:10px 0;background:#fff}.qcm label{display:block;margin:4px 0;cursor:pointer}
+footer{text-align:center;color:var(--doux);font-size:13px;margin-top:22px}
+.hid{display:none!important}
+@media (max-width:860px){.grille{grid-template-columns:1fr}.scene{height:260px}.stepper .st small{display:none}.bgrid{grid-template-columns:1fr}}
+@media (max-width:520px){.nivs{grid-template-columns:1fr 1fr 1fr}.niv span{font-size:12.5px}.st b{font-size:10px}.st .rd{width:40px;height:40px}.stepper:before{top:20px}}
+.az{display:inline-flex;flex-direction:column;align-items:flex-end;font-size:.62em;line-height:1.05;vertical-align:-.45em;margin-right:1px}.az sup,.az sub{vertical-align:baseline;font-size:1em}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <a class="back" id="retour">← Carnets d'exploration</a>
+  <p class="kick">🗺 EFIR · 3e · Chapitre 1 · Carnet d'exploration</p>
+  <h1>Tests d'identification des ions</h1>
+  <div class="card jauge"><div class="ic">⚡</div><div class="bar"><b id="jtxt">Jauge de compréhension · 0 / 27 étoiles</b><div class="barre"><i id="jbar"></i></div></div><div class="pc" id="jpc">0 %</div></div>
+  <div class="theme"><div class="ic" id="thIc">🧪</div><div><h2 id="thNom">Le pH-mètre</h2><p id="thSous">3e · Chapitre 1</p></div><span class="pg" id="thPg">Page 1 / 3</span></div>
+  <div class="stepper" id="stepper"></div>
+  <div id="vuePage">
+    <div class="grille">
+      <div class="card gauche" id="gauche"></div>
+      <div class="droite">
+        <div class="nivs" id="nivs"></div>
+        <div class="mission"><div class="pl">▶</div><div><b>MISSION</b><p id="mission"></p></div></div>
+        <div class="scene" id="scene"><canvas id="c2d"></canvas></div>
+        <div class="sbar"><span class="chip" id="aide3d">✋ Glissez pour tourner</span><button class="chip" id="b2d" type="button">☐ Vue 2D</button></div>
+        <div class="mesures" id="mesures"></div>
+        <div class="ebars" id="ebars"></div>
+        <div class="card curseur"><label for="cur"><span id="curNom"></span><b id="curVal"></b></label><input type="range" id="cur"></div>
+        <div class="card rep"><p id="repQ" style="margin:0 0 8px;font-weight:600"></p><div class="row"><input type="text" id="repIn" inputmode="decimal" placeholder="valeur" aria-label="ma réponse"><span id="repU"></span><button class="btn" id="repOk" type="button">Vérifier</button></div><div class="msg hid" id="repMsg"></div></div>
+        <div style="margin-top:10px"><button class="btn sec" id="raz" type="button" style="width:100%">↺ Recommencer le niveau</button></div>
+        <div class="nav"><button class="btn sec" id="prec" type="button">‹ Précédent</button><button class="btn" id="suiv" type="button">Page suivante ›</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="vueBilan" class="card bilan hid"></div>
+  <div class="card journal"><h3>✎ Journal de bord · <span id="jnNom">Le pH-mètre</span></h3><textarea id="journal" placeholder="Notez vos réponses, vos calculs, ce qui vous surprend…"></textarea><div class="row"><button class="btn sec" id="jnSave" type="button">💾 Sauvegarder</button></div><p>Vos étoiles et vos notes restent sur cet appareil. À la fin, « Télécharger mon carnet » les rassemble dans un fichier.</p></div>
+  <footer>© 2026-2027 · Ma science physique-chimie · Conçu par Mme Messaoudi · © EFIR · Mme Messaoudi — Tous droits réservés</footer>
+</div>
+<script type="module">
+/* ---------- Données du carnet (programme de 3e, chapitre 1 « Atomes et ions » : tests d'identification des ions ; contenus alignés sur les fiches EFIR, l'activité AE1 et la fiche FE5) ---------- */
+const fr = (x, d = 2) => (Math.abs(x) < 1e-12 ? 0 : x).toFixed(d).replace('.', ',').replace('-', '−');
+const SOL = [['jus de citron', 1.8], ['jus d\'orange', 4], ['lait', 6.7], ['eau pure', 7], ['eau de Javel', 11.5], ['déboucheur', 13]];
+const IONS = { cu: { ion: 'Cu²⁺', nom: 'ion cuivre II', sol: 'sulfate de cuivre', liq: '#8EC9F2', pp: '#1E88E5', txt: 'précipité bleu' }, fe2: { ion: 'Fe²⁺', nom: 'ion fer II', sol: 'sulfate de fer II', liq: '#DCEFC8', pp: '#4E7D3A', txt: 'précipité vert' },
+  fe3: { ion: 'Fe³⁺', nom: 'ion fer III', sol: 'chlorure de fer III', liq: '#F6D98B', pp: '#B4521E', txt: 'précipité rouille' }, zn: { ion: 'Zn²⁺', nom: 'ion zinc II', sol: 'sulfate de zinc', liq: '#EEF3F6', pp: '#FFFFFF', txt: 'précipité blanc' },
+  cl: { ion: 'Cl⁻', nom: 'ion chlorure', sol: 'chlorure de sodium', liq: '#EEF3F6', pp: '#F5F5F5', txt: 'précipité blanc qui noircit à la lumière' } };
+const FLACONS = [['A', 'cu', null, 'précipité bleu', 'aucun précipité'], ['B', null, 'cl', 'aucun précipité', 'précipité blanc qui noircit'], ['C', 'fe3', 'cl', 'précipité rouille', 'précipité blanc qui noircit']];
+const PAGES = [
+  { cle: 'p1', nom: 'Le pH-mètre', ic: '🧪', court: 'Page 1 · Ions H⁺ et HO⁻', badge: 'Maître du pH', scene: 'ph',
+    lignes: ['Un nombre de 0 à 14.', 'Des ions H⁺ ou HO⁻.', 'Le pH les révèle.'], hl: 2, question: 'Comment repérer les ions H⁺ et HO⁻ ?',
+    notions: [
+      { t: 'Le pH', p: 'Le pH est un nombre sans unité, compris entre 0 et 14. On l\'évalue avec du papier pH et on le mesure précisément avec un pH-mètre.', f: 'pH < 7 : acide · pH = 7 : neutre · pH > 7 : basique' },
+      { t: 'Les ions H⁺ et HO⁻', p: 'Toutes les solutions aqueuses contiennent des ions H⁺ et HO⁻. Une solution acide contient plus d\'ions H⁺ que d\'ions HO⁻ ; une solution basique, plus d\'ions HO⁻ que d\'ions H⁺.', f: 'acide : H⁺ majoritaires · basique : HO⁻ majoritaires' },
+      { t: 'La dilution et la sécurité', p: 'Quand on ajoute de l\'eau à une solution acide, son pH augmente et se rapproche de 7. On verse toujours l\'acide dans l\'eau, jamais l\'inverse.', f: 'dilution d\'un acide : pH ↑ vers 7' }],
+    niveaux: [
+      { nom: 'Acide ou basique ?', desc: 'Six solutions de la vie courante sont testées au pH-mètre.', piege: 'Une solution est acide seulement si pH < 7. Le lait (pH 6,7) est très légèrement acide ; l\'eau pure (pH 7) est neutre.',
+        mission: 'Parcourez les six solutions avec le curseur, puis indiquez combien sont acides.', cur: { nom: 'Solution n°', u: '', min: 1, max: 6, pas: 1, def: 1 }, q: 'Nombre de solutions acides =', u: '', rep: 3, tol: .001,
+        corr: '3 solutions acides : le jus de citron (1,8), le jus d\'orange (4) et le lait (6,7). L\'eau pure est neutre, la Javel et le déboucheur sont basiques.' },
+      { nom: 'L\'eau de la piscine', desc: 'Pour ne pas irriter la peau, l\'eau d\'une piscine doit avoir un pH compris entre 7,2 et 7,4. Antoine mesure pH = 8,0.', piege: 'pH = 8,0 > 7 : l\'eau est basique, les ions HO⁻ sont majoritaires. Le pH doit diminuer.',
+        mission: 'Réglez le pH mesuré par Antoine (8,0) et calculez de combien le pH doit au moins diminuer pour revenir dans la bonne zone.', cur: { nom: 'pH de l\'eau de la piscine', u: '', min: 6.8, max: 8.4, pas: .1, def: 7.3 }, q: 'Diminution minimale du pH =', u: '', rep: .6, tol: .02,
+        corr: '8,0 − 7,4 = 0,6 : le pH doit diminuer d\'au moins 0,6. L\'eau, trop basique, contient trop d\'ions HO⁻.' },
+      { nom: 'La dilution', desc: 'On dilue un jus de citron (pH ≈ 2) en ajoutant de plus en plus d\'eau.', piege: 'Ajouter de l\'eau ne rend jamais une solution acide basique : le pH augmente mais reste inférieur ou égal à 7.',
+        mission: 'Augmentez la dilution jusqu\'au maximum, puis indiquez la valeur vers laquelle tend le pH.', cur: { nom: 'Dilution : on multiplie le volume par 10 puissance', u: '', min: 0, max: 5, pas: 1, def: 0 }, q: 'Le pH tend vers', u: '', rep: 7, tol: .001,
+        corr: 'Le pH tend vers 7 : en diluant, la solution devient de moins en moins acide, sans jamais devenir basique.' }] },
+  { cle: 'p2', nom: 'La soude', ic: '💧', court: 'Page 2 · Ions métalliques', badge: 'Expert de la soude', scene: 'tubes',
+    lignes: ['Quelques gouttes de soude.', 'Un précipité apparaît.', 'Sa couleur nomme l\'ion.'], hl: 2, question: 'Comment identifier un ion métallique ?',
+    notions: [
+      { t: 'Le précipité', p: 'Un précipité est un solide qui apparaît dans un liquide sous la forme d\'un nuage. S\'il se forme après ajout du réactif, le test est positif.', f: 'test positif = apparition d\'un précipité' },
+      { t: 'Le test à la soude', p: 'On verse environ 2 mL de solution dans un tube, puis quelques gouttes de soude (hydroxyde de sodium). La couleur du précipité identifie l\'ion métallique.', f: 'Cu²⁺ bleu · Fe²⁺ vert · Fe³⁺ rouille · Zn²⁺ blanc' },
+      { t: 'La sécurité', p: 'La soude est corrosive : blouse, gants et lunettes. Les solutions usagées vont dans le bidon de récupération, jamais à l\'évier.', f: 'blouse · gants · lunettes · bidon de récupération' }],
+    niveaux: [
+      { nom: 'Le précipité bleu', desc: 'Un tube contient une solution de sulfate de cuivre (ions Cu²⁺ et SO₄²⁻). On ajoute de la soude goutte à goutte.', piege: 'La charge « 2+ » indique le nombre d\'électrons perdus par l\'atome, pas un nombre de protons gagnés.',
+        mission: 'Ajoutez 3 gouttes de soude, observez, puis indiquez combien d\'électrons l\'atome de cuivre a perdus pour former l\'ion détecté.', cur: { nom: 'Gouttes de soude', u: '', min: 0, max: 6, pas: 1, def: 0 }, q: 'Électrons perdus par l\'atome Cu =', u: '', rep: 2, tol: .001,
+        corr: 'Précipité bleu : ion cuivre II Cu²⁺. L\'atome de cuivre a perdu 2 électrons.' },
+      { nom: 'Vert ou rouille ?', desc: 'Deux tubes : sulfate de fer II et chlorure de fer III. On ajoute de la soude dans chacun. Le fer a pour numéro atomique Z = 26.', piege: 'Fe²⁺ et Fe³⁺ ont le même noyau (26 protons) : seul le nombre d\'électrons change.',
+        mission: 'Comparez les deux tubes, puis donnez le nombre d\'électrons de l\'ion qui donne le précipité rouille.', cur: { nom: 'Tube n°', u: '', min: 1, max: 2, pas: 1, def: 1 }, q: 'Électrons de l\'ion du précipité rouille =', u: '', rep: 23, tol: .001,
+        corr: 'Précipité rouille : ion fer III Fe³⁺, 26 − 3 = 23 électrons (Fe²⁺, précipité vert, en a 24).' },
+      { nom: 'La banque de tests', desc: 'Quatre tubes : ions Cu²⁺, Fe²⁺, Fe³⁺ et Zn²⁺. On ajoute quelques gouttes de soude dans chacun.', piege: 'Le précipité de l\'ion zinc est blanc : il est bien là, même s\'il n\'est pas coloré.',
+        mission: 'Parcourez les quatre tubes, puis indiquez combien donnent un précipité coloré (autre que blanc).', cur: { nom: 'Tube n°', u: '', min: 1, max: 4, pas: 1, def: 1 }, q: 'Nombre de précipités colorés =', u: '', rep: 3, tol: .001,
+        corr: '3 précipités colorés : bleu (Cu²⁺), vert (Fe²⁺) et rouille (Fe³⁺). Zn²⁺ donne un précipité blanc.' }] },
+  { cle: 'p3', nom: 'L\'enquête', ic: '🔎', court: 'Page 3 · Ion chlorure et enquête', badge: 'Enquêteur des ions', scene: 'tubes',
+    lignes: ['Du nitrate d\'argent.', 'Un précipité blanc qui noircit.', 'Des flacons à identifier.'], hl: 2, question: 'Comment identifier les ions d\'une solution inconnue ?',
+    notions: [
+      { t: 'Le test au nitrate d\'argent', p: 'Quelques gouttes de nitrate d\'argent donnent avec les ions chlorure Cl⁻ un précipité blanc qui noircit à la lumière.', f: 'Cl⁻ + nitrate d\'argent → précipité blanc qui noircit' },
+      { t: 'Conclure avec rigueur', p: 'Un test négatif montre seulement que l\'ion recherché est absent, pas que la solution ne contient rien. On rédige : « On observe que… On en conclut que… ».', f: 'test négatif : seul l\'ion testé est absent' },
+      { t: 'La neutralité de la solution', p: 'Une solution ionique contient des cations et des anions et reste électriquement neutre : autant de charges positives que de charges négatives.', f: 'FeCl₃ : un ion Fe³⁺ pour trois ions Cl⁻' }],
+    niveaux: [
+      { nom: 'L\'ion chlorure', desc: 'Un tube contient une solution de chlorure de sodium (ions Na⁺ et Cl⁻). On ajoute du nitrate d\'argent goutte à goutte. Le chlore a pour numéro atomique Z = 17.', piege: 'On cherche les ions chlorure avec le nitrate d\'argent, jamais avec la soude.',
+        mission: 'Ajoutez 3 gouttes de nitrate d\'argent, observez, puis donnez le nombre d\'électrons de l\'ion détecté.', cur: { nom: 'Gouttes de nitrate d\'argent', u: '', min: 0, max: 6, pas: 1, def: 0 }, q: 'Électrons de l\'ion Cl⁻ =', u: '', rep: 18, tol: .001,
+        corr: 'Précipité blanc qui noircit : ion chlorure Cl⁻, 17 + 1 = 18 électrons (c\'est un anion).' },
+      { nom: 'Les flacons sans étiquette', desc: 'Trois flacons A, B et C ont perdu leur étiquette. Chacun est testé à la soude et au nitrate d\'argent.', piege: 'Le flacon B ne réagit pas à la soude, mais il réagit au nitrate d\'argent : ce n\'est pas de l\'eau distillée.',
+        mission: 'Parcourez les trois flacons, puis indiquez combien contiennent des ions chlorure.', cur: { nom: 'Flacon', u: '', min: 1, max: 3, pas: 1, def: 1 }, q: 'Nombre de flacons contenant Cl⁻ =', u: '', rep: 2, tol: .001,
+        corr: '2 flacons : B (chlorure de sodium) et C (chlorure de fer III). Le flacon A contient du sulfate de cuivre II.' },
+      { nom: 'La neutralité', desc: 'Le flacon C contient du chlorure de fer III : des ions Fe³⁺ et des ions Cl⁻.', piege: 'Un ion Fe³⁺ porte 3 charges positives ; chaque ion Cl⁻ n\'en compense qu\'une.',
+        mission: 'Réglez le nombre d\'ions chlorure pour que l\'ensemble soit neutre, puis indiquez combien il en faut pour un ion Fe³⁺.', cur: { nom: 'Ions Cl⁻ pour un ion Fe³⁺', u: '', min: 1, max: 4, pas: 1, def: 1 }, q: 'Ions Cl⁻ pour un ion Fe³⁺ =', u: '', rep: 3, tol: .001,
+        corr: '3 ions Cl⁻ compensent les 3 charges + de Fe³⁺ : la formule du chlorure de fer III est FeCl₃.' }] }
+];
+const QCM = [
+  { q: 'Une solution de pH = 4 est :', c: ['acide', 'neutre', 'basique'], b: 0 },
+  { q: 'Dans une solution basique :', c: ['il y a plus d\'ions H⁺ que d\'ions HO⁻', 'il y a plus d\'ions HO⁻ que d\'ions H⁺', 'il n\'y a aucun ion H⁺'], b: 1 },
+  { q: 'Avec la soude, les ions Fe³⁺ donnent un précipité :', c: ['vert', 'bleu', 'rouille'], b: 2 },
+  { q: 'Pour identifier les ions chlorure, on utilise :', c: ['le nitrate d\'argent', 'la soude', 'le papier pH'], b: 0 },
+  { q: 'Le test à la soude d\'une solution est négatif. On peut conclure :', c: ['la solution ne contient aucun ion', 'les ions recherchés sont absents', 'la solution est de l\'eau pure'], b: 1 },
+  { q: 'Pour un ion Cu²⁺, une solution neutre de chlorure de cuivre contient :', c: ['1 ion Cl⁻', '2 ions Cl⁻', '3 ions Cl⁻'], b: 1 }];
+
+/* ---------- État sauvegardé ---------- */
+const CLE = 'efir-carnet-3e-ch01-tests';
+const lit = () => { try { return JSON.parse(localStorage.getItem(CLE)) || {}; } catch (e) { return {}; } };
+let S = Object.assign({ page: 0, niv: [0, 0, 0], etoiles: {}, essais: {}, journal: {}, qcm: {}, bilan: false }, lit());
+const sauve = () => { try { localStorage.setItem(CLE, JSON.stringify(S)); } catch (e) {} };
+const $ = s => document.querySelector(s);
+const etoilesTot = () => Object.values(S.etoiles).reduce((a, b) => a + b, 0);
+const pageFaite = p => [0, 1, 2].every(n => (S.etoiles[p + '-' + n] || 0) > 0);
+const nivOuvert = (p, n) => n === 0 || (S.etoiles[p + '-' + (n - 1)] || 0) > 0;
+const pageOuverte = p => p === 0 || pageFaite(p - 1);
+
+$('#retour').onclick = () => { try { parent.location.hash = 'cours'; } catch (e) { location.hash = ''; } };
+
+/* ---------- Mise en page ---------- */
+function jauge() { const e = etoilesTot(); $('#jtxt').textContent = `Jauge de compréhension · ${e} / 27 étoiles`; $('#jpc').textContent = Math.round(e / 27 * 100) + ' %'; $('#jbar').style.width = (e / 27 * 100) + '%'; }
+function stepper() {
+  const el = $('#stepper'); el.innerHTML = '';
+  PAGES.forEach((P, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'st' + (!S.bilan && S.page === i ? ' on' : '') + (pageFaite(i) ? ' fait' : '');
+    b.disabled = !pageOuverte(i); b.innerHTML = `<div class="rd">${pageOuverte(i) ? P.ic : '🔒'}</div><b>${P.court}</b><small>Badge : ${P.badge}</small>`; b.onclick = () => { S.bilan = false; S.page = i; sauve(); rendu(); }; el.appendChild(b); });
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'st' + (S.bilan ? ' on' : ''); b.disabled = !pageFaite(2);
+  b.innerHTML = `<div class="rd">${pageFaite(2) ? '🏅' : '🔒'}</div><b>Bilan</b><small>Badges et QCM</small>`; b.onclick = () => { S.bilan = true; sauve(); rendu(); }; el.appendChild(b);
+}
+function gauche() {
+  const P = PAGES[S.page], n = S.niv[S.page], N = P.niveaux[n];
+  $('#gauche').innerHTML = `<div class="k">📖 ${P.court}</div><h3 class="big">${P.lignes.map((l, i) => `<span class="${i === P.hl ? 'hl' : ''}">${l}</span>`).join('')}</h3><p class="qq">${P.question}</p>` +
+    P.notions.map((x, i) => `<div class="notion"><h4><em>0${i + 1}</em>${x.t}</h4><p>${x.p}</p><div class="f">${x.f}</div></div>`).join('') +
+    `<div class="nivdesc"><b>Niveau ${n + 1} · ${N.nom}</b>${N.desc}</div><div class="piege">⚠️ <b>Piège du Brevet :</b> ${N.piege}</div>` +
+    `<div class="badge ${pageFaite(S.page) ? 'gagne' : ''}">${pageFaite(S.page) ? '🏅 Badge gagné : « ' + P.badge + ' »' : '🔒 Réussissez les 3 niveaux pour gagner le badge « ' + P.badge + ' ».'}</div>`;
+}
+function nivs() {
+  const P = PAGES[S.page], el = $('#nivs'); el.innerHTML = '';
+  P.niveaux.forEach((N, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'niv' + (S.niv[S.page] === i ? ' on' : ''); b.disabled = !nivOuvert(S.page, i);
+    const e = S.etoiles[S.page + '-' + i] || 0; b.innerHTML = `<small>${nivOuvert(S.page, i) ? '' : '🔒 '}NIVEAU ${i + 1}</small><span>${N.nom}</span><span class="et">${[0, 1, 2].map(k => `<span class="${k < e ? 'o' : ''}">★</span>`).join('')}</span>`;
+    b.onclick = () => { S.niv[S.page] = i; sauve(); rendu(); }; el.appendChild(b); });
+}
+let VAL = 0;
+function niveau() {
+  const P = PAGES[S.page], n = S.niv[S.page], N = P.niveaux[n], k = S.page + '-' + n;
+  $('#mission').innerHTML = N.mission; $('#curNom').innerHTML = N.cur.nom;
+  const c = $('#cur'); c.min = N.cur.min; c.max = N.cur.max; c.step = N.cur.pas; VAL = N.cur.def; c.value = VAL;
+  $('#repQ').innerHTML = N.q; $('#repU').textContent = N.u; $('#repIn').value = (S.essais[k] || {}).v || '';
+  const m = $('#repMsg'); if (S.etoiles[k]) { m.className = 'msg ok'; m.innerHTML = '✓ Niveau réussi (' + '★'.repeat(S.etoiles[k]) + '). ' + N.corr; } else { m.className = 'msg hid'; }
+  $('#thNom').textContent = P.nom; $('#thIc').textContent = P.ic; $('#thSous').textContent = '3e · Chapitre 1 · ' + P.court.replace(/^Page \d · /, ''); $('#thPg').textContent = `Page ${S.page + 1} / 3`;
+  $('#jnNom').textContent = P.nom; $('#journal').value = S.journal[P.cle] || '';
+  $('#prec').disabled = S.page === 0; $('#suiv').textContent = S.page === 2 ? 'Bilan ›' : 'Page suivante ›'; $('#suiv').disabled = !pageFaite(S.page);
+  majCur(); SC.choisir(P.scene);
+}
+function majCur() { const N = PAGES[S.page].niveaux[S.niv[S.page]]; $('#curVal').textContent = fr(VAL, N.cur.pas < .01 ? 3 : N.cur.pas < .1 ? 2 : N.cur.pas < 1 ? 1 : 0) + (N.cur.u ? ' ' + N.cur.u : ''); physique(); }
+$('#cur').oninput = e => { VAL = +e.target.value; majCur(); };
+$('#raz').onclick = () => { const k = S.page + '-' + S.niv[S.page]; delete S.etoiles[k]; delete S.essais[k]; sauve(); rendu(); };
+$('#prec').onclick = () => { if (S.page > 0) { S.page--; sauve(); rendu(); } };
+$('#suiv').onclick = () => { if (S.page < 2) S.page++; else S.bilan = true; sauve(); rendu(); };
+$('#jnSave').onclick = () => { S.journal[S.bilan ? 'bilan' : PAGES[S.page].cle] = $('#journal').value; sauve(); $('#jnSave').textContent = '✓ Sauvegardé'; setTimeout(() => $('#jnSave').textContent = '💾 Sauvegarder', 1400); };
+$('#journal').oninput = () => { S.journal[S.bilan ? 'bilan' : PAGES[S.page].cle] = $('#journal').value; sauve(); };
+const num = t => { const x = parseFloat(String(t).replace(/\s/g, '').replace(',', '.').replace('−', '-').replace(/[x×]10\^?(-?\d+)/i, 'e$1')); return isFinite(x) ? x : NaN; };
+$('#repOk').onclick = () => {
+  const P = PAGES[S.page], n = S.niv[S.page], N = P.niveaux[n], k = S.page + '-' + n, v = num($('#repIn').value), m = $('#repMsg');
+  const E = S.essais[k] = S.essais[k] || { n: 0 }; E.v = $('#repIn').value;
+  if (!isFinite(v)) { m.className = 'msg ko'; m.textContent = 'Écrivez une valeur numérique (ex. 12).'; return; }
+  if (S.etoiles[k]) { m.className = 'msg ok'; m.innerHTML = '✓ Déjà réussi. ' + N.corr; return; }
+  E.n++;
+  if (Math.abs(v - N.rep) <= Math.abs(N.rep) * N.tol) { S.etoiles[k] = E.n === 1 ? 3 : E.n === 2 ? 2 : 1; m.className = 'msg ok'; m.innerHTML = `✓ Juste : ${'★'.repeat(S.etoiles[k])} ! ${N.corr}`; }
+  else { m.className = 'msg ko'; m.innerHTML = E.n >= 2 ? `✗ Pas encore. Indice : ${N.piege}` : '✗ Pas encore : relisez la mission et vérifiez les unités.'; }
+  sauve(); jauge(); nivs(); stepper(); gauche(); $('#suiv').disabled = !pageFaite(S.page);
+};
+
+/* ---------- Physique de chaque niveau : mesures, barres d'énergie et état de la scène ---------- */
+const ST = {};
+function barres(l, max, u = 'J') { $('#ebars').innerHTML = l.map(([t, v, c]) => `<div class="eb"><span>${t}</span><i><u style="width:${Math.max(0, Math.min(100, v / max * 100))}%;background:${c}"></u></i><b>${fr(v, v >= 100 ? 0 : v < 1 ? 3 : 2)} ${u}</b></div>`).join(''); }
+function mesures(l) { $('#mesures').innerHTML = l.map(([t, v]) => `<div class="mes"><small>${t}</small><b>${v}</b></div>`).join(''); }
+/* couleur de l'indicateur universel selon le pH */
+function coulPH(ph) { const P = [[0, [211, 47, 47]], [3, [245, 124, 0]], [5, [251, 192, 45]], [7, [76, 175, 80]], [9, [30, 136, 229]], [11, [57, 73, 171]], [14, [106, 27, 154]]]; let i = 0; while (i < P.length - 2 && ph > P[i + 1][0]) i++; const [a, ca] = P[i], [b, cb] = P[i + 1], k = Math.max(0, Math.min(1, (ph - a) / (b - a))); return '#' + ca.map((v, j) => Math.round(v + (cb[j] - v) * k).toString(16).padStart(2, '0')).join(''); }
+const phDil = k => { const c = Math.pow(10, -(2 + k)); return -Math.log10(c / 2 + Math.sqrt(c * c / 4 + 1e-14)); };
+function tube(cleIon, g, reac, sel = 1, lab) { const I = IONS[cleIon] || { liq: '#EEF3F6' }; const reagit = cleIon && ((reac === 'soude' && cleIon !== 'cl') || (reac === 'nitrate' && cleIon === 'cl')); return { liq: I.liq, pp: reagit ? I.pp : null, q: reagit ? Math.min(1, g / 3) : 0, noircit: reac === 'nitrate' && reagit, sel, lab: lab || (I.ion || 'eau'), g }; }
+function physique() {
+  for (const k in ST) delete ST[k];
+  const p = S.page, n = S.niv[p];
+  if (p === 0) {
+    if (n === 0) { const [nom, ph] = SOL[VAL - 1]; Object.assign(ST, { mode: 'ph', ph, nom }); mesures([['Solution', nom], ['pH mesuré', fr(ph, 1)], ['Ions majoritaires', ph < 7 ? 'H⁺' : ph > 7 ? 'HO⁻' : 'autant de H⁺ que de HO⁻']]); barres([['pH', ph, coulPH(ph)]], 14, ''); }
+    if (n === 1) { const ph = VAL, ok = ph >= 7.2 - 1e-9 && ph <= 7.4 + 1e-9; Object.assign(ST, { mode: 'ph', ph, nom: 'eau de piscine', zone: 1 }); mesures([['pH mesuré', fr(ph, 1)], ['Zone conseillée', '7,2 à 7,4'], ['Verdict', ok ? '✓ bon pH' : ph > 7.4 ? 'trop basique' : 'trop acide']]); barres([['pH', ph, coulPH(ph)]], 14, ''); }
+    if (n === 2) { const ph = phDil(VAL), f = Math.pow(10, VAL); Object.assign(ST, { mode: 'ph', ph, nom: 'jus de citron dilué', dil: VAL }); mesures([['Volume multiplié par', fr(f, 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')], ['pH mesuré', fr(ph, 2)], ['Nature', ph < 6.995 ? 'acide' : 'neutre']]); barres([['pH', ph, coulPH(ph)]], 14, ''); }
+  }
+  if (p === 1) {
+    if (n === 0) { Object.assign(ST, { mode: 'tubes', reac: 'soude', act: 0, t: [tube('cu', VAL, 'soude')] }); mesures([['Solution', 'sulfate de cuivre'], ['Gouttes de soude', String(VAL)], ['Observation', VAL ? 'précipité bleu' : 'pas encore de réactif']]); barres([['précipité formé', Math.min(1, VAL / 3) * 100, '#1E88E5']], 100, '%'); }
+    if (n === 1) { const l = ['fe2', 'fe3']; Object.assign(ST, { mode: 'tubes', reac: 'soude', act: VAL - 1, t: l.map((c, i) => tube(c, 3, 'soude', i === VAL - 1 ? 1 : .35, i === VAL - 1 ? '?' : '')) }); const I = IONS[l[VAL - 1]]; mesures([['Tube', 'n° ' + VAL + ' · ' + I.sol], ['Observation', I.txt], ['Noyau du fer', '26 protons']]); barres([], 1, ''); }
+    if (n === 2) { const l = ['cu', 'fe2', 'fe3', 'zn']; Object.assign(ST, { mode: 'tubes', reac: 'soude', act: VAL - 1, t: l.map((c, i) => tube(c, 3, 'soude', i === VAL - 1 ? 1 : .35)) }); const I = IONS[l[VAL - 1]]; mesures([['Tube', 'n° ' + VAL + ' · ' + I.sol], ['Observation', I.txt], ['Ion identifié', I.ion]]); barres([], 1, ''); }
+  }
+  if (p === 2) {
+    if (n === 0) { Object.assign(ST, { mode: 'tubes', reac: 'nitrate', act: 0, t: [tube('cl', VAL, 'nitrate')] }); mesures([['Solution', 'chlorure de sodium'], ['Gouttes de nitrate d\'argent', String(VAL)], ['Observation', VAL ? 'précipité blanc qui noircit à la lumière' : 'pas encore de réactif']]); barres([['précipité formé', Math.min(1, VAL / 3) * 100, '#9E9E9E']], 100, '%'); }
+    if (n === 1) { const F = FLACONS[VAL - 1]; Object.assign(ST, { mode: 'tubes', act: -1, flacon: F[0], t: [Object.assign(tube(F[1], 3, 'soude'), { lab: 'soude' }), Object.assign(tube(F[2], 3, 'nitrate'), { lab: 'nitrate d\'argent', liq: F[1] ? IONS[F[1]].liq : '#EEF3F6' })] }); mesures([['Flacon', F[0]], ['Test à la soude', F[3]], ['Test au nitrate d\'argent', F[4]]]); barres([], 1, ''); }
+    if (n === 2) { const q = 3 - VAL; Object.assign(ST, { mode: 'ions', n: VAL }); mesures([['Charges +', '3 (un ion Fe³⁺)'], ['Charges −', VAL + ' (ions Cl⁻)'], ['Charge totale', q === 0 ? '0 : neutre ✓' : (q > 0 ? '+' : '−') + Math.abs(q)]]); barres([['charges +', 3, '#C2185B'], ['charges −', VAL, '#1565C0']], 4, ''); }
+  }
+  SC.maj();
+}
+
+/* ---------- Scènes : 3D (Three.js) avec vue 2D de secours ---------- */
+const SC = { type: '', vue2d: false, three: null, t0: performance.now(),
+  choisir(t) { this.type = t; if (this.three) this.three.construire(t); },
+  maj() { if (this.three) this.three.maj(); }
+};
+const cv = $('#c2d'), ctx = cv.getContext('2d');
+function taille() { const r = $('#scene').getBoundingClientRect(); cv.width = r.width * 2; cv.height = r.height * 2; if (SC.three) SC.three.taille(r.width, r.height); }
+addEventListener('resize', taille);
+const noir = (c, k) => { const v = parseInt(c.slice(1), 16), m = 1 - .75 * k; return 'rgb(' + [(v >> 16) & 255, (v >> 8) & 255, v & 255].map(x => Math.round(x * m)).join(',') + ')'; };
+function dessin2d(t) {
+  const W = cv.width, H = cv.height, cx = W / 2; ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#F4F2F8'; ctx.fillRect(0, 0, W, H); ctx.font = '600 24px Inter'; ctx.textAlign = 'left'; ctx.lineWidth = 3;
+  if (ST.mode === 'ph') {
+    const bw = W * .3, bh = H * .5, x0 = cx - bw / 2 - W * .1, y0 = H * .22; ctx.fillStyle = coulPH(ST.ph) + 'aa'; ctx.fillRect(x0, y0 + bh * .3, bw, bh * .7); ctx.strokeStyle = '#90a4ae'; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 + bh); ctx.lineTo(x0 + bw, y0 + bh); ctx.lineTo(x0 + bw, y0); ctx.stroke();
+    ctx.strokeStyle = '#455A64'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x0 + bw * .55, y0 - 40); ctx.lineTo(x0 + bw * .55, y0 + bh * .85); ctx.stroke(); ctx.lineWidth = 3;
+    const bx = cx + W * .12, by = H * .25; ctx.fillStyle = '#37474F'; ctx.fillRect(bx, by, W * .22, H * .3); ctx.fillStyle = '#C5E1A5'; ctx.fillRect(bx + 16, by + 16, W * .22 - 32, H * .12); ctx.fillStyle = '#1B5E20'; ctx.font = '700 56px Inter'; ctx.textAlign = 'center'; ctx.fillText(fr(ST.ph, ST.dil != null ? 2 : 1), bx + W * .11, by + 16 + H * .1); ctx.font = '600 22px Inter'; ctx.fillStyle = '#fff'; ctx.fillText('pH-mètre', bx + W * .11, by + H * .26); ctx.textAlign = 'left';
+    ctx.strokeStyle = '#455A64'; ctx.beginPath(); ctx.moveTo(x0 + bw * .55, y0 - 40); ctx.quadraticCurveTo(x0 + bw * .55, y0 - 90, bx, by + 40); ctx.stroke();
+    const gx = 30, gw = W - 60, gy = H - 90; for (let i = 0; i < 140; i++) { ctx.fillStyle = coulPH(i / 10); ctx.fillRect(gx + gw * i / 140, gy, gw / 140 + 1, 22); } ctx.fillStyle = '#4A148C'; ctx.beginPath(); const mx = gx + gw * ST.ph / 14; ctx.moveTo(mx, gy - 4); ctx.lineTo(mx - 10, gy - 22); ctx.lineTo(mx + 10, gy - 22); ctx.fill();
+    if (ST.zone) { ctx.strokeStyle = '#2e7d32'; ctx.strokeRect(gx + gw * 7.2 / 14, gy - 2, gw * .2 / 14, 26); }
+    ctx.font = '600 20px Inter'; [0, 7, 14].forEach(v => { ctx.fillText(String(v), gx + gw * v / 14 - 8, gy + 46); }); ctx.font = '600 24px Inter'; ctx.fillText(ST.nom + ' · ' + (ST.ph < 6.995 ? 'acide' : ST.ph > 7.005 ? 'basique' : 'neutre'), 20, 34);
+  } else if (ST.mode === 'tubes') {
+    const nb = ST.t.length, tw = Math.min(90, W / (nb * 2.4)), th = H * .55, y0 = H * .2;
+    ST.t.forEach((T, i) => { const x = cx + (i - (nb - 1) / 2) * W / (nb + .6) - tw / 2; ctx.globalAlpha = T.sel; ctx.fillStyle = T.liq; ctx.fillRect(x, y0 + th * .45, tw, th * .55 - tw / 2); ctx.beginPath(); ctx.arc(x + tw / 2, y0 + th - tw / 2, tw / 2, 0, Math.PI); ctx.fill();
+      if (T.pp && T.q > 0) { const nk = noircit2(T, t); for (let k = 0; k < 40 * T.q; k++) { const px = x + 6 + ((k * 37) % (tw - 12)), py = y0 + th * .5 + ((k * 53) % (th * .45)); ctx.fillStyle = T.noircit ? noir('#F5F5F5', nk) : T.pp; ctx.beginPath(); ctx.arc(px, py, 7, 0, 7); ctx.fill(); } }
+      ctx.strokeStyle = i === ST.act ? '#7B1FA2' : '#90a4ae'; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + th - tw / 2); ctx.arc(x + tw / 2, y0 + th - tw / 2, tw / 2, Math.PI, 0, true); ctx.lineTo(x + tw, y0); ctx.stroke();
+      ctx.fillStyle = '#4A148C'; ctx.textAlign = 'center'; ctx.fillText(T.lab, x + tw / 2, y0 + th + 40); ctx.textAlign = 'left'; ctx.globalAlpha = 1;
+      if (i === ST.act || ST.act === -1) { ctx.fillStyle = '#ECEFF1'; ctx.fillRect(x + tw / 2 - 8, y0 - 90, 16, 60); ctx.fillStyle = '#7B1FA2'; ctx.fillRect(x + tw / 2 - 14, y0 - 110, 28, 26); if (T.g > 0) { const ph = (t * .9) % 1; ctx.fillStyle = '#B3E5FC'; ctx.beginPath(); ctx.arc(x + tw / 2, y0 - 28 + ph * th * .45, 7, 0, 7); ctx.fill(); } } });
+    ctx.fillStyle = '#4A148C'; ctx.fillText(ST.flacon ? 'Flacon ' + ST.flacon + ' : test à la soude (gauche) et au nitrate d\'argent (droite)' : 'réactif : ' + (ST.reac === 'soude' ? 'soude (hydroxyde de sodium)' : 'nitrate d\'argent'), 20, H - 20);
+  } else if (ST.mode === 'ions') {
+    const r = Math.min(W, H) * .1, cy = H * .45; const bil = (x, y, rr, c, lab) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, rr, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '700 ' + Math.round(rr * .55) + 'px Inter'; ctx.textAlign = 'center'; ctx.fillText(lab, x, y + rr * .2); };
+    bil(cx, cy, r * 1.2, '#B4521E', 'Fe³⁺'); for (let k = 0; k < ST.n; k++) { const a = k * 2 * Math.PI / ST.n + t * .3; bil(cx + Math.cos(a) * r * 3, cy + Math.sin(a) * r * 2.2, r * .8, '#2E7D32', 'Cl⁻'); }
+    ctx.textAlign = 'left'; ctx.font = '600 24px Inter'; ctx.fillStyle = '#4A148C'; const q = 3 - ST.n; ctx.fillText('charge totale : ' + (q === 0 ? '0 → électriquement neutre' : (q > 0 ? '+' : '−') + Math.abs(q)), 20, H - 20);
+  }
+}
+function noircit2(T, t) { return T.noircit ? Math.min(1, ((t % 12) / 8)) * Math.min(1, T.q) : 0; }
+function boucle(t) { if (SC.vue2d || !SC.three) dessin2d(t / 1000); else SC.three.anime(t / 1000); requestAnimationFrame(boucle); }
+$('#b2d').onclick = () => { SC.vue2d = !SC.vue2d; $('#b2d').classList.toggle('on', SC.vue2d); $('#b2d').textContent = (SC.vue2d ? '☑' : '☐') + ' Vue 2D'; if (SC.three) SC.three.r.domElement.style.display = SC.vue2d ? 'none' : 'block'; cv.style.display = SC.vue2d || !SC.three ? 'block' : 'none'; };
+
+async function init3d() {
+  try {
+    const THREE = window.THREE || await new Promise((ok, ko) => { const u = ['/lib/three-r128.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js']; const essai = i => { if (i >= u.length) return ko(new Error('three')); const sc = document.createElement('script'); sc.src = u[i]; sc.onload = () => window.THREE ? ok(window.THREE) : essai(i + 1); sc.onerror = () => essai(i + 1); document.head.appendChild(sc); }; essai(0); });
+    const r = new THREE.WebGLRenderer({ antialias: true }); r.setPixelRatio(Math.min(2, devicePixelRatio)); $('#scene').appendChild(r.domElement); r.domElement.style.position = 'absolute'; r.domElement.style.inset = '0';
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0xEEF1F7); const cam = new THREE.PerspectiveCamera(40, 1, .05, 100);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xd8d0e8, .9)); const dl = new THREE.DirectionalLight(0xffffff, .9); dl.position.set(3, 6, 4); scene.add(dl);
+    let G = new THREE.Group(); scene.add(G); let rot = 0, drag = null;
+    r.domElement.addEventListener('pointerdown', e => drag = e.clientX); addEventListener('pointerup', () => drag = null);
+    r.domElement.addEventListener('pointermove', e => { if (drag != null) { rot += (e.clientX - drag) * .006; rot = Math.max(-.9, Math.min(.9, rot)); drag = e.clientX; } });
+    const M = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: .5 }, o));
+    const verre = () => new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: .25, roughness: .1, depthWrite: false });
+    const texte = (s, w = 256, h = 96, fond = '#C5E1A5', coul = '#1B5E20', taillePx = 60) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = fond; x.fillRect(0, 0, w, h); x.fillStyle = coul; x.font = '700 ' + taillePx + 'px Inter, Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s, w / 2, h / 2 + 2); const tx = new THREE.CanvasTexture(c); return new THREE.MeshBasicMaterial({ map: tx }); };
+    let O = {}, cle = '';
+    const T3 = { r,
+      taille(w, h) { r.setSize(w, h, false); r.domElement.style.width = '100%'; r.domElement.style.height = '100%'; cam.aspect = w / h; cam.updateProjectionMatrix(); },
+      construire() { cle = ''; this.maj(); },
+      maj() {
+        const k = JSON.stringify(ST); if (k === cle) return; cle = k;
+        scene.remove(G); G = new THREE.Group(); scene.add(G); O = { pp: [], gouttes: [] };
+        const pail = new THREE.Mesh(new THREE.BoxGeometry(3.2, .05, 1.4), M(0xd7ccc8)); pail.position.y = -.025; G.add(pail);
+        if (ST.mode === 'ph') {
+          const b = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .62, 40, 1, true), verre()); b.position.set(-.35, .31, 0); G.add(b);
+          const liq = new THREE.Mesh(new THREE.CylinderGeometry(.29, .29, .38, 40), new THREE.MeshStandardMaterial({ color: coulPH(ST.ph), transparent: true, opacity: .65 })); liq.position.set(-.35, .2, 0); G.add(liq);
+          const sonde = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .8, 16), M(0x455A64)); sonde.position.set(-.3, .5, 0); G.add(sonde);
+          const boit = new THREE.Mesh(new THREE.BoxGeometry(.55, .4, .12), M(0x37474F)); boit.position.set(.45, .22, .1); G.add(boit);
+          const ecran = new THREE.Mesh(new THREE.PlaneGeometry(.44, .17), texte(fr(ST.ph, ST.dil != null ? 2 : 1))); ecran.position.set(.45, .29, .161); G.add(ecran);
+          const lab = new THREE.Mesh(new THREE.PlaneGeometry(.44, .08), texte('pH-mètre', 256, 48, '#37474F', '#ffffff', 30)); lab.position.set(.45, .13, .161); G.add(lab);
+          const cable = new THREE.Mesh(new THREE.TorusGeometry(.38, .008, 6, 40, Math.PI * .8), M(0x263238)); cable.position.set(.07, .9, 0); cable.rotation.z = .1; G.add(cable);
+          cam.position.set(0, .75, 1.9); cam.lookAt(.05, .3, 0);
+        } else if (ST.mode === 'tubes') {
+          const nb = ST.t.length, dx = nb > 2 ? .38 : .5; const sup = new THREE.Mesh(new THREE.BoxGeometry(dx * nb + .2, .06, .25), M(0xB0BEC5)); sup.position.y = .7; G.add(sup);
+          ST.t.forEach((T, i) => { const x = (i - (nb - 1) / 2) * dx, op = T.sel;
+            const tb = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, .8, 28, 1, true), verre()); tb.position.set(x, .5, 0); G.add(tb);
+            const fond = new THREE.Mesh(new THREE.SphereGeometry(.07, 20, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), verre()); fond.position.set(x, .1, 0); G.add(fond);
+            const lq = new THREE.Mesh(new THREE.CylinderGeometry(.065, .065, .32, 28), new THREE.MeshStandardMaterial({ color: T.liq, transparent: true, opacity: .55 * op + .1 })); lq.position.set(x, .26, 0); G.add(lq);
+            if (T.pp && T.q > 0) for (let j = 0; j < Math.round(34 * T.q); j++) { const s = new THREE.Mesh(new THREE.SphereGeometry(.021, 8, 6), M(T.pp, { transparent: true, opacity: op })); s.position.set(x + ((j * 37) % 9 - 4) * .012, .14 + ((j * 53) % 23) * .011, ((j * 29) % 9 - 4) * .012); G.add(s); O.pp.push({ m: s, T }); }
+            const lg = T.lab.length > 6, et = new THREE.Mesh(new THREE.PlaneGeometry(lg ? .42 : .3, .09), texte(T.lab, lg ? 448 : 320, 96, '#ffffff', '#4A148C', lg ? 46 : 56)); et.position.set(x, .0 + .02, .2); et.rotation.x = -.5; G.add(et);
+            if (i === ST.act || ST.act === -1) { const pip = new THREE.Mesh(new THREE.CylinderGeometry(.015, .03, .35, 16), M(0xECEFF1, { transparent: true, opacity: .9 })); pip.position.set(x, 1.08, 0); G.add(pip); const poire = new THREE.Mesh(new THREE.SphereGeometry(.05, 16, 12), M(0x7B1FA2)); poire.position.set(x, 1.28, 0); G.add(poire);
+              if (T.g > 0) { const gt = new THREE.Mesh(new THREE.SphereGeometry(.015, 10, 8), M(0xB3E5FC)); G.add(gt); O.gouttes.push({ m: gt, x }); } } });
+          cam.position.set(0, .6, nb > 2 ? 1.8 : 1.6); cam.lookAt(0, .4, 0);
+        } else if (ST.mode === 'ions') {
+          const fe = new THREE.Mesh(new THREE.SphereGeometry(.16, 28, 20), M(0xB4521E)); fe.position.y = .6; G.add(fe);
+          const lf = new THREE.Mesh(new THREE.PlaneGeometry(.3, .12), texte('Fe³⁺', 256, 100, '#B4521E', '#ffffff', 64)); lf.position.set(0, .6, .17); G.add(lf);
+          O.cl = []; for (let j = 0; j < ST.n; j++) { const g = new THREE.Group(); const s = new THREE.Mesh(new THREE.SphereGeometry(.11, 24, 16), M(0x2E7D32)); g.add(s); const l = new THREE.Mesh(new THREE.PlaneGeometry(.2, .09), texte('Cl⁻', 256, 110, '#2E7D32', '#ffffff', 64)); l.position.z = .115; g.add(l); G.add(g); O.cl.push({ g, a0: j * 2 * Math.PI / ST.n }); }
+          cam.position.set(0, .9, 2.1); cam.lookAt(0, .55, 0);
+        }
+      },
+      anime(t) {
+        G.rotation.y = rot;
+        O.gouttes.forEach(o => { const ph = (t * .9) % 1; o.m.position.set(o.x, .9 - ph * .5, 0); });
+        O.pp.forEach(o => { if (o.T.noircit) o.m.material.color.set(noir('#F5F5F5', noircit2(o.T, t))); });
+        if (O.cl) O.cl.forEach(o => { const a = o.a0 + t * .3; o.g.position.set(Math.cos(a) * .48, .6 + Math.sin(a) * .3, .05); });
+        r.render(scene, cam);
+      } };
+    SC.three = T3; cv.style.display = 'none'; taille(); T3.construire(SC.type);
+  } catch (e) { console.warn('3D indisponible', e); SC.three = null; $('#aide3d').textContent = 'Vue 2D (la 3D n\'est pas disponible sur cet appareil)'; cv.style.display = 'block'; }
+}
+
+/* ---------- Bilan : badges, étoiles, QCM, téléchargement ---------- */
+function bilan() {
+  const el = $('#vueBilan'), e = etoilesTot();
+  el.innerHTML = `<h3>🏅 Bilan du carnet · ${e} / 27 étoiles</h3><div class="bgrid">${PAGES.map((P, i) => `<div class="badge ${pageFaite(i) ? 'gagne' : ''}">${P.ic} <b>${P.badge}</b><br>${[0, 1, 2].map(n => P.niveaux[n].nom + ' : ' + ('★'.repeat(S.etoiles[i + '-' + n] || 0) || '—')).join('<br>')}</div>`).join('')}</div>` +
+    `<div class="qcm"><h3>📝 QCM final</h3>${QCM.map((x, i) => `<div class="q"><p><b>${i + 1}.</b> ${x.q}</p>${x.c.map((c, j) => `<label><input type="radio" name="q${i}" value="${j}" ${S.qcm[i] === j ? 'checked' : ''}> ${c}</label>`).join('')}<div class="msg hid" id="qm${i}"></div></div>`).join('')}
+    <button class="btn" id="qcmOk" type="button">Vérifier le QCM</button> <button class="btn sec" id="pdf" type="button">⬇ Télécharger mon carnet (PDF)</button><p class="msg hid" id="pdfMsg"></p></div>`;
+  el.querySelectorAll('input[type=radio]').forEach(i => i.onchange = () => { S.qcm[+i.name.slice(1)] = +i.value; sauve(); });
+  $('#qcmOk').onclick = () => { let ok = 0; QCM.forEach((x, i) => { const m = $('#qm' + i), b = S.qcm[i] === x.b; if (b) ok++; m.className = 'msg ' + (b ? 'ok' : 'ko'); m.textContent = b ? '✓ Juste' : '✗ Réponse attendue : ' + x.c[x.b]; }); S.qcmScore = ok; sauve(); };
+  $('#pdf').onclick = telecharger;
+  $('#journal').value = S.journal.bilan || ''; $('#jnNom').textContent = 'Bilan';
+}
+const plat = s => String(s).replace(/<[^>]+>/g, '').replace(/ℰ/g, 'E').replace(/[⃗]/g, '').replace(/→/g, '->').replace(/⁻¹/g, '-1').replace(/²/g, '2').replace(/³/g, '3').replace(/−/g, '-').replace(/★/g, '*').replace(/·/g, '.').replace(/⁺/g, '+').replace(/⁻/g, '-').replace(/[₀-₉]/g, c => String(c.charCodeAt(0) - 8320)).replace(/[⁰¹²³⁴-⁹]/g, c => '⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(c)).replace(/⇌/g, '<=>').replace(/[^\x20-\xFF]/g, '');
+function chargeJsPDF() { return new Promise((ok, ko) => { if (window.jspdf) return ok(); const essai = (u, suite) => { const s = document.createElement('script'); s.src = u; s.onload = () => ok(); s.onerror = suite; document.head.appendChild(s); };
+  essai('/lib/jspdf-2.5.1.umd.min.js', () => essai('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', ko)); }); }
+async function telecharger() {
+  const nom = prompt ? null : null; void nom;
+  try { await chargeJsPDF(); } catch (e) { $('#pdfMsg').className = 'msg ko'; $('#pdfMsg').textContent = 'Le PDF ne peut pas être créé hors connexion : la page va s\'imprimer.'; window.print(); return; }
+  const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' }); let y = 18; const L = (t, s = 11, b = false) => { doc.setFont('helvetica', b ? 'bold' : 'normal'); doc.setFontSize(s); doc.splitTextToSize(plat(t), 180).forEach(l => { if (y > 280) { doc.addPage(); y = 18; } doc.text(l, 15, y); y += s * .45; }); y += 1.5; };
+  doc.setFillColor(74, 20, 140); doc.rect(0, 0, 210, 10, 'F'); L('EFIR - 3e - Chapitre 1 - Carnet d\'exploration', 9); L('Tests d\'identification des ions', 15, true);
+  L('Jauge de comprehension : ' + etoilesTot() + ' / 27 etoiles', 11, true);
+  PAGES.forEach((P, i) => { L(P.court + ' - ' + P.nom + (pageFaite(i) ? ' - badge gagne : ' + P.badge : ''), 12, true); P.niveaux.forEach((N, n) => { const k = i + '-' + n; L('Niveau ' + (n + 1) + ' (' + N.nom + ') : ' + ('*'.repeat(S.etoiles[k] || 0) || 'non reussi') + ' - ma reponse : ' + ((S.essais[k] || {}).v || '-') + ' ' + N.u); }); if (S.journal[P.cle]) L('Journal : ' + S.journal[P.cle]); });
+  L('QCM final : ' + (S.qcmScore != null ? S.qcmScore + ' / ' + QCM.length : 'non verifie'), 12, true); if (S.journal.bilan) L('Journal du bilan : ' + S.journal.bilan);
+  const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.text('(c) EFIR - Mme Messaoudi - Tous droits reserves - page ' + i + '/' + n, 15, 292); }
+  doc.save('Carnet_3e_ch01_tests_identification_ions.pdf'); $('#pdfMsg').className = 'msg ok'; $('#pdfMsg').textContent = '✓ Carnet téléchargé : déposez-le dans le devoir Google Classroom (Ajouter › Fichier, puis Rendre).';
+}
+
+function rendu() {
+  jauge(); stepper();
+  $('#vuePage').classList.toggle('hid', !!S.bilan); $('#vueBilan').classList.toggle('hid', !S.bilan);
+  if (S.bilan) { bilan(); return; }
+  if (!pageOuverte(S.page)) S.page = 0;
+  if (!nivOuvert(S.page, S.niv[S.page])) S.niv[S.page] = 0;
+  gauche(); nivs(); niveau(); taille();
+}
+rendu(); taille(); requestAnimationFrame(boucle); init3d();
+/* protection : pas de copie hors des champs de réponse */
+document.addEventListener('contextmenu', e => { if (!e.target.closest('input,textarea')) e.preventDefault(); });
+document.addEventListener('copy', e => { if (!e.target.closest || !e.target.closest('input,textarea')) e.preventDefault(); });
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && ['s', 'u', 'p'].includes(e.key.toLowerCase())) e.preventDefault(); });
+</script>
+<script>
+  /* vecteurs : lettre + flèche combinante (U+20D7) → flèche dessinée en CSS (la flèche combinante s'affiche mal dans certaines polices) */
+  (function () {
+    var RX = /((?:Δ|Σ)?[A-Za-zΑ-ω0-9])⃗/;
+    if (!document.getElementById("efir-vec-css")) { var sv = document.createElement("style"); sv.id = "efir-vec-css"; sv.textContent = '.vec{display:inline-block;position:relative;padding-top:.18em;line-height:1}.vec::before{content:"";position:absolute;left:4%;right:6%;top:.06em;border-top:1.4px solid currentColor}.vec::after{content:"";position:absolute;right:2%;top:-.1em;width:.26em;height:.26em;border:solid currentColor;border-width:1.4px 1.4px 0 0;transform:rotate(45deg)}'; (document.head || document.documentElement).appendChild(sv); }
+    function vecDom(root) {
+      if (!root || !document.createTreeWalker) return;
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), l = [], n;
+      while ((n = w.nextNode())) if (n.nodeValue.indexOf("⃗") >= 0 && n.parentNode && !/^(SCRIPT|STYLE|TEXTAREA|OPTION|TITLE)$/.test(n.parentNode.nodeName) && !(n.parentNode.closest && n.parentNode.closest("svg"))) l.push(n);
+      l.forEach(function (t) {
+        var s = t.nodeValue, f = document.createDocumentFragment(), m;
+        while ((m = RX.exec(s))) { if (m.index) f.appendChild(document.createTextNode(s.slice(0, m.index))); var sp = document.createElement("span"); sp.className = "vec"; sp.textContent = m[1]; f.appendChild(sp); s = s.slice(m.index + m[0].length); }
+        if (s) f.appendChild(document.createTextNode(s.replace(/⃗/g, "")));
+        t.parentNode.replaceChild(f, t);
+      });
+    }
+    var en = false, mo = new MutationObserver(function () { if (en) return; en = true; try { vecDom(document.body); } finally { en = false; } });
+    function go() { vecDom(document.body); mo.observe(document.body, { childList: true, subtree: true, characterData: true }); }
+    if (document.body) go(); else document.addEventListener("DOMContentLoaded", go);
+  })();
+</script>
+</body>
+</html>
