@@ -1,5 +1,5 @@
 /* Labo virtuel EFIR : service worker du mode hors ligne (site découpé : index.html léger + blocs/ + lib/) */
-const VERSION = "2026-11-24-ch02-61f6215e";
+const VERSION = "2026-11-26-3e-ch01-tests-099aab70";
 const CACHE_SITE = "efir-site-" + VERSION;   // page d'accueil et manifeste (changent à chaque version)
 const CACHE_LOCAL = "efir-local-v2";         // blocs/ et lib/ : noms versionnés, jamais périmés
 const CACHE_LIBS = "efir-libs-v1";           // bibliothèques externes restantes (polices, Python)
@@ -18,6 +18,8 @@ const LOCAUX = [
 "/blocs/exp2d-sc-1re-ch2-ae3-3d.3b09074775.txt",
 "/blocs/exp2d-sc-1re-ch2-ae4-3d.0edf6b0858.txt",
 "/blocs/cours-1re-ch02-oxydoreduction.78374c6bbe.txt",
+"/blocs/cours-3e-ch01-atomes-ions.acec0d7272.txt",
+"/blocs/cours-3e-ch01-tests-ions.099aab70e3.txt",
 "/blocs/sim-1re-ch14-ae1-3d.dfb945473b.txt",
 "/blocs/sim-1re-ch14-ae3-3d.a630744b7c.txt",
 "/blocs/sim-1re-ch14-ae4-3d.c3764df050.txt",
